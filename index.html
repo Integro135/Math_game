@@ -681,15 +681,18 @@ body{
   .lvl-btn{padding:4px 8px;font-size:.78rem}
   .lvl-lbl{font-size:.8rem}
   .card{padding:14px 10px;border-radius:20px}
-  /* equation row: smaller abs-buttons, shift inward to reclaim space */
-  .eq-row{padding:0 44px 0 86px}
-  .chk-btn{width:38px;height:38px;font-size:1rem}
-  .ko-eq-btn{width:38px;height:38px;left:44px;font-size:1.5rem}
-  .pa-eq-btn{width:38px;height:38px;left:44px;font-size:1.5rem}
-  .lg-eq-btn{width:38px;height:38px;left:2px;font-size:1.5rem}
+  /* equation row: 36px abs-buttons, ko/pa shifted to left:42px → right-edge 78px → 82px left-pad */
+  .eq-row{padding:0 42px 0 82px}
+  .chk-btn{width:36px;height:36px;font-size:.95rem}
+  .ko-eq-btn{width:36px;height:36px;left:42px;font-size:1.4rem}
+  .pa-eq-btn{width:36px;height:36px;left:42px;font-size:1.4rem}
+  .lg-eq-btn{width:36px;height:36px;left:2px;font-size:1.4rem}
   .ko-eq-btn::before,.pa-eq-btn::before,.lg-eq-btn::before{top:-18px;font-size:.62rem}
-  .eq-n,.eq-op,.eq-res{font-size:2.2rem}
-  .ans-inp{width:66px;height:54px;font-size:2.2rem;border-radius:12px}
+  /* 1.9rem + min-width 28px + gap 5px keeps 5-element TM/TS/TA in one line at ≥390px */
+  .eq-n,.eq-op,.eq-res{font-size:1.9rem}
+  .eq-n{min-width:28px}
+  .equation{gap:5px}
+  .ans-inp{width:58px;height:50px;font-size:1.9rem;border-radius:12px}
   .hrt{font-size:1.5rem}
   .hearts{gap:3px}
   .ab-wrap{gap:6px}
@@ -707,6 +710,15 @@ body{
   .ko-eq-display .eq-op{font-size:1.9rem}
   .ko-eq-display .ans-inp{width:64px;height:52px;font-size:2rem}
   .ko-stage{grid-template-columns:repeat(8,1fr);gap:7px}
+}
+
+/* ── Responsive — narrow mobile (≤360px) ── */
+@media (max-width:360px){
+  .eq-row{padding:0 38px 0 78px}
+  .eq-n,.eq-op,.eq-res{font-size:1.75rem}
+  .eq-n{min-width:24px}
+  .ans-inp{width:52px;height:46px;font-size:1.75rem}
+  .equation{gap:4px}
 }
 
 /* ── Boys theme ── */
