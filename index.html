@@ -308,8 +308,11 @@ body{
 }
 
 /* ── Equation row + circular buttons ── */
-.eq-row{display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:12px;position:relative;padding:0 54px 0 110px}
+.eq-row{display:flex;align-items:center;justify-content:center;gap:8px;row-gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .eq-row .equation{margin-bottom:0}
+.eq-btns-row{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.eq-mini-btns{display:flex;align-items:center;gap:6px}
+.lvl-break{display:none}
 .chk-btn{
   flex-shrink:0;width:48px;height:48px;border-radius:50%;position:relative;
   background:radial-gradient(circle at 38% 36%,#CE93D8,#6A0080 70%);
@@ -326,7 +329,7 @@ body{
   box-shadow:0 7px 30px rgba(156,39,176,.8),inset 0 1px 0 rgba(255,255,255,.38)}
 .chk-btn:active{transform:scale(.96) rotate(2deg)}
 .ko-eq-btn{
-  position:absolute;left:58px;top:50%;transform:translateY(-50%);
+  position:relative;flex-shrink:0;
   width:48px;height:48px;border-radius:50%;
   background:radial-gradient(circle at 38% 36%,#ff6b35,#c2185b 70%);
   border:3px solid rgba(255,255,255,.32);
@@ -343,10 +346,10 @@ body{
 }
 .ko-eq-btn::after{content:'';position:absolute;inset:0;border-radius:50%;
   background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%)}
-.ko-eq-btn:hover{transform:translateY(-50%) scale(1.16) rotate(-9deg);
+.ko-eq-btn:hover{transform:scale(1.16) rotate(-9deg);
   box-shadow:0 7px 30px rgba(255,50,0,.8),inset 0 1px 0 rgba(255,255,255,.38)}
-.ko-eq-btn:active{transform:translateY(-50%) scale(.96) rotate(2deg)}
-.ko-eq-btn:disabled{opacity:.28;cursor:default;transform:translateY(-50%)!important;box-shadow:none!important;filter:grayscale(.5)}
+.ko-eq-btn:active{transform:scale(.96) rotate(2deg)}
+.ko-eq-btn:disabled{opacity:.28;cursor:default;transform:none!important;box-shadow:none!important;filter:grayscale(.5)}
 
 /* ── Knockout panel ── */
 #ko-panel{display:none;position:fixed;inset:0;z-index:950;
@@ -475,18 +478,18 @@ body{
 
 /* ── Party mini-game ── */
 @keyframes paBorderGlow{0%,100%{box-shadow:0 0 70px rgba(0,180,80,.28),0 22px 64px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07)}33%{box-shadow:0 0 90px rgba(255,80,180,.28),0 22px 64px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07)}66%{box-shadow:0 0 90px rgba(80,180,255,.28),0 22px 64px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07)}}
-.pa-eq-btn{position:absolute;left:58px;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#69F0AE,#00897B 70%);border:3px solid rgba(255,255,255,.32);box-shadow:0 4px 22px rgba(0,200,100,.6),inset 0 1px 0 rgba(255,255,255,.28);cursor:pointer;font-size:1.8rem;display:none;align-items:center;justify-content:center;transition:all .22s}
+.pa-eq-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#69F0AE,#00897B 70%);border:3px solid rgba(255,255,255,.32);box-shadow:0 4px 22px rgba(0,200,100,.6),inset 0 1px 0 rgba(255,255,255,.28);cursor:pointer;font-size:1.8rem;display:none;align-items:center;justify-content:center;transition:all .22s}
 .pa-eq-btn::before{content:'10 ⭐';position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:.72rem;font-family:'Nunito',sans-serif;font-weight:800;color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.7);white-space:nowrap;pointer-events:none}
 .pa-eq-btn::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%)}
-.pa-eq-btn:hover{transform:translateY(-50%) scale(1.16) rotate(9deg);box-shadow:0 7px 30px rgba(0,220,100,.85),inset 0 1px 0 rgba(255,255,255,.38)}
-.pa-eq-btn:active{transform:translateY(-50%) scale(.96) rotate(-2deg)}
-.pa-eq-btn:disabled{opacity:.28;cursor:default;transform:translateY(-50%)!important;box-shadow:none!important;filter:grayscale(.5)}
-.lg-eq-btn{position:absolute;left:4px;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#FFB300,#E65100 70%);border:3px solid rgba(255,255,255,.32);box-shadow:0 4px 22px rgba(255,140,0,.6),inset 0 1px 0 rgba(255,255,255,.28);cursor:pointer;font-size:1.8rem;display:none;align-items:center;justify-content:center;transition:all .22s}
+.pa-eq-btn:hover{transform:scale(1.16) rotate(9deg);box-shadow:0 7px 30px rgba(0,220,100,.85),inset 0 1px 0 rgba(255,255,255,.38)}
+.pa-eq-btn:active{transform:scale(.96) rotate(-2deg)}
+.pa-eq-btn:disabled{opacity:.28;cursor:default;transform:none!important;box-shadow:none!important;filter:grayscale(.5)}
+.lg-eq-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#FFB300,#E65100 70%);border:3px solid rgba(255,255,255,.32);box-shadow:0 4px 22px rgba(255,140,0,.6),inset 0 1px 0 rgba(255,255,255,.28);cursor:pointer;font-size:1.8rem;display:none;align-items:center;justify-content:center;transition:all .22s}
 .lg-eq-btn::before{content:'15 ⭐';position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:.72rem;font-family:'Nunito',sans-serif;font-weight:800;color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.7);white-space:nowrap;pointer-events:none}
 .lg-eq-btn::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%)}
-.lg-eq-btn:hover{transform:translateY(-50%) scale(1.16) rotate(9deg);box-shadow:0 7px 30px rgba(255,140,0,.8),inset 0 1px 0 rgba(255,255,255,.38)}
-.lg-eq-btn:active{transform:translateY(-50%) scale(.96) rotate(-2deg)}
-.lg-eq-btn:disabled{opacity:.28;cursor:default;transform:translateY(-50%)!important;box-shadow:none!important;filter:grayscale(.5)}
+.lg-eq-btn:hover{transform:scale(1.16) rotate(9deg);box-shadow:0 7px 30px rgba(255,140,0,.8),inset 0 1px 0 rgba(255,255,255,.38)}
+.lg-eq-btn:active{transform:scale(.96) rotate(-2deg)}
+.lg-eq-btn:disabled{opacity:.28;cursor:default;transform:none!important;box-shadow:none!important;filter:grayscale(.5)}
 #pa-panel{display:none;position:fixed;inset:0;z-index:950;background:rgba(0,10,4,.92);backdrop-filter:blur(10px);align-items:center;justify-content:center}
 .pa-box{background:linear-gradient(170deg,#001a0e 0%,#00301a 50%,#00100a 100%);border:2px solid rgba(60,220,120,.32);box-shadow:0 0 70px rgba(0,180,80,.28),0 22px 64px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07);border-radius:30px;padding:22px 20px 16px;width:min(560px,94vw);max-height:90vh;overflow-y:auto;position:relative;animation:paBorderGlow 5s ease-in-out infinite}
 .pa-balloons{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:28px}
@@ -552,7 +555,7 @@ body{
 .lg-tower-glow{width:68px;height:10px;background:radial-gradient(ellipse at center,rgba(80,160,255,.3),transparent 68%);margin-bottom:-2px;flex-shrink:0}
 .lg-base-plate{width:102px;height:15px;background:linear-gradient(180deg,#9C7C14 0%,#6B5008 55%,#3E2E06 100%);border-radius:3px 3px 8px 8px;box-shadow:0 8px 22px rgba(0,0,0,.7),inset 0 3px 0 rgba(255,255,255,.24),inset 0 -3px 5px rgba(0,0,0,.45);position:relative;overflow:hidden;flex-shrink:0}
 .lg-base-plate::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0,rgba(255,255,255,.06) 9px,transparent 9px,transparent 18px)}
-.lg-tower-count{font-family:'Fredoka One',cursive;font-size:1rem;color:rgba(255,210,70,.65);margin-top:9px;letter-spacing:.05em}
+.lg-tower-count{font-family:'Fredoka One',cursive;font-size:1rem;color:rgba(255,210,70,.85);letter-spacing:.05em;position:absolute;right:calc(100% + 8px);bottom:4px;white-space:nowrap;background:rgba(0,0,0,.32);padding:3px 9px;border-radius:8px}
 .lg-side-panel{display:flex;flex-direction:column;gap:8px;align-items:center;flex-shrink:0;align-self:stretch;justify-content:center;padding-bottom:32px}
 .lg-side-lbl{font-family:'Nunito',sans-serif;font-weight:800;font-size:.6rem;color:rgba(255,255,255,.3);letter-spacing:.05em;text-transform:uppercase}
 .lg-drop-btn{width:46px;height:46px;border-radius:13px;border:2px solid rgba(255,255,255,.18);color:#fff;font-size:1.55rem;font-family:'Fredoka One',cursive;line-height:1;cursor:pointer;transition:all .14s cubic-bezier(.17,1.4,.5,1);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;overflow:hidden;user-select:none}
@@ -681,18 +684,20 @@ body{
   .lvl-btn{padding:4px 8px;font-size:.78rem}
   .lvl-lbl{font-size:.8rem}
   .card{padding:14px 10px;border-radius:20px}
-  /* equation row: 36px abs-buttons, ko/pa shifted to left:42px → right-edge 78px → 82px left-pad */
-  .eq-row{padding:0 42px 0 82px}
+  /* equation on its own row; buttons row below */
+  .equation{width:100%;justify-content:center}
+  .eq-btns-row{width:100%;justify-content:space-between}
   .chk-btn{width:36px;height:36px;font-size:.95rem}
-  .ko-eq-btn{width:36px;height:36px;left:42px;font-size:1.4rem}
-  .pa-eq-btn{width:36px;height:36px;left:42px;font-size:1.4rem}
-  .lg-eq-btn{width:36px;height:36px;left:2px;font-size:1.4rem}
-  .ko-eq-btn::before,.pa-eq-btn::before,.lg-eq-btn::before{top:-18px;font-size:.62rem}
-  /* 1.9rem + min-width 28px + gap 5px keeps 5-element TM/TS/TA in one line at ≥390px */
+  .ko-eq-btn,.pa-eq-btn,.lg-eq-btn{width:36px;height:36px;font-size:1.4rem}
+  .ko-eq-btn::before,.pa-eq-btn::before,.lg-eq-btn::before{display:none}
+  /* keep equation numbers compact so they fit one line */
   .eq-n,.eq-op,.eq-res{font-size:1.9rem}
   .eq-n{min-width:28px}
   .equation{gap:5px}
   .ans-inp{width:58px;height:50px;font-size:1.9rem;border-radius:12px}
+  /* level buttons: 3+2 split — show break element */
+  .lvl-break{display:block;flex-basis:100%;height:0}
+  .lvl-lbl{display:none}
   .hrt{font-size:1.5rem}
   .hearts{gap:3px}
   .ab-wrap{gap:6px}
@@ -714,7 +719,6 @@ body{
 
 /* ── Responsive — narrow mobile (≤360px) ── */
 @media (max-width:360px){
-  .eq-row{padding:0 38px 0 78px}
   .eq-n,.eq-op,.eq-res{font-size:1.75rem}
   .eq-n{min-width:24px}
   .ans-inp{width:52px;height:46px;font-size:1.75rem}
@@ -785,13 +789,14 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
       <button class="lvl-btn"        id="lb0"  onclick="setMode(0)">1+1 🌱</button>
       <button class="lvl-btn"        id="lb5"  onclick="setMode(5)">עַד 5 ⭐</button>
       <button class="lvl-btn"        id="lb10" onclick="setMode(10)">עַד 10 ⭐</button>
+      <span class="lvl-break"></span>
       <button class="lvl-btn active" id="lb20" onclick="setMode(20)">עַד 20 ⭐</button>
       <button class="lvl-btn"        id="lbmx" onclick="setMode('mx')">3+5-4 💪</button>
     </div>
   </header>
 
   <div class="card glass" id="card">
-    <div class="eq-row"><button class="lg-eq-btn" onclick="lgOpen()" title="מִגְדַּל הַלֶּגוֹ">🧱</button><button class="ko-eq-btn" onclick="koOpen()" title="מִשְׂחֲקוֹן הָאֶגְרוֹף">🥊</button><button class="pa-eq-btn" onclick="paOpen()" title="מְסִיבַּת הַדְּמֻיּוֹת">🎉</button><div class="equation" id="eq"></div><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="lg-eq-btn" onclick="lgOpen()" title="מִגְדַּל הַלֶּגוֹ">🧱</button><button class="ko-eq-btn" onclick="koOpen()" title="מִשְׂחֲקוֹן הָאֶגְרוֹף">🥊</button><button class="pa-eq-btn" onclick="paOpen()" title="מְסִיבַּת הַדְּמֻיּוֹת">🎉</button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div class="hearts"   id="hearts"></div>
     <div class="div"></div>
@@ -1204,7 +1209,7 @@ function endGame(){
 
 function rebuildCard(){
   document.getElementById('card').innerHTML=`
-    <div class="eq-row"><button class="lg-eq-btn" onclick="lgOpen()" title="מִגְדַּל הַלֶּגוֹ">🧱</button><button class="ko-eq-btn" onclick="koOpen()" title="מִשְׂחֲקוֹן הָאֶגְרוֹף">🥊</button><button class="pa-eq-btn" onclick="paOpen()" title="מְסִיבַּת הַדְּמֻיּוֹת">🎉</button><div class="equation" id="eq"></div><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="lg-eq-btn" onclick="lgOpen()" title="מִגְדַּל הַלֶּגוֹ">🧱</button><button class="ko-eq-btn" onclick="koOpen()" title="מִשְׂחֲקוֹן הָאֶגְרוֹף">🥊</button><button class="pa-eq-btn" onclick="paOpen()" title="מְסִיבַּת הַדְּמֻיּוֹת">🎉</button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div class="hearts"   id="hearts"></div>
     <div class="div"></div>
