@@ -166,8 +166,28 @@ body{
 /* ── Feedback ── */
 .fb{text-align:center;font-family:'Fredoka One',cursive;font-size:1.45rem;min-height:42px;padding:5px 0}
 .fb-err{font-size:2.2rem}
-.fb-ok {color:#80ffdb;text-shadow:0 0 16px rgba(128,255,219,.6)}
-.fb-err{color:#ff80ab}
+.fb-ok  {color:#80ffdb;text-shadow:0 0 16px rgba(128,255,219,.6)}
+.fb-err {color:#ff80ab}
+.aid-hint-pop{text-align:center;pointer-events:none;animation:aidHintPop 2s ease-out forwards;margin:4px 0}
+.aid-hint-lbl{display:block;font-family:'Fredoka One',cursive;font-size:.88rem;color:rgba(255,210,80,.92);margin-bottom:3px}
+.aid-hint-emojis{font-size:1.9rem}
+@keyframes aidHintPop{
+  0%  {transform:scale(.1) translateY(0);opacity:0}
+  18% {transform:scale(1.35) translateY(-10px);opacity:1}
+  32% {transform:scale(1) translateY(0);opacity:1}
+  52% {transform:scale(1.12) translateY(-6px);opacity:1}
+  68% {transform:scale(1) translateY(0);opacity:1}
+  82% {opacity:1}
+  100%{transform:scale(.85) translateY(-12px);opacity:0}
+}
+.aid-hint-bounce{animation:aidHeartsBounce .7s cubic-bezier(.17,1.4,.5,1)}
+@keyframes aidHeartsBounce{
+  0%  {transform:none}
+  28% {transform:scale(1.09) translateY(-6px)}
+  52% {transform:scale(1) translateY(0)}
+  72% {transform:scale(1.05) translateY(-3px)}
+  100%{transform:scale(1) translateY(0)}
+}
 
 /* ── Buttons ── */
 .btn-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
@@ -987,7 +1007,7 @@ function modePts(){return mode==='mx'?20:mode||5;}
 /* ── State ── */
 const GL=12;
 let mode=20,score=0,idx=0,problems=[],done=false;
-let ptype,num1,num2,num3,hState=[];
+let ptype,num1,num2,num3,hState=[],aidUsed=false,spaceDir=1;
 let report=[];
 
 /* ── Mode switch ── */
@@ -1027,7 +1047,7 @@ function loadProblem(){
                     :'🤍 הוֹסִיפִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!')
               :(boys?'🚗 מְחַק מְכוֹנִיּוֹת כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
                     :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!');}
-  renderEq();renderHearts();showBtns('check');abReset();
+  spaceDir=1;renderEq();renderHearts();showBtns('check');resetAidUsed();abReset();
   setTimeout(()=>{const i=document.getElementById('ans');if(i)i.focus()},60);
 }
 
@@ -1089,6 +1109,7 @@ function renderHearts(){
    TA/TX: pop (lit) ↔ shrink (unlit); boys מנהל .hrt-unlit */
 function clickHeart(i,b){
   if(done)return;
+  markAidUsed();
   hState[i]=!hState[i];
   const boys=theme==='boys';
   if(ptype!==TA&&ptype!==TX){
@@ -1147,16 +1168,33 @@ function checkAns(){
     if(mode===0){setTimeout(nextP,700);}else{setTimeout(showFw,300);}
   }else{
     if(report[idx])report[idx].wrongs.push(v);
+    if(!aidUsed&&mode!==0)setTimeout(showAidHintFx,500);
     setFb('','');showSadModal();
     showBtns('wrong');
   }
 }
 function setFb(t,c){const e=document.getElementById('fb');e.textContent=t;e.className='fb '+(c||'')}
+function markAidUsed(){if(aidUsed)return;aidUsed=true;}
+function resetAidUsed(){aidUsed=false;}
+function showAidHintFx(){
+  const heartsEl=document.getElementById('hearts');
+  if(!heartsEl)return;
+  const emoji=theme==='boys'?'🚗':'💗';
+  const div=document.createElement('div');
+  div.className='aid-hint-pop';
+  div.innerHTML=`<span class="aid-hint-lbl">זִכְרִי לְהִשְׁתַּמֵּשׁ</span><span class="aid-hint-emojis">${emoji} ${emoji} ${emoji}</span>`;
+  heartsEl.insertAdjacentElement('afterend',div);
+  div.addEventListener('animationend',()=>div.remove(),{once:true});
+  heartsEl.classList.remove('aid-hint-bounce');
+  void heartsEl.offsetWidth;
+  heartsEl.classList.add('aid-hint-bounce');
+  heartsEl.addEventListener('animationend',()=>heartsEl.classList.remove('aid-hint-bounce'),{once:true});
+}
 
 /* ── Reset current ── */
 function resetCur(){
   done=false;initHearts();
-  renderEq();renderHearts();abReset();setFb('','');showBtns('check');
+  spaceDir=1;renderEq();renderHearts();abReset();setFb('','');showBtns('check');resetAidUsed();
   setTimeout(()=>{const i=document.getElementById('ans');if(i)i.focus()},60);
 }
 function nextP(){
@@ -1372,11 +1410,12 @@ function showFw(){
   _fwKey=e=>{if(e.key==='Enter'||e.key===' ')fwClose();};
   document.addEventListener('keydown',_fwKey);
 }
+const SAD_EMOJIS=['😢','😭','🥺','😞','☹️','😔','😣','🤧','😿','💔','😩','🙈'];
 function showSadModal(){
   const ov=document.getElementById('sad-ov');
-  ov.style.display='flex';
-  // restart animation by re-cloning the box
   const box=ov.querySelector('.sad-box');
+  box.querySelector('.sad-emoji').textContent=SAD_EMOJIS[0|Math.random()*SAD_EMOJIS.length];
+  ov.style.display='flex';
   const clone=box.cloneNode(true);
   ov.replaceChild(clone,box);
   setTimeout(()=>ov.style.display='none',1500);
@@ -1431,6 +1470,7 @@ function abReset(){
   abDraw();
 }
 function abStep(d){
+  markAidUsed();
   const N=abN(),nr=abRows();
   const maxTot=(ptype===TS||ptype===TM)?(num1||0):N*nr;
   let tot=abL[0]+(nr>1?abL[1]:0)+d;
@@ -1542,7 +1582,7 @@ function abClick(e){
   if(bd>AB.R+8)return;
   const nl=abL[row];
   abL[row]=Math.max(0,Math.min(rowMax2[row],bk<nl?nl-1:nl+1));
-  abDraw();
+  markAidUsed();abDraw();
 }
 
 /* ── Particle FX system ── */
@@ -1841,7 +1881,7 @@ function koOpen(){
   if(done||score<10)return;
   lgClose();
   score-=10;document.getElementById('score-val').textContent=score;
-  koUpdateBtn();
+  markAidUsed();koUpdateBtn();
   if(koProbIdx!==idx){
     koData=Array.from({length:num1},()=>({up:true}));
     koProbIdx=idx;
@@ -1959,7 +1999,7 @@ function paOpen(){
   if(done||score<10)return;
   lgClose();
   score-=10;document.getElementById('score-val').textContent=score;
-  koUpdateBtn();paUpdateBtn();
+  markAidUsed();koUpdateBtn();paUpdateBtn();
   const isNew=(paProbIdx!==idx);
   if(isNew){
     paData=Array.from({length:num1+num2>10?20:10},()=>'dark');
@@ -2133,7 +2173,8 @@ function lgKnockBrick(brickEl){
 function lgOpen(){
   if(done||score<15)return;
   koClose();paClose();
-  score-=15;document.getElementById('score-val').textContent=score;koUpdateBtn();
+  score-=15;document.getElementById('score-val').textContent=score;
+  markAidUsed();koUpdateBtn();
   const isNew=(lgProbIdx!==idx);
   if(isNew){
     lgData=Array.from({length:num1},(_,i)=>LG_COLORS[i%LG_COLORS.length]);
@@ -2231,6 +2272,47 @@ abInit();
 applyTheme();
 spawnParticles();
 loadProblem();
+
+/* ── Spacebar heart shortcut ── */
+document.addEventListener('keydown',e=>{
+  if(e.key!==' ')return;
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='TEXTAREA'||(ae.tagName==='INPUT'&&ae.type!=='number')))return;
+  const panels=['ko-panel','pa-panel','lg-panel','fw-ov','sad-ov','report-ov'];
+  if(panels.some(id=>{const el=document.getElementById(id);return el&&el.style.display&&el.style.display!=='none';}))return;
+  if(done)return;
+  e.preventDefault();
+  const hearts=document.getElementById('hearts');
+  if(!hearts)return;
+  const btns=[...hearts.querySelectorAll('.hrt')];
+  let ti=-1;
+  if(ptype===TA){
+    if(spaceDir===1){
+      for(let i=0;i<hState.length;i++){if(hState[i]===false){ti=i;break;}}
+      if(ti<0){spaceDir=-1;for(let i=hState.length-1;i>=0;i--){if(hState[i]===true){ti=i;break;}}}
+    }else{
+      for(let i=hState.length-1;i>=0;i--){if(hState[i]===true){ti=i;break;}}
+      if(ti<0){spaceDir=1;for(let i=0;i<hState.length;i++){if(hState[i]===false){ti=i;break;}}}
+    }
+  }else if(ptype===TX){
+    if(spaceDir===1){
+      for(let i=hState.length-1;i>=0;i--){if(hState[i]===true){ti=i;break;}}
+      if(ti<0){spaceDir=-1;for(let i=0;i<hState.length;i++){if(hState[i]===false){ti=i;break;}}}
+    }else{
+      for(let i=0;i<hState.length;i++){if(hState[i]===false){ti=i;break;}}
+      if(ti<0){spaceDir=1;for(let i=hState.length-1;i>=0;i--){if(hState[i]===true){ti=i;break;}}}
+    }
+  }else{
+    if(spaceDir===1){
+      for(let i=0;i<hState.length;i++){if(hState[i]===false){ti=i;break;}}
+      if(ti<0){spaceDir=-1;for(let i=hState.length-1;i>=0;i--){if(hState[i]===true){ti=i;break;}}}
+    }else{
+      for(let i=hState.length-1;i>=0;i--){if(hState[i]===true){ti=i;break;}}
+      if(ti<0){spaceDir=1;for(let i=0;i<hState.length;i++){if(hState[i]===false){ti=i;break;}}}
+    }
+  }
+  if(ti>=0&&btns[ti]&&!btns[ti].disabled)btns[ti].click();
+});
 </script>
 </body>
 </html>
