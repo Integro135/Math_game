@@ -636,7 +636,7 @@ body{
 @keyframes gnSparkFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
 /* ── Balloon mini-game ── */
 #bl-panel{display:none;position:fixed;inset:0;z-index:950;background:rgba(0,8,22,.92);backdrop-filter:blur(10px);align-items:center;justify-content:center}
-.bl-box{background:linear-gradient(170deg,#020d20 0%,#041828 50%,#010810 100%);border:2px solid rgba(40,180,255,.32);box-shadow:0 0 70px rgba(0,140,255,.28),0 22px 64px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07);border-radius:30px;padding:22px 22px 18px;width:min(600px,97vw);max-height:92vh;overflow-y:auto;position:relative}
+.bl-box{background:linear-gradient(170deg,#020d20 0%,#041828 50%,#010810 100%);border:2px solid rgba(40,180,255,.32);box-shadow:0 0 70px rgba(0,140,255,.28),0 22px 64px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07);border-radius:30px;padding:22px 30px 18px;width:min(640px,99vw);max-height:92vh;overflow-y:auto;position:relative}
 .bl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .bl-title{font-family:'Fredoka One',cursive;font-size:1.25rem;background:linear-gradient(90deg,#40C4FF,#0091EA,#00B0FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .bl-close{background:linear-gradient(135deg,rgba(40,160,255,.18),rgba(20,100,200,.12));border:1px solid rgba(40,160,255,.32);color:rgba(140,210,255,.9);font-size:.9rem;cursor:pointer;padding:6px 16px;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;transition:all .18s}
@@ -649,6 +649,8 @@ body{
 .bl-side-btn:hover{transform:scale(1.16) rotate(-9deg);box-shadow:0 6px 24px rgba(0,180,255,.75)}
 .bl-side-btn:active{transform:scale(.95)}
 .bl-side-btn:disabled{opacity:.28;cursor:default;transform:none!important;box-shadow:none!important;filter:grayscale(.5)}
+.bl-side-rem-btn{background:radial-gradient(circle at 38% 36%,#FF5252,#C62828 70%)!important;box-shadow:0 4px 16px rgba(200,30,30,.5),inset 0 1px 0 rgba(255,255,255,.22)!important;color:#FFD54F!important}
+.bl-side-rem-btn:hover{transform:scale(1.16) rotate(9deg)!important;box-shadow:0 6px 24px rgba(200,30,30,.7)!important}
 .bl-field::after{content:'';position:absolute;bottom:0;left:6%;right:6%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14) 30%,rgba(255,255,255,.14) 70%,transparent)}
 .bl-count{font-family:'Fredoka One',cursive;font-size:1.3rem;color:rgba(100,210,255,.8);text-align:center;margin-bottom:6px}
 .bl-hint{font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;color:rgba(130,200,255,.58);min-height:18px;text-align:center;margin-bottom:8px}
@@ -1252,7 +1254,7 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
     <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="החלפת עיצוב">👦</button>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v2.7">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v3.0">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1463,6 +1465,7 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
       </div>
       <div class="bl-side">
         <button class="bl-side-btn" id="bl-add-btn" onclick="blAddBalloon()">+</button>
+        <button class="bl-side-btn bl-side-rem-btn" id="bl-rem-btn" onclick="blRemoveTop()">−</button>
       </div>
     </div>
     <div class="bl-hint" id="bl-hint"></div>
@@ -1481,9 +1484,9 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
     <div class="bu-scene">
       <div class="bu-tank"><div class="bu-row" id="bu-row"></div><div class="bu-water"></div></div>
       <div class="bu-side">
-        <button class="bu-side-btn bu-blow-btn" id="bu-blow-btn" onclick="buBlow()">+</button>
+        <button class="bu-side-btn bu-blow-btn" id="bu-blow-btn" onclick="buBlow()">💨</button>
         <div class="bu-side-lbl">נְפַח</div>
-        <button class="bu-side-btn bu-pop-btn" id="bu-pop-btn" onclick="buPopTop()">💨</button>
+        <button class="bu-side-btn bu-pop-btn" id="bu-pop-btn" onclick="buPopTop()">💥</button>
         <div class="bu-side-lbl">פּוֹצֵץ</div>
       </div>
     </div>
@@ -2432,7 +2435,7 @@ function spawnParticles(){
     const interactive=i===4;
     if(interactive)s.classList.add('glow-click');
     s.style.cssText=`left:${side()}%;font-size:${.8+Math.random()*.9}rem;animation-duration:${10+Math.random()*14}s;animation-delay:${-Math.random()*22}s`;
-    if(interactive)s.addEventListener('click',e=>{e.stopPropagation();runFx(e.clientX,e.clientY);_popEl(s);addScore(1);koUpdateBtn();});
+    if(interactive)s.addEventListener('click',e=>{e.stopPropagation();runFx(e.clientX,e.clientY);_popEl(s);addScore(5);koUpdateBtn();});
     c.appendChild(s);
   }
   for(let i=0;i<2;i++){
@@ -2442,7 +2445,7 @@ function spawnParticles(){
     const dur=15+Math.random()*8,delay=-(Math.random()*22);
     const lft=i===0?Math.random()*(lBound+3):(rBound-3)+Math.random()*(100-(rBound-3));
     s.style.cssText=`position:fixed;top:0;z-index:10;left:${lft}%;font-size:${2+Math.random()*.5}rem;--ud:${dur}s;--ua:${delay}s;user-select:none`;
-    s.addEventListener('click',e=>{e.stopPropagation();runFx(e.clientX,e.clientY);addScore(1);koUpdateBtn();});
+    s.addEventListener('click',e=>{e.stopPropagation();runFx(e.clientX,e.clientY);addScore(5);koUpdateBtn();});
     document.body.appendChild(s);
     _specialPtc.push(s);
   }
@@ -2452,7 +2455,7 @@ function spawnParticles(){
     d.innerHTML=CHAR_SVG;
     const lft=i===0?Math.random()*(lBound+2):(rBound-2)+Math.random()*(100-(rBound-2));
     d.style.cssText=`left:${lft}%;animation-duration:${18+Math.random()*8}s;animation-delay:${-Math.random()*20}s`;
-    d.addEventListener('click',e=>{e.stopPropagation();runFx(e.clientX,e.clientY);_popEl(d);addScore(1);koUpdateBtn();});
+    d.addEventListener('click',e=>{e.stopPropagation();runFx(e.clientX,e.clientY);_popEl(d);addScore(5);koUpdateBtn();});
     c.appendChild(d);
   }
 }
@@ -3262,6 +3265,12 @@ function blSpawnBurst(cx,cy,color){
     document.body.appendChild(p);setTimeout(()=>p.remove(),560);
   }
 }
+function blRemoveTop(){
+  if(done||blAnimating)return;
+  const field=document.getElementById('bl-field');if(!field)return;
+  const els=[...field.querySelectorAll('.bl-balloon-wrap:not(.bl-popping)')];
+  if(els.length)els[els.length-1].click();
+}
 function blAddBalloon(){
   if(done||blAnimating)return;
   const alive=blData.filter(b=>b.alive).length;
@@ -3290,7 +3299,7 @@ function blOpen(){
       :ptype===TM?'פִּצְּצִי בָּלּוֹנִים — סַפְרִי כַּמָּה פִּיצַּצְתְּ!'
       :ptype===TX?'פִּצְּצִי וְשַׁחְרְרִי בָּלּוֹנִים לְפִי הַחִשּׁוּב!'
                :'פִּצְּצִי בָּלּוֹנִים עַד שֶׁנִּשְׁאַר הַמִּסְפָּר הַנָּכוֹן!';
-    document.getElementById('bl-add-btn').disabled=(ptype!==TA&&ptype!==TX);
+    document.getElementById('bl-add-btn').disabled=(ptype!==TA&&ptype!==TX);document.getElementById('bl-rem-btn').disabled=false;
   }
   document.getElementById('bl-panel').style.display='flex';
   blRenderBalloons();
@@ -3315,7 +3324,7 @@ function blCheckAns(){
   if(v===correct){
     addScore(modePts());koUpdateBtn();
     if(report[idx])report[idx].gotCorrect=true;done=true;
-    document.getElementById('bl-add-btn').disabled=true;
+    document.getElementById('bl-add-btn').disabled=true;document.getElementById('bl-rem-btn').disabled=true;
     const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}
     document.getElementById('btns').innerHTML='';
     setFb('🎉 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');
@@ -3928,7 +3937,11 @@ document.addEventListener('keydown',e=>{
   if(e.key!==' ')return;
   const ae=document.activeElement;
   if(ae&&(ae.tagName==='TEXTAREA'||(ae.tagName==='INPUT'&&ae.type!=='number')))return;
-  const panels=['ko-panel','pa-panel','lg-panel','bl-panel','gn-panel','bu-panel','tn-panel','fr-panel','ck-panel','st-panel','fw-ov','sad-ov','report-ov'];
+  // spacebar inside balloon panel
+  if(document.getElementById('bl-panel')?.style.display==='flex'){
+    e.preventDefault();if(!done){if(ptype===TA)blAddBalloon();else blRemoveTop();}return;
+  }
+  const panels=['ko-panel','pa-panel','lg-panel','gn-panel','bu-panel','tn-panel','fr-panel','ck-panel','st-panel','fw-ov','sad-ov','report-ov'];
   if(panels.some(id=>{const el=document.getElementById(id);return el&&el.style.display&&el.style.display!=='none';}))return;
   if(done)return;
   e.preventDefault();
