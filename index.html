@@ -1163,11 +1163,12 @@ body{
   /* back to normal flow so space-between works in row 2 */
   .eq-mini-btns{position:static;transform:none}
   .chk-btn{width:36px;height:36px;font-size:.95rem}
-  .ko-eq-btn,.pa-eq-btn,.lg-eq-btn{width:36px;height:36px;font-size:1.4rem}
+  .ko-eq-btn,.pa-eq-btn,.lg-eq-btn,.bl-eq-btn,.gn-eq-btn,.si-eq-btn,
+  .bu-eq-btn,.tn-eq-btn,.fr-eq-btn,.ck-eq-btn,.st-eq-btn,.cn-eq-btn{width:36px;height:36px;font-size:1.4rem}
   .ko-eq-btn::before,.pa-eq-btn::before,.lg-eq-btn::before,
   .bl-eq-btn::before,.gn-eq-btn::before,.si-eq-btn::before,
   .bu-eq-btn::before,.tn-eq-btn::before,.fr-eq-btn::before,
-  .ck-eq-btn::before,.st-eq-btn::before{display:none}
+  .ck-eq-btn::before,.st-eq-btn::before,.cn-eq-btn::before{display:none}
   /* keep equation numbers compact so they fit one line */
   .eq-n,.eq-op,.eq-res{font-size:1.9rem}
   .eq-n{min-width:28px}
@@ -1254,7 +1255,7 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
     <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="החלפת עיצוב">👦</button>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v3.0">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v3.2">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -2039,6 +2040,18 @@ function toggleTheme(){
   localStorage.setItem('gameTheme',theme);
   renderHearts();
   abDraw();
+  // refresh hint text to match new theme gender
+  const boys=theme==='boys';
+  const hint=document.getElementById('hint');
+  if(hint&&ptype){
+    hint.textContent=
+      ptype===TX?(boys?'🧮 חַשֵּׁב בְּשָׁלָבִים: תְּחִלָּה חַסֵּר, אַחַר כָּךְ הוֹסֵף!'
+                      :'🧮 חַשְׁבִי בְּשָׁלָבִים: תְּחִלָּה חִסְרִי, אַחַר כָּךְ הוֹסִיפִי!')
+     :ptype===TA?(boys?'🚗 הוֹסֵף מְכוֹנִיּוֹת כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
+                      :'🤍 הוֹסִיפִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!')
+              :(boys?'🚗 מְחַק מְכוֹנִיּוֹת כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
+                    :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!');
+  }
 }
 
 function showFw(){
@@ -3974,7 +3987,12 @@ document.addEventListener('keydown',e=>{
       if(ti<0){spaceDir=1;for(let i=0;i<hState.length;i++){if(hState[i]===false){ti=i;break;}}}
     }
   }
-  if(ti>=0&&btns[ti]&&!btns[ti].disabled)btns[ti].click();
+  if(ti>=0&&btns[ti]&&!btns[ti].disabled){
+    btns[ti].click();
+    // also step the abacus in the matching direction
+    const abDir=(ptype===TA)?spaceDir:-spaceDir;
+    abStep(abDir);
+  }
 });
 </script>
 </body>
