@@ -1130,9 +1130,9 @@ body{
 .pgm-arc{fill:none;stroke-width:2;stroke-linecap:round;opacity:0;animation:pgmArcFade .3s ease-out forwards}
 .pgm-arc-add{stroke:rgba(255,215,0,.85)}.pgm-arc-sub{stroke:rgba(80,180,255,.85)}
 @keyframes pgmArcFade{to{opacity:1}}
-.pgm-nl-nums{position:relative;height:16px;margin-top:4px;direction:ltr}
-.pgm-nl-num{position:absolute;font-family:'Fredoka One',cursive;font-size:.58rem;color:rgba(255,255,255,.25);transform:translateX(-50%);line-height:1}
-.pgm-nl-num5{color:rgba(255,255,255,.42);font-size:.62rem}
+.pgm-nl-nums{position:relative;height:20px;margin-top:5px;direction:ltr}
+.pgm-nl-num{position:absolute;font-family:'Fredoka One',cursive;font-size:.8rem;color:rgba(255,255,255,.45);transform:translateX(-50%);line-height:1}
+.pgm-nl-num5{color:rgba(255,255,255,.75);font-size:.88rem}
 .pgm-scene{display:flex;align-items:center;justify-content:center;gap:44px;direction:ltr;margin:6px 0}
 .pgm-side{width:72px;height:72px;border-radius:10px;border:none;font-family:'Fredoka One',cursive;font-size:2.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .16s;position:relative;overflow:hidden;flex-shrink:0}
 .pgm-side::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 52%);pointer-events:none}
@@ -1356,7 +1356,7 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
     <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="החלפת עיצוב">👦</button>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v5.14">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v5.18">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1986,7 +1986,8 @@ function renderEq(){
     const op1=ptype===TX?op('-','op-m'):op('+','op-p');
     const mkSub=(id,next,gid)=>`<input id="${id}" class="tx-sub-inp" type="number" min="0" max="30"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2);tzSubUpd('${id}','${gid}')"`+
-      ` onkeydown="if(event.key==='Enter')document.getElementById('${next}')?.focus()">`;
+      ` onblur="tzSubJarSync('${id}')"`+
+      ` onkeydown="if(event.key==='Enter'){tzSubJarSync('${id}');document.getElementById('${next}')?.focus()}">`;
     const subRow=(id,next,gid)=>`<div class="tz-sub-row">${op('=','op-e')}${mkSub(id,next,gid)}</div>`;
     const vPair=`<svg class="tz-vsv" viewBox="0 0 100 18" preserveAspectRatio="none" width="100%" height="16">`+
       `<line x1="8" y1="0" x2="50" y2="18" stroke="rgba(255,215,0,.55)" stroke-width="1.5" stroke-linecap="round"/>`+
@@ -2186,6 +2187,25 @@ function tzSubUpd(id,gid){
   if(row)row.classList.toggle('tz-live',v!=='');
   // re-render hearts so add/delete mode updates with the new step
   if(ptype===TX)renderHearts();
+}
+function tzSubJarSync(id){
+  if(ptype!==TZ&&ptype!==TX)return;
+  const el=document.getElementById(id);if(!el||el.value==='')return;
+  const v=parseInt(el.value,10);if(isNaN(v))return;
+  // calculate correct sub-values
+  const sc1=ptype===TX?num1-num2:num1+num2;
+  const sc2=sc1+num3;
+  const correct=id==='tx-sub1'?sc1:id==='tx-sub2'?sc2:null;
+  if(correct!==null){
+    el.classList.remove('sub-ok','sub-err');
+    el.classList.add(v===correct?'sub-ok':'sub-err');
+  }
+  // update cookie jar when tx-sub1 blurs
+  if(id==='tx-sub1'&&document.getElementById('chain-tools')?.style.display!=='none'){
+    const newCV=Math.min(Math.max(0,v),PGM_NL);
+    pgmCV=newCV;pgmCk=Array.from({length:newCV},(_,i)=>i%5);pgmArcs=[];
+    pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
+  }
 }
 /* For chain problems: is the current active step an addition step?
    TZ is always add; TX step1(sub1 empty)=subtract, step2(sub1 filled)=add */
