@@ -1122,17 +1122,17 @@ body{
 .aid-toggle-btn:active{transform:scale(.96) rotate(2deg)}
 
 /* ── Chain tools (number line + cookie jar) ── */
-#chain-tools{display:none;margin:0 0 12px}
+#chain-tools{display:none;margin:36px 0 12px}
 .pgm-nl{margin:8px 0 10px;direction:ltr}
-.pgm-bar{height:10px;background:rgba(255,255,255,.08);border-radius:5px;border:1px solid rgba(255,255,255,.12);position:relative;overflow:visible;margin:0 10px}
+.pgm-bar{height:10px;background:rgba(255,255,255,.08);border-radius:5px;border:1px solid rgba(255,255,255,.12);position:relative;overflow:visible}
 .pgm-dot{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#FFE57F,#FF9800);box-shadow:0 0 12px rgba(255,200,0,.9);border:2px solid rgba(255,255,255,.5);transform:translate(-50%,-50%);transition:left .3s cubic-bezier(.17,1.3,.5,1);z-index:3}
 .pgm-arcs-svg{position:absolute;bottom:0;left:0;width:100%;height:16px;overflow:visible;pointer-events:none;z-index:4}
 .pgm-arc{fill:none;stroke-width:2;stroke-linecap:round;opacity:0;animation:pgmArcFade .3s ease-out forwards}
 .pgm-arc-add{stroke:rgba(255,215,0,.85)}.pgm-arc-sub{stroke:rgba(80,180,255,.85)}
 @keyframes pgmArcFade{to{opacity:1}}
-.pgm-nl-nums{position:relative;height:20px;margin-top:5px;direction:ltr}
-.pgm-nl-num{position:absolute;font-family:'Fredoka One',cursive;font-size:.8rem;color:rgba(255,255,255,.45);transform:translateX(-50%);line-height:1}
-.pgm-nl-num5{color:rgba(255,255,255,.75);font-size:.88rem}
+.pgm-nl-nums{position:relative;height:22px;margin-top:6px;direction:ltr}
+.pgm-nl-num{position:absolute;font-family:'Fredoka One',cursive;font-size:.92rem;color:rgba(255,255,255,.45);transform:translateX(-50%);line-height:1}
+.pgm-nl-num5{color:rgba(255,255,255,.75);font-size:1rem}
 .pgm-scene{display:flex;align-items:center;justify-content:center;gap:44px;direction:ltr;margin:6px 0}
 .pgm-side{width:72px;height:72px;border-radius:10px;border:none;font-family:'Fredoka One',cursive;font-size:2.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .16s;position:relative;overflow:hidden;flex-shrink:0}
 .pgm-side::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 52%);pointer-events:none}
@@ -1141,24 +1141,24 @@ body{
 .pgm-plus{background:linear-gradient(160deg,#FFCC80,#BF8040 80%);box-shadow:0 4px 0 #7A5010,0 4px 14px rgba(200,130,0,.55);color:#3E2000}
 .pgm-plus:hover{transform:translateY(-2px) scale(1.06)}.pgm-plus:active{transform:translateY(4px)!important}
 .pgm-side:disabled{opacity:.28;cursor:default;transform:none!important;box-shadow:none!important;filter:grayscale(.4)}
-.pgm-jar-col{display:flex;flex-direction:column;align-items:center;gap:4px}
-.pgm-ctop{display:flex;align-items:center;gap:5px}
-.pgm-val{font-family:'Fredoka One',cursive;font-size:.9rem;color:rgba(255,215,0,.6);line-height:1}
+.pgm-jar-col{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.pgm-jar-btm{position:absolute;bottom:14px;right:-47px;display:flex;align-items:center;gap:4px;z-index:5;background:rgba(0,0,0,.38);border:1.5px solid rgba(255,215,0,.35);border-radius:20px;padding:3px 7px 3px 6px;backdrop-filter:blur(6px)}
+.pgm-val{font-family:'Fredoka One',cursive;font-size:1.4rem;color:rgba(255,215,0,.9);text-shadow:0 0 10px rgba(255,200,0,.6);line-height:1;pointer-events:none}
 .pgm-rst{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
 .pgm-rst:hover{background:rgba(255,255,255,.16);color:#fff;transform:rotate(-180deg)}
-.pgm-poof{position:fixed;pointer-events:none;z-index:999;font-size:1.5rem;line-height:1;
-  animation:pgmPoofAnim .44s ease-out forwards}
-@keyframes pgmPoofAnim{
-  0%  {transform:scale(.3) rotate(-10deg);opacity:1}
-  45% {transform:scale(1.3) rotate(12deg); opacity:.75}
-  100%{transform:scale(2)   rotate(30deg); opacity:0}
+.pgm-poof-ring{position:fixed;pointer-events:none;z-index:999;width:44px;height:44px;
+  border-radius:50%;border:3px solid rgba(255,210,80,.95);
+  animation:pgmPoofRing .36s ease-out forwards}
+@keyframes pgmPoofRing{
+  0%  {transform:translate(-50%,-50%) scale(.15);opacity:1}
+  100%{transform:translate(-50%,-50%) scale(2.6); opacity:0}
 }
-.pgm-poof-dot{position:fixed;pointer-events:none;z-index:999;width:7px;height:7px;
-  border-radius:50%;background:rgba(255,160,60,.85);
-  animation:pgmPoofDot .4s ease-out forwards}
-@keyframes pgmPoofDot{
-  0%  {transform:translate(0,0) scale(1);opacity:.9}
-  100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}
+.pgm-poof-crumb{position:fixed;pointer-events:none;z-index:999;width:8px;height:5px;
+  border-radius:2px;
+  animation:pgmPoofCrumb .46s ease-out forwards}
+@keyframes pgmPoofCrumb{
+  0%  {transform:translate(0,0) rotate(0deg) scale(1.1);opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(0);opacity:0}
 }
 
 /* ── Report modal ── */
@@ -1356,7 +1356,7 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
     <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="החלפת עיצוב">👦</button>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v5.18">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v5.28">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1391,8 +1391,8 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
       <div class="pgm-nl"><div class="pgm-bar" id="pgm-bar"><svg class="pgm-arcs-svg" id="pgm-arcs-svg" viewBox="0 0 100 16" preserveAspectRatio="none"></svg><div class="pgm-dot" id="pgm-dot"></div></div><div class="pgm-nl-nums" id="pgm-nums"></div></div>
       <div class="pgm-scene">
         <button class="pgm-side pgm-minus" id="pgm-btn-minus" onclick="pgmMinus()">−</button>
-        <div class="pgm-jar-col"><div class="pgm-ctop"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
-          <div class="ck-jar"><svg class="ck-jar-bg" viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="120" height="22" rx="6" fill="#8B6914"/><rect x="34" y="10" width="112" height="18" rx="5" fill="#A0791C"/><rect x="42" y="6" width="96" height="12" rx="4" fill="#7A5810"/><path d="M30,32 Q20,38 18,55 L14,230 Q14,248 90,248 Q166,248 166,230 L162,55 Q160,38 150,32 Z" fill="rgba(200,180,140,.14)" stroke="rgba(220,180,100,.45)" stroke-width="2.5"/><path d="M36,40 Q28,55 26,90 L24,200" stroke="rgba(255,255,255,.28)" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="244" rx="75" ry="10" fill="rgba(160,120,60,.25)" stroke="rgba(200,160,80,.3)" stroke-width="1.5"/></svg><div class="ck-cookies-wrap" id="pgm-wrap"></div></div>
+        <div class="pgm-jar-col">
+          <div class="ck-jar"><svg class="ck-jar-bg" viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="120" height="22" rx="6" fill="#8B6914"/><rect x="34" y="10" width="112" height="18" rx="5" fill="#A0791C"/><rect x="42" y="6" width="96" height="12" rx="4" fill="#7A5810"/><path d="M30,32 Q20,38 18,55 L14,230 Q14,248 90,248 Q166,248 166,230 L162,55 Q160,38 150,32 Z" fill="rgba(200,180,140,.14)" stroke="rgba(220,180,100,.45)" stroke-width="2.5"/><path d="M36,40 Q28,55 26,90 L24,200" stroke="rgba(255,255,255,.28)" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="244" rx="75" ry="10" fill="rgba(160,120,60,.25)" stroke="rgba(200,160,80,.3)" stroke-width="1.5"/></svg><div class="ck-cookies-wrap" id="pgm-wrap"></div></div><div class="pgm-jar-btm"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
         </div>
         <button class="pgm-side pgm-plus" id="pgm-btn-plus" onclick="pgmPlus()">+</button>
       </div>
@@ -1890,14 +1890,14 @@ function modePts(){return mode==='mx'?20:mode||5;}
 /* ── State ── */
 const GL=12;
 let mode=20,score=0,idx=0,problems=[],done=false;
-let aidMode='nl'; // 'nl' = cookies+number-line (default) | 'hearts' = hearts+abacus
+let aidMode='hearts'; // 'hearts' = hearts+abacus (default) | 'nl' = cookies+number-line
 let ptype,num1,num2,num3,num4=0,hState=[],aidUsed=false,spaceDir=1;
 let report=[];
 
 /* ── Mode switch ── */
 function setMode(m){
   if(mode===m)return;
-  mode=m;aidMode='nl';
+  mode=m;aidMode='hearts';
   koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];
   [0,5,10,20,'mx'].forEach(v=>document.getElementById('lb'+v).classList.toggle('active',v===m));
   score=0;idx=0;report=[];document.getElementById('score-val').textContent='0';
@@ -2309,8 +2309,8 @@ function rebuildCard(){
       <div class="pgm-nl"><div class="pgm-bar" id="pgm-bar"><svg class="pgm-arcs-svg" id="pgm-arcs-svg" viewBox="0 0 100 16" preserveAspectRatio="none"></svg><div class="pgm-dot" id="pgm-dot"></div></div><div class="pgm-nl-nums" id="pgm-nums"></div></div>
       <div class="pgm-scene">
         <button class="pgm-side pgm-minus" id="pgm-btn-minus" onclick="pgmMinus()">−</button>
-        <div class="pgm-jar-col"><div class="pgm-ctop"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
-          <div class="ck-jar"><svg class="ck-jar-bg" viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="120" height="22" rx="6" fill="#8B6914"/><rect x="34" y="10" width="112" height="18" rx="5" fill="#A0791C"/><rect x="42" y="6" width="96" height="12" rx="4" fill="#7A5810"/><path d="M30,32 Q20,38 18,55 L14,230 Q14,248 90,248 Q166,248 166,230 L162,55 Q160,38 150,32 Z" fill="rgba(200,180,140,.14)" stroke="rgba(220,180,100,.45)" stroke-width="2.5"/><path d="M36,40 Q28,55 26,90 L24,200" stroke="rgba(255,255,255,.28)" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="244" rx="75" ry="10" fill="rgba(160,120,60,.25)" stroke="rgba(200,160,80,.3)" stroke-width="1.5"/></svg><div class="ck-cookies-wrap" id="pgm-wrap"></div></div>
+        <div class="pgm-jar-col">
+          <div class="ck-jar"><svg class="ck-jar-bg" viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="120" height="22" rx="6" fill="#8B6914"/><rect x="34" y="10" width="112" height="18" rx="5" fill="#A0791C"/><rect x="42" y="6" width="96" height="12" rx="4" fill="#7A5810"/><path d="M30,32 Q20,38 18,55 L14,230 Q14,248 90,248 Q166,248 166,230 L162,55 Q160,38 150,32 Z" fill="rgba(200,180,140,.14)" stroke="rgba(220,180,100,.45)" stroke-width="2.5"/><path d="M36,40 Q28,55 26,90 L24,200" stroke="rgba(255,255,255,.28)" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="244" rx="75" ry="10" fill="rgba(160,120,60,.25)" stroke="rgba(200,160,80,.3)" stroke-width="1.5"/></svg><div class="ck-cookies-wrap" id="pgm-wrap"></div></div><div class="pgm-jar-btm"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
         </div>
         <button class="pgm-side pgm-plus" id="pgm-btn-plus" onclick="pgmPlus()">+</button>
       </div>
@@ -4238,21 +4238,24 @@ function pgmPoof(){
   const cookies=w.querySelectorAll('.ck-cookie');
   const last=cookies[cookies.length-1];if(!last)return;
   const r=last.getBoundingClientRect();
-  const cx=r.left+r.width/2,cy=r.top+r.height/2;
-  // smoke emoji
-  const p=document.createElement('div');p.className='pgm-poof';
-  p.textContent='💨';p.style.left=(cx-14)+'px';p.style.top=(cy-14)+'px';
-  document.body.appendChild(p);setTimeout(()=>p.remove(),460);
-  // 6 small dots flying outward
-  for(let i=0;i<6;i++){
-    const ang=(i/6)*Math.PI*2;
-    const dist=22+Math.random()*18;
-    const d=document.createElement('div');d.className='pgm-poof-dot';
-    d.style.left=(cx-3.5)+'px';d.style.top=(cy-3.5)+'px';
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  // expanding ring
+  const ring=document.createElement('div');ring.className='pgm-poof-ring';
+  ring.style.left=cx+'px';ring.style.top=cy+'px';
+  document.body.appendChild(ring);setTimeout(()=>ring.remove(),380);
+  // 8 cookie-colored crumbs burst outward
+  const colors=['#D2691E','#F5DEB3','#C8860A','#8B4513','#FFD700','#A0522D','#DEB887','#4A2000'];
+  for(let i=0;i<8;i++){
+    const ang=(i/8)*Math.PI*2 + Math.random()*.4;
+    const dist=28+Math.random()*24;
+    const d=document.createElement('div');d.className='pgm-poof-crumb';
+    d.style.background=colors[i];
+    d.style.left=(cx-4)+'px';d.style.top=(cy-2.5)+'px';
     d.style.setProperty('--dx',Math.cos(ang)*dist+'px');
     d.style.setProperty('--dy',Math.sin(ang)*dist+'px');
-    d.style.animationDelay=(i*18)+'ms';
-    document.body.appendChild(d);setTimeout(()=>d.remove(),420+i*18);
+    d.style.setProperty('--rot',(Math.random()*360)+'deg');
+    d.style.animationDelay=(i*12)+'ms';
+    document.body.appendChild(d);setTimeout(()=>d.remove(),480+i*12);
   }
 }
 function pgmMinus(){
@@ -4453,7 +4456,7 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Delete'&&e.key!=='Escape')return;
   const ae=document.activeElement;
   if(ae&&ae.tagName==='INPUT'&&ae.type!=='number')return;
-  if((ptype===TX||ptype===TZ)&&document.getElementById('chain-tools')?.style.display!=='none'){
+  if(document.getElementById('chain-tools')?.style.display!=='none'){
     e.preventDefault();pgmUndo();
   }
 });
