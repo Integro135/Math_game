@@ -1115,6 +1115,31 @@ body{
 .st-sparkle{position:fixed;pointer-events:none;z-index:9999;font-size:1rem;animation:stSparkleFly .55s ease-out forwards}
 @keyframes stSparkleFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
 
+/* ── Coin counting (TC) — matches coins_game.html design ── */
+.tc-stage-wrap{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px}
+.coins-stage{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:18px;
+  min-height:110px;width:100%;padding:16px;
+  background:rgba(255,255,255,.04);border-radius:20px;
+  border:1px solid rgba(255,255,255,.08)}
+.coin-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;
+  animation:tcCoinDrop .55s cubic-bezier(.17,1.3,.5,1) both}
+.coin-wrap:nth-child(1){animation-delay:.05s}
+.coin-wrap:nth-child(2){animation-delay:.14s}
+.coin-wrap:nth-child(3){animation-delay:.23s}
+.coin-wrap:nth-child(4){animation-delay:.32s}
+@keyframes tcCoinDrop{
+  0%  {transform:translateY(-60px) scale(.6) rotate(-15deg);opacity:0}
+  60% {transform:translateY(6px)   scale(1.05) rotate(3deg); opacity:1}
+  80% {transform:translateY(-3px)  scale(.98) rotate(-1deg)}
+  100%{transform:none;opacity:1}
+}
+.coin-lbl{font-family:'Fredoka One',cursive;font-size:.82rem;
+  color:rgba(255,255,255,.45);letter-spacing:.04em}
+.tc-answer-row{display:flex;align-items:center;justify-content:center;gap:12px}
+.tc-eq-lbl{font-family:'Fredoka One',cursive;font-size:1.5rem;color:rgba(255,255,255,.5)}
+.tc-hint-top{font-family:'Nunito',sans-serif;font-weight:700;font-size:.95rem;
+  color:rgba(255,255,255,.7);text-align:center;margin-bottom:4px}
+
 /* ── Aid-mode toggle button (free, no star cost) ── */
 .aid-toggle-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#80DEEA,#00838F 70%);border:3px solid rgba(255,255,255,.32);box-shadow:0 4px 22px rgba(0,131,143,.6),inset 0 1px 0 rgba(255,255,255,.28);cursor:pointer;font-size:1.55rem;display:none;align-items:center;justify-content:center;transition:all .22s}
 .aid-toggle-btn::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%);pointer-events:none}
@@ -1356,7 +1381,7 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
     <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="החלפת עיצוב">👦</button>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v5.28">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v5.36">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1786,7 +1811,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TDA='dbl_add',TDS='dbl_sub';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TDA='dbl_add',TDS='dbl_sub',TC='coins';
 const BASIC_SEQ=(()=>{const a=[];for(let i=1;i<=9;i++)for(let j=1;j<=10-i;j++)a.push([i,j]);return a})();
 const RAW={
   20:{M:[[12,5],[14,6],[16,8],[10,3],[13,7],[15,9],[11,4],[10,6],[13,8],[15,6],[12,7],[11,5]],
@@ -1860,6 +1885,59 @@ function makeMxPool(){
   return out;
 }
 const gameLen=()=>mode===0?BASIC_SEQ.length:problems.length;
+/* ── Coin counting ── */
+const TC_DEFS=[
+  {v:1, r:32,rim:'#B87333',face:'#CD7F32',shine:'#E8A464',shadow:'#7A4010',text:'#3E1C00'},
+  {v:2, r:35,rim:'#9E9E9E',face:'#BDBDBD',shine:'#E0E0E0',shadow:'#616161',text:'#1A1A1A',ring:'#C8860A'},
+  {v:5, r:38,rim:'#78909C',face:'#90A4AE',shine:'#CFD8DC',shadow:'#455A64',text:'#0D1B21'},
+  {v:10,r:42,rim:'#B8860B',face:'#DAA520',shine:'#FFE57F',shadow:'#7A5800',text:'#3E2800'},
+];
+const TC_MAP=Object.fromEntries(TC_DEFS.map(c=>[c.v,c]));
+let tcCoins=[];
+function tcCoinSVG(v){
+  const c=TC_MAP[v];if(!c)return'';
+  const {r,rim,face,shine,shadow,text,ring}=c;
+  const d=r*2+8,cx=r+4,cy=r+4;const b2=v===2;
+  let g=b2
+    ?`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${rim}" stroke="${shadow}" stroke-width="1.5"/>
+       <circle cx="${cx}" cy="${cy}" r="${r*.72}" fill="${ring}"/>
+       <circle cx="${cx}" cy="${cy}" r="${r*.66}" fill="#E8B84B"/>
+       <circle cx="${cx}" cy="${cy}" r="${r*.6}"  fill="${ring}"/>`
+    :`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${rim}" stroke="${shadow}" stroke-width="1.5"/>
+       <circle cx="${cx}" cy="${cy}" r="${r*.88}" fill="${face}"/>
+       <circle cx="${cx}" cy="${cy}" r="${r*.78}" fill="${face}" stroke="${shadow}" stroke-width=".6" stroke-opacity=".4"/>`;
+  g+=`<ellipse cx="${cx-r*.18}" cy="${cy-r*.25}" rx="${r*.32}" ry="${r*.18}" fill="${shine}" opacity=".55" transform="rotate(-25 ${cx-r*.18} ${cy-r*.25})"/>`;
+  // milled edge dots
+  for(let i=0;i<24;i++){const a=(i/24)*Math.PI*2;g+=`<circle cx="${Math.cos(a)*(r+1.5)+cx}" cy="${Math.sin(a)*(r+1.5)+cy}" r=".9" fill="${shadow}" opacity=".25"/>`;}
+  const fs=v===10?r*.62:r*.7;
+  g+=`<text x="${cx}" y="${cy+fs*.38}" text-anchor="middle" font-family="Fredoka One,cursive" font-size="${fs}" fill="${text}" font-weight="900" filter="url(#csf)">${v}</text>`;
+  return`<div class="coin-wrap"><svg width="${d}" height="${d}" viewBox="0 0 ${d} ${d}" xmlns="http://www.w3.org/2000/svg"><defs><filter id="csf" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="1" stdDeviation=".8" flood-color="${shadow}" flood-opacity=".6"/></filter></defs>${g}</svg><div class="coin-lbl">₪${v}</div></div>`;
+}
+function makeCoinProblem(m){
+  const mx=m==='mx'||m===20?20:m===10?10:5;
+  const vals=[1,2,5,10].filter(v=>v<=mx);
+  const maxN=mx<=5?3:4;
+  for(let t=0;t<80;t++){
+    const n=3+Math.floor(Math.random()*(maxN-2));
+    const cs=Array.from({length:n},()=>vals[0|Math.random()*vals.length]);
+    const s=cs.reduce((a,b)=>a+b,0);
+    if(s>=2&&s<=mx)return{t:TC,coins:cs,correct:s};
+  }
+  return{t:TC,coins:[1,1,1],correct:3};
+}
+function injectCoins(arr,m){
+  if(!arr.length||m===0)return arr;
+  // guaranteed 1-2 coin problems; avoid first/last slot and TD slots ((i+1)%4===0)
+  const count=arr.length>=8?1+Math.floor(Math.random()*2):1;
+  const used=new Set();let tries=0;
+  while(used.size<count&&tries<80){
+    const i=1+Math.floor(Math.random()*(arr.length-2));
+    if(!used.has(i)&&(i+1)%4!==0){used.add(i);arr[i]=makeCoinProblem(m);}
+    tries++;
+  }
+  return arr;
+}
+
 function makePool(m){
   if(m===0)return BASIC_SEQ.map(([a,b])=>({t:TA,a,b}));
   if(m==='mx')return makeMxPool(); // fresh random 15 problems each game
@@ -1902,6 +1980,7 @@ function setMode(m){
   [0,5,10,20,'mx'].forEach(v=>document.getElementById('lb'+v).classList.toggle('active',v===m));
   score=0;idx=0;report=[];document.getElementById('score-val').textContent='0';
   problems=m===0?makePool(0):m==='mx'?makePool('mx'):sampleWithTD(makePool(m),GL);
+  if(m!==0)injectCoins(problems,m);
   rebuildCard();loadProblem();koUpdateBtn();
 }
 
@@ -1909,13 +1988,14 @@ function setMode(m){
 function loadProblem(){
   if(idx>=problems.length){endGame();return}
   ({t:ptype,a:num1,b:num2,c:num3,d:num4}=problems[idx]);num3=num3||0;num4=num4||0;
+  if(ptype===TC){tcCoins=problems[idx].coins||[];num1=problems[idx].correct||0;num2=0;num3=0;num4=0;}
   if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
-  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TZ?num1+num2+num3+num4:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TZ?num1+num2+num3+num4:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;koClose();paClose();lgClose();blClose();gnClose();siClose();cnClose();buClose();tnClose();frClose();ckClose();stClose();
   const _allGames=['pa','lg','bl','gn','si','bu','tn','fr','st'];
   const _subGames=['ko','lg','bl','gn','si','cn','bu','tn','fr','st'];
-  const _pool=mode===0||ptype===TDA||ptype===TDS||ptype===TX||ptype===TZ?null:(ptype===TS||ptype===TM)?_subGames:_allGames;
+  const _pool=mode===0||ptype===TDA||ptype===TDS||ptype===TC||ptype===TX||ptype===TZ?null:(ptype===TS||ptype===TM)?_subGames:_allGames;
   // pick 2 random games per problem — variety on every question
   const _picks=_pool?[..._pool].sort(()=>Math.random()-.5).slice(0,2):[];
   const _qd=cls=>document.querySelector('.'+cls+'-eq-btn');
@@ -1927,7 +2007,8 @@ function loadProblem(){
   setFb('','');
   {const boys=theme==='boys';
   document.getElementById('hint').textContent=
-    ptype===TDA?(boys?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'
+    ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
+   :ptype===TDA?(boys?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'
                      :'🔢 מִצְאִי שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!')
    :ptype===TDS?(boys?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁהַהֶפְרֵשׁ בֵּינֵיהֶם שָׁוֶה לַתְּשׁוּבָה!'
                      :'🔢 מִצְאִי שְׁנֵי מִסְפָּרִים שֶׁהַהֶפְרֵשׁ בֵּינֵיהֶם שָׁוֶה לַתְּשׁוּבָה!')
@@ -1946,8 +2027,11 @@ function loadProblem(){
       :(boys?'🚗 מְחַק מְכוֹנִיּוֹת כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
              :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'));}
   spaceDir=1;renderEq();renderHearts();showBtns('check');resetAidUsed();abReset();
+  // TC (coins): hide all aids
+  if(ptype===TC){const ct=document.getElementById('chain-tools'),he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec'),tb=document.querySelector('.aid-toggle-btn');
+    if(ct)ct.style.display='none';if(he)he.style.display='none';if(ae)ae.style.display='none';if(tb)tb.style.display='none';}
   // Aid display — chain always NL; mode 0 always hearts; TDA/TDS keep hearts; others follow aidMode
-  {const isChain=ptype===TX||ptype===TZ;
+  if(ptype!==TC){const isChain=ptype===TX||ptype===TZ;
   const noAid=ptype===TDA||ptype===TDS;
   const forceHearts=mode===0&&!isChain&&!noAid;
   const effMode=forceHearts?'hearts':aidMode;
@@ -1973,6 +2057,8 @@ function loadProblem(){
 
 /* ── Equation ── */
 function renderEq(){
+  // restore hint visibility (TC hides it and embeds it inline)
+  if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
   const n=t=>`<span class="eq-n">${t}</span>`;
   const op=(t,c)=>`<span class="eq-op ${c}">${t}</span>`;
   const inp=`<input id="ans" class="ans-inp" type="number" min="0" max="20"
@@ -2010,6 +2096,16 @@ function renderEq(){
     parts+=`${op('=','op-e')}${inp}`;
     h=`<div class="tz-inline">${parts}</div>`;
   }
+  else if(ptype===TC){
+    const hintEl=document.getElementById('hint');
+    const hintTxt=hintEl?hintEl.textContent:'';
+    if(hintEl)hintEl.style.display='none';
+    const coinsHtml=tcCoins.map(v=>tcCoinSVG(v)).join('');
+    h=`<div class="tc-stage-wrap">`+
+      `<div class="tc-hint-top">${hintTxt}</div>`+
+      `<div class="coins-stage">${coinsHtml}</div>`+
+      `<div class="tc-answer-row"><span class="tc-eq-lbl">סְכוּם =</span>${inp}</div></div>`;
+  }
   else if(ptype===TDA||ptype===TDS){
     const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="30"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)"`+
@@ -2024,6 +2120,7 @@ function renderEq(){
    TA/TX: מערך maxH (10 או 20), true=מוארים ל-num1 הראשונים, false=כהים
    TS/TM: מערך num1 בלבד, כולו false (שלם, טרם נמחק) — ללא slots ריקים */
 function initHearts(){
+  if(ptype===TC){hState=[];return;}
   if(ptype===TDA||ptype===TDS){
     // show R hearts (the known result) — user toggles to split mentally
     hState=new Array(Math.max(0,num1)).fill(true);
@@ -2323,7 +2420,7 @@ function rebuildCard(){
 
 function restart(){
   score=0;idx=0;report=[];koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];document.getElementById('score-val').textContent='0';
-  problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);rebuildCard();loadProblem();koUpdateBtn();
+  problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);if(mode!==0)injectCoins(problems,mode);rebuildCard();loadProblem();koUpdateBtn();
 }
 
 /* ── Success overlay ── */
@@ -2530,6 +2627,17 @@ function abReset(){
   const N=abN(),nr=abRows(),v=num1||0;
   abL[0]=Math.min(N,v);
   abL[1]=nr>1?Math.max(0,v-N):0;
+  const cv=document.getElementById('ab-cv');if(!cv)return;
+  cv.width=abW();cv.height=abH();
+  abDraw();
+}
+function abSyncToHearts(){
+  const N=abN(),nr=abRows();
+  const addMode=ptype===TA||ptype===TZ||(ptype===TX&&tzAddMode());
+  let tot=addMode?hState.filter(Boolean).length:hState.filter(x=>x===false).length;
+  tot=Math.max(0,Math.min(N*nr,tot));
+  abL[0]=Math.min(N,tot);
+  abL[1]=nr>1?Math.max(0,tot-N):0;
   const cv=document.getElementById('ab-cv');if(!cv)return;
   cv.width=abW();cv.height=abH();
   abDraw();
@@ -4124,7 +4232,7 @@ function stMakeSlot(slotIdx,isLit){
   div.addEventListener('click',()=>stToggleStar(slotIdx,div));
   return div;
 }
-function stRenderStars(){const wrap=document.getElementById('st-stars');wrap.innerHTML='';wrap.classList.toggle('two-rows',stMaxN>10);stState.forEach((isLit,i)=>wrap.appendChild(stMakeSlot(i,isLit)));stUpdateCount();}
+function stRenderStars(){const wrap=document.getElementById('st-stars');wrap.innerHTML='';wrap.classList.toggle('two-rows',stMaxN>=10);stState.forEach((isLit,i)=>wrap.appendChild(stMakeSlot(i,isLit)));stUpdateCount();}
 function stCountLit(){return stState.filter(Boolean).length;}
 function stUpdateCount(){const el=document.getElementById('st-count');if(el)el.textContent=`✨ ${stCountLit()}`;}
 function stSpawnSparkles(el,lighting){const r=el.getBoundingClientRect();const cx=r.left+r.width/2,cy=r.top+r.height/2;const emojis=lighting?['✨','⭐','🌟','💫']:['💨','·','·'];for(let i=0;i<7;i++){const p=document.createElement('div');p.className='st-sparkle';const ang=Math.random()*Math.PI*2,dist=20+Math.random()*40;p.textContent=emojis[i%emojis.length];p.style.cssText=`left:${cx}px;top:${cy}px;font-size:${.8+Math.random()*.6}rem;--dx:${Math.cos(ang)*dist}px;--dy:${Math.sin(ang)*dist-14}px`;document.body.appendChild(p);setTimeout(()=>p.remove(),570);}}
@@ -4295,7 +4403,7 @@ function toggleAidMode(){
     if(ct)ct.style.display='none';
     if(he)he.style.display='';
     if(ae)ae.style.display='';
-    abReset();
+    abSyncToHearts();
     if(tb)tb.textContent='🍪';
   }
   // Update hint text to match new mode
@@ -4325,6 +4433,7 @@ function reportOpen(){
     else if(r.ptype===TZ) eq=r.num4>0?`${r.num1} + ${r.num2} + ${r.num3} + ${r.num4} = ${r.correct}`:`${r.num1} + ${r.num2} + ${r.num3} = ${r.correct}`;
     else if(r.ptype===TDA){const p=r.userPair;eq=p?`${p[0]} + ${p[1]} = ${r.correct}`:`___ + ___ = ${r.correct}`;}
     else if(r.ptype===TDS){const p=r.userPair;eq=p?`${p[0]} − ${p[1]} = ${r.correct}`:`___ − ___ = ${r.correct}`;}
+    else if(r.ptype===TC) eq=`🪙 ${(problems[i]?.coins||[]).join(' + ')} = ${r.correct}`;
     else                  eq=`${r.num1} + ${r.num2} = ${r.correct}`;
     html+=`<div class="rep-row ${ok?'rep-ok':'rep-bad'}">
       <span class="rep-badge">${i+1}</span>
@@ -4411,7 +4520,7 @@ function creatureClick(el){
 }
 
 /* ── Boot ── */
-problems=sampleWithTD(makePool(mode),GL);
+problems=sampleWithTD(makePool(mode),GL);injectCoins(problems,mode);
 abInit();
 applyTheme();
 spawnParticles();
