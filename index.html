@@ -87,7 +87,21 @@ body{
 .lvl-btn.active:hover{transform:scale(1.14) translateY(-3px)}
 
 /* ── Card ── */
-.card{border-radius:28px;padding:22px 20px;margin-top:0}
+.card{border-radius:28px;padding:22px 20px;margin-top:0;position:relative}
+
+/* ── Wrong-state buttons — right side of card ── */
+#btns.btns-side{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  flex-direction:column;gap:10px;width:auto;z-index:10;
+  justify-content:center;
+}
+#btns.btns-side .btn{
+  padding:11px 15px;font-size:.88rem;white-space:nowrap;
+}
+@media(max-width:540px){
+  #btns.btns-side{position:static;transform:none;flex-direction:row;flex-wrap:wrap;width:100%;}
+  #btns.btns-side .btn{padding:14px 32px;font-size:1.05rem;}
+}
 
 /* ── Equation ── */
 .equation{
@@ -1368,6 +1382,97 @@ body.theme-boys .lvl-btn.active{
   box-shadow:0 5px 0 #0D47A1,0 7px 22px rgba(33,150,243,.65),inset 0 1px 0 rgba(255,255,255,.45);
 }
 body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
+
+/* ── New success overlays (nfw) ── */
+.nfw-ov{display:none;position:fixed;inset:0;z-index:1000;cursor:pointer;
+  align-items:center;justify-content:center;flex-direction:column}
+/* confetti */
+#nfw-cf{background:rgba(10,0,30,.88)}
+.nfw-cf-msg{font-family:'Fredoka One',cursive;text-align:center;position:relative;z-index:2;
+  animation:nfwCfUp .55s cubic-bezier(.17,1.4,.5,1) both}
+@keyframes nfwCfUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.nfw-cf-icon{font-size:5rem;display:block;
+  animation:nfwCfPop .6s .1s cubic-bezier(.17,1.5,.5,1) both}
+@keyframes nfwCfPop{from{transform:scale(0) rotate(-25deg);opacity:0}to{transform:scale(1);opacity:1}}
+.nfw-cf-title{font-size:2.4rem;margin:.3rem 0;
+  background:linear-gradient(90deg,#ffd700,#ff80ab,#c77dff,#ffd700);background-size:300% auto;
+  animation:nfwShimmer 2s linear infinite;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+@keyframes nfwShimmer{to{background-position:300% center}}
+.nfw-cf-sub{font-size:1.1rem;color:#ffd6ff;margin-top:.2rem}
+.nfw-confetti{position:fixed;pointer-events:none;animation:nfwCfFall linear forwards}
+@keyframes nfwCfFall{
+  0%{transform:translateY(-20px) rotate(0deg) scaleX(1);opacity:1}
+  80%{opacity:1}
+  100%{transform:translateY(110vh) rotate(720deg) scaleX(.4);opacity:0}
+}
+/* burst */
+#nfw-bu{background:rgba(5,0,20,.9)}
+.nfw-burst-content{display:flex;flex-direction:column;align-items:center;gap:8px}
+.nfw-burst-icon{font-size:7rem;display:block;text-align:center;position:relative;z-index:2;
+  animation:nfwBuIcon .5s cubic-bezier(.17,1.6,.5,1) both}
+@keyframes nfwBuIcon{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.nfw-burst-title{font-family:'Fredoka One',cursive;font-size:2.8rem;text-align:center;
+  color:#fff;text-shadow:0 0 30px rgba(255,215,0,.8);
+  animation:nfwBuTxt .4s .25s both;position:relative;z-index:2}
+.nfw-burst-sub{font-family:'Fredoka One',cursive;font-size:1.2rem;color:#ffd6ff;
+  text-align:center;animation:nfwBuTxt .4s .4s both;position:relative;z-index:2}
+@keyframes nfwBuTxt{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.nfw-burst-ptc{position:fixed;font-size:1.8rem;pointer-events:none;
+  animation:nfwBuFly linear forwards}
+@keyframes nfwBuFly{
+  0%{transform:translate(0,0) scale(1);opacity:1}
+  100%{transform:translate(var(--bx),var(--by)) scale(0);opacity:0}
+}
+/* hero */
+#nfw-hr{background:linear-gradient(135deg,#6A0080,#C2185B,#FF6D00,#F9A825);
+  background-size:300% 300%;animation:nfwHrGrad 3s ease infinite}
+body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099CC,#00BCD4);background-size:300% 300%}
+@keyframes nfwHrGrad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.nfw-hero-content{display:flex;flex-direction:column;align-items:center;gap:6px}
+.nfw-hero-icon{font-size:8rem;display:block;filter:drop-shadow(0 8px 20px rgba(0,0,0,.4));
+  animation:nfwHrBounce .7s cubic-bezier(.17,1.5,.5,1) both}
+@keyframes nfwHrBounce{
+  0%{transform:translateY(-130px) scale(1.3);opacity:0}
+  55%{transform:translateY(18px) scale(.93);opacity:1}
+  75%{transform:translateY(-10px) scale(1.05)}
+  90%{transform:translateY(4px) scale(.98)}
+  100%{transform:translateY(0) scale(1);opacity:1}
+}
+.nfw-hero-title{font-family:'Fredoka One',cursive;font-size:3rem;color:#fff;
+  text-shadow:0 4px 0 rgba(0,0,0,.3),0 0 30px rgba(255,255,255,.4);
+  animation:nfwHrTxt .5s .3s cubic-bezier(.17,1.4,.5,1) both}
+.nfw-hero-stars{font-size:2rem;letter-spacing:6px;
+  animation:nfwHrTxt .5s .45s cubic-bezier(.17,1.4,.5,1) both}
+@keyframes nfwHrTxt{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.nfw-hero-ring{position:fixed;border-radius:50%;border:4px solid rgba(255,255,255,.35);
+  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+  animation:nfwHrRing 1s ease-out forwards}
+@keyframes nfwHrRing{0%{width:0;height:0;opacity:.9}100%{width:300vmax;height:300vmax;opacity:0}}
+/* ripple */
+#nfw-rp{background:rgba(0,5,20,.85)}
+.nfw-ripple-content{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;z-index:2}
+.nfw-ripple-score{font-family:'Fredoka One',cursive;font-size:5rem;line-height:1;
+  background:linear-gradient(135deg,#ffd700,#fff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(255,215,0,.7));
+  animation:nfwRpIn .6s cubic-bezier(.17,1.5,.5,1) both}
+@keyframes nfwRpIn{from{transform:translateY(20px) scale(.5);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.nfw-ripple-label{font-family:'Fredoka One',cursive;font-size:1.4rem;color:#ffd6ff;
+  animation:nfwRpIn .5s .15s cubic-bezier(.17,1.4,.5,1) both}
+.nfw-ripple-sub{font-size:.95rem;color:rgba(255,214,255,.6);margin-top:6px;animation:nfwRpIn .5s .3s both}
+.nfw-rp-ring{position:fixed;border-radius:50%;border:3px solid rgba(255,215,0,.5);
+  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
+  animation:nfwRpExpand var(--rd,1.6s) var(--rdelay,0s) ease-out forwards}
+@keyframes nfwRpExpand{
+  0%{width:0;height:0;opacity:.8}100%{width:260vmax;height:260vmax;opacity:0}
+}
+.nfw-rp-float{position:fixed;font-family:'Fredoka One',cursive;font-size:1.8rem;
+  color:#ffd700;pointer-events:none;animation:nfwRpFloat 1.2s ease-out forwards}
+@keyframes nfwRpFloat{
+  0%{transform:translate(-50%,0) scale(1);opacity:1}
+  100%{transform:translate(-50%,-90px) scale(.7);opacity:0}
+}
 </style>
 </head>
 <body>
@@ -1381,7 +1486,7 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
     <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="החלפת עיצוב">👦</button>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v5.36">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v5.43">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1784,6 +1889,36 @@ body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
   </div>
 </div>
 
+<!-- new success overlays -->
+<div class="nfw-ov" id="nfw-cf" onclick="fwClose()">
+  <div class="nfw-cf-msg">
+    <span class="nfw-cf-icon" id="nfw-cf-icon">🌈</span>
+    <div class="nfw-cf-title" id="nfw-cf-title">כָּל הַכָּבוֹד!</div>
+    <div class="nfw-cf-sub">תְּשׁוּבָה נְכוֹנָה!</div>
+  </div>
+</div>
+<div class="nfw-ov" id="nfw-bu" onclick="fwClose()">
+  <div class="nfw-burst-content">
+    <span class="nfw-burst-icon" id="nfw-bu-icon">🌟</span>
+    <div class="nfw-burst-title" id="nfw-bu-title">מְעֻלֶּה!</div>
+    <div class="nfw-burst-sub">תְּשׁוּבָה נְכוֹנָה!</div>
+  </div>
+</div>
+<div class="nfw-ov" id="nfw-hr" onclick="fwClose()">
+  <div class="nfw-hero-content">
+    <span class="nfw-hero-icon" id="nfw-hr-icon">🦄</span>
+    <div class="nfw-hero-title" id="nfw-hr-title">יוֹפִי!</div>
+    <div class="nfw-hero-stars" id="nfw-hr-stars">⭐⭐⭐⭐⭐</div>
+  </div>
+</div>
+<div class="nfw-ov" id="nfw-rp" onclick="fwClose()">
+  <div class="nfw-ripple-content">
+    <div class="nfw-ripple-score" id="nfw-rp-score">+20 ⭐</div>
+    <div class="nfw-ripple-label" id="nfw-rp-label">כָּל הַכָּבוֹד!</div>
+    <div class="nfw-ripple-sub">תְּשׁוּבָה נְכוֹנָה!</div>
+  </div>
+</div>
+
 <div id="sad-ov"><div class="sad-box"><span class="sad-emoji">😢</span></div></div>
 
 <div id="mode-creature" onclick="creatureClick(this)"></div>
@@ -1839,22 +1974,24 @@ function makeMxPool(){
   const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
   const out=[];
 
-  // Phase 1, problems 1-3: pure triple addition (TZ), small numbers
+  // Phase 1, problems 1-3: pure triple addition (TZ), up to 10; 50% chance of +d (1 or 2)
   while(out.length<3){
-    const a=ri(1,3),b=ri(1,3),c=ri(1,3);
-    if(a+b+c<=6)out.push({t:TZ,a,b,c});
+    const a=ri(1,4),b=ri(1,4),c=ri(1,4);
+    const withD=Math.random()<0.5;
+    const d=withD?ri(1,2):0;
+    if(a+b+c+d<=10)out.push(withD?{t:TZ,a,b,c,d}:{t:TZ,a,b,c});
   }
 
-  // Phase 1, problems 4-5: mixed a−b+c (TX), still small
+  // Phase 1, problems 4-5: mixed a−b+c (TX), up to 10
   while(out.length<5){
-    const a=ri(3,6),b=ri(1,2),c=ri(1,2);
-    if(a>b&&a-b+c<=6)out.push({t:TX,a,b,c});
+    const a=ri(4,8),b=ri(1,3),c=ri(1,3);
+    if(a>b&&a-b+c<=10)out.push({t:TX,a,b,c});
   }
 
   // Phase 2, problems 6-10: mix of TZ and TX; from problem 7 may add 4th +d
   while(out.length<10){
     const isTX=Math.random()<0.4;           // 40% chance of a−b+c
-    const withD=!isTX&&out.length>=6&&Math.random()<0.5; // 4th only for TZ, from prob 7
+    const withD=!isTX&&Math.random()<0.5; // 4th addend (+1/+2) possible from prob 6
     if(isTX){
       const a=ri(5,9),b=ri(2,4),c=ri(1,3);
       if(a>b&&a-b+c<=10)out.push({t:TX,a,b,c});
@@ -1867,19 +2004,31 @@ function makeMxPool(){
     }
   }
 
-  // Phase 3, problems 11-15: mix of TZ and TX; may add 4th +d
+  // Phase 3, problem 11: transition bridge
+  while(out.length<11){
+    const isTX=Math.random()<0.4;
+    if(isTX){
+      const a=ri(8,12),b=ri(3,5),c=ri(2,4);
+      if(a>b&&a-b+c<=15)out.push({t:TX,a,b,c});
+    }else{
+      const a=ri(4,9),b=ri(2,6),c=ri(1,4);
+      if(a+b+c<=15)out.push({t:TZ,a,b,c});
+    }
+  }
+
+  // Phase 3, problems 12-15 (last 4): first number (a) > 10
   while(out.length<15){
     const isTX=Math.random()<0.4;
-    const withD=!isTX&&Math.random()<0.5;
+    const withD=!isTX&&Math.random()<0.4;
     if(isTX){
-      const a=ri(8,14),b=ri(3,6),c=ri(2,4);
-      if(a>b&&a-b+c<=18)out.push({t:TX,a,b,c});
+      const a=ri(11,17),b=ri(3,6),c=ri(1,4);
+      if(a>b&&a-b+c<=20)out.push({t:TX,a,b,c});
     }else if(withD){
-      const d=ri(1,2),a=ri(2,7),b=ri(2,7),c=ri(2,6);
-      if(a+b+c+d<=18)out.push({t:TZ,a,b,c,d});
+      const d=ri(1,2),a=ri(11,14),b=ri(1,3),c=ri(1,2);
+      if(a+b+c+d<=20)out.push({t:TZ,a,b,c,d});
     }else{
-      const a=ri(2,8),b=ri(2,8),c=ri(2,8);
-      if(a+b+c<=18)out.push({t:TZ,a,b,c});
+      const a=ri(11,15),b=ri(1,4),c=ri(1,3);
+      if(a+b+c<=20)out.push({t:TZ,a,b,c});
     }
   }
   return out;
@@ -2027,9 +2176,13 @@ function loadProblem(){
       :(boys?'🚗 מְחַק מְכוֹנִיּוֹת כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
              :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'));}
   spaceDir=1;renderEq();renderHearts();showBtns('check');resetAidUsed();abReset();
-  // TC (coins): hide all aids
-  if(ptype===TC){const ct=document.getElementById('chain-tools'),he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec'),tb=document.querySelector('.aid-toggle-btn');
-    if(ct)ct.style.display='none';if(he)he.style.display='none';if(ae)ae.style.display='none';if(tb)tb.style.display='none';}
+  // TC (coins): show number line (no jar) starting at 0; hide hearts/abacus/toggle
+  if(ptype===TC){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec'),tb=document.querySelector('.aid-toggle-btn');
+    if(he)he.style.display='none';if(ae)ae.style.display='none';if(tb)tb.style.display='none';
+    const ct=document.getElementById('chain-tools');if(ct)ct.style.display='block';
+    const jar=ct?.querySelector('.ck-jar');if(jar)jar.style.display='none';
+    const jbtm=ct?.querySelector('.pgm-jar-btm');if(jbtm)jbtm.style.transform='translate(-0.5cm,1cm)';
+    pgmCV=0;pgmCk=[];pgmArcs=[];pgmBuildNL();pgmDrawArcs();pgmUpdateAll();}
   // Aid display — chain always NL; mode 0 always hearts; TDA/TDS keep hearts; others follow aidMode
   if(ptype!==TC){const isChain=ptype===TX||ptype===TZ;
   const noAid=ptype===TDA||ptype===TDS;
@@ -2041,7 +2194,10 @@ function loadProblem(){
   const he=document.getElementById('hearts');const ae=document.querySelector('.abacus-sec');
   if(he)he.style.display=(noAid||useHrts)?'':((isChain||useNL)?'none':'');
   if(ae)ae.style.display=useHrts?'':'none';
-  if(useNL){pgmCV=num1;pgmCk=Array.from({length:num1},(_,i)=>i%5);pgmArcs=[];pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();}
+  if(useNL){pgmCV=num1;pgmCk=Array.from({length:num1},(_,i)=>i%5);pgmArcs=[];
+    const _jar=document.querySelector('#chain-tools .ck-jar');if(_jar)_jar.style.display='';
+    const _jbtm=document.querySelector('#chain-tools .pgm-jar-btm');if(_jbtm)_jbtm.style.transform='';
+    pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();}
   // Toggle button: visible only for mode 5/10/20, non-chain, non-TDA/TDS
   const tb=document.querySelector('.aid-toggle-btn');
   if(tb){const show=!noAid&&!isChain&&(mode===5||mode===10||mode===20);
@@ -2196,14 +2352,17 @@ function clickHeart(i,b){
 /* ── Buttons ── */
 function showBtns(s){
   const cb=document.getElementById('chk-btn');
+  const btns=document.getElementById('btns');
   if(s==='check'){
-    document.getElementById('btns').innerHTML='';
+    btns.innerHTML='';
+    btns.className='btn-row';
     if(cb)cb.style.display='flex';
   }else{
     if(cb)cb.style.display='none';
-    document.getElementById('btns').innerHTML=
+    btns.innerHTML=
       `<button class="btn b-try" onclick="resetCur()">🔄 נַסִּי שׁוּב</button>
        <button class="btn b-nxt" onclick="nextP()">תַּרְגִּיל הַבָּא ←</button>`;
+    btns.className='btn-row btns-side';
   }
 }
 
@@ -2495,6 +2654,23 @@ function toggleTheme(){
   }
 }
 
+/* Extra theme data for new success screens */
+const NFW_CF_COLORS=['#FF5252','#FF4081','#E040FB','#7C4DFF','#448AFF','#00E5FF','#69F0AE','#FFD740','#FF6D00','#F06292','#80DEEA','#CE93D8'];
+const NFW_DATA={
+  girls:{
+    cf:{icon:'🌈',title:'כָּל הַכָּבוֹד!'},
+    bu:{icon:'🌟',title:'מְעֻלֶּה!',  ptcs:['⭐','💜','🌸','🌟','💗','✨','🦄','💫','🌺','💝']},
+    hr:{icon:'🦄',title:'יוֹפִי!',    stars:'💜💜💜💜💜'},
+    rp:{label:'כָּל הַכָּבוֹד!'},
+  },
+  boys:{
+    cf:{icon:'🚀',title:'סוּפֶּר!'},
+    bu:{icon:'🏆',title:'מַגְנִיב!', ptcs:['⚡','🚀','🌟','💥','🏆','✨','🤖','💫','🎯','⭐']},
+    hr:{icon:'🚀',title:'מְדַהֵם!',  stars:'⭐⭐⭐⭐⭐'},
+    rp:{label:'מְדַהֵם!'},
+  }
+};
+
 function showFw(){
   if(_fwOn)return;_fwOn=true;
   fwCount++;
@@ -2502,6 +2678,11 @@ function showFw(){
   const _T=THEMES[theme];
   const v=isSuper?_T.fwSuper:_T.fw[0|Math.random()*_T.fw.length];
   const DUR=isSuper?_T.fwSuper.dur:1700;
+  // 0=original fireworks; 1=confetti; 2=burst; 3=hero; 4=ripple
+  const _style=isSuper?0:(0|Math.random()*5);
+  _fwKey=e=>{if(e.key==='Enter'||e.key===' ')fwClose();};
+  document.addEventListener('keydown',_fwKey);
+  if(_style!==0){_showNfw(_style,isSuper,v,DUR);return;}
   const ov=document.getElementById('fw-ov');
   ov.style.display='block';
   document.querySelector('.fw-uni').textContent=v.icon;
@@ -2569,8 +2750,6 @@ function showFw(){
     if(t<1)_fwRaf=requestAnimationFrame(step);else _fwDone();
   })(START);
 
-  _fwKey=e=>{if(e.key==='Enter'||e.key===' ')fwClose();};
-  document.addEventListener('keydown',_fwKey);
 }
 const SAD_EMOJIS=['😢','😭','🥺','😞','☹️','😔','😣','🤧','😿','💔','😩','🙈'];
 function showSadModal(){
@@ -2583,11 +2762,81 @@ function showSadModal(){
   setTimeout(()=>ov.style.display='none',1500);
 }
 
+function _showNfw(style,isSuper,v,DUR){
+  const D=NFW_DATA[theme];
+  const reboot=el=>{el.style.animation='none';void el.offsetWidth;el.style.animation='';};
+  const ovId=['','nfw-cf','nfw-bu','nfw-hr','nfw-rp'][style];
+  const ov=document.getElementById(ovId);
+  ov.style.display='flex';
+
+  if(style===1){
+    document.getElementById('nfw-cf-icon').textContent=isSuper?v.icon:D.cf.icon;
+    document.getElementById('nfw-cf-title').textContent=isSuper?v.title:D.cf.title;
+    ov.querySelectorAll('.nfw-cf-msg,.nfw-cf-icon,.nfw-cf-title').forEach(reboot);
+    for(let i=0;i<70;i++)setTimeout(()=>{
+      const el=document.createElement('div');el.className='nfw-confetti';
+      const color=NFW_CF_COLORS[0|Math.random()*NFW_CF_COLORS.length];
+      const w=6+Math.random()*10,h=w*(Math.random()<.5?1:2.5),dur=1.4+Math.random()*1.8;
+      el.style.cssText=`left:${Math.random()*100}vw;top:-${h}px;width:${w}px;height:${h}px;`+
+        `background:${color};border-radius:${Math.random()<.3?'50%':'2px'};`+
+        `animation-duration:${dur}s;animation-delay:${Math.random()*.4}s`;
+      document.body.appendChild(el);
+      el.addEventListener('animationend',()=>el.remove());
+    },i*18);
+  }
+  else if(style===2){
+    document.getElementById('nfw-bu-icon').textContent=isSuper?v.icon:D.bu.icon;
+    document.getElementById('nfw-bu-title').textContent=isSuper?v.title:D.bu.title;
+    ov.querySelectorAll('.nfw-burst-icon,.nfw-burst-title,.nfw-burst-sub').forEach(reboot);
+    const ptcs=D.bu.ptcs,cx=innerWidth/2,cy=innerHeight/2;
+    for(let i=0;i<40;i++){
+      const el=document.createElement('div');el.className='nfw-burst-ptc';
+      const ang=(i/40)*360,dist=120+Math.random()*220,rad=ang*Math.PI/180;
+      el.style.cssText=`left:${cx}px;top:${cy}px;--bx:${Math.cos(rad)*dist}px;--by:${Math.sin(rad)*dist}px;`+
+        `animation-duration:${.7+Math.random()*.6}s;animation-delay:${Math.random()*.25}s`;
+      el.textContent=ptcs[0|Math.random()*ptcs.length];
+      document.body.appendChild(el);
+      el.addEventListener('animationend',()=>el.remove());
+    }
+  }
+  else if(style===3){
+    document.getElementById('nfw-hr-icon').textContent=isSuper?v.icon:D.hr.icon;
+    document.getElementById('nfw-hr-title').textContent=isSuper?v.title:D.hr.title;
+    document.getElementById('nfw-hr-stars').textContent=D.hr.stars;
+    ov.querySelectorAll('.nfw-hero-icon,.nfw-hero-title,.nfw-hero-stars').forEach(reboot);
+    const ring=document.createElement('div');ring.className='nfw-hero-ring';
+    document.body.appendChild(ring);ring.addEventListener('animationend',()=>ring.remove());
+  }
+  else if(style===4){
+    const pts=modePts();
+    document.getElementById('nfw-rp-score').textContent=`+${pts} ⭐`;
+    document.getElementById('nfw-rp-label').textContent=isSuper?v.title:D.rp.label;
+    ov.querySelectorAll('.nfw-ripple-score,.nfw-ripple-label,.nfw-ripple-sub').forEach(reboot);
+    for(let i=0;i<3;i++){
+      const r=document.createElement('div');r.className='nfw-rp-ring';
+      r.style.cssText=`--rd:1.6s;--rdelay:${i*.35}s`;
+      document.body.appendChild(r);r.addEventListener('animationend',()=>r.remove());
+    }
+    const cx=innerWidth/2,cy=innerHeight/2;
+    ['+'+pts+' ⭐',theme==='girls'?'💜':'🚀','✨'].forEach((txt,i)=>{
+      setTimeout(()=>{
+        const el=document.createElement('div');el.className='nfw-rp-float';el.textContent=txt;
+        el.style.cssText=`left:${cx+(-60+i*60)}px;top:${cy+20}px;animation-delay:${i*.15}s`;
+        document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove());
+      },i*150);
+    });
+  }
+  setTimeout(_fwDone,DUR);
+}
+
 function _fwDone(){
   if(!_fwOn)return;_fwOn=false;
   if(_fwRaf){cancelAnimationFrame(_fwRaf);_fwRaf=null;}
   if(_fwKey){document.removeEventListener('keydown',_fwKey);_fwKey=null;}
   document.getElementById('fw-ov').style.display='none';
+  ['nfw-cf','nfw-bu','nfw-hr','nfw-rp'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
   nextP();
 }
 function fwClose(){if(_fwRaf)cancelAnimationFrame(_fwRaf);_fwDone();}
@@ -4012,11 +4261,11 @@ function frOpen(){
   const isNew=frProbIdx!==idx;
   if(isNew){frMaxN=(num1>10||(ptype===TA&&num1+num2>10))?20:10;frState=Array.from({length:frMaxN},(_,i)=>i<num1);frProbIdx=idx;document.getElementById('fr-eq-display').innerHTML=frEqHTML();document.getElementById('fr-fb').textContent='';document.getElementById('fr-hint').textContent=ptype===TA?'הַקְפִּיצִי צְפַרְדְּעִים לָאֲגַם — כַּמָּה יֶשׁ עַל הָעָלִים?':ptype===TM?'הַקְפִּיצִי צְפַרְדְּעִים מִן הָאֲגַם — סַפְרִי כַּמָּה עָזְבוּ!':ptype===TX?'הַקְפִּיצִי וְהוֹצִיאִי צְפַרְדְּעִים כְּדֵי לְפָתֵּר!':'הַקְפִּיצִי צְפַרְדְּעִים מִן הָעָלִים כְּדֵי לִמְצֹא אֶת הַתְּשׁוּבָה!';}
   document.getElementById('fr-add-btn').disabled=false;document.getElementById('fr-rem-btn').disabled=false;
-  document.getElementById('fr-panel').style.display='flex';frRenderPads();frStartHopTimer();
+  document.getElementById('fr-panel').style.display='flex';frRenderPads();
   setTimeout(()=>{const a=document.getElementById('fr-ans');if(a)a.focus();},80);
 }
 function frClose(){const p=document.getElementById('fr-panel');if(p)p.style.display='none';if(frHopTimer){clearInterval(frHopTimer);frHopTimer=null;}}
-function frReset(){frState=Array.from({length:frMaxN},(_,i)=>i<num1);frAnimating=false;document.getElementById('fr-eq-display').innerHTML=frEqHTML();document.getElementById('fr-fb').textContent='';document.getElementById('fr-add-btn').disabled=false;document.getElementById('fr-rem-btn').disabled=false;frRenderPads();frStartHopTimer();setTimeout(()=>{const a=document.getElementById('fr-ans');if(a)a.focus();},60);}
+function frReset(){frState=Array.from({length:frMaxN},(_,i)=>i<num1);frAnimating=false;document.getElementById('fr-eq-display').innerHTML=frEqHTML();document.getElementById('fr-fb').textContent='';document.getElementById('fr-add-btn').disabled=false;document.getElementById('fr-rem-btn').disabled=false;frRenderPads();setTimeout(()=>{const a=document.getElementById('fr-ans');if(a)a.focus();},60);}
 function frCheckAns(){
   if(done)return;
   const el=document.getElementById('fr-ans');const v=parseInt(el?el.value:'',10);
@@ -4285,7 +4534,7 @@ function pgmCkSVG(idx){
   return`<svg viewBox="0 0 52 20"><ellipse cx="26" cy="11" rx="24" ry="9" fill="${c.edge}"/><ellipse cx="26" cy="10" rx="23" ry="8" fill="${c.base}"/>${ch}<ellipse cx="20" cy="6" rx="6" ry="3" fill="rgba(255,255,255,.15)" transform="rotate(-15 20 6)"/></svg>`;
 }
 let pgmCV=0,pgmCk=[],pgmArcs=[];
-function pgmInitChain(){pgmCV=num1;pgmCk=Array.from({length:num1},(_,i)=>i%5);pgmArcs=[];pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();}
+function pgmInitChain(){pgmCV=ptype===TC?0:num1;pgmCk=Array.from({length:pgmCV},(_,i)=>i%5);pgmArcs=[];pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();}
 function pgmMakeCookie(ti,drop=false){
   const d=document.createElement('div');
   d.className='ck-cookie'+(drop?' ck-dropping':'');
@@ -4580,6 +4829,10 @@ document.addEventListener('keydown',e=>{
   }
   const panels=['ko-panel','pa-panel','lg-panel','gn-panel','bu-panel','tn-panel','fr-panel','ck-panel','st-panel','fw-ov','sad-ov','report-ov'];
   if(panels.some(id=>{const el=document.getElementById(id);return el&&el.style.display&&el.style.display!=='none';}))return;
+  // TC (coins): spacebar advances number-line cursor (+1)
+  if(ptype===TC&&document.getElementById('chain-tools')?.style.display!=='none'){
+    e.preventDefault();if(!done)pgmPlus();return;
+  }
   // Chain mode (TX/TZ): spacebar controls cookie jar
   if((ptype===TX||ptype===TZ)&&document.getElementById('chain-tools')?.style.display!=='none'){
     e.preventDefault();
