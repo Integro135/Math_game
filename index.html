@@ -1154,6 +1154,16 @@ body{
 .tc-hint-top{font-family:'Nunito',sans-serif;font-weight:700;font-size:.95rem;
   color:rgba(255,255,255,.7);text-align:center;margin-bottom:4px}
 
+/* ── TDA cookie-jar toggle button ── */
+.tda-jar-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;
+  background:radial-gradient(circle at 38% 36%,#FFCC80,#E65100 70%);
+  border:3px solid rgba(255,255,255,.32);
+  box-shadow:0 4px 22px rgba(230,81,0,.55),inset 0 1px 0 rgba(255,255,255,.28);
+  cursor:pointer;font-size:1.55rem;display:none;align-items:center;justify-content:center;transition:all .22s}
+.tda-jar-btn::after{content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%);pointer-events:none}
+.tda-jar-btn:hover{transform:scale(1.16) rotate(-9deg);box-shadow:0 7px 30px rgba(230,81,0,.8)}
+.tda-jar-btn:active{transform:scale(.96) rotate(2deg)}
 /* ── Aid-mode toggle button (free, no star cost) ── */
 .aid-toggle-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#80DEEA,#00838F 70%);border:3px solid rgba(255,255,255,.32);box-shadow:0 4px 22px rgba(0,131,143,.6),inset 0 1px 0 rgba(255,255,255,.28);cursor:pointer;font-size:1.55rem;display:none;align-items:center;justify-content:center;transition:all .22s}
 .aid-toggle-btn::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%);pointer-events:none}
@@ -1172,7 +1182,7 @@ body{
 .pgm-nl-nums{position:relative;height:22px;margin-top:6px;direction:ltr}
 .pgm-nl-num{position:absolute;font-family:'Fredoka One',cursive;font-size:.92rem;color:rgba(255,255,255,.45);transform:translateX(-50%);line-height:1}
 .pgm-nl-num5{color:rgba(255,255,255,.75);font-size:1rem}
-.pgm-scene{display:flex;align-items:center;justify-content:center;gap:44px;direction:ltr;margin:6px 0}
+.pgm-scene{display:flex;align-items:flex-start;justify-content:center;gap:44px;direction:ltr;margin:6px 0}
 .pgm-side{width:72px;height:72px;border-radius:10px;border:none;font-family:'Fredoka One',cursive;font-size:2.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .16s;position:relative;overflow:hidden;flex-shrink:0}
 .pgm-side::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 52%);pointer-events:none}
 .pgm-minus{background:linear-gradient(160deg,#FF6B81,#C2185B 80%);box-shadow:0 4px 0 #880E4F,0 4px 14px rgba(194,24,91,.55);color:#FFD54F}
@@ -1473,6 +1483,44 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
   0%{transform:translate(-50%,0) scale(1);opacity:1}
   100%{transform:translate(-50%,-90px) scale(.7);opacity:0}
 }
+/* ── Gift indicator (near header title) ── */
+.gift-indicator{
+  position:absolute;right:10px;top:10px;
+  background:rgba(255,215,0,.1);border:1.5px solid rgba(255,215,0,.3);
+  border-radius:12px;padding:4px 10px;
+  font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:800;
+  color:rgba(255,215,0,.9);text-shadow:0 0 6px rgba(255,215,0,.35);
+  cursor:default;display:flex;flex-direction:column;align-items:flex-end;gap:1px;
+}
+.gift-mode-lbl{display:block;text-align:right;opacity:.85}
+@media(max-width:480px){.gift-indicator{display:none}}
+/* ── End-screen gift ── */
+.end-gift{font-size:5rem;margin:8px 0;display:block;
+  animation:giftPop .65s cubic-bezier(.17,1.5,.5,1) both}
+@keyframes giftPop{
+  from{transform:scale(0) rotate(-20deg);opacity:0}
+  to  {transform:scale(1) rotate(0);opacity:1}
+}
+/* ── Chain garden eq-button ── */
+.pgm-gn-eq-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;
+  background:radial-gradient(circle at 38% 36%,#FFE082,#F57F17 70%);
+  border:3px solid rgba(255,255,255,.32);
+  box-shadow:0 4px 22px rgba(255,160,0,.6),inset 0 1px 0 rgba(255,255,255,.28);
+  cursor:pointer;font-size:1.65rem;display:none;align-items:center;justify-content:center;transition:all .22s}
+.pgm-gn-eq-btn::before{content:'20 ⭐';position:absolute;top:-22px;left:50%;transform:translateX(-50%);
+  font-size:.72rem;font-family:'Nunito',sans-serif;font-weight:800;
+  color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.7);white-space:nowrap;pointer-events:none}
+.pgm-gn-eq-btn::after{content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%)}
+.pgm-gn-eq-btn:hover{transform:scale(1.16) rotate(-9deg);box-shadow:0 7px 30px rgba(255,160,0,.85)}
+.pgm-gn-eq-btn:active{transform:scale(.96) rotate(2deg)}
+.pgm-gn-eq-btn:disabled{opacity:.28;cursor:default;transform:none!important;box-shadow:none!important;filter:grayscale(.5)}
+/* ── Chain garden display (replaces cookie jar) ── */
+#pgm-gn-display{flex-direction:column;align-items:center;gap:3px;padding:2px 0;height:220px;overflow:hidden}
+.pgm-gn-flowers{display:flex;flex-wrap:wrap;justify-content:flex-start;align-content:flex-start;gap:1px;width:312px;height:190px;overflow-y:auto}
+.pgm-gn-flower{width:30px;height:43px;display:flex;align-items:flex-end;justify-content:center;flex-shrink:0}
+.pgm-gn-flower svg{width:100%;height:auto;display:block}
+.pgm-gn-lbl{font-family:'Fredoka One',cursive;font-size:.78rem;color:#69F0AE}
 </style>
 </head>
 <body>
@@ -1484,9 +1532,12 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
 
   <header class="header glass">
     <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="החלפת עיצוב">👦</button>
+    <div class="gift-indicator" id="gift-indicator" style="display:none">
+      <span id="gift-next"></span>
+    </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v5.43">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v5.50">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1500,13 +1551,13 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
       <button class="lvl-btn"        id="lb5"  onclick="setMode(5)">עַד 5 ⭐</button>
       <button class="lvl-btn"        id="lb10" onclick="setMode(10)">עַד 10 ⭐</button>
       <span class="lvl-break"></span>
-      <button class="lvl-btn active" id="lb20" onclick="setMode(20)">עַד 20 ⭐</button>
-      <button class="lvl-btn"        id="lbmx" onclick="setMode('mx')">2+3+4 💪</button>
+      <button class="lvl-btn active" id="lb20" onclick="setMode(20)">עַד 20 ⭐ 🎁</button>
+      <button class="lvl-btn"        id="lbmx" onclick="setMode('mx')">2+3+4 💪 🎁</button>
     </div>
   </header>
 
   <div class="card glass" id="card">
-    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="gn-eq-btn" onclick="gnOpen()" title="גִּנַּת הַפְּרָחִים">🌸</button><button class="bu-eq-btn" onclick="buOpen()" title="בּוּעוֹת הַסַּבּוֹן"><svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="14" r="10" stroke="#fff" stroke-opacity=".85" stroke-width="2" fill="#78DCFF" fill-opacity=".18"/><circle cx="9" cy="10" r="2.2" fill="#fff" fill-opacity=".6"/><circle cx="16" cy="7.5" r="1.4" fill="#fff" fill-opacity=".45"/></svg></button><button class="tn-eq-btn" onclick="tnOpen()" title="רַכֶּבֶת הַמִּסְפָּרִים">🚂</button><button class="fr-eq-btn" onclick="frOpen()" title="צְפַרְדְּעֵי הַבְּרֵכָה">🐸</button><button class="st-eq-btn" onclick="stOpen()" title="כּוֹכְבֵי הַלַּיְלָה">✨</button><button class="cn-eq-btn" onclick="cnOpen()" title="יְרִיַּת הַפַּחִיּוֹת">🥫</button><button class="si-eq-btn" onclick="siOpen()" title="פּוֹלְשֵׁי הַחָלָל">🚀</button><button class="bl-eq-btn" onclick="blOpen()" title="מִשְׂחֲקוֹן הַבַּלּוֹנִים">🎈</button><button class="lg-eq-btn" onclick="lgOpen()" title="מִגְדַּל הַלֶּגוֹ">🧱</button><button class="ko-eq-btn" onclick="koOpen()" title="מִשְׂחֲקוֹן הָאֶגְרוֹף">🥊</button><button class="pa-eq-btn" onclick="paOpen()" title="מְסִיבַּת הַדְּמֻיּוֹת">🎉</button><button class="aid-toggle-btn" onclick="toggleAidMode()" title="החלף תצוגת עזר">💜</button></div></div></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="gn-eq-btn" onclick="gnOpen()" title="גִּנַּת הַפְּרָחִים">🌸</button><button class="bu-eq-btn" onclick="buOpen()" title="בּוּעוֹת הַסַּבּוֹן"><svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="14" r="10" stroke="#fff" stroke-opacity=".85" stroke-width="2" fill="#78DCFF" fill-opacity=".18"/><circle cx="9" cy="10" r="2.2" fill="#fff" fill-opacity=".6"/><circle cx="16" cy="7.5" r="1.4" fill="#fff" fill-opacity=".45"/></svg></button><button class="tn-eq-btn" onclick="tnOpen()" title="רַכֶּבֶת הַמִּסְפָּרִים">🚂</button><button class="fr-eq-btn" onclick="frOpen()" title="צְפַרְדְּעֵי הַבְּרֵכָה">🐸</button><button class="st-eq-btn" onclick="stOpen()" title="כּוֹכְבֵי הַלַּיְלָה">✨</button><button class="cn-eq-btn" onclick="cnOpen()" title="יְרִיַּת הַפַּחִיּוֹת">🥫</button><button class="si-eq-btn" onclick="siOpen()" title="פּוֹלְשֵׁי הַחָלָל">🚀</button><button class="bl-eq-btn" onclick="blOpen()" title="מִשְׂחֲקוֹן הַבַּלּוֹנִים">🎈</button><button class="lg-eq-btn" onclick="lgOpen()" title="מִגְדַּל הַלֶּגוֹ">🧱</button><button class="ko-eq-btn" onclick="koOpen()" title="מִשְׂחֲקוֹן הָאֶגְרוֹף">🥊</button><button class="pa-eq-btn" onclick="paOpen()" title="מְסִיבַּת הַדְּמֻיּוֹת">🎉</button><button class="pgm-gn-eq-btn" id="pgm-gn-eq-btn" onclick="openChainGarden()" title="גִּנַּת פְּרָחִים בְּשַׁרְשֶׁרֶת">🌻</button><button class="tda-jar-btn" id="tda-jar-btn" onclick="toggleTdaJar()" title="החלף לתצוגת צנצנת">🍪</button><button class="aid-toggle-btn" onclick="toggleAidMode()" title="החלף תצוגת עזר">💜</button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div class="hearts"   id="hearts"></div>
     <div class="abacus-sec">
@@ -1522,7 +1573,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
       <div class="pgm-scene">
         <button class="pgm-side pgm-minus" id="pgm-btn-minus" onclick="pgmMinus()">−</button>
         <div class="pgm-jar-col">
-          <div class="ck-jar"><svg class="ck-jar-bg" viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="120" height="22" rx="6" fill="#8B6914"/><rect x="34" y="10" width="112" height="18" rx="5" fill="#A0791C"/><rect x="42" y="6" width="96" height="12" rx="4" fill="#7A5810"/><path d="M30,32 Q20,38 18,55 L14,230 Q14,248 90,248 Q166,248 166,230 L162,55 Q160,38 150,32 Z" fill="rgba(200,180,140,.14)" stroke="rgba(220,180,100,.45)" stroke-width="2.5"/><path d="M36,40 Q28,55 26,90 L24,200" stroke="rgba(255,255,255,.28)" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="244" rx="75" ry="10" fill="rgba(160,120,60,.25)" stroke="rgba(200,160,80,.3)" stroke-width="1.5"/></svg><div class="ck-cookies-wrap" id="pgm-wrap"></div></div><div class="pgm-jar-btm"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
+          <div class="ck-jar" id="pgm-ck-jar"><svg class="ck-jar-bg" viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="120" height="22" rx="6" fill="#8B6914"/><rect x="34" y="10" width="112" height="18" rx="5" fill="#A0791C"/><rect x="42" y="6" width="96" height="12" rx="4" fill="#7A5810"/><path d="M30,32 Q20,38 18,55 L14,230 Q14,248 90,248 Q166,248 166,230 L162,55 Q160,38 150,32 Z" fill="rgba(200,180,140,.14)" stroke="rgba(220,180,100,.45)" stroke-width="2.5"/><path d="M36,40 Q28,55 26,90 L24,200" stroke="rgba(255,255,255,.28)" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="244" rx="75" ry="10" fill="rgba(160,120,60,.25)" stroke="rgba(200,160,80,.3)" stroke-width="1.5"/></svg><div class="ck-cookies-wrap" id="pgm-wrap"></div></div><div id="pgm-gn-display" style="display:none"><div class="pgm-gn-flowers" id="pgm-gn-flowers"></div><div class="pgm-gn-lbl">🌸 <span id="pgm-gn-count">0</span></div></div><div class="pgm-jar-btm"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
         </div>
         <button class="pgm-side pgm-plus" id="pgm-btn-plus" onclick="pgmPlus()">+</button>
       </div>
@@ -1982,25 +2033,37 @@ function makeMxPool(){
     if(a+b+c+d<=10)out.push(withD?{t:TZ,a,b,c,d}:{t:TZ,a,b,c});
   }
 
-  // Phase 1, problems 4-5: mixed a−b+c (TX), up to 10
-  while(out.length<5){
+  // Phase 1, problem 4: TX, up to 10
+  while(out.length<4){
     const a=ri(4,8),b=ri(1,3),c=ri(1,3);
     if(a>b&&a-b+c<=10)out.push({t:TX,a,b,c});
   }
 
-  // Phase 2, problems 6-10: mix of TZ and TX; from problem 7 may add 4th +d
-  while(out.length<10){
-    const isTX=Math.random()<0.4;           // 40% chance of a−b+c
-    const withD=!isTX&&Math.random()<0.5; // 4th addend (+1/+2) possible from prob 6
+  // Phase 1, problem 5: TZ/TX, up to 20 (first ≤20 problem)
+  while(out.length<5){
+    const isTX=Math.random()<0.5;
     if(isTX){
-      const a=ri(5,9),b=ri(2,4),c=ri(1,3);
-      if(a>b&&a-b+c<=10)out.push({t:TX,a,b,c});
-    }else if(withD){
-      const d=ri(1,2),a=ri(1,4),b=ri(1,4),c=ri(1,4);
-      if(a+b+c+d<=10)out.push({t:TZ,a,b,c,d});
+      const a=ri(6,12),b=ri(2,5),c=ri(1,4);
+      if(a>b&&a-b+c<=20)out.push({t:TX,a,b,c});
     }else{
-      const a=ri(1,5),b=ri(1,5),c=ri(1,5);
-      if(a+b+c<=10)out.push({t:TZ,a,b,c});
+      const a=ri(3,8),b=ri(2,6),c=ri(2,5);
+      if(a+b+c<=20&&a+b+c>=8)out.push({t:TZ,a,b,c});
+    }
+  }
+
+  // Phase 2, problems 6-10: mix of TZ and TX, up to 20
+  while(out.length<10){
+    const isTX=Math.random()<0.4;
+    const withD=!isTX&&Math.random()<0.5;
+    if(isTX){
+      const a=ri(5,14),b=ri(2,6),c=ri(1,5);
+      if(a>b&&a-b+c<=20)out.push({t:TX,a,b,c});
+    }else if(withD){
+      const d=ri(1,2),a=ri(2,7),b=ri(2,6),c=ri(1,5);
+      if(a+b+c+d<=20)out.push({t:TZ,a,b,c,d});
+    }else{
+      const a=ri(2,8),b=ri(2,7),c=ri(1,6);
+      if(a+b+c<=20&&a+b+c>=8)out.push({t:TZ,a,b,c});
     }
   }
 
@@ -2114,6 +2177,19 @@ function sampleWithTD(pool,k){
 }
 function modePts(){return mode==='mx'?20:mode||5;}
 
+/* ── Gift reward thresholds (grade out of 1000) ── */
+const GIFT_GOALS={20:700,mx:750};
+const GIFT_MODE_LABELS={20:'עַד 20',mx:'שַׁרְשֶׁרֶת'};
+function updateGiftIndicator(){
+  const ind=document.getElementById('gift-indicator');
+  if(!ind)return;
+  const goal=GIFT_GOALS[mode];
+  if(goal==null){ind.style.display='none';return;}
+  ind.style.display='flex';
+  const nxt=document.getElementById('gift-next');
+  if(nxt)nxt.textContent=`🎁 המתנה הבאה: ${goal}`;
+}
+
 /* ── State ── */
 const GL=12;
 let mode=20,score=0,idx=0,problems=[],done=false;
@@ -2130,7 +2206,7 @@ function setMode(m){
   score=0;idx=0;report=[];document.getElementById('score-val').textContent='0';
   problems=m===0?makePool(0):m==='mx'?makePool('mx'):sampleWithTD(makePool(m),GL);
   if(m!==0)injectCoins(problems,m);
-  rebuildCard();loadProblem();koUpdateBtn();
+  rebuildCard();loadProblem();koUpdateBtn();updateGiftIndicator();
 }
 
 /* ── Problem ── */
@@ -2180,7 +2256,9 @@ function loadProblem(){
   if(ptype===TC){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec'),tb=document.querySelector('.aid-toggle-btn');
     if(he)he.style.display='none';if(ae)ae.style.display='none';if(tb)tb.style.display='none';
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='block';
-    const jar=ct?.querySelector('.ck-jar');if(jar)jar.style.display='none';
+    chainGnMode=false;
+    const jar=document.getElementById('pgm-ck-jar');if(jar)jar.style.display='none';
+    const gnd=document.getElementById('pgm-gn-display');if(gnd)gnd.style.display='none';
     const jbtm=ct?.querySelector('.pgm-jar-btm');if(jbtm)jbtm.style.transform='translate(-0.5cm,1cm)';
     pgmCV=0;pgmCk=[];pgmArcs=[];pgmBuildNL();pgmDrawArcs();pgmUpdateAll();}
   // Aid display — chain always NL; mode 0 always hearts; TDA/TDS keep hearts; others follow aidMode
@@ -2194,10 +2272,22 @@ function loadProblem(){
   const he=document.getElementById('hearts');const ae=document.querySelector('.abacus-sec');
   if(he)he.style.display=(noAid||useHrts)?'':((isChain||useNL)?'none':'');
   if(ae)ae.style.display=useHrts?'':'none';
-  if(useNL){pgmCV=num1;pgmCk=Array.from({length:num1},(_,i)=>i%5);pgmArcs=[];
-    const _jar=document.querySelector('#chain-tools .ck-jar');if(_jar)_jar.style.display='';
+  if(useNL){
+    chainGnMode=false;
+    pgmCV=num1;pgmCk=Array.from({length:num1},(_,i)=>i%5);pgmArcs=[];
+    const _jar=document.getElementById('pgm-ck-jar');if(_jar)_jar.style.display='';
+    const _gnd=document.getElementById('pgm-gn-display');if(_gnd)_gnd.style.display='none';
     const _jbtm=document.querySelector('#chain-tools .pgm-jar-btm');if(_jbtm)_jbtm.style.transform='';
     pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();}
+  // Garden chain button: visible only for TZ/TX
+  {const _cgb=document.getElementById('pgm-gn-eq-btn');
+    if(_cgb){_cgb.style.display=(ptype===TZ||ptype===TX)?'flex':'none';
+      if(!chainGnMode)_cgb.disabled=score<20;}}
+  // TDA cookie-jar toggle: visible only for TDA; reset on new problem
+  tdaJarMode=false;
+  {const _tjb=document.getElementById('tda-jar-btn');
+    if(_tjb){_tjb.style.display=(ptype===TDA||ptype===TDS)?'flex':'none';
+      _tjb.textContent='🍪';_tjb.title='החלף לתצוגת צנצנת';}}
   // Toggle button: visible only for mode 5/10/20, non-chain, non-TDA/TDS
   const tb=document.querySelector('.aid-toggle-btn');
   if(tb){const show=!noAid&&!isChain&&(mode===5||mode===10||mode===20);
@@ -2264,7 +2354,7 @@ function renderEq(){
   }
   else if(ptype===TDA||ptype===TDS){
     const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="30"`+
-      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)"`+
+      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2);tdUpdateHearts('${id}',this.value)"`+
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
   }
@@ -2275,11 +2365,35 @@ function renderEq(){
 /* initHearts — מאתחל hState[] לפי סוג תרגיל וערכה:
    TA/TX: מערך maxH (10 או 20), true=מוארים ל-num1 הראשונים, false=כהים
    TS/TM: מערך num1 בלבד, כולו false (שלם, טרם נמחק) — ללא slots ריקים */
+function tdUpdateHearts(inputId,rawVal){
+  if(done||inputId!=='ans1')return;
+  const maxH=(mode===20||mode==='mx')?20:mode===10?10:5;
+  const v=parseInt(rawVal,10);
+  const empty=isNaN(v)||v<=0||rawVal==='';
+  if(ptype===TDA){
+    hState=new Array(maxH).fill(false);
+    if(!empty)for(let i=0;i<Math.min(v,maxH);i++)hState[i]=true;
+  }else if(ptype===TDS){
+    hState=empty?new Array(Math.max(0,num1)).fill(true):new Array(Math.min(v,maxH)).fill(true);
+  }
+  if(tdaJarMode){
+    // update cookie jar to reflect entered value
+    const newCV=Math.max(0,Math.min(empty?(ptype===TDS?num1:0):v,PGM_NL));
+    pgmCV=newCV;pgmCk=Array.from({length:newCV},(_,i)=>i%5);pgmArcs=[];
+    pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
+  }else{
+    renderHearts();
+  }
+}
 function initHearts(){
   if(ptype===TC){hState=[];return;}
   if(ptype===TDA||ptype===TDS){
-    // show R hearts (the known result) — user toggles to split mentally
-    hState=new Array(Math.max(0,num1)).fill(true);
+    const maxH=(mode===20||mode==='mx')?20:mode===10?10:5;
+    if(ptype===TDA){
+      hState=new Array(maxH).fill(false); // TDA: full range, 0 lit — fills as user enters v1
+    }else{
+      hState=new Array(Math.max(0,num1)).fill(true); // TDS: R lit hearts
+    }
     return;
   }
   if(ptype===TA||ptype===TZ){
@@ -2456,8 +2570,8 @@ function tzSubJarSync(id){
     el.classList.remove('sub-ok','sub-err');
     el.classList.add(v===correct?'sub-ok':'sub-err');
   }
-  // update cookie jar when tx-sub1 blurs
-  if(id==='tx-sub1'&&document.getElementById('chain-tools')?.style.display!=='none'){
+  // update cookie jar / garden when tx-sub1 or tx-sub2 blurs
+  if((id==='tx-sub1'||id==='tx-sub2')&&document.getElementById('chain-tools')?.style.display!=='none'){
     const newCV=Math.min(Math.max(0,v),PGM_NL);
     pgmCV=newCV;pgmCk=Array.from({length:newCV},(_,i)=>i%5);pgmArcs=[];
     pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
@@ -2538,23 +2652,25 @@ function endGame(){
       </div>`;
     return;
   }
+  {const g=calcGrade();const giftGoal=GIFT_GOALS[mode];const wonGift=giftGoal!=null&&g>=giftGoal;
   document.getElementById('card').innerHTML=`
     <div class="end-scr">
       <div class="end-uni">🦄</div>
       <div class="end-ttl">🎊 סִיַּמְתְּ! 🎊</div>
-      <div class="end-grade-num">${calcGrade()}</div>
+      <div class="end-grade-num">${g}</div>
       <div class="end-grade-max">מִתּוֹךְ 1000</div>
-      <div class="end-grade-msg">${gradeMsg(calcGrade())}</div>
+      <div class="end-grade-msg">${gradeMsg(g)}</div>
+      ${wonGift?'<span class="end-gift">🎁</span>':''}
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:4px">
         <button class="btn b-rpl" onclick="restart()">שַׂחֲקִי שׁוּב 🔄</button>
         <button class="btn b-rep" onclick="reportOpen()">📊 סִיכּוּם</button>
       </div>
-    </div>`;
+    </div>`;}
 }
 
 function rebuildCard(){
   document.getElementById('card').innerHTML=`
-    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="gn-eq-btn" onclick="gnOpen()" title="גִּנַּת הַפְּרָחִים">🌸</button><button class="bu-eq-btn" onclick="buOpen()" title="בּוּעוֹת הַסַּבּוֹן"><svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="14" r="10" stroke="#fff" stroke-opacity=".85" stroke-width="2" fill="#78DCFF" fill-opacity=".18"/><circle cx="9" cy="10" r="2.2" fill="#fff" fill-opacity=".6"/><circle cx="16" cy="7.5" r="1.4" fill="#fff" fill-opacity=".45"/></svg></button><button class="tn-eq-btn" onclick="tnOpen()" title="רַכֶּבֶת הַמִּסְפָּרִים">🚂</button><button class="fr-eq-btn" onclick="frOpen()" title="צְפַרְדְּעֵי הַבְּרֵכָה">🐸</button><button class="st-eq-btn" onclick="stOpen()" title="כּוֹכְבֵי הַלַּיְלָה">✨</button><button class="cn-eq-btn" onclick="cnOpen()" title="יְרִיַּת הַפַּחִיּוֹת">🥫</button><button class="si-eq-btn" onclick="siOpen()" title="פּוֹלְשֵׁי הַחָלָל">🚀</button><button class="bl-eq-btn" onclick="blOpen()" title="מִשְׂחֲקוֹן הַבַּלּוֹנִים">🎈</button><button class="lg-eq-btn" onclick="lgOpen()" title="מִגְדַּל הַלֶּגוֹ">🧱</button><button class="ko-eq-btn" onclick="koOpen()" title="מִשְׂחֲקוֹן הָאֶגְרוֹף">🥊</button><button class="pa-eq-btn" onclick="paOpen()" title="מְסִיבַּת הַדְּמֻיּוֹת">🎉</button><button class="aid-toggle-btn" onclick="toggleAidMode()" title="החלף תצוגת עזר">💜</button></div></div></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="gn-eq-btn" onclick="gnOpen()" title="גִּנַּת הַפְּרָחִים">🌸</button><button class="bu-eq-btn" onclick="buOpen()" title="בּוּעוֹת הַסַּבּוֹן"><svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg"><circle cx="13" cy="14" r="10" stroke="#fff" stroke-opacity=".85" stroke-width="2" fill="#78DCFF" fill-opacity=".18"/><circle cx="9" cy="10" r="2.2" fill="#fff" fill-opacity=".6"/><circle cx="16" cy="7.5" r="1.4" fill="#fff" fill-opacity=".45"/></svg></button><button class="tn-eq-btn" onclick="tnOpen()" title="רַכֶּבֶת הַמִּסְפָּרִים">🚂</button><button class="fr-eq-btn" onclick="frOpen()" title="צְפַרְדְּעֵי הַבְּרֵכָה">🐸</button><button class="st-eq-btn" onclick="stOpen()" title="כּוֹכְבֵי הַלַּיְלָה">✨</button><button class="cn-eq-btn" onclick="cnOpen()" title="יְרִיַּת הַפַּחִיּוֹת">🥫</button><button class="si-eq-btn" onclick="siOpen()" title="פּוֹלְשֵׁי הַחָלָל">🚀</button><button class="bl-eq-btn" onclick="blOpen()" title="מִשְׂחֲקוֹן הַבַּלּוֹנִים">🎈</button><button class="lg-eq-btn" onclick="lgOpen()" title="מִגְדַּל הַלֶּגוֹ">🧱</button><button class="ko-eq-btn" onclick="koOpen()" title="מִשְׂחֲקוֹן הָאֶגְרוֹף">🥊</button><button class="pa-eq-btn" onclick="paOpen()" title="מְסִיבַּת הַדְּמֻיּוֹת">🎉</button><button class="pgm-gn-eq-btn" id="pgm-gn-eq-btn" onclick="openChainGarden()" title="גִּנַּת פְּרָחִים בְּשַׁרְשֶׁרֶת">🌻</button><button class="tda-jar-btn" id="tda-jar-btn" onclick="toggleTdaJar()" title="החלף לתצוגת צנצנת">🍪</button><button class="aid-toggle-btn" onclick="toggleAidMode()" title="החלף תצוגת עזר">💜</button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div class="hearts"   id="hearts"></div>
     <div class="abacus-sec">
@@ -2566,7 +2682,7 @@ function rebuildCard(){
       <div class="pgm-scene">
         <button class="pgm-side pgm-minus" id="pgm-btn-minus" onclick="pgmMinus()">−</button>
         <div class="pgm-jar-col">
-          <div class="ck-jar"><svg class="ck-jar-bg" viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="120" height="22" rx="6" fill="#8B6914"/><rect x="34" y="10" width="112" height="18" rx="5" fill="#A0791C"/><rect x="42" y="6" width="96" height="12" rx="4" fill="#7A5810"/><path d="M30,32 Q20,38 18,55 L14,230 Q14,248 90,248 Q166,248 166,230 L162,55 Q160,38 150,32 Z" fill="rgba(200,180,140,.14)" stroke="rgba(220,180,100,.45)" stroke-width="2.5"/><path d="M36,40 Q28,55 26,90 L24,200" stroke="rgba(255,255,255,.28)" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="244" rx="75" ry="10" fill="rgba(160,120,60,.25)" stroke="rgba(200,160,80,.3)" stroke-width="1.5"/></svg><div class="ck-cookies-wrap" id="pgm-wrap"></div></div><div class="pgm-jar-btm"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
+          <div class="ck-jar" id="pgm-ck-jar"><svg class="ck-jar-bg" viewBox="0 0 180 260" xmlns="http://www.w3.org/2000/svg"><rect x="30" y="10" width="120" height="22" rx="6" fill="#8B6914"/><rect x="34" y="10" width="112" height="18" rx="5" fill="#A0791C"/><rect x="42" y="6" width="96" height="12" rx="4" fill="#7A5810"/><path d="M30,32 Q20,38 18,55 L14,230 Q14,248 90,248 Q166,248 166,230 L162,55 Q160,38 150,32 Z" fill="rgba(200,180,140,.14)" stroke="rgba(220,180,100,.45)" stroke-width="2.5"/><path d="M36,40 Q28,55 26,90 L24,200" stroke="rgba(255,255,255,.28)" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="244" rx="75" ry="10" fill="rgba(160,120,60,.25)" stroke="rgba(200,160,80,.3)" stroke-width="1.5"/></svg><div class="ck-cookies-wrap" id="pgm-wrap"></div></div><div id="pgm-gn-display" style="display:none"><div class="pgm-gn-flowers" id="pgm-gn-flowers"></div><div class="pgm-gn-lbl">🌸 <span id="pgm-gn-count">0</span></div></div><div class="pgm-jar-btm"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
         </div>
         <button class="pgm-side pgm-plus" id="pgm-btn-plus" onclick="pgmPlus()">+</button>
       </div>
@@ -3182,6 +3298,8 @@ function updateAllMiniGameBtns(){
   Object.entries(GAME_COSTS).forEach(([g,cost])=>{
     const b=document.querySelector('.'+g+'-eq-btn');if(b)b.disabled=score<cost;
   });
+  const gnb=document.getElementById('pgm-gn-eq-btn');
+  if(gnb)gnb.disabled=!chainGnMode&&score<20;
 }
 function koUpdateBtn(){updateAllMiniGameBtns();}
 
@@ -3438,7 +3556,7 @@ function paOpen(){
   markAidUsed();updateAllMiniGameBtns();
   const isNew=(paProbIdx!==idx);
   if(isNew){
-    paData=Array.from({length:20},()=>'dark');
+    paData=Array.from({length:PA_TOTAL},()=>'dark');
     paProbIdx=idx;
     document.getElementById('pa-eq-display').innerHTML=paEqHTML();
     document.getElementById('pa-fb').textContent='';
@@ -3511,7 +3629,7 @@ function paUpdateHint(){
   else{hint.textContent='מְעוּלֶה! עַכְשָׁיו כִּתְבִי אֶת הַתְּשׁוּבָה! ✏️';hint.className='pa-dyn-hint pa-done';}
 }
 function paReset(){
-  paData=Array.from({length:num1+num2>10?20:10},()=>'dark');
+  paData=Array.from({length:PA_TOTAL},()=>'dark');
   document.getElementById('pa-eq-display').innerHTML=paEqHTML();document.getElementById('pa-fb').textContent='';
   paRender();paUpdateHint();paAutoLighting=true;paRunAutoLight(0);
 }
@@ -4533,8 +4651,32 @@ function pgmCkSVG(idx){
     :`<circle cx="18" cy="8" r="3" fill="${c.chip}"/><circle cx="28" cy="6" r="2.5" fill="${c.chip}"/><circle cx="34" cy="11" r="3" fill="${c.chip}"/>`;
   return`<svg viewBox="0 0 52 20"><ellipse cx="26" cy="11" rx="24" ry="9" fill="${c.edge}"/><ellipse cx="26" cy="10" rx="23" ry="8" fill="${c.base}"/>${ch}<ellipse cx="20" cy="6" rx="6" ry="3" fill="rgba(255,255,255,.15)" transform="rotate(-15 20 6)"/></svg>`;
 }
-let pgmCV=0,pgmCk=[],pgmArcs=[];
-function pgmInitChain(){pgmCV=ptype===TC?0:num1;pgmCk=Array.from({length:pgmCV},(_,i)=>i%5);pgmArcs=[];pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();}
+let pgmCV=0,pgmCk=[],pgmArcs=[],chainGnMode=false,tdaJarMode=false;
+function pgmInitChain(){const _jar0=ptype===TC||ptype===TDA;pgmCV=_jar0?0:num1;pgmCk=Array.from({length:pgmCV},(_,i)=>i%5);pgmArcs=[];pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();}
+function toggleTdaJar(){
+  if(ptype!==TDA&&ptype!==TDS)return;
+  tdaJarMode=!tdaJarMode;
+  const ct=document.getElementById('chain-tools');
+  const he=document.getElementById('hearts');
+  const btn=document.getElementById('tda-jar-btn');
+  if(tdaJarMode){
+    if(he)he.style.display='none';
+    if(ct)ct.style.display='block';
+    const jar=document.getElementById('pgm-ck-jar');if(jar)jar.style.display='';
+    const gnd=document.getElementById('pgm-gn-display');if(gnd)gnd.style.display='none';
+    // TDA starts at 0 (count up); TDS starts at R (the known result)
+    const startCV=ptype===TDS?Math.min(num1,PGM_NL):0;
+    pgmCV=startCV;pgmCk=Array.from({length:startCV},(_,i)=>i%5);pgmArcs=[];
+    pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
+    if(btn)btn.textContent='💜';
+    if(btn)btn.title='החזר לתצוגת לבבות';
+  }else{
+    if(ct)ct.style.display='none';
+    if(he)he.style.display='';
+    if(btn)btn.textContent='🍪';
+    if(btn)btn.title='החלף לתצוגת צנצנת';
+  }
+}
 function pgmMakeCookie(ti,drop=false){
   const d=document.createElement('div');
   d.className='ck-cookie'+(drop?' ck-dropping':'');
@@ -4546,8 +4688,44 @@ function pgmMakeCookie(ti,drop=false){
   return d;
 }
 function pgmRenderJar(){
+  if(chainGnMode)return;
   const w=document.getElementById('pgm-wrap');if(!w)return;
   w.innerHTML='';pgmCk.forEach(ti=>w.appendChild(pgmMakeCookie(ti)));
+}
+function pgmRenderGarden(){
+  const wrap=document.getElementById('pgm-gn-flowers');
+  const cnt=document.getElementById('pgm-gn-count');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  const n=Math.max(0,Math.min(pgmCV,20));
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');d.className='pgm-gn-flower';
+    d.innerHTML=gnFlowerSVG(i%5);wrap.appendChild(d);
+  }
+  if(cnt)cnt.textContent=pgmCV;
+}
+function openChainGarden(){
+  const jar=document.getElementById('pgm-ck-jar');
+  const disp=document.getElementById('pgm-gn-display');
+  const btn=document.getElementById('pgm-gn-eq-btn');
+  if(chainGnMode){
+    // Toggle back to cookie jar (free)
+    chainGnMode=false;
+    if(jar)jar.style.display='';
+    if(disp)disp.style.display='none';
+    if(btn)btn.textContent='🌻';
+    pgmRenderJar();pgmUpdateAll();
+  }else{
+    // Switch to garden (costs 20 stars on first activation)
+    const COST=20;
+    if(score<COST)return;
+    addScore(-COST);markAidUsed();chainGnMode=true;
+    if(jar)jar.style.display='none';
+    if(disp)disp.style.display='flex';
+    if(btn)btn.textContent='🍪';
+    pgmRenderGarden();
+  }
+  koUpdateBtn();
 }
 function pgmBuildNL(){
   const el=document.getElementById('pgm-nums');if(!el)return;
@@ -4579,6 +4757,7 @@ function pgmUpdateAll(){
   pgmUpdateNL();
   const bm=document.getElementById('pgm-btn-minus'),bp=document.getElementById('pgm-btn-plus');
   if(bm)bm.disabled=done||pgmCV<=0;if(bp)bp.disabled=done||pgmCV>=PGM_NL;
+  if(chainGnMode)pgmRenderGarden();
 }
 function pgmPlus(){
   if(done||pgmCV>=PGM_NL)return;
@@ -4773,6 +4952,7 @@ problems=sampleWithTD(makePool(mode),GL);injectCoins(problems,mode);
 abInit();
 applyTheme();
 spawnParticles();
+updateGiftIndicator();
 loadProblem();
 
 /* ── Spacebar heart shortcut ── */
@@ -4814,6 +4994,12 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Delete'&&e.key!=='Escape')return;
   const ae=document.activeElement;
   if(ae&&ae.tagName==='INPUT'&&ae.type!=='number')return;
+  // Clear focused number input (new: in addition to existing pgmUndo)
+  if(e.key==='Delete'&&ae&&ae.tagName==='INPUT'&&ae.type==='number'&&!ae.disabled&&ae.value!==''){
+    ae.value='';
+    ae.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  // Undo last step on number line (existing behaviour)
   if(document.getElementById('chain-tools')?.style.display!=='none'){
     e.preventDefault();pgmUndo();
   }
@@ -4840,7 +5026,23 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(done)return;
-  if(ptype===TDA||ptype===TDS)return; // double-unknown: no spacebar heart action
+  // TDA (x+x=R): spacebar adds object; TDS (x-x=R): spacebar removes object
+  if(ptype===TDA||ptype===TDS){
+    e.preventDefault();
+    if(tdaJarMode){
+      // cookie jar mode
+      ptype===TDA?pgmPlus():pgmMinus();
+    }else{
+      // hearts mode
+      if(ptype===TDA){
+        const fi=hState.indexOf(false);
+        if(fi!==-1){hState[fi]=true;renderHearts();}
+      }else{
+        if(hState.length>0){hState.pop();renderHearts();}
+      }
+    }
+    return;
+  }
   e.preventDefault();
   const hearts=document.getElementById('hearts');
   if(!hearts)return;
