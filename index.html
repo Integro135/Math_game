@@ -1608,7 +1608,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v5.61">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v5.62">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -2945,7 +2945,7 @@ function initGalaxyStars(){
   }
 
   /* ── Saturn (floats across like Earth) ── */
-  const SAT={x:-200,y:H*.4,vx:.16,vy:0,op:0,active:false,cd:120+Math.random()*180,tilt:.35};
+  const SAT={x:-200,y:H*.4,vx:.16,vy:0,op:0,active:false,cd:0,tilt:.35};
   function spawnSat(){
     const left=Math.random()<.5;
     SAT.x=left?-160:W+160;SAT.y=H*(.1+Math.random()*.7);
@@ -2985,7 +2985,7 @@ function initGalaxyStars(){
   }
 
   /* ── Earth + Moon ── */
-  const E={x:-150,y:H/2,vx:.18,vy:0,op:0,active:false,cd:60+Math.random()*120,mAng:Math.random()*Math.PI*2};
+  const E={x:-150,y:H/2,vx:.18,vy:0,op:0,active:false,cd:0,mAng:Math.random()*Math.PI*2};
   function spawnEarth(){
     const left=Math.random()<.5;
     E.x=left?-110:W+110;E.y=H*(.08+Math.random()*.72);
