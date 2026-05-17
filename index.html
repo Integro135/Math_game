@@ -1393,6 +1393,76 @@ body.theme-boys .lvl-btn.active{
 }
 body.theme-boys .anime-char svg{filter:drop-shadow(0 0 7px #00BCD4)}
 
+/* ══════════════════════════════════════
+   GALAXY / SPACE THEME
+══════════════════════════════════════ */
+
+/* Background — deep space */
+body.theme-galaxy #bg{
+  background:linear-gradient(145deg,#000008,#04000e,#08001c,#0a0028,#050015,#000008);
+  background-size:300% 300%;animation:bgshift 28s ease infinite;
+}
+
+/* Nebula overlay on #bg */
+body.theme-galaxy #bg::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 90% 35% at 45% 55%,rgba(80,40,200,.07) 0%,transparent 70%),
+    radial-gradient(ellipse 60% 70% at 15% 25%,rgba(120,40,180,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 65% at 85% 75%,rgba(40,80,220,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 40% at 70% 15%,rgba(200,80,255,.04) 0%,transparent 60%);
+}
+
+/* Stars canvas layer */
+#stars-layer{position:fixed;inset:0;z-index:-1;pointer-events:none;display:none}
+body.theme-galaxy #stars-layer{display:block}
+
+/* Title — cosmic shimmer */
+body.theme-galaxy .title{
+  background:linear-gradient(90deg,#fff 0%,#b8d4ff 20%,#d0b0ff 40%,#80e0ff 60%,#d0b0ff 80%,#fff 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:shimmer 3s linear infinite;
+}
+
+/* Level buttons */
+body.theme-galaxy .lvl-btn.active{
+  background:linear-gradient(145deg,#B39DDB,#7E57C2,#4527A0);color:#fff;
+  border-color:transparent;
+  box-shadow:0 5px 0 #311B92,0 7px 22px rgba(126,87,194,.65),inset 0 1px 0 rgba(255,255,255,.45);
+}
+
+/* Check button (circular) */
+body.theme-galaxy .chk-btn{
+  background:radial-gradient(circle at 38% 36%,#9575CD,#1A237E 70%);
+  box-shadow:0 4px 22px rgba(57,73,171,.6),inset 0 1px 0 rgba(255,255,255,.28);
+}
+body.theme-galaxy .chk-btn:hover{
+  transform:scale(1.16) rotate(-9deg);
+  box-shadow:0 7px 30px rgba(57,73,171,.85),inset 0 1px 0 rgba(255,255,255,.38)
+}
+
+/* Action buttons */
+body.theme-galaxy .b-chk{
+  background:linear-gradient(150deg,#9575CD,#3949AB,#1A237E);
+  box-shadow:0 6px 0 #0D1B8C,0 8px 22px rgba(57,73,171,.65),inset 0 1px 0 rgba(255,255,255,.28)
+}
+body.theme-galaxy .b-chk:hover{box-shadow:0 8px 0 #0D1B8C,0 12px 32px rgba(57,73,171,.85),inset 0 1px 0 rgba(255,255,255,.32)}
+body.theme-galaxy .b-chk:active{box-shadow:0 2px 0 #0D1B8C,0 4px 14px rgba(57,73,171,.5),inset 0 1px 0 rgba(255,255,255,.28)!important}
+body.theme-galaxy .b-try{
+  background:linear-gradient(150deg,#CE93D8,#8E24AA,#4A148C);
+  box-shadow:0 6px 0 #2D0058,0 8px 22px rgba(142,36,170,.65),inset 0 1px 0 rgba(255,255,255,.28)
+}
+body.theme-galaxy .b-try:hover{box-shadow:0 8px 0 #2D0058,0 12px 32px rgba(142,36,170,.85),inset 0 1px 0 rgba(255,255,255,.32)}
+body.theme-galaxy .b-try:active{box-shadow:0 2px 0 #2D0058,0 4px 14px rgba(142,36,170,.5),inset 0 1px 0 rgba(255,255,255,.28)!important}
+body.theme-galaxy .b-nxt{
+  background:linear-gradient(150deg,#80DEEA,#00838F,#004D40);
+  box-shadow:0 6px 0 #003038,0 8px 22px rgba(0,131,143,.65),inset 0 1px 0 rgba(255,255,255,.28)
+}
+body.theme-galaxy .b-nxt:hover{box-shadow:0 8px 0 #003038,0 12px 32px rgba(0,131,143,.85),inset 0 1px 0 rgba(255,255,255,.32)}
+body.theme-galaxy .b-nxt:active{box-shadow:0 2px 0 #003038,0 4px 14px rgba(0,131,143,.5),inset 0 1px 0 rgba(255,255,255,.28)!important}
+body.theme-galaxy .anime-char svg{filter:drop-shadow(0 0 7px #7C4DFF)}
+
 /* ── New success overlays (nfw) ── */
 .nfw-ov{display:none;position:fixed;inset:0;z-index:1000;cursor:pointer;
   align-items:center;justify-content:center;flex-direction:column}
@@ -1526,6 +1596,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
 <body>
 
 <div id="bg"></div>
+<div id="stars-layer"></div>
 <div id="particles"></div>
 
 <div class="wrap">
@@ -1537,7 +1608,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v5.50">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v5.61">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -2414,7 +2485,7 @@ function renderHearts(){
   const g=document.getElementById('hearts');g.innerHTML='';
   const total=hState.length;
   g.classList.toggle('two-rows',total>10);
-  const boys=theme==='boys';
+  const boys=theme==='boys';const galaxy=theme==='galaxy';
   hState.forEach((st,i)=>{
     const b=document.createElement('button');
     b.className='hrt';
@@ -2422,9 +2493,10 @@ function renderHearts(){
       b.textContent='🩶';b.classList.add('inactive');b.disabled=true;
     }else if(ptype===TA||ptype===TZ||ptype===TDA||ptype===TDS||(ptype===TX&&tzAddMode())){
       if(boys){b.textContent='🚗';if(!st)b.classList.add('hrt-unlit');}
+      else if(galaxy){b.textContent=st?'⭐':'✨';if(!st)b.classList.add('hrt-unlit');}
       else b.textContent=st?'💜':'🤍';
     }else{
-      b.textContent=st?(boys?'💥':'💔'):(boys?'🚗':'💗');
+      b.textContent=st?(boys?'💥':galaxy?'☄️':'💔'):(boys?'🚗':galaxy?'⭐':'💗');
       if(st)b.classList.add('deleted');
     }
     if(st!==null)b.onclick=()=>clickHeart(i,b);
@@ -2438,10 +2510,10 @@ function clickHeart(i,b){
   if(done)return;
   markAidUsed();
   hState[i]=!hState[i];
-  const boys=theme==='boys';
+  const boys=theme==='boys';const galaxy=theme==='galaxy';
   const _isAdd=ptype===TA||ptype===TZ||ptype===TDA||ptype===TDS||(ptype===TX&&tzAddMode());
   if(!_isAdd){
-    b.textContent=hState[i]?(boys?'💥':'💔'):(boys?'🚗':'💗');
+    b.textContent=hState[i]?(boys?'💥':galaxy?'☄️':'💔'):(boys?'🚗':galaxy?'⭐':'💗');
     if(hState[i]){
       b.classList.remove('undel-pop');
       b.classList.add('deleted');
@@ -2452,6 +2524,7 @@ function clickHeart(i,b){
     }
   }else{
     if(boys){b.textContent='🚗';if(hState[i])b.classList.remove('hrt-unlit');else b.classList.add('hrt-unlit');}
+    else if(galaxy){b.textContent=hState[i]?'⭐':'✨';if(hState[i])b.classList.remove('hrt-unlit');else b.classList.add('hrt-unlit');}
     else b.textContent=hState[i]?'💜':'🤍';
     if(hState[i]){
       b.classList.add('pop');
@@ -2720,7 +2793,7 @@ const THEMES={
       em:['🌈','🦄','⭐','💫','🌟','💗','✨','🎊','💜','🌸','🦄','🌈'],dur:3500},
   },
   boys:{
-    titleEmoji:'🚀',uniL:'🏎️',uniR:'⚡',toggleIcon:'👧',
+    titleEmoji:'🚀',uniL:'🏎️',uniR:'⚡',toggleIcon:'🌌',
     particles:['🚗','🦇','⚡','🏎️','🚀','🤖','⚽','🎮','💥','🦈','🛸','🎯'],
     specialEm:'🚀',
     rbColors:['#80D8FF','#B3E5FC','#A5F3FC','#99F6E4','#BBF7D0','#C7D2FE'],
@@ -2732,14 +2805,261 @@ const THEMES={
     ],
     fwSuper:{icon:'🚀',title:'✨ גִּיבּוֹר אֶמִיתִי! ✨',sub:'אַתָּה פָּשׁוּט מַדְהִים! 🌟',
       em:['🚀','⚡','🦾','💥','🌟','🤖','✨','🎊','🏆','🌠','🚀','💫'],dur:3500},
+  },
+  galaxy:{
+    titleEmoji:'🌌',uniL:'🚀',uniR:'🪐',toggleIcon:'👧',
+    particles:['⭐','🌟','☄️','🪐','✨','🛸','🌙','💫','🌌','🌠','⚡','🔭'],
+    specialEm:'🚀',
+    rbColors:['#1a0040','#0a0060','#000080','#0020a0','#201060','#401080'],
+    fw:[
+      {icon:'🌟',title:'כָּל הַכָּבוֹד!',em:['⭐','🌟','💫','✨','🪐','☄️'],n:14,rainbow:false,radial:true,spd:1.4},
+      {icon:'🚀',title:'מַדְהִים!',     em:['🚀','⭐','🌟','💫','🛸','✨'],n:18,rainbow:false,radial:false,spd:1.2},
+      {icon:'🪐',title:'מְצֻיָּן!',    em:['🪐','⭐','💫','🌙','✨','🌟'],n:12,rainbow:false,radial:true,spd:.9},
+      {icon:'☄️',title:'יָפֶה!',       em:['☄️','⭐','🌠','💫','🌟','✨'],n:20,rainbow:false,radial:false,spd:1.5},
+    ],
+    fwSuper:{icon:'🌌',title:'✨ גָּלַקְסְיָה! ✨',sub:'אַתְּ כּוֹכֶבֶת! 🌟',
+      em:['🌌','⭐','🚀','🪐','☄️','🌟','💫','✨','🛸','🌙','🌠','⭐'],dur:3500},
   }
 };
+
+/* initGalaxyStars — rich galaxy scene: stars, multiple spirals, nebulae, planets, comets */
+function initGalaxyStars(){
+  const layer=document.getElementById('stars-layer');
+  if(!layer)return;
+  layer.innerHTML='';
+  const cv=document.createElement('canvas');
+  cv.style.cssText='position:absolute;inset:0;width:100%;height:100%';
+  cv.width=innerWidth;cv.height=innerHeight;
+  layer.appendChild(cv);
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+
+  /* ── Stars ── */
+  const SCOLS=['255,255,255','210,225,255','255,225,200','190,215,255','220,255,220'];
+  const stars=[];
+  for(let i=0;i<320;i++){
+    const r=Math.random()<0.55?0.55:Math.random()<0.6?1.0:1.6;
+    stars.push({x:Math.random()*W,y:Math.random()*H,r,
+      a:0.3+Math.random()*0.7,phase:Math.random()*Math.PI*2,
+      speed:0.008+Math.random()*0.022,col:SCOLS[0|Math.random()*5]});
+  }
+
+  /* ── Nebulae (large, vivid) ── */
+  const NEB=[
+    [0.18,0.28,0.55,0.42,[110,40,220],0.14],
+    [0.78,0.58,0.52,0.58,[40,90,235],0.13],
+    [0.50,0.45,0.65,0.32,[70,55,210],0.11],
+    [0.65,0.18,0.42,0.48,[210,55,255],0.12],
+    [0.10,0.70,0.46,0.38,[35,155,225],0.12],
+    [0.38,0.78,0.48,0.32,[255,80,180],0.10],
+    [0.88,0.20,0.34,0.38,[255,140,60], 0.09],
+    [0.25,0.50,0.40,0.30,[60,220,200], 0.08],
+  ];
+  function drawNebulae(){
+    NEB.forEach(([px,py,rx,ry,[r,g,b],a])=>{
+      const cx=px*W,cy=py*H,rxi=rx*W,ryi=ry*H,mR=Math.max(rxi,ryi);
+      const gd=ctx.createRadialGradient(cx,cy,0,cx,cy,mR);
+      gd.addColorStop(0,`rgba(${r},${g},${b},${a})`);
+      gd.addColorStop(0.5,`rgba(${r},${g},${b},${(a*.45).toFixed(3)})`);
+      gd.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.save();ctx.scale(rxi/mR,ryi/mR);
+      ctx.beginPath();ctx.arc(cx*mR/rxi,cy*mR/ryi,mR,0,Math.PI*2);
+      ctx.fillStyle=gd;ctx.fill();ctx.restore();
+    });
+  }
+
+  /* ── Milky Way ── */
+  function drawMilkyWay(){
+    const gd=ctx.createLinearGradient(0,H*0.20,W,H*0.80);
+    gd.addColorStop(0,'rgba(70,50,180,0)');
+    gd.addColorStop(0.3,'rgba(90,75,200,.055)');
+    gd.addColorStop(0.5,'rgba(125,105,220,.10)');
+    gd.addColorStop(0.7,'rgba(90,75,200,.055)');
+    gd.addColorStop(1,'rgba(70,50,180,0)');
+    ctx.fillStyle=gd;ctx.fillRect(0,0,W,H);
+  }
+
+  /* ── Multiple spiral galaxies ── */
+  const GALS=[
+    // [cx%,cy%, scale, arms, flatY, rotSpeed, armColors, coreCol]
+    {px:.70,py:.22,sc:3.2,arms:3,fy:.40,rs:.00085,
+     cols:[[150,100,255],[100,165,255],[255,120,200],[80,210,255]],core:'255,230,180'},
+    {px:.12,py:.62,sc:2.4,arms:2,fy:.50,rs:.00065,
+     cols:[[255,140,60],[255,210,90],[220,100,40]],core:'255,200,120'},
+    {px:.82,py:.72,sc:1.8,arms:4,fy:.35,rs:.00110,
+     cols:[[80,210,255],[120,255,200],[60,160,255],[40,255,180]],core:'180,240,255'},
+    {px:.30,py:.08,sc:1.5,arms:2,fy:.45,rs:.00130,
+     cols:[[255,100,160],[210,80,255],[255,160,100]],core:'255,180,200'},
+    {px:.55,py:.82,sc:1.2,arms:3,fy:.38,rs:.00090,
+     cols:[[140,255,160],[60,200,120],[100,255,200]],core:'180,255,200'},
+  ];
+  GALS.forEach(g=>{g.rot=Math.random()*Math.PI*2;});
+  function drawGalaxy(g){
+    const cx=g.px*W,cy=g.py*H;
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(g.rot);
+    const cr=18*g.sc/3.2;
+    const cg=ctx.createRadialGradient(0,0,0,0,0,cr);
+    cg.addColorStop(0,`rgba(${g.core},.14)`);
+    cg.addColorStop(0.5,`rgba(${g.core},.06)`);
+    cg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();ctx.arc(0,0,cr,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
+    const steps=Math.round(120*g.sc/3.2);
+    for(let arm=0;arm<g.arms;arm++){
+      const base=arm*(Math.PI*2/g.arms);
+      for(let step=1;step<steps;step++){
+        const t=step/steps;
+        const rad=step*(2.1*g.sc/3.2);
+        const ang=base+step*0.11;
+        const x=rad*Math.cos(ang);
+        const y=rad*Math.sin(ang)*g.fy;
+        const ci=(arm+Math.floor(step*g.cols.length/steps))%g.cols.length;
+        const [r,gb,b]=g.cols[ci];
+        const alpha=(0.16-t*0.14)*(arm===0?1:.8);
+        if(alpha<=0)continue;
+        const sz=Math.max(0.5,3.2*g.sc/3.2-step*(2.5*g.sc/3.2)/steps);
+        ctx.beginPath();ctx.arc(x,y,sz,0,Math.PI*2);
+        ctx.fillStyle=`rgba(${r},${gb},${b},${alpha.toFixed(3)})`;ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ── Shooting stars ── */
+  const SHOOTS=[];let shootCd=40+Math.random()*80;
+  function spawnShoot(){
+    const ang=.25+Math.random()*.55,spd=7+Math.random()*10,len=60+Math.random()*100;
+    SHOOTS.push({x:Math.random()*W,y:Math.random()*H*.55,
+      vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,len,life:1});
+  }
+  function drawShoots(){
+    shootCd--;if(shootCd<=0){spawnShoot();shootCd=50+Math.random()*100;}
+    for(let i=SHOOTS.length-1;i>=0;i--){
+      const s=SHOOTS[i];s.x+=s.vx;s.y+=s.vy;s.life-=0.035;
+      if(s.life<=0){SHOOTS.splice(i,1);continue;}
+      const gd=ctx.createLinearGradient(s.x,s.y,s.x-s.vx*9,s.y-s.vy*9);
+      gd.addColorStop(0,`rgba(255,255,255,${s.life.toFixed(2)})`);
+      gd.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*9,s.y-s.vy*9);
+      ctx.strokeStyle=gd;ctx.lineWidth=1.8*s.life;ctx.stroke();
+    }
+  }
+
+  /* ── Saturn (floats across like Earth) ── */
+  const SAT={x:-200,y:H*.4,vx:.16,vy:0,op:0,active:false,cd:120+Math.random()*180,tilt:.35};
+  function spawnSat(){
+    const left=Math.random()<.5;
+    SAT.x=left?-160:W+160;SAT.y=H*(.1+Math.random()*.7);
+    SAT.vx=left?.13:-.13;SAT.vy=(Math.random()-.5)*.05;
+    SAT.op=0;SAT.active=true;SAT.tilt=.25+Math.random()*.3;
+  }
+  function drawSaturn(){
+    if(SAT.cd>0){SAT.cd--;return;}
+    if(!SAT.active){spawnSat();return;}
+    SAT.x+=SAT.vx;SAT.y+=SAT.vy;
+    const ef=Math.min((SAT.x+160)/80,1,(W-SAT.x+160)/80,1);
+    SAT.op=Math.min(.6,SAT.op+.004,ef);
+    if(SAT.x<-220||SAT.x>W+220){SAT.active=false;SAT.op=0;SAT.cd=120+Math.random()*180;return;}
+    const sx=SAT.x,sy=SAT.y,sr=22,rW=58;
+    ctx.save();ctx.globalAlpha=SAT.op;
+    // Back ring half
+    ctx.save();ctx.translate(sx,sy);ctx.scale(1,SAT.tilt);
+    ctx.beginPath();ctx.ellipse(0,0,rW,rW,0,Math.PI,Math.PI*2);
+    ctx.strokeStyle='rgba(200,175,110,.55)';ctx.lineWidth=9;ctx.stroke();
+    ctx.strokeStyle='rgba(230,210,140,.28)';ctx.lineWidth=4;
+    ctx.beginPath();ctx.ellipse(0,0,rW*.7,rW*.7,0,Math.PI,Math.PI*2);ctx.stroke();
+    ctx.restore();
+    // Planet
+    const sg=ctx.createRadialGradient(sx-5,sy-5,2,sx,sy,sr);
+    sg.addColorStop(0,'#EDD090');sg.addColorStop(.55,'#C89055');sg.addColorStop(1,'#9A6830');
+    ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fillStyle=sg;ctx.fill();
+    ctx.strokeStyle='rgba(180,140,70,.3)';ctx.lineWidth=3;
+    ctx.beginPath();ctx.ellipse(sx,sy+4,sr*.9,5,0,0,Math.PI*2);ctx.stroke();
+    // Front ring half
+    ctx.save();ctx.translate(sx,sy);ctx.scale(1,SAT.tilt);
+    ctx.beginPath();ctx.ellipse(0,0,rW,rW,0,0,Math.PI);
+    ctx.strokeStyle='rgba(200,175,110,.55)';ctx.lineWidth=9;ctx.stroke();
+    ctx.strokeStyle='rgba(230,210,140,.28)';ctx.lineWidth=4;
+    ctx.beginPath();ctx.ellipse(0,0,rW*.7,rW*.7,0,0,Math.PI);ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+  }
+
+  /* ── Earth + Moon ── */
+  const E={x:-150,y:H/2,vx:.18,vy:0,op:0,active:false,cd:60+Math.random()*120,mAng:Math.random()*Math.PI*2};
+  function spawnEarth(){
+    const left=Math.random()<.5;
+    E.x=left?-110:W+110;E.y=H*(.08+Math.random()*.72);
+    E.vx=left?.15:-.15;E.vy=(Math.random()-.5)*.05;
+    E.op=0;E.active=true;E.mAng=Math.random()*Math.PI*2;
+  }
+  function drawEarth(){
+    if(E.cd>0){E.cd--;return;}
+    if(!E.active){spawnEarth();return;}
+    E.x+=E.vx;E.y+=E.vy;E.mAng+=.007;
+    const ef=Math.min((E.x+120)/80,1,(W-E.x+120)/80,1);
+    E.op=Math.min(.6,E.op+.004,ef);
+    if(E.x<-200||E.x>W+200){E.active=false;E.op=0;E.cd=60+Math.random()*120;return;}
+    const ex=E.x,ey=E.y,er=26,mr=10,md=54;
+    ctx.save();ctx.globalAlpha=E.op;
+    const mx=ex+Math.cos(E.mAng)*md,my=ey+Math.sin(E.mAng)*md*.38;
+    const mg=ctx.createRadialGradient(mx-2,my-1,0,mx,my,mr);
+    mg.addColorStop(0,'#C8C8C8');mg.addColorStop(.7,'#909090');mg.addColorStop(1,'#606060');
+    ctx.beginPath();ctx.arc(mx,my,mr,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();
+    ctx.fillStyle='rgba(80,80,80,.28)';
+    ctx.beginPath();ctx.arc(mx+2,my-1,2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(mx-2,my+2,1.3,0,Math.PI*2);ctx.fill();
+    const eg=ctx.createRadialGradient(ex-4,ey-4,1,ex,ey,er);
+    eg.addColorStop(0,'#4AAEDC');eg.addColorStop(.55,'#2070B8');eg.addColorStop(1,'#184880');
+    ctx.beginPath();ctx.arc(ex,ey,er,0,Math.PI*2);ctx.fillStyle=eg;ctx.fill();
+    ctx.fillStyle='rgba(55,135,70,.88)';
+    ctx.beginPath();ctx.ellipse(ex-3,ey-2,7,5,.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(ex+5,ey+5,5,4,-.3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(ex-2,ey+8,5,2.5,.7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.35)';
+    ctx.beginPath();ctx.ellipse(ex+2,ey-7,7,1.8,.3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(ex-6,ey+2,4,1.4,-.4,0,Math.PI*2);ctx.fill();
+    const hl=ctx.createRadialGradient(ex-5,ey-5,0,ex-5,ey-5,13);
+    hl.addColorStop(0,'rgba(255,255,255,.22)');hl.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=hl;ctx.beginPath();ctx.arc(ex,ey,er,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+
+  /* ── Main loop ── */
+  let animId=null;
+  function frame(){
+    if(theme!=='galaxy'){layer.innerHTML='';return;}
+    ctx.clearRect(0,0,W,H);
+    drawMilkyWay();
+    drawNebulae();
+    GALS.forEach(g=>{g.rot+=g.rs;drawGalaxy(g);});
+    drawSaturn();
+    drawEarth();
+    drawShoots();
+    stars.forEach(s=>{
+      s.phase+=s.speed;
+      const alpha=s.a*(0.50+0.50*Math.sin(s.phase));
+      if(s.r>1.2){
+        const gd=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*2.2);
+        gd.addColorStop(0,`rgba(${s.col},${(alpha*.32).toFixed(2)})`);
+        gd.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath();ctx.arc(s.x,s.y,s.r*2.2,0,Math.PI*2);
+        ctx.fillStyle=gd;ctx.fill();
+      }
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${s.col},${alpha.toFixed(2)})`;ctx.fill();
+    });
+    animId=requestAnimationFrame(frame);
+  }
+  if(animId)cancelAnimationFrame(animId);
+  frame();
+}
 
 /* applyTheme — מחיל ערכה (girls/boys): body.className, כותרת, חד-קרנות, כפתור toggle */
 function applyTheme(t){
   if(t)theme=t;
-  document.body.className=theme==='boys'?'theme-boys':'';
-  const T=THEMES[theme];
+  document.body.className=theme==='boys'?'theme-boys':theme==='galaxy'?'theme-galaxy':'';
+  if(theme==='galaxy')initGalaxyStars();
+  const T=THEMES[theme]||THEMES.girls;
   const ul=document.getElementById('uni-left');
   const ur=document.getElementById('uni-right');
   const tt=document.getElementById('game-title');
@@ -2751,22 +3071,25 @@ function applyTheme(t){
 }
 /* toggleTheme — מחליף girls↔boys, שומר localStorage, מרענן לבבות/מכוניות מיידית */
 function toggleTheme(){
-  applyTheme(theme==='girls'?'boys':'girls');
+  const cycle={girls:'boys',boys:'galaxy',galaxy:'girls'};
+  applyTheme(cycle[theme]||'girls');
   spawnParticles();
   localStorage.setItem('gameTheme',theme);
   renderHearts();
   abDraw();
-  // refresh hint text to match new theme gender
   const boys=theme==='boys';
+  const galaxy=theme==='galaxy';
   const hint=document.getElementById('hint');
   if(hint&&ptype){
     hint.textContent=
-      ptype===TX?(boys?'🧮 חַשֵּׁב בְּשָׁלָבִים: תְּחִלָּה חַסֵּר, אַחַר כָּךְ הוֹסֵף!'
-                      :'🧮 חַשְׁבִי בְּשָׁלָבִים: תְּחִלָּה חִסְרִי, אַחַר כָּךְ הוֹסִיפִי!')
-     :ptype===TA?(boys?'🚗 הוֹסֵף מְכוֹנִיּוֹת כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
-                      :'🤍 הוֹסִיפִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!')
-              :(boys?'🚗 מְחַק מְכוֹנִיּוֹת כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
-                    :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!');
+      ptype===TX?(boys||galaxy?'🧮 חַשֵּׁב בְּשָׁלָבִים: תְּחִלָּה חַסֵּר, אַחַר כָּךְ הוֹסֵף!'
+                              :'🧮 חַשְׁבִי בְּשָׁלָבִים: תְּחִלָּה חִסְרִי, אַחַר כָּךְ הוֹסִיפִי!')
+     :ptype===TA?(boys?'🚗 הוֹסֵף מְכוֹנִיּוֹת כְּעֶזֶר...'
+                      :galaxy?'⭐ הוֹסֵף כּוֹכָבִים כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
+                             :'🤍 הוֹסִיפִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!')
+              :(boys?'🚗 מְחַק מְכוֹנִיּוֹת כְּעֶזֶר...'
+                    :galaxy?'⭐ הָסֵר כּוֹכָבִים כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
+                           :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!');
   }
 }
 
@@ -2784,6 +3107,12 @@ const NFW_DATA={
     bu:{icon:'🏆',title:'מַגְנִיב!', ptcs:['⚡','🚀','🌟','💥','🏆','✨','🤖','💫','🎯','⭐']},
     hr:{icon:'🚀',title:'מְדַהֵם!',  stars:'⭐⭐⭐⭐⭐'},
     rp:{label:'מְדַהֵם!'},
+  },
+  galaxy:{
+    cf:{icon:'🌌',title:'כָּל הַכָּבוֹד!'},
+    bu:{icon:'⭐',title:'מַדְהִים!', ptcs:['⭐','🌟','☄️','🪐','🛸','💫','🌠','✨','🔭','🌌']},
+    hr:{icon:'🚀',title:'גָּלַקְסְיָה!', stars:'⭐⭐⭐⭐⭐'},
+    rp:{label:'כָּל הַכָּבוֹד!'},
   }
 };
 
