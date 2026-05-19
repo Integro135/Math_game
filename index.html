@@ -1279,8 +1279,36 @@ body{
   display:flex;align-items:center;justify-content:center;
   transition:all .22s;box-shadow:0 2px 10px rgba(0,0,0,.25);z-index:10;
 }
-.theme-toggle-btn:hover{background:rgba(255,255,255,.26);transform:scale(1.14) rotate(18deg)}
+.theme-toggle-btn:hover{background:rgba(255,255,255,.26);transform:scale(1.14)}
 .theme-toggle-btn:active{transform:scale(.92)}
+
+/* ── Theme picker menu ── */
+#theme-menu{
+  display:none;
+  position:fixed;
+  z-index:9999;
+  background:rgba(20,10,40,.96);
+  backdrop-filter:blur(14px);
+  border:1.5px solid rgba(255,255,255,.22);
+  border-radius:14px;
+  padding:6px;
+  box-shadow:0 8px 32px rgba(0,0,0,.55);
+  flex-direction:column;gap:2px;
+  animation:tmIn .16s ease-out;
+}
+#theme-menu.open{display:flex}
+@keyframes tmIn{from{opacity:0;transform:translateY(-6px) scale(.96)}to{opacity:1;transform:none}}
+.tm-item{
+  display:flex;align-items:center;justify-content:center;
+  width:40px;height:40px;
+  border-radius:10px;
+  cursor:pointer;
+  border:none;background:transparent;
+  transition:background .12s;
+}
+.tm-item:hover{background:rgba(255,255,255,.18)}
+.tm-item.active{background:rgba(255,255,255,.22)}
+.tm-item .tm-icon{font-size:1.5rem;line-height:1}
 
 /* ── Responsive — tablet (≤768px) ── */
 @media (max-width:768px){
@@ -1661,13 +1689,13 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
 <div class="wrap">
 
   <header class="header glass">
-    <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="החלפת עיצוב">👦</button>
+    <button id="theme-toggle" class="theme-toggle-btn" onclick="openThemeMenu(event)" title="בְּחַר עִיצּוּב">🎨</button>
     <div class="gift-indicator" id="gift-indicator" style="display:none">
       <span id="gift-next"></span>
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v5.83">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v5.85">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -3179,7 +3207,7 @@ function initGalaxyStars(){
   /* ── Main loop ── */
   let animId=null;
   function frame(){
-    if(theme!=='galaxy'){layer.innerHTML='';return;}
+    if(theme!=='galaxy'){return;}
     ctx.clearRect(0,0,W,H);
     drawMilkyWay();
     drawNebulae();
@@ -3285,6 +3313,7 @@ function applyTheme(t){
   document.body.className=theme==='boys'?'theme-boys':theme==='galaxy'?'theme-galaxy':theme==='dino'?'theme-dino':'';
   if(theme==='galaxy')initGalaxyStars();
   else if(theme==='dino')initDinoScene();
+  else{const _l=document.getElementById('stars-layer');if(_l)_l.innerHTML='';}
   const T=THEMES[theme]||THEMES.girls;
   const ul=document.getElementById('uni-left');
   const ur=document.getElementById('uni-right');
@@ -3295,8 +3324,37 @@ function applyTheme(t){
   _setUni(ul,T.uniL);_setUni(ur,T.uniR);
   const _ew=e=>`<span style="-webkit-text-fill-color:initial">${e}</span>`;
   if(tt)tt.innerHTML=`${_ew(T.titleEmoji)} מִשְׂחֲקֵי חֶשְׁבּוֹן ${_ew(T.titleEmoji)}`;
-  if(tb)tb.textContent=T.toggleIcon;
+  const _themeIcons={girls:'🦄',boys:'🚗',galaxy:'🌌',dino:'🦕'};
+  if(tb)tb.textContent=_themeIcons[theme]||'🎨';
+  // Mark active theme in menu
+  document.querySelectorAll('.tm-item').forEach(el=>{
+    el.classList.toggle('active', el.getAttribute('onclick')===`pickTheme('${theme}')`);
+  });
 }
+/* ── Theme picker menu ── */
+function openThemeMenu(e){
+  e.stopPropagation();
+  const menu=document.getElementById('theme-menu');
+  const btn=document.getElementById('theme-toggle');
+  const r=btn.getBoundingClientRect();
+  menu.style.top=(r.bottom+8)+'px';
+  menu.style.left=r.left+'px';
+  menu.classList.toggle('open');
+}
+function pickTheme(t){
+  document.getElementById('theme-menu').classList.remove('open');
+  if(t===theme)return;
+  applyTheme(t);
+  spawnParticles();
+  localStorage.setItem('gameTheme',theme);
+  renderHearts();
+  abDraw();
+}
+document.addEventListener('click',function(){
+  document.getElementById('theme-menu')?.classList.remove('open');
+});
+document.getElementById('theme-menu')?.addEventListener('click',e=>e.stopPropagation());
+
 /* toggleTheme — מחליף girls↔boys, שומר localStorage, מרענן לבבות/מכוניות מיידית */
 function toggleTheme(){
   const cycle={girls:'boys',boys:'galaxy',galaxy:'dino',dino:'girls'};
@@ -5813,5 +5871,14 @@ document.addEventListener('keydown',e=>{
   }
 });
 </script>
+
+<!-- ── Theme picker menu (outside any backdrop-filter parent) ── -->
+<div id="theme-menu">
+  <button class="tm-item" onclick="pickTheme('girls')"><span class="tm-icon">🦄</span></button>
+  <button class="tm-item" onclick="pickTheme('boys')"><span class="tm-icon">🚗</span></button>
+  <button class="tm-item" onclick="pickTheme('galaxy')"><span class="tm-icon">🌌</span></button>
+  <button class="tm-item" onclick="pickTheme('dino')"><span class="tm-icon">🦕</span></button>
+</div>
+
 </body>
 </html>
