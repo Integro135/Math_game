@@ -1318,8 +1318,11 @@ body{
   border:3px solid rgba(255,255,255,.32);
   box-shadow:0 4px 22px rgba(150,30,200,.55),inset 0 1px 0 rgba(255,255,255,.28);
   cursor:pointer;font-size:1.65rem;
-  display:none;align-items:center;justify-content:center;transition:all .22s;
+  display:flex;align-items:center;justify-content:center;
+  visibility:hidden;pointer-events:none;
+  transition:transform .22s,box-shadow .22s;
 }
+.games-drop-btn.gm-active{visibility:visible;pointer-events:auto}
 .games-drop-btn:hover{transform:scale(1.12);box-shadow:0 6px 28px rgba(180,60,240,.8)}
 .games-drop-btn:active{transform:scale(.95)}
 #games-menu{
@@ -1850,7 +1853,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v6.07">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v6.18">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1870,7 +1873,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
   </header>
 
   <div class="card glass" id="card">
-    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="games-drop-btn" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים" style="display:none">🎮</button></div></div></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div class="hearts"   id="hearts"></div>
     <div class="abacus-sec">
@@ -2298,6 +2301,17 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
   </div>
 </div>
 
+<!-- ── Theme picker menu (outside any backdrop-filter parent) ── -->
+<div id="theme-menu">
+  <button class="tm-item" onclick="pickTheme('girls')"><span class="tm-icon">🦄</span></button>
+  <button class="tm-item" onclick="pickTheme('boys')"><span class="tm-icon">🤖</span></button>
+  <button class="tm-item" onclick="pickTheme('galaxy')"><span class="tm-icon">🌌</span></button>
+  <button class="tm-item" onclick="pickTheme('dino')"><span class="tm-icon">🦕</span></button>
+</div>
+
+<!-- ── Games dropdown menu (outside any backdrop-filter parent) ── -->
+<div id="games-menu"></div>
+
 <script>
 /* ── roundRect polyfill ── */
 if(!CanvasRenderingContext2D.prototype.roundRect){
@@ -2537,7 +2551,6 @@ function loadProblem(){
   const _pool=mode===0||ptype===TDA||ptype===TDS||ptype===TC||ptype===TX||ptype===TZ?null:(ptype===TS||ptype===TM)?_subGames:_allGames;
   // pick 2 random games per problem — variety on every question
   const _picks=_pool?[..._pool].sort(()=>Math.random()-.5).slice(0,2):[];
-  buildGamesMenu(_picks);
   updateAllMiniGameBtns();
   initHearts();
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -2564,33 +2577,30 @@ function loadProblem(){
         :dino?'🥚 הָסֵר בֵּיצִים כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
                :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'));}
   spaceDir=1;renderEq();renderHearts();showBtns('check');resetAidUsed();abReset();
-  // TC (coins): show number line (no jar) starting at 0; hide hearts/abacus/toggle
+  // TC (coins): show kangaroo NL only, starting at 0
   if(ptype===TC){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec');
     if(he)he.style.display='none';if(ae)ae.style.display='none';
-    const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='none';
-    const ct=document.getElementById('chain-tools');if(ct)ct.style.display='block';
-    chainGnMode=false;
-    const jar=document.getElementById('pgm-ck-jar');if(jar)jar.style.display='none';
-    const gnd=document.getElementById('pgm-gn-display');if(gnd)gnd.style.display='none';
-    const jbtm=ct?.querySelector('.pgm-jar-btm');if(jbtm)jbtm.style.transform='translate(-0.5cm,1cm)';
-    pgmCV=0;pgmCk=[];pgmArcs=[];pgmBuildNL();pgmDrawArcs();pgmUpdateAll();}
-  // Aid display — chain always NL; mode 0 always hearts; TDA/TDS keep hearts; others follow aidMode
+    const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
+    const nlp=document.getElementById('nl-panel');if(nlp){nlp.style.display='';NL.init(0);}
+    chainGnMode=false;}
+  // Aid display — chain always NL; mode 0 always hearts; TDA/TDS + others follow aidMode
   if(ptype!==TC){const isChain=ptype===TX||ptype===TZ;
-  const noAid=ptype===TDA||ptype===TDS;
-  const forceHearts=mode===0&&!isChain&&!noAid;
+  const isTD=ptype===TDA||ptype===TDS;
+  const forceHearts=mode===0&&!isChain&&!isTD;
   const effMode=forceHearts?'hearts':aidMode;
-  const useNL=!noAid&&(isChain||effMode==='nl');
-  const useHrts=!noAid&&!isChain&&effMode==='hearts';
-  const useKang=!noAid&&!isChain&&effMode==='kang';
+  const useNL=isChain||(effMode==='nl');
+  const useHrts=!isChain&&effMode==='hearts';
+  const useKang=!isChain&&effMode==='kang';
   const ct=document.getElementById('chain-tools');if(ct)ct.style.display=useNL?'block':'none';
   const he=document.getElementById('hearts');const ae=document.querySelector('.abacus-sec');
-  if(he)he.style.display=(noAid||useHrts)?'':((isChain||useNL||useKang)?'none':'');
-  if(ae)ae.style.display=useHrts?'':'none';
+  if(he)he.style.display=useHrts?'':((isChain||useNL||useKang)?'none':'');
+  if(ae)ae.style.display=(useHrts&&!isTD)?'':'none';
   const nlp=document.getElementById('nl-panel');
-  if(nlp){nlp.style.display=useKang?'':'none';if(useKang)NL.init(num1);}
+  if(nlp){nlp.style.display=useKang?'':'none';if(useKang)NL.init(isTD?0:num1);}
   if(useNL){
     chainGnMode=false;
-    pgmCV=num1;pgmCk=Array.from({length:num1},(_,i)=>i%5);pgmArcs=[];
+    const _cv=isTD?(ptype===TDA?0:num1):num1;
+    pgmCV=_cv;pgmCk=Array.from({length:_cv},(_,i)=>i%5);pgmArcs=[];
     const _jar=document.getElementById('pgm-ck-jar');if(_jar)_jar.style.display='';
     const _gnd=document.getElementById('pgm-gn-display');if(_gnd)_gnd.style.display='none';
     const _jbtm=document.querySelector('#chain-tools .pgm-jar-btm');if(_jbtm)_jbtm.style.transform='';
@@ -2601,6 +2611,7 @@ function loadProblem(){
                :(ptype===TDA||ptype===TDS)?document.getElementById('ans1'):null;
     (first||document.getElementById('ans'))?.focus();
   },60);
+  buildGamesMenu(_picks);
   setTimeout(updateModeCreature,300);
 }
 
@@ -2679,11 +2690,13 @@ function tdUpdateHearts(inputId,rawVal){
   }else if(ptype===TDS){
     hState=empty?new Array(Math.max(0,num1)).fill(true):new Array(Math.min(v,maxH)).fill(true);
   }
-  if(tdaJarMode){
-    // update cookie jar to reflect entered value
+  if(aidMode==='nl'){
     const newCV=Math.max(0,Math.min(empty?(ptype===TDS?num1:0):v,PGM_NL));
     pgmCV=newCV;pgmCk=Array.from({length:newCV},(_,i)=>i%5);pgmArcs=[];
     pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
+  }else if(aidMode==='kang'){
+    const newCV=Math.max(0,Math.min(empty?0:v,20));
+    NL.init(newCV);
   }else{
     renderHearts();
   }
@@ -2978,7 +2991,7 @@ function endGame(){
 
 function rebuildCard(){
   document.getElementById('card').innerHTML=`
-    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="games-drop-btn" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים" style="display:none">🎮</button></div></div></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div class="hearts"   id="hearts"></div>
     <div class="abacus-sec">
@@ -3505,10 +3518,10 @@ function initUnicornScene(){
   const sd=document.createElement('div');
   sd.style.cssText='position:absolute;inset:0;pointer-events:none';
   const starCols=['#fff','#ffe8f4','#f0d8ff','#ffc8e8','#ffe8ff'];
-  for(let i=0;i<240;i++){const sz=Math.random()*2.6+0.4,s=document.createElement('div');const col=starCols[Math.floor(Math.random()*starCols.length)];s.style.cssText=`position:absolute;background:${col};border-radius:50%;width:${sz}px;height:${sz}px;top:${Math.random()*58}%;left:${Math.random()*100}%;animation:twinkleStar ${1.4+Math.random()*3.8}s ${Math.random()*6}s infinite alternate`;sd.appendChild(s);}
-  for(let i=0;i<18;i++){const sz=5+Math.random()*6,s=document.createElement('div');s.style.cssText=`position:absolute;width:${sz}px;height:${sz}px;top:${Math.random()*52}%;left:${Math.random()*100}%;animation:twinkleStar ${1+Math.random()*2.5}s ${Math.random()*4}s infinite alternate;background:radial-gradient(circle,#fff 15%,rgba(255,200,240,.7) 50%,transparent 100%);border-radius:50%;filter:blur(.4px)`;sd.appendChild(s);}
-  const sparkPos=[[8,12],[25,5],[42,18],[60,8],[78,15],[93,6],[16,28],[50,22],[85,30]];
-  sparkPos.forEach(([l,t])=>{const sp=document.createElement('div');sp.style.cssText=`position:absolute;left:${l}%;top:${t}%;font-size:${10+Math.random()*8}px;opacity:.55;animation:twinkleStar ${2+Math.random()*2}s ${Math.random()*4}s infinite alternate;color:#ffd6ff`;sp.textContent='✦';sd.appendChild(sp);});
+  for(let i=0;i<80;i++){const sz=Math.random()*2.2+0.4,s=document.createElement('div');const col=starCols[Math.floor(Math.random()*starCols.length)];s.style.cssText=`position:absolute;background:${col};border-radius:50%;width:${sz}px;height:${sz}px;top:${Math.random()*55}%;left:${Math.random()*100}%;animation:twinkleStar ${1.8+Math.random()*4}s ${Math.random()*6}s infinite alternate`;sd.appendChild(s);}
+  for(let i=0;i<6;i++){const sz=5+Math.random()*5,s=document.createElement('div');s.style.cssText=`position:absolute;width:${sz}px;height:${sz}px;top:${Math.random()*48}%;left:${Math.random()*100}%;animation:twinkleStar ${1.5+Math.random()*2.5}s ${Math.random()*4}s infinite alternate;background:radial-gradient(circle,#fff 15%,rgba(255,200,240,.7) 50%,transparent 100%);border-radius:50%;filter:blur(.4px)`;sd.appendChild(s);}
+  const sparkPos=[[18,8],[55,5],[85,10],[35,25]];
+  sparkPos.forEach(([l,t])=>{const sp=document.createElement('div');sp.style.cssText=`position:absolute;left:${l}%;top:${t}%;font-size:${10+Math.random()*7}px;opacity:.45;animation:twinkleStar ${2.5+Math.random()*2}s ${Math.random()*4}s infinite alternate;color:#ffd6ff`;sp.textContent='✦';sd.appendChild(sp);});
   layer.appendChild(sd);
   /* Moon */
   const mn=document.createElement('div');
@@ -3527,8 +3540,8 @@ function initUnicornScene(){
   layer.appendChild(cl);
   /* Floating particles */
   const pt=document.createElement('div');pt.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden';
-  const floaties=['🌸','💜','⭐','🌷','💖','✨','🌺','💫'];
-  for(let i=0;i<16;i++){const f=document.createElement('div');const em=floaties[Math.floor(Math.random()*floaties.length)];const dur=8+Math.random()*14,delay=Math.random()*12;f.style.cssText=`position:absolute;left:${Math.random()*95}%;bottom:${15+Math.random()*60}%;font-size:${10+Math.random()*14}px;animation:floatUp ${dur}s ${delay}s infinite linear;opacity:0`;f.textContent=em;pt.appendChild(f);}
+  const floaties=['🌸','✨','🌷','💫'];
+  for(let i=0;i<6;i++){const f=document.createElement('div');const em=floaties[Math.floor(Math.random()*floaties.length)];const dur=12+Math.random()*12,delay=Math.random()*14;f.style.cssText=`position:absolute;left:${Math.random()*90}%;bottom:${10+Math.random()*55}%;font-size:${10+Math.random()*10}px;animation:floatUp ${dur}s ${delay}s infinite linear;opacity:0`;f.textContent=em;pt.appendChild(f);}
   layer.appendChild(pt);
   /* Mountain SVG */
   const ms=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -3570,29 +3583,20 @@ function initUnicornScene(){
   <g fill="rgba(255,180,240,.42)"><circle cx="52" cy="438" r="4.5"/><circle cx="64" cy="430" r="3.5"/><circle cx="44" cy="433" r="3"/><circle cx="76" cy="426" r="3.5"/><circle cx="104" cy="444" r="4.5"/><circle cx="115" cy="438" r="3"/></g>
   <g opacity=".72"><ellipse cx="1348" cy="436" rx="22" ry="18" fill="#c030b0"/><ellipse cx="1366" cy="424" rx="18" ry="15" fill="#d040c0"/><rect x="1356" y="436" width="7" height="28" rx="2" fill="#5a0858"/><ellipse cx="1392" cy="442" rx="19" ry="15" fill="#b028a8"/><rect x="1386" y="442" width="6" height="24" rx="2" fill="#5a0858"/></g>
   <g fill="rgba(255,180,240,.40)"><circle cx="1344" cy="429" r="4.5"/><circle cx="1356" cy="422" r="3.5"/><circle cx="1338" cy="425" r="3"/><circle cx="1368" cy="418" r="3.5"/><circle cx="1390" cy="435" r="4.5"/><circle cx="1402" cy="430" r="3"/></g>
-  <g font-size="18" text-anchor="middle"><text x="72" y="508">🌸</text><text x="188" y="501">🌺</text><text x="328" y="510">🌷</text><text x="468" y="503">🌸</text><text x="630" y="509">💜</text><text x="800" y="500">🌸</text><text x="975" y="507">🌷</text><text x="1150" y="502">🌺</text><text x="1328" y="507">🌸</text><text x="1420" y="500">💜</text></g>
-  <g font-size="14" text-anchor="middle" opacity=".55"><text x="150" y="490">💖</text><text x="420" y="488">💕</text><text x="680" y="492">💗</text><text x="880" y="486">💖</text><text x="1080" y="490">💕</text><text x="1260" y="488">💗</text></g>
+  <g font-size="18" text-anchor="middle"><text x="150" y="508">🌸</text><text x="450" y="503">🌷</text><text x="750" y="508">🌸</text><text x="1050" y="503">🌺</text><text x="1350" y="507">🌷</text></g>
   <path id="un-trail1" fill="none" stroke="url(#unTrl)" stroke-width="4.5" stroke-linecap="round" opacity=".72" d="M0,498 C60,490 100,475 140,462 C185,448 220,440 255,425 C300,408 330,392 365,372 C405,350 430,335 460,310 C492,284 510,265 540,248 C560,235 575,228 590,220"/>
   <path id="un-trail2" fill="none" stroke="url(#unTrl)" stroke-width="4" stroke-linecap="round" opacity=".70" d="M680,490 C730,480 775,468 820,452 C870,434 910,418 950,400 C995,380 1025,360 1060,338 C1095,316 1120,298 1148,278 C1168,262 1182,250 1195,238"/>
   <path id="un-trail3" fill="none" stroke="#ff98e0" stroke-width="3.5" stroke-linecap="round" opacity=".56" d="M1250,490 C1280,476 1300,462 1318,446 C1340,428 1352,412 1362,394 C1374,374 1380,356 1390,336 C1400,316 1408,300 1418,282"/>
   <path id="un-sky1" d="M-80,88 C200,62 500,106 720,78 C960,50 1200,94 1540,72" fill="none" stroke="none"/>
-  <path id="un-sky2" d="M1540,128 C1200,104 900,144 720,118 C480,88 200,132 -80,112" fill="none" stroke="none"/>
   <path fill="url(#unGnd)" d="M0,500 Q360,462 720,490 Q1080,518 1440,480 L1440,540 L0,540 Z"/>
   <g><animateMotion dur="30s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail1"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="0.82s" repeatCount="indefinite" additive="sum"/><text font-size="42" text-anchor="middle" dy="-4" style="font-family:serif;filter:drop-shadow(0 0 8px #ff80cc)">🦄</text></g>
-  <g><animateMotion dur="44s" begin="20s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail1"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-4;0,0" dur="1.12s" repeatCount="indefinite" additive="sum"/><text font-size="34" text-anchor="middle" dy="-4" style="font-family:serif">🦄</text></g>
   <g><animateMotion dur="36s" begin="8s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail2"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-4;0,0" dur="0.75s" repeatCount="indefinite" additive="sum"/><text font-size="40" text-anchor="middle" dy="-4" style="font-family:serif;filter:drop-shadow(0 0 6px #ff80cc)">🦄</text></g>
-  <g><animateMotion dur="50s" begin="26s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail2"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="1.35s" repeatCount="indefinite" additive="sum"/><text font-size="46" text-anchor="middle" dy="-4" style="font-family:serif;filter:drop-shadow(0 0 10px #ffaaee)">🦄</text></g>
   <g><animateMotion dur="22s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail3"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-3;0,0" dur="0.58s" repeatCount="indefinite" additive="sum"/><text font-size="32" text-anchor="middle" dy="-4" style="font-family:serif">🦄</text></g>
   <g><animateMotion dur="26s" begin="9s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail3"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-8;0,0" dur="0.44s" repeatCount="indefinite" additive="sum"/><text font-size="30" text-anchor="middle" dy="-4" style="font-family:serif">🐰</text></g>
-  <g><animateMotion dur="38s" begin="32s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail1"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-9;0,0" dur="0.40s" repeatCount="indefinite" additive="sum"/><text font-size="28" text-anchor="middle" dy="-4" style="font-family:serif">🐰</text></g>
   <g><animateMotion dur="32s" begin="15s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail2"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-2;0,0" dur="0.95s" repeatCount="indefinite" additive="sum"/><text font-size="28" text-anchor="middle" dy="-4" style="font-family:serif">🐱</text></g>
-  <g><animateMotion dur="52s" repeatCount="indefinite" calcMode="linear"><mpath href="#un-sky1"/></animateMotion><text font-size="30" text-anchor="middle" dy="-4" style="font-family:serif">🦋</text></g>
-  <g><animateMotion dur="40s" begin="20s" repeatCount="indefinite" calcMode="linear"><mpath href="#un-sky2"/></animateMotion><text font-size="25" text-anchor="middle" dy="-4" style="font-family:serif">🦋</text></g>
-  <g><animateMotion dur="8s" begin="3s" repeatCount="indefinite" calcMode="linear"><mpath href="#un-sky1"/></animateMotion><text font-size="20" text-anchor="middle" dy="-4" style="font-family:serif;opacity:.7">🌠</text></g>
+  <g><animateMotion dur="52s" repeatCount="indefinite" calcMode="linear"><mpath href="#un-sky1"/></animateMotion><text font-size="28" text-anchor="middle" dy="-4" style="font-family:serif">🦋</text></g>
   <g><animateMotion dur="33s" begin="10s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail1"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-4;0,0" dur="0.7s" repeatCount="indefinite" additive="sum"/><text font-size="36" text-anchor="middle" dy="-4" style="font-family:serif">🐴</text></g>
-  <g><animateMotion dur="28s" begin="4s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail2"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-4;0,0" dur="0.62s" repeatCount="indefinite" additive="sum"/><text font-size="38" text-anchor="middle" dy="-4" style="font-family:serif">🐴</text></g>
-  <g><animateMotion dur="46s" begin="38s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail1"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-3;0,0" dur="0.78s" repeatCount="indefinite" additive="sum"/><text font-size="30" text-anchor="middle" dy="-4" style="font-family:serif">🐴</text></g>
-  <g><animateMotion dur="19s" begin="12s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail3"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-4;0,0" dur="0.65s" repeatCount="indefinite" additive="sum"/><text font-size="32" text-anchor="middle" dy="-4" style="font-family:serif">🐴</text></g>`;
+  <g><animateMotion dur="28s" begin="4s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1" calcMode="linear"><mpath href="#un-trail2"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-4;0,0" dur="0.62s" repeatCount="indefinite" additive="sum"/><text font-size="38" text-anchor="middle" dy="-4" style="font-family:serif">🐴</text></g>`;
   layer.appendChild(ms);
 }
 
@@ -3845,7 +3849,9 @@ function buildGamesMenu(picks){
     extras.push({icon:chainGnMode?'🍪':'🌻',name:chainGnMode?'חֲזָרָה לְצַנְצֶנֶת':'גִּנַּת פְּרָחִים',cost:gnCost,disabled:!chainGnMode&&score<20,fn:openChainGarden});
   }
   if(ptype===TDA||ptype===TDS){
-    extras.push({icon:tdaJarMode?'❤️':'🍪',name:tdaJarMode?'תְּצוּגַת לְבָבוֹת':'תְּצוּגַת צַנְצֶנֶת',cost:null,disabled:false,fn:toggleTdaJar});
+    [{m:'kang',icon:'🦘'},{m:'nl',icon:'🍪'},{m:'hearts',icon:'❤️'}].forEach(({m,icon})=>{
+      extras.push({icon,cost:null,disabled:m===aidMode,fn:()=>toggleAidMode(m)});
+    });
   }
   if((mode===5||mode===10||mode===20)&&ptype!==TDA&&ptype!==TDS&&ptype!==TZ&&ptype!==TX&&ptype!==TC){
     [{m:'kang',icon:'🦘'},{m:'nl',icon:'🍪'},{m:'hearts',icon:'❤️'}].forEach(({m,icon})=>{
@@ -3865,11 +3871,10 @@ function buildGamesMenu(picks){
     menu.appendChild(el);
   });
   const total=picks.length+extras.length;
-  btn.style.display=total?'flex':'none';
+  btn.classList.toggle('gm-active',total>0);
   if(total){
     let icon;
-    if(ptype===TDA||ptype===TDS) icon=tdaJarMode?'🍪':'❤️';
-    else if(ptype===TZ||ptype===TX) icon=chainGnMode?'🌻':'🍪';
+    if(ptype===TZ||ptype===TX) icon=chainGnMode?'🌻':'🍪';
     else icon=aidMode==='hearts'?'❤️':aidMode==='kang'?'🦘':'🍪';
     btn.textContent=icon;
   }
@@ -6120,31 +6125,33 @@ function pgmUndo(){
 
 /* ── Aid-mode toggle (cycles: kang → nl → hearts → kang, or jump to targetMode) ── */
 function toggleAidMode(targetMode){
-  if(ptype===TDA||ptype===TDS||ptype===TX||ptype===TZ)return;
+  if(ptype===TX||ptype===TZ||ptype===TC)return;
   if(typeof targetMode==='string'){if(targetMode===aidMode)return;aidMode=targetMode;}
   else aidMode={nl:'hearts',hearts:'kang',kang:'nl'}[aidMode]||'kang';
+  const isTD=ptype===TDA||ptype===TDS;
   const ct=document.getElementById('chain-tools');
   const he=document.getElementById('hearts');
   const ae=document.querySelector('.abacus-sec');
   const nlp=document.getElementById('nl-panel');
   if(aidMode==='nl'){
+    const _cv=isTD?(ptype===TDA?0:num1):num1;
     if(ct)ct.style.display='block';
     if(he)he.style.display='none';
     if(ae)ae.style.display='none';
     if(nlp)nlp.style.display='none';
-    pgmCV=num1;pgmCk=Array.from({length:num1},(_,i)=>i%5);pgmArcs=[];
+    pgmCV=_cv;pgmCk=Array.from({length:_cv},(_,i)=>i%5);pgmArcs=[];
     pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
   }else if(aidMode==='hearts'){
     if(ct)ct.style.display='none';
     if(he)he.style.display='';
-    if(ae)ae.style.display='';
+    if(ae)ae.style.display=isTD?'none':'';
     if(nlp)nlp.style.display='none';
-    abSyncToHearts();
+    if(!isTD)abSyncToHearts();
   }else{
     if(ct)ct.style.display='none';
     if(he)he.style.display='none';
     if(ae)ae.style.display='none';
-    if(nlp){nlp.style.display='';NL.init(num1);}
+    if(nlp){nlp.style.display='';NL.init(isTD?0:num1);}
   }
   buildGamesMenu(_lastPicks);
   {const boys=theme==='boys';
@@ -6280,6 +6287,7 @@ applyTheme();
 spawnParticles();
 updateGiftIndicator();
 loadProblem();
+buildGamesMenu(_lastPicks);
 
 /* ── Spacebar heart shortcut ── */
 /* ── ESC closes any open mini-game panel ── */
@@ -6342,10 +6350,8 @@ document.addEventListener('keydown',e=>{
   }
   const panels=['ko-panel','pa-panel','lg-panel','gn-panel','bu-panel','tn-panel','fr-panel','ck-panel','st-panel','fw-ov','sad-ov','report-ov'];
   if(panels.some(id=>{const el=document.getElementById(id);return el&&el.style.display&&el.style.display!=='none';}))return;
-  // TC (coins): spacebar advances number-line cursor (+1)
-  if(ptype===TC&&document.getElementById('chain-tools')?.style.display!=='none'){
-    e.preventDefault();if(!done)pgmPlus();return;
-  }
+  // TC (coins): spacebar moves kangaroo forward
+  if(ptype===TC){e.preventDefault();if(!done)NL.step(1);return;}
   // Chain mode (TX/TZ): spacebar controls cookie jar
   if((ptype===TX||ptype===TZ)&&document.getElementById('chain-tools')?.style.display!=='none'){
     e.preventDefault();
@@ -6414,18 +6420,8 @@ document.addEventListener('keydown',e=>{
     }
   }
 });
+
 </script>
-
-<!-- ── Theme picker menu (outside any backdrop-filter parent) ── -->
-<div id="theme-menu">
-  <button class="tm-item" onclick="pickTheme('girls')"><span class="tm-icon">🦄</span></button>
-  <button class="tm-item" onclick="pickTheme('boys')"><span class="tm-icon">🤖</span></button>
-  <button class="tm-item" onclick="pickTheme('galaxy')"><span class="tm-icon">🌌</span></button>
-  <button class="tm-item" onclick="pickTheme('dino')"><span class="tm-icon">🦕</span></button>
-</div>
-
-<!-- ── Games dropdown menu (outside any backdrop-filter parent) ── -->
-<div id="games-menu"></div>
 
 </body>
 </html>
