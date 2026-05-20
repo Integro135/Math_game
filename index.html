@@ -1853,7 +1853,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v6.18">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v6.21">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -2596,7 +2596,7 @@ function loadProblem(){
   if(he)he.style.display=useHrts?'':((isChain||useNL||useKang)?'none':'');
   if(ae)ae.style.display=(useHrts&&!isTD)?'':'none';
   const nlp=document.getElementById('nl-panel');
-  if(nlp){nlp.style.display=useKang?'':'none';if(useKang)NL.init(isTD?0:num1);}
+  if(nlp){nlp.style.display=useKang?'':'none';if(useKang)NL.init(0);}
   if(useNL){
     chainGnMode=false;
     const _cv=isTD?(ptype===TDA?0:num1):num1;
@@ -3044,7 +3044,7 @@ const THEMES={
   },
   boys:{
     titleEmoji:'🚀',uniL:'🏎️',uniR:'⚡',toggleIcon:'🌌',
-    particles:['🚗','🦇','⚡','🏎️','🚀','🤖','⚽','🎮','💥','🦈','🛸','🎯'],
+    particles:['🛸','🚁','🚀','🤖'],
     specialEm:'🚀',
     rbColors:['#80D8FF','#B3E5FC','#A5F3FC','#99F6E4','#BBF7D0','#C7D2FE'],
     fw:[
@@ -3476,22 +3476,14 @@ function initFutureCityScene(){
   <path d="M0,390 Q360,384 720,388 Q1080,392 1440,386" fill="none" stroke="rgba(255,100,0,.25)" stroke-width="1.5"/>
   <g fill="#050508"><rect x="100" y="390" width="18" height="60"/><rect x="300" y="390" width="18" height="60"/><rect x="500" y="390" width="18" height="60"/><rect x="700" y="390" width="18" height="60"/><rect x="900" y="390" width="18" height="60"/><rect x="1100" y="390" width="18" height="60"/><rect x="1300" y="390" width="18" height="60"/></g>
   <path fill="url(#fcGlow)" d="M0,450 Q720,440 1440,450 L1440,540 L0,540 Z"/>
-  <g><animateMotion dur="18s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road1"/></animateMotion><text font-size="34" text-anchor="middle" dy="-4" style="font-family:serif">🤖</text></g>
-  <g><animateMotion dur="22s" begin="5s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road2"/></animateMotion><text font-size="28" text-anchor="middle" dy="-4" style="font-family:serif">🤖</text></g>
-  <g><animateMotion dur="30s" begin="12s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road1"/></animateMotion><text font-size="38" text-anchor="middle" dy="-4" style="font-family:serif">🤖</text></g>
-  <g><animateMotion dur="14s" begin="8s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road2"/></animateMotion><text font-size="24" text-anchor="middle" dy="-4" style="font-family:serif">🤖</text></g>
-  <g><animateMotion dur="10s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road1"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-1;0,0" dur="0.3s" repeatCount="indefinite" additive="sum"/><text font-size="30" text-anchor="middle" dy="-4" style="font-family:serif">🚗</text></g>
-  <g><animateMotion dur="12s" begin="3s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road2"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-1;0,0" dur="0.28s" repeatCount="indefinite" additive="sum"/><text font-size="28" text-anchor="middle" dy="-4" style="font-family:serif">🚕</text></g>
-  <g><animateMotion dur="14s" begin="7s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road1"/></animateMotion><text font-size="32" text-anchor="middle" dy="-4" style="font-family:serif">🚙</text></g>
-  <g><animateMotion dur="20s" begin="15s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road2"/></animateMotion><text font-size="36" text-anchor="middle" dy="-4" style="font-family:serif">🚌</text></g>
-  <g><animateMotion dur="8s" begin="2s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-elev"/></animateMotion><text font-size="26" text-anchor="middle" dy="-6" style="font-family:serif">🚗</text></g>
-  <g><animateMotion dur="11s" begin="6s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-elev"/></animateMotion><text font-size="24" text-anchor="middle" dy="-6" style="font-family:serif">🚕</text></g>
-  <g><animateMotion dur="25s" begin="18s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-elev"/></animateMotion><text font-size="28" text-anchor="middle" dy="-6" style="font-family:serif">🤖</text></g>
+  <g><animateMotion dur="22s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road1"/></animateMotion><text font-size="34" text-anchor="middle" dy="-4" style="font-family:serif">🤖</text></g>
+  <g><animateMotion dur="14s" begin="8s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road2"/></animateMotion><text font-size="30" text-anchor="middle" dy="-4" style="font-family:serif">🚗</text></g>
+  <g><animateMotion dur="18s" begin="5s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road1"/></animateMotion><text font-size="32" text-anchor="middle" dy="-4" style="font-family:serif">🚙</text></g>
+  <g><animateMotion dur="26s" begin="12s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road2"/></animateMotion><text font-size="36" text-anchor="middle" dy="-4" style="font-family:serif">🚌</text></g>
+  <g><animateMotion dur="20s" begin="3s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road2"/></animateMotion><text font-size="34" text-anchor="middle" dy="-4" style="font-family:serif">🚛</text></g>
+  <g><animateMotion dur="10s" begin="6s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-elev"/></animateMotion><text font-size="28" text-anchor="middle" dy="-6" style="font-family:serif">🛻</text></g>
   <g><animateMotion dur="20s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-sky1"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-4;0,0" dur="1.2s" repeatCount="indefinite" additive="sum"/><text font-size="32" text-anchor="middle" dy="-4" style="font-family:serif">🚁</text></g>
-  <g><animateMotion dur="28s" begin="8s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-sky2"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="2s" repeatCount="indefinite" additive="sum"/><text font-size="30" text-anchor="middle" dy="-4" style="font-family:serif">🛸</text></g>
-  <g><animateMotion dur="12s" begin="4s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-sky3"/></animateMotion><text font-size="28" text-anchor="middle" dy="-4" style="font-family:serif">🚀</text></g>
-  <g><animateMotion dur="16s" begin="10s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-road1"/></animateMotion><text font-size="26" text-anchor="middle" dy="-4" style="font-family:serif">🛺</text></g>
-  <g><animateMotion dur="35s" begin="15s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-sky1"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-3;0,0" dur="1.5s" repeatCount="indefinite" additive="sum"/><text font-size="26" text-anchor="middle" dy="-4" style="font-family:serif">🚁</text></g>`;
+  <g><animateMotion dur="28s" begin="8s" repeatCount="indefinite" calcMode="linear"><mpath href="#fc-sky2"/></animateMotion><animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="2s" repeatCount="indefinite" additive="sum"/><text font-size="30" text-anchor="middle" dy="-4" style="font-family:serif">🛸</text></g>`;
   layer.appendChild(ms);
   /* Khalifa on top of city SVG */
   layer.appendChild(_bkWrap);
@@ -4442,7 +4434,7 @@ function spawnParticles(){
     ? Math.random()*(lBound+4)
     : (rBound-4)+Math.random()*(100-(rBound-4));
   const em=T.particles;
-  const ptcCount=(theme==='galaxy'||theme==='dino')?3:12;
+  const ptcCount=theme==='boys'?2:(theme==='galaxy'||theme==='dino')?3:12;
   for(let i=0;i<ptcCount;i++){
     const s=document.createElement('span');s.className='particle';
     s.textContent=em[0|Math.random()*em.length];
@@ -6151,7 +6143,7 @@ function toggleAidMode(targetMode){
     if(ct)ct.style.display='none';
     if(he)he.style.display='none';
     if(ae)ae.style.display='none';
-    if(nlp){nlp.style.display='';NL.init(isTD?0:num1);}
+    if(nlp){nlp.style.display='';NL.init(0);}
   }
   buildGamesMenu(_lastPicks);
   {const boys=theme==='boys';
