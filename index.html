@@ -1877,7 +1877,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v6.32">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v6.33">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -2638,9 +2638,14 @@ function renderEq(){
     oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)"
     onkeydown="if(event.key==='Enter')checkAns()">`;
   const res=t=>`<span class="eq-res">${t}</span>`;
+  const _dh=(a,b)=>(a>10&&b>10)?`<span class="tt-hint-icon" data-hint="${a%10}-${b%10}">?</span>`:'';
   let h='';
-  if(ptype===TM)     h=n(num1)+op('-','op-m')+inp+op('=','op-e')+res(num2);
-  else if(ptype===TS)h=n(num1)+op('-','op-m')+n(num2)+op('=','op-e')+inp;
+  if(ptype===TM){const dh=_dh(num1,num2);
+    h=dh?`<div class="tt-eq-wrap">${n(num1)}${op('-','op-m')}${inp}${op('=','op-e')}${res(num2)}${dh}</div>`
+        :n(num1)+op('-','op-m')+inp+op('=','op-e')+res(num2);}
+  else if(ptype===TS){const dh=_dh(num1,num2);
+    h=dh?`<div class="tt-eq-wrap">${n(num1)}${op('-','op-m')}${n(num2)}${op('=','op-e')}${inp}${dh}</div>`
+        :n(num1)+op('-','op-m')+n(num2)+op('=','op-e')+inp;}
   else if(ptype===TX||ptype===TZ||ptype===TW){
     const op1=(ptype===TX||ptype===TW)?op('-','op-m'):op('+','op-p');
     const mkSub=(id,next,gid)=>`<input id="${id}" class="tx-sub-inp" type="number" min="0" max="30"`+
