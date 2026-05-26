@@ -1222,6 +1222,17 @@ body{
   transition:background .15s,transform .15s;
   user-select:none;
 }
+#digit-hint-btn{
+  width:48px;height:48px;font-size:1.5rem;
+  background:radial-gradient(circle at 38% 36%,#81C784,#2E7D32 70%);
+  border:3px solid rgba(255,255,255,.32);
+  box-shadow:0 4px 0 #1B5E20,0 4px 18px rgba(46,125,50,.65),inset 0 1px 0 rgba(255,255,255,.28);
+  color:#fff;
+  transition:transform .22s,box-shadow .22s;
+}
+#digit-hint-btn:hover:not(:disabled){transform:scale(1.12);box-shadow:0 6px 0 #1B5E20,0 6px 24px rgba(76,175,80,.85)}
+#digit-hint-btn:active:not(:disabled){transform:scale(.95);box-shadow:0 1px 0 #1B5E20,0 2px 10px rgba(46,125,50,.5)}
+#digit-hint-btn:disabled{opacity:.45;cursor:default;transform:none;filter:grayscale(.25);box-shadow:0 4px 0 #1B5E20,0 4px 10px rgba(46,125,50,.3)}
 .tt-hint-icon:hover:not(:disabled){background:rgba(255,220,80,.35);transform:scale(1.12)}
 .tt-hint-icon:disabled{opacity:.3;cursor:default}
 .tt-hint-icon::before{
@@ -1886,7 +1897,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v6.35">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v6.38">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -2516,7 +2527,7 @@ function sampleWithTD(pool,k){
 function modePts(){return mode==='mx'?20:mode||5;}
 
 /* ── Gift reward thresholds (grade out of 1000) ── */
-const GIFT_GOALS={20:600,mx:600};
+const GIFT_GOALS={20:800,mx:800};
 const GIFT_MODE_LABELS={20:'מֶלֶךְ',mx:'מַלְכָּה'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
