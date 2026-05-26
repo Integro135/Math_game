@@ -1216,23 +1216,32 @@ body{
   display:inline-flex;align-items:center;justify-content:center;
   width:26px;height:26px;border-radius:50%;
   background:rgba(255,255,255,.18);color:rgba(255,255,255,.85);
-  font-size:.9rem;font-weight:900;cursor:help;
+  font-size:.9rem;font-weight:900;cursor:pointer;
   border:1.5px solid rgba(255,255,255,.25);
   margin-right:6px;flex-shrink:0;position:relative;
   transition:background .15s,transform .15s;
+  user-select:none;
 }
-.tt-hint-icon:hover{background:rgba(255,220,80,.35);transform:scale(1.12)}
+.tt-hint-icon:hover:not(:disabled){background:rgba(255,220,80,.35);transform:scale(1.12)}
+.tt-hint-icon:disabled{opacity:.3;cursor:default}
+.tt-hint-icon::before{
+  content:'30⭐';
+  position:absolute;top:-17px;left:50%;transform:translateX(-50%);
+  font-size:.6rem;font-family:'Nunito',sans-serif;font-weight:800;
+  color:rgba(255,215,0,.85);white-space:nowrap;pointer-events:none;
+}
+.tt-hint-icon.hint-shown::before{display:none}
 .tt-hint-icon::after{
   content:attr(data-hint);
   position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
   background:rgba(20,0,60,.95);color:#FFD700;
   padding:6px 14px;border-radius:10px;white-space:nowrap;
   font-family:'Fredoka One',cursive;font-size:1.3rem;letter-spacing:.5px;
-  opacity:0;pointer-events:none;transition:opacity .18s;
+  opacity:0;pointer-events:none;transition:opacity .22s;
   border:1px solid rgba(255,215,0,.35);
   box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:20;
 }
-.tt-hint-icon:hover::after{opacity:1}
+.tt-hint-icon.hint-shown::after{opacity:1}
 
 /* ── Report modal ── */
 #report-ov{
@@ -1877,7 +1886,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v6.33">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v6.35">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1897,7 +1906,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
   </header>
 
   <div class="card glass" id="card">
-    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button></div></div></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button id="digit-hint-btn" class="tt-hint-icon" style="display:none" data-hint="" onclick="showDigitHint(this)">?</button><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div class="hearts"   id="hearts"></div>
     <div class="abacus-sec">
@@ -2625,6 +2634,15 @@ function loadProblem(){
     (first||document.getElementById('ans'))?.focus();
   },60);
   buildGamesMenu(_picks);
+  // Digit hint button — shown for TT and for TS/TM where both nums > 10
+  {const _dhBtn=document.getElementById('digit-hint-btn');
+  if(_dhBtn){
+    const _showDH=ptype===TT||(ptype===TS&&num1>10&&num2>10)||(ptype===TM&&num1>10&&num2>10);
+    if(_showDH){
+      const _ht=ptype===TT?(ttOp==='add'?`${num1/10}+${num2/10}`:`${num1/10}-${num2/10}`):`${num1%10}-${num2%10}`;
+      _dhBtn.dataset.hint=_ht;_dhBtn.style.display='';_dhBtn.classList.remove('hint-shown');_dhBtn.disabled=score<30;
+    }else{_dhBtn.style.display='none';}
+  }}
   setTimeout(updateModeCreature,300);
 }
 
@@ -2638,14 +2656,9 @@ function renderEq(){
     oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)"
     onkeydown="if(event.key==='Enter')checkAns()">`;
   const res=t=>`<span class="eq-res">${t}</span>`;
-  const _dh=(a,b)=>(a>10&&b>10)?`<span class="tt-hint-icon" data-hint="${a%10}-${b%10}">?</span>`:'';
   let h='';
-  if(ptype===TM){const dh=_dh(num1,num2);
-    h=dh?`<div class="tt-eq-wrap">${n(num1)}${op('-','op-m')}${inp}${op('=','op-e')}${res(num2)}${dh}</div>`
-        :n(num1)+op('-','op-m')+inp+op('=','op-e')+res(num2);}
-  else if(ptype===TS){const dh=_dh(num1,num2);
-    h=dh?`<div class="tt-eq-wrap">${n(num1)}${op('-','op-m')}${n(num2)}${op('=','op-e')}${inp}${dh}</div>`
-        :n(num1)+op('-','op-m')+n(num2)+op('=','op-e')+inp;}
+  if(ptype===TM)     h=n(num1)+op('-','op-m')+inp+op('=','op-e')+res(num2);
+  else if(ptype===TS)h=n(num1)+op('-','op-m')+n(num2)+op('=','op-e')+inp;
   else if(ptype===TX||ptype===TZ||ptype===TW){
     const op1=(ptype===TX||ptype===TW)?op('-','op-m'):op('+','op-p');
     const mkSub=(id,next,gid)=>`<input id="${id}" class="tx-sub-inp" type="number" min="0" max="30"`+
@@ -2691,7 +2704,7 @@ function renderEq(){
       ` onkeydown="if(event.key==='Enter')checkAns()">`;
     const hintStr=ttOp==='add'?`${num1/10}+${num2/10}`:`${num1/10}-${num2/10}`;
     h=`<div class="tt-eq-wrap">${n(num1)}${op(ttOp==='add'?'+':'-',ttOp==='add'?'op-p':'op-m')}${n(num2)}${op('=','op-e')}${ttInp}`+
-      `<span class="tt-hint-icon" data-hint="${hintStr}">?</span></div>`;
+      `</div>`;
   }
   else if(ptype===TDA||ptype===TDS){
     const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="30"`+
@@ -2889,6 +2902,11 @@ function checkAns(){
     showBtns('wrong');
   }
 }
+function showDigitHint(el){
+  if(el.classList.contains('hint-shown')||el.disabled)return;
+  addScore(-30);aidUsed=true;
+  el.classList.add('hint-shown');el.disabled=false;
+}
 function setFb(t,c){const e=document.getElementById('fb');e.textContent=t;e.className='fb '+(c||'')}
 function addScore(n){
   score+=n;document.getElementById('score-val').textContent=score;
@@ -3019,7 +3037,7 @@ function endGame(){
 
 function rebuildCard(){
   document.getElementById('card').innerHTML=`
-    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button></div></div></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button id="digit-hint-btn" class="tt-hint-icon" style="display:none" data-hint="" onclick="showDigitHint(this)">?</button><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div class="hearts"   id="hearts"></div>
     <div class="abacus-sec">
@@ -4648,6 +4666,8 @@ function updateAllMiniGameBtns(){
   Object.entries(GAME_COSTS).forEach(([g,cost])=>{
     const b=document.querySelector('.gm-item[data-game="'+g+'"]');if(b)b.disabled=score<cost;
   });
+  const dhb=document.getElementById('digit-hint-btn');
+  if(dhb&&dhb.style.display!=='none'&&!dhb.classList.contains('hint-shown'))dhb.disabled=score<30;
 }
 function koUpdateBtn(){updateAllMiniGameBtns();}
 
