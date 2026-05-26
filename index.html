@@ -1210,6 +1210,30 @@ body{
   100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(0);opacity:0}
 }
 
+/* ── TT tens hint icon ── */
+.tt-eq-wrap{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tt-hint-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(255,255,255,.18);color:rgba(255,255,255,.85);
+  font-size:.9rem;font-weight:900;cursor:help;
+  border:1.5px solid rgba(255,255,255,.25);
+  margin-right:6px;flex-shrink:0;position:relative;
+  transition:background .15s,transform .15s;
+}
+.tt-hint-icon:hover{background:rgba(255,220,80,.35);transform:scale(1.12)}
+.tt-hint-icon::after{
+  content:attr(data-hint);
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:rgba(20,0,60,.95);color:#FFD700;
+  padding:6px 14px;border-radius:10px;white-space:nowrap;
+  font-family:'Fredoka One',cursive;font-size:1.3rem;letter-spacing:.5px;
+  opacity:0;pointer-events:none;transition:opacity .18s;
+  border:1px solid rgba(255,215,0,.35);
+  box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:20;
+}
+.tt-hint-icon:hover::after{opacity:1}
+
 /* ── Report modal ── */
 #report-ov{
   display:none;position:fixed;inset:0;z-index:980;
@@ -1853,7 +1877,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v6.27">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v6.32">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -1867,8 +1891,8 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
       <button class="lvl-btn"        id="lb5"  onclick="setMode(5)">עַד 5 ⭐</button>
       <button class="lvl-btn"        id="lb10" onclick="setMode(10)">עַד 10 ⭐</button>
       <span class="lvl-break"></span>
-      <button class="lvl-btn active" id="lb20" onclick="setMode(20)">עַד 20 ⭐ 🎁</button>
-      <button class="lvl-btn"        id="lbmx" onclick="setMode('mx')">2+3+4 💪 🎁</button>
+      <button class="lvl-btn active" id="lb20" onclick="setMode(20)">מֶלֶךְ 🤴 🎁</button>
+      <button class="lvl-btn"        id="lbmx" onclick="setMode('mx')">מַלְכָּה 👸 🎁</button>
     </div>
   </header>
 
@@ -2325,7 +2349,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens';
 const BASIC_SEQ=(()=>{const a=[];for(let i=1;i<=9;i++)for(let j=1;j<=10-i;j++)a.push([i,j]);return a})();
 const RAW={
   20:{M:[[18,11],[15,12],[17,11],[20,13],[16,11],[19,12],[14,11],[20,14],[18,13],[15,13],[17,14],[19,13]],
@@ -2434,6 +2458,26 @@ function injectCoins(arr,m){
   }
   return arr;
 }
+function makeTensProblem(){
+  const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
+  if(Math.random()<0.5){
+    const a=ri(1,8)*10;const maxB=9-a/10;if(maxB<1)return makeTensProblem();
+    const b=ri(1,maxB)*10;return{t:TT,op:'add',a,b};
+  }
+  const a=ri(2,9)*10;const maxB=a/10-1;if(maxB<1)return makeTensProblem();
+  const b=ri(1,maxB)*10;return{t:TT,op:'sub',a,b};
+}
+function injectTens(arr,m){
+  if(m!==20&&m!=='mx')return arr;
+  const count=5;const used=new Set();let tries=0;
+  while(used.size<count&&tries<80){
+    const i=1+Math.floor(Math.random()*(arr.length-2));
+    const okTD=m==='mx'?true:(i+1)%4!==0;
+    if(!used.has(i)&&okTD&&arr[i]?.t!==TC){used.add(i);arr[i]=makeTensProblem();}
+    tries++;
+  }
+  return arr;
+}
 
 function makePool(m){
   if(m===0)return BASIC_SEQ.map(([a,b])=>({t:TA,a,b}));
@@ -2463,8 +2507,8 @@ function sampleWithTD(pool,k){
 function modePts(){return mode==='mx'?20:mode||5;}
 
 /* ── Gift reward thresholds (grade out of 1000) ── */
-const GIFT_GOALS={20:800,mx:800};
-const GIFT_MODE_LABELS={20:'עַד 20',mx:'שַׁרְשֶׁרֶת'};
+const GIFT_GOALS={20:600,mx:600};
+const GIFT_MODE_LABELS={20:'מֶלֶךְ',mx:'מַלְכָּה'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
@@ -2480,17 +2524,19 @@ const GL=12;
 let mode=20,score=0,idx=0,problems=[],done=false;
 let aidMode='kang'; // 'kang' = kangaroo NL (default) | 'nl' = cookies | 'hearts' = hearts+abacus
 let ptype,num1,num2,num3,num4=0,hState=[],aidUsed=false,spaceDir=1;
+let ttOp='add'; // current TT problem operator: 'add' | 'sub'
 let report=[];
 
 /* ── Mode switch ── */
 function setMode(m){
   if(mode===m)return;
   mode=m;aidMode='kang';
-  koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];
+  koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];pgmTensMode=false;buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];
   [0,5,10,20,'mx'].forEach(v=>document.getElementById('lb'+v).classList.toggle('active',v===m));
   score=0;idx=0;report=[];document.getElementById('score-val').textContent='0';
   problems=m===0?makePool(0):m==='mx'?makePool('mx'):sampleWithTD(makePool(m),GL);
   if(m!==0)injectCoins(problems,m);
+  if(m===20||m==='mx')injectTens(problems,m);
   rebuildCard();loadProblem();koUpdateBtn();updateGiftIndicator();
 }
 
@@ -2500,12 +2546,13 @@ function loadProblem(){
   ({t:ptype,a:num1,b:num2,c:num3,d:num4}=problems[idx]);num3=num3||0;num4=num4||0;
   if(ptype===TC){tcCoins=problems[idx].coins||[];num1=problems[idx].correct||0;num2=0;num3=0;num4=0;}
   if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
-  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  if(ptype===TT){ttOp=problems[idx].op||'add';}
+  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;koClose();paClose();lgClose();blClose();gnClose();siClose();cnClose();buClose();tnClose();frClose();ckClose();stClose();
   const _allGames=['pa','lg','bl','gn','si','bu','tn','fr','st'];
   const _subGames=['ko','lg','bl','gn','si','cn','bu','tn','fr','st'];
-  const _pool=mode===0||ptype===TDA||ptype===TDS||ptype===TC||ptype===TX||ptype===TZ||ptype===TW?null:(ptype===TS||ptype===TM)?_subGames:_allGames;
+  const _pool=mode===0||ptype===TDA||ptype===TDS||ptype===TC||ptype===TX||ptype===TZ||ptype===TW?null:(ptype===TS||ptype===TM||(ptype===TT&&ttOp==='sub'))?_subGames:_allGames;
   // pick 2 random games per problem — variety on every question
   const _picks=_pool?[..._pool].sort(()=>Math.random()-.5).slice(0,2):[];
   updateAllMiniGameBtns();
@@ -2521,6 +2568,7 @@ function loadProblem(){
    :ptype===TX?'🧮 חַשֵּׁב בְּשָׁלָבִים: תְּחִלָּה חַסֵּר, אַחַר כָּךְ הוֹסֵף!'
    :ptype===TW?'🧮 חַשֵּׁב בְּשָׁלָבִים: חַסֵּר פַּעֲמַיִם בְּזֶה אַחַר זֶה!'
    :ptype===TZ?'🧮 חַשֵּׁב בְּשָׁלָבִים: קוֹדֶם חַבֵּר שְׁנַיִם, אַחַר כָּךְ הוֹסֵף שְׁלִישִׁי!'
+   :ptype===TT?(ttOp==='add'?'🔟 קְפַץ קָדִימָה בַּעֲשָׂרוֹת עַל הַיָּשָׁר!':'🔟 קְפַץ אָחוֹר בַּעֲשָׂרוֹת עַל הַיָּשָׁר!')
    :ptype===TA?((aidMode==='nl'||aidMode==='kang')&&mode!==0
       ?(aidMode==='kang'?'🦘 קְפַץ קָדִימָה עַל הַיְּשַׁר כְּעֶזֶר!'
         :'🍪 הוֹסֵף עוּגִיּוֹת כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!')
@@ -2539,10 +2587,17 @@ function loadProblem(){
   if(ptype===TC){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec');
     if(he)he.style.display='none';if(ae)ae.style.display='none';
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
-    const nlp=document.getElementById('nl-panel');if(nlp){nlp.style.display='';NL.init(0);}
+    const nlp=document.getElementById('nl-panel');if(nlp){nlp.style.display='';NL.configure(20,1);NL.init(0);}
     chainGnMode=false;}
+  // TT (tens): kangaroo NL configured for 0-100 in steps of 10
+  if(ptype===TT){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec');
+    if(he)he.style.display='none';if(ae)ae.style.display='none';
+    const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
+    const nlp=document.getElementById('nl-panel');
+    NL.configure(100,10);if(nlp){nlp.style.display='';NL.init(num1);}
+    tdaJarMode=false;chainGnMode=false;}
   // Aid display — chain always NL; mode 0 always hearts; TDA/TDS + others follow aidMode
-  if(ptype!==TC){const isChain=ptype===TX||ptype===TZ||ptype===TW;
+  if(ptype!==TC&&ptype!==TT){const isChain=ptype===TX||ptype===TZ||ptype===TW;
   const isTD=ptype===TDA||ptype===TDS;
   const forceHearts=mode===0&&!isChain&&!isTD;
   const effMode=forceHearts?'hearts':aidMode;
@@ -2554,9 +2609,9 @@ function loadProblem(){
   if(he)he.style.display=useHrts?'':((isChain||useNL||useKang)?'none':'');
   if(ae)ae.style.display=(useHrts&&!isTD)?'':'none';
   const nlp=document.getElementById('nl-panel');
-  if(nlp){nlp.style.display=useKang?'':'none';if(useKang)NL.init(0);}
+  if(nlp){nlp.style.display=useKang?'':'none';if(useKang){NL.configure(20,1);NL.init(0);}}
   if(useNL){
-    chainGnMode=false;
+    pgmTensMode=false;chainGnMode=false;
     const _cv=isTD?(ptype===TDA?0:num1):num1;
     pgmCV=_cv;pgmCk=Array.from({length:_cv},(_,i)=>i%5);pgmArcs=[];
     const _jar=document.getElementById('pgm-ck-jar');if(_jar)_jar.style.display='';
@@ -2625,6 +2680,14 @@ function renderEq(){
       `<div class="coins-stage">${coinsHtml}</div>`+
       `<div class="tc-answer-row"><span class="tc-eq-lbl">סְכוּם =</span>${inp}</div></div>`;
   }
+  else if(ptype===TT){
+    const ttInp=`<input id="ans" class="ans-inp" type="number" min="0" max="100"`+
+      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,3)"`+
+      ` onkeydown="if(event.key==='Enter')checkAns()">`;
+    const hintStr=ttOp==='add'?`${num1/10}+${num2/10}`:`${num1/10}-${num2/10}`;
+    h=`<div class="tt-eq-wrap">${n(num1)}${op(ttOp==='add'?'+':'-',ttOp==='add'?'op-p':'op-m')}${n(num2)}${op('=','op-e')}${ttInp}`+
+      `<span class="tt-hint-icon" data-hint="${hintStr}">?</span></div>`;
+  }
   else if(ptype===TDA||ptype===TDS){
     const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="30"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2);tdUpdateHearts('${id}',this.value)"`+
@@ -2661,7 +2724,7 @@ function tdUpdateHearts(inputId,rawVal){
   }
 }
 function initHearts(){
-  if(ptype===TC){hState=[];return;}
+  if(ptype===TC||ptype===TT){hState=[];return;}
   if(ptype===TDA||ptype===TDS){
     const maxH=(mode===20||mode==='mx')?20:mode===10?10:5;
     if(ptype===TDA){
@@ -2791,7 +2854,7 @@ function checkAns(){
   const inp=document.getElementById('ans');
   const v=inp?parseInt(inp.value,10):NaN;
   if(!inp||inp.value===''||isNaN(v)){setFb('נָא לְהַזִּין מִסְפָּר בָּרִיבּוּעַ 💗','fb-err');return}
-  const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const correct=ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   done=true;if(inp)inp.disabled=true;
   document.getElementById('btns').innerHTML='';
   const _cb=document.getElementById('chk-btn');if(_cb)_cb.style.display='none';
@@ -2885,6 +2948,7 @@ function showAidHintFx(){
 function resetCur(){
   done=false;initHearts();
   spaceDir=1;renderEq();renderHearts();abReset();setFb('','');showBtns('check');resetAidUsed();
+  if(ptype===TT){NL.configure(100,10);NL.init(num1);}
   setTimeout(()=>{
     const first=(ptype===TX||ptype===TZ)?document.getElementById('tx-sub1')
                :(ptype===TDA||ptype===TDS)?document.getElementById('ans1'):null;
@@ -2977,7 +3041,7 @@ function rebuildCard(){
 
 function restart(){
   score=0;idx=0;report=[];koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];document.getElementById('score-val').textContent='0';
-  problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);if(mode!==0)injectCoins(problems,mode);rebuildCard();loadProblem();koUpdateBtn();
+  problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);if(mode!==0)injectCoins(problems,mode);if(mode===20||mode==='mx')injectTens(problems,mode);rebuildCard();loadProblem();koUpdateBtn();
 }
 
 /* ── Success overlay ── */
@@ -3668,14 +3732,15 @@ function pickTheme(t){
 }
 /* ── Number-line kangaroo (NL) ── */
 const NL=(()=>{
-  const MAX=20;
+  let MAX=20,STEP=1,initVal=0;
   let cv=0,arcs=[],history=[],isDragging=false,dragStartCv=0;
 
+  function configure(max,step){MAX=max;STEP=step||1;}
   function buildNL(){
     const bar=document.getElementById('nl-bar');if(!bar)return;
     bar.querySelectorAll('.tick,.nl-num').forEach(el=>el.remove());
-    for(let i=0;i<=MAX;i++){
-      const pct=(i/MAX)*100,isMaj=(i%5===0);
+    for(let i=0;i<=MAX;i+=STEP){
+      const pct=(i/MAX)*100,isMaj=(i%(STEP*5)===0);
       const tick=document.createElement('div');tick.className='tick'+(isMaj?' major':'');tick.style.left=pct+'%';bar.appendChild(tick);
       const num=document.createElement('span');num.className='nl-num'+(isMaj?' major':'');num.textContent=i;num.style.left=pct+'%';bar.appendChild(num);
     }
@@ -3709,13 +3774,13 @@ const NL=(()=>{
     dot.addEventListener('animationend',()=>dot.classList.remove('jumping'),{once:true});
   }
   function step(dir){
-    const nv=cv+dir;if(nv<0||nv>MAX)return;
+    const nv=cv+dir*STEP;if(nv<0||nv>MAX)return;
     history.push({cv,arcs:JSON.parse(JSON.stringify(arcs))});
     arcs.push({from:cv,to:nv,type:dir>0?'add':'sub'});
     cv=nv;updateDot();drawArcs();triggerJump(dir);
   }
   function reset(){
-    history=[];arcs=[];cv=0;updateDot();drawArcs();
+    history=[];arcs=[];cv=initVal;updateDot();drawArcs();
   }
   function undo(){
     if(!history.length)return;
@@ -3723,7 +3788,7 @@ const NL=(()=>{
   }
   function getBarNum(clientX){
     const rect=document.getElementById('nl-bar')?.getBoundingClientRect();if(!rect)return cv;
-    return Math.round(Math.max(0,Math.min(1,(clientX-rect.left)/rect.width))*MAX);
+    return Math.round(Math.max(0,Math.min(1,(clientX-rect.left)/rect.width))*MAX/STEP)*STEP;
   }
   function startDrag(clientX){isDragging=true;dragStartCv=cv;cv=getBarNum(clientX);updateDot();}
   function duringDrag(clientX){if(!isDragging)return;cv=getBarNum(clientX);updateDot();}
@@ -3738,7 +3803,9 @@ const NL=(()=>{
   }
   function isVisible(){const p=document.getElementById('nl-panel');return p&&p.style.display!=='none';}
   function init(startVal){
-    cv=typeof startVal==='number'?Math.max(0,Math.min(MAX,startVal)):0;
+    const raw=typeof startVal==='number'?startVal:0;
+    cv=Math.round(Math.max(0,Math.min(MAX,raw))/STEP)*STEP;
+    initVal=cv;
     arcs=[];history=[];isDragging=false;dragStartCv=0;
     buildNL();updateDot();drawArcs();
   }
@@ -3760,7 +3827,7 @@ const NL=(()=>{
       else if(e.key==='ArrowLeft'){e.preventDefault();step(-1);}
     });
   }
-  return{init,step,reset,undo,attachBarEvents,attachDocumentEvents};
+  return{configure,init,step,reset,undo,attachBarEvents,attachDocumentEvents};
 })();
 
 const GAME_META={
@@ -5927,8 +5994,11 @@ function pgmCkSVG(idx){
     :`<circle cx="18" cy="8" r="3" fill="${c.chip}"/><circle cx="28" cy="6" r="2.5" fill="${c.chip}"/><circle cx="34" cy="11" r="3" fill="${c.chip}"/>`;
   return`<svg viewBox="0 0 52 20"><ellipse cx="26" cy="11" rx="24" ry="9" fill="${c.edge}"/><ellipse cx="26" cy="10" rx="23" ry="8" fill="${c.base}"/>${ch}<ellipse cx="20" cy="6" rx="6" ry="3" fill="rgba(255,255,255,.15)" transform="rotate(-15 20 6)"/></svg>`;
 }
-let pgmCV=0,pgmCk=[],pgmArcs=[],chainGnMode=false,tdaJarMode=false,_lastPicks=[];
-function pgmInitChain(){const _jar0=ptype===TC||ptype===TDA;pgmCV=_jar0?0:num1;pgmCk=Array.from({length:pgmCV},(_,i)=>i%5);pgmArcs=[];pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();}
+let pgmCV=0,pgmCk=[],pgmArcs=[],pgmTensMode=false,chainGnMode=false,tdaJarMode=false,_lastPicks=[];
+function pgmInitChain(){
+  if(pgmTensMode){pgmCV=num1;pgmCk=[];pgmArcs=[];pgmBuildNL();pgmDrawArcs();pgmUpdateAll();return;}
+  const _jar0=ptype===TC||ptype===TDA;pgmCV=_jar0?0:num1;pgmCk=Array.from({length:pgmCV},(_,i)=>i%5);pgmArcs=[];pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
+}
 function toggleTdaJar(){
   if(ptype!==TDA&&ptype!==TDS)return;
   tdaJarMode=!tdaJarMode;
@@ -5997,6 +6067,12 @@ function openChainGarden(){
 function pgmBuildNL(){
   const el=document.getElementById('pgm-nums');if(!el)return;
   el.innerHTML='';
+  if(pgmTensMode){
+    for(let i=0;i<=100;i+=10){const sp=document.createElement('span');
+      sp.className='pgm-nl-num'+(i%50===0?' pgm-nl-num5':'');
+      sp.style.left=(i/100*100)+'%';sp.textContent=i;el.appendChild(sp);}
+    return;
+  }
   for(let i=0;i<=PGM_NL;i++){
     const sp=document.createElement('span');
     sp.className='pgm-nl-num'+(i%5===0?' pgm-nl-num5':'');
@@ -6004,14 +6080,16 @@ function pgmBuildNL(){
   }
 }
 function pgmUpdateNL(){
-  const pct=Math.max(0,Math.min(100,(pgmCV/PGM_NL)*100));
+  const max=pgmTensMode?100:PGM_NL;
+  const pct=Math.max(0,Math.min(100,(pgmCV/max)*100));
   const dot=document.getElementById('pgm-dot');if(dot)dot.style.left=pct+'%';
 }
 function pgmDrawArcs(animLast=false){
   const svg=document.getElementById('pgm-arcs-svg');if(!svg)return;
   svg.innerHTML='';
+  const _arcMax=pgmTensMode?100:PGM_NL;
   pgmArcs.forEach(({a,b,type},i)=>{
-    const x1=a/PGM_NL*100,x2=b/PGM_NL*100,mx=(x1+x2)/2;
+    const x1=a/_arcMax*100,x2=b/_arcMax*100,mx=(x1+x2)/2;
     const p=document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('d',`M ${x1} 16 Q ${mx} 4 ${x2} 16`);
     p.setAttribute('class','pgm-arc pgm-arc-'+type);
@@ -6022,19 +6100,21 @@ function pgmDrawArcs(animLast=false){
 function pgmUpdateAll(){
   const v=document.getElementById('pgm-val');if(v)v.textContent=pgmCV;
   pgmUpdateNL();
+  const _max=pgmTensMode?100:PGM_NL;
   const bm=document.getElementById('pgm-btn-minus'),bp=document.getElementById('pgm-btn-plus');
-  if(bm)bm.disabled=done||pgmCV<=0;if(bp)bp.disabled=done||pgmCV>=PGM_NL;
+  if(bm)bm.disabled=done||pgmCV<=0;if(bp)bp.disabled=done||pgmCV>=_max;
   if(chainGnMode)pgmRenderGarden();
 }
 function pgmPlus(){
-  if(done||pgmCV>=PGM_NL)return;
-  const prev=pgmCV;pgmCV++;
+  const _max=pgmTensMode?100:PGM_NL,_step=pgmTensMode?10:1;
+  if(done||pgmCV>=_max)return;
+  const prev=pgmCV;pgmCV+=_step;
   const last=pgmArcs[pgmArcs.length-1];
   if(last&&last.a===prev&&last.b===pgmCV&&last.type==='sub')pgmArcs.pop();
   else pgmArcs.push({a:prev,b:pgmCV,type:'add'});
   pgmUpdateAll();pgmDrawArcs(true);
-  const ti=pgmCk.length%5;pgmCk.push(ti);
-  const w=document.getElementById('pgm-wrap');if(w){const nc=pgmMakeCookie(ti,true);w.appendChild(nc);}
+  if(!pgmTensMode){const ti=pgmCk.length%5;pgmCk.push(ti);
+    const w=document.getElementById('pgm-wrap');if(w){const nc=pgmMakeCookie(ti,true);w.appendChild(nc);}}
 }
 function pgmPoof(){
   const w=document.getElementById('pgm-wrap');if(!w)return;
@@ -6062,26 +6142,29 @@ function pgmPoof(){
   }
 }
 function pgmMinus(){
+  const _step=pgmTensMode?10:1;
   if(done||pgmCV<=0)return;
-  pgmPoof();
-  const nv=pgmCV;pgmCV--;
+  if(!pgmTensMode)pgmPoof();
+  const nv=pgmCV;pgmCV-=_step;
   const last=pgmArcs[pgmArcs.length-1];
   if(last&&last.a===pgmCV&&last.b===nv&&last.type==='add')pgmArcs.pop();
   else pgmArcs.push({a:pgmCV,b:nv,type:'sub'});
   pgmUpdateAll();pgmDrawArcs(true);
-  pgmCk.pop();pgmRenderJar();
+  if(!pgmTensMode){pgmCk.pop();pgmRenderJar();}
 }
 function pgmUndo(){
   if(pgmArcs.length===0)return;
+  const _step=pgmTensMode?10:1;
   const last=pgmArcs.pop();
-  if(last.type==='add'){pgmCV--;pgmCk.pop();}
-  else{pgmCV++;pgmCk.push(pgmCk.length%5);}
-  pgmRenderJar();pgmUpdateAll();pgmDrawArcs(false);
+  if(last.type==='add'){pgmCV-=_step;if(!pgmTensMode)pgmCk.pop();}
+  else{pgmCV+=_step;if(!pgmTensMode)pgmCk.push(pgmCk.length%5);}
+  if(!pgmTensMode)pgmRenderJar();
+  pgmUpdateAll();pgmDrawArcs(false);
 }
 
 /* ── Aid-mode toggle (cycles: kang → nl → hearts → kang, or jump to targetMode) ── */
 function toggleAidMode(targetMode){
-  if(ptype===TC)return;
+  if(ptype===TC||ptype===TT)return;
   const isChainNow=ptype===TX||ptype===TZ||ptype===TW;
   if(typeof targetMode==='string'){if(targetMode===aidMode)return;aidMode=targetMode;}
   else if(isChainNow) aidMode=aidMode==='nl'?'kang':'nl';
@@ -6237,7 +6320,7 @@ function creatureClick(el){
 }
 
 /* ── Boot ── */
-problems=sampleWithTD(makePool(mode),GL);injectCoins(problems,mode);
+problems=sampleWithTD(makePool(mode),GL);injectCoins(problems,mode);injectTens(problems,mode);
 abInit();
 NL.attachDocumentEvents();
 NL.attachBarEvents();
@@ -6316,6 +6399,8 @@ document.addEventListener('keydown',e=>{
     if(!done){const sub1=document.getElementById('tx-sub1');const isAdd=ptype===TZ||(ptype===TX&&sub1&&sub1.value!=='');if(isAdd)pgmPlus();else pgmMinus();}
     return;
   }
+  // TT (tens): spacebar steps the kangaroo NL in the correct direction
+  if(ptype===TT){e.preventDefault();if(!done){NL.step(ttOp==='add'?1:-1);}return;}
   // Kangaroo NL (kang mode): spacebar moves kangaroo forward (add) or backward (sub)
   if(aidMode==='kang'&&document.getElementById('nl-panel')?.style.display!=='none'){
     e.preventDefault();
