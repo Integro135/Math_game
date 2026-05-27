@@ -3743,12 +3743,14 @@ function initDinoScene(){
 function initFairyPrincessScene(){
   const layer=document.getElementById('stars-layer');
   if(!layer)return;layer.innerHTML='';layer.style.overflow='hidden';
-  const W=layer.clientWidth||innerWidth,H=layer.clientHeight||innerHeight;
+  let W=innerWidth,H=innerHeight;
   const cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%';
   cv.width=W;cv.height=H;
-  cv.style.cssText=`position:absolute;top:0;left:0;width:${W}px;height:${H}px`;
   layer.appendChild(cv);
   const ctx=cv.getContext('2d');
+  function onResize(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  window.addEventListener('resize',onResize);
   function lg(x1,y1,x2,y2,st){const g=ctx.createLinearGradient(x1,y1,x2,y2);st.forEach(([t,c])=>g.addColorStop(t,c));return g;}
   function rg(x,y,r1,r2,st){const g=ctx.createRadialGradient(x,y,r1,x,y,r2);st.forEach(([t,c])=>g.addColorStop(t,c));return g;}
   // Stars & shooting stars
@@ -3838,7 +3840,7 @@ function initFairyPrincessScene(){
     for(const f of FF){f.x+=f.vx;f.y+=f.vy;if(f.x<0)f.x=1;if(f.x>1)f.x=0;if(f.y<.5)f.y=.95;if(f.y>1)f.y=.5;ctx.fillStyle=`rgba(200,255,150,${(.3+.7*Math.abs(Math.sin(t*f.sp+f.ph))).toFixed(2)})`;ctx.beginPath();ctx.arc(f.x*W,f.y*H,f.r,0,Math.PI*2);ctx.fill();}
   }
   let animId=null;
-  function frame(ts){if(theme!=='castle')return;drawScene(ts/1000);animId=requestAnimationFrame(frame);}
+  function frame(ts){if(theme!=='castle'){window.removeEventListener('resize',onResize);return;}drawScene(ts/1000);animId=requestAnimationFrame(frame);}
   if(animId)cancelAnimationFrame(animId);
   setTimeout(spawnBolt,800+Math.random()*2000);
   requestAnimationFrame(frame);
@@ -4129,6 +4131,12 @@ const NFW_DATA={
     cf:{icon:'🦕',title:'כָּל הַכָּבוֹד!'},
     bu:{icon:'🥚',title:'מְצֻיָּן!', ptcs:['🦕','🦖','🥚','🌿','🦴','🌱','🌋','🍃','🦕','🦖']},
     hr:{icon:'🦕',title:'עֲצוּם!',   stars:'🥚🥚🥚🥚🥚'},
+    rp:{label:'כָּל הַכָּבוֹד!'},
+  },
+  castle:{
+    cf:{icon:'🏰',title:'כָּל הַכָּבוֹד!'},
+    bu:{icon:'👸',title:'מְצֻיָּן!', ptcs:['✨','💫','🌸','🌟','💎','🌷','🦋','⭐','💖','🔮']},
+    hr:{icon:'🏰',title:'נִפְלָא!',  stars:'✨✨✨✨✨'},
     rp:{label:'כָּל הַכָּבוֹד!'},
   },
 };
