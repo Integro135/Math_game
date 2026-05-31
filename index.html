@@ -1398,6 +1398,17 @@ body{
 .gm-icon-wrap{font-size:1.3rem;line-height:1}
 .gm-cost{font-size:.76rem;color:#ffd700;font-weight:800;white-space:nowrap}
 
+/* ── Try-first gate ── */
+.tf-locked{opacity:.28!important;pointer-events:none!important}
+#tf-nl-note{display:none;text-align:center;font-size:.84rem;font-weight:800;color:#f97316;padding:1px 0 5px;letter-spacing:.02em}
+#tf-msg{text-align:center;font-size:1.45rem;font-weight:900;color:#f97316;padding:10px 0 4px;letter-spacing:.04em;animation:tfPulse 2s ease-in-out infinite;text-shadow:0 2px 6px rgba(0,0,0,.25)}
+@keyframes tfPulse{0%,100%{opacity:.78;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
+body.theme-girls   #tf-msg{color:#8e1bd0;text-shadow:0 2px 6px rgba(255,255,255,.7),0 0 2px #fff}
+body.theme-boys    #tf-msg{color:#7adcff;text-shadow:0 2px 8px rgba(0,180,255,.5)}
+body.theme-galaxy  #tf-msg{color:#d4a8ff;text-shadow:0 2px 10px rgba(180,120,255,.7)}
+body.theme-dino    #tf-msg{color:#ffd755;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+body.theme-castle  #tf-msg{color:#ffb8f0;text-shadow:0 2px 10px rgba(255,150,220,.6)}
+
 /* ── Number-line kangaroo panel (inline aid) ── */
 #nl-panel{
   background:rgba(255,255,255,.07);
@@ -1934,6 +1945,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
       </div>
     </div>
     <div id="chain-tools" style="display:none">
+      <div id="tf-nl-note">💪 נַסִּי לְבַד. אַתְּ אַלּוּפָה!</div>
       <div class="pgm-nl"><div class="pgm-bar" id="pgm-bar"><svg class="pgm-arcs-svg" id="pgm-arcs-svg" viewBox="0 0 100 16" preserveAspectRatio="none"></svg><div class="pgm-dot" id="pgm-dot"></div></div><div class="pgm-nl-nums" id="pgm-nums"></div></div>
       <div class="pgm-scene">
         <button class="pgm-side pgm-minus" id="pgm-btn-minus" onclick="pgmMinus()">−</button>
@@ -2661,6 +2673,7 @@ function loadProblem(){
     }else{_dhBtn.style.display='none';}
   }}
   setTimeout(updateModeCreature,300);
+  _lockAids();
 }
 
 /* ── Equation ── */
@@ -2873,7 +2886,7 @@ function checkAns(){
     document.getElementById('btns').innerHTML='';
     const _cb=document.getElementById('chk-btn');if(_cb)_cb.style.display='none';
     if(valid){
-      addScore(modePts());koUpdateBtn();
+      addScore(_tfPts());koUpdateBtn();
       if(report[idx]){report[idx].gotCorrect=true;report[idx].userPair=[v1,v2];}
       const _ic=['🎉','⭐','🌟','💫','🦄','🌈','💗','✨','🎊','🍭','🎀','💜'];
       const _ico=_ic[0|Math.random()*_ic.length];
@@ -2881,8 +2894,13 @@ function checkAns(){
       setTimeout(showFw,300);
     }else{
       if(report[idx])report[idx].wrongs.push(`${v1}${ptype===TDA?'+':'-'}${v2}`);
-      if(!aidUsed)setTimeout(showAidHintFx,500);
-      setFb('','');showSadModal();showBtns('wrong');
+      if(tryFirst===0)_unlockAids();tryFirst++;
+      showSadModal();
+      done=false;
+      if(i1){i1.disabled=false;i1.value='';}
+      if(i2){i2.disabled=false;i2.value='';}
+      const _cb2=document.getElementById('chk-btn');if(_cb2)_cb2.style.display='flex';
+      setTimeout(()=>document.getElementById('ans1')?.focus(),150);
     }
     return;
   }
@@ -2894,7 +2912,7 @@ function checkAns(){
   document.getElementById('btns').innerHTML='';
   const _cb=document.getElementById('chk-btn');if(_cb)_cb.style.display='none';
   if(v===correct){
-    addScore(modePts());koUpdateBtn();
+    addScore(_tfPts());koUpdateBtn();
     if(report[idx])report[idx].gotCorrect=true;
     const _ic=['🎉','⭐','🌟','💫','🦄','🌈','💗','✨','🎊','🍭','🎀','💜'];
     const _ico=_ic[0|Math.random()*_ic.length];
@@ -2902,7 +2920,7 @@ function checkAns(){
     if(mode===0){setTimeout(nextP,700);}else{setTimeout(showFw,300);}
   }else{
     if(report[idx])report[idx].wrongs.push(v);
-    if(!aidUsed)setTimeout(showAidHintFx,500);
+    if(tryFirst===0)_unlockAids();tryFirst++;
     // TX: check sub-answer and mark it
     if(ptype===TX||ptype===TZ||ptype===TW){
       const sc1=(ptype===TX||ptype===TW)?num1-num2:num1+num2;
@@ -2915,8 +2933,10 @@ function checkAns(){
         if(!isNaN(sv))el.classList.add(sv===sc?'sub-ok':'sub-err');
       });
     }
-    setFb('','');showSadModal();
-    showBtns('wrong');
+    showSadModal();
+    done=false;
+    if(inp){inp.disabled=false;inp.value='';setTimeout(()=>inp.focus(),150);}
+    const _cb3=document.getElementById('chk-btn');if(_cb3)_cb3.style.display='flex';
   }
 }
 function showDigitHint(el){
@@ -2969,6 +2989,34 @@ function tzAddMode(){
 }
 function markAidUsed(){if(aidUsed)return;aidUsed=true;}
 function resetAidUsed(){aidUsed=false;}
+let tryFirst=0;
+function _tfPts(){return tryFirst===0?modePts():tryFirst===1?Math.round(modePts()*.8):0;}
+function _lockAids(){
+  tryFirst=0;
+  const gb=document.getElementById('games-drop-btn');
+  if(gb){gb.disabled=true;gb.classList.add('tf-locked');gb.innerHTML='💪';}
+  ['pgm-btn-plus','pgm-btn-minus','nl-btn-plus','nl-btn-minus'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.disabled=true;el.classList.add('tf-locked');}});
+  document.querySelectorAll('.hrt,.ab-btn,.pgm-rst').forEach(el=>{el.disabled=true;el.classList.add('tf-locked');});
+  const note=document.getElementById('tf-nl-note');if(note)note.style.display='block';
+  const hint=document.getElementById('hint');if(hint)hint.style.visibility='hidden';
+  // Insert prominent message above the number line (always visible regardless of aid mode)
+  const old=document.getElementById('tf-msg');if(old)old.remove();
+  const msg=document.createElement('div');msg.id='tf-msg';
+  msg.textContent='💪 נַסִּי לְבַד. אַתְּ אַלּוּפָה!';
+  const ct=document.getElementById('chain-tools');
+  if(ct)ct.parentNode.insertBefore(msg,ct);
+}
+function _unlockAids(){
+  const gb=document.getElementById('games-drop-btn');
+  if(gb){gb.disabled=false;gb.classList.remove('tf-locked');gb.innerHTML='🦘';}
+  ['pgm-btn-plus','pgm-btn-minus','nl-btn-plus','nl-btn-minus'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.disabled=false;el.classList.remove('tf-locked');}});
+  document.querySelectorAll('.hrt,.ab-btn,.pgm-rst').forEach(el=>{el.disabled=false;el.classList.remove('tf-locked');});
+  const note=document.getElementById('tf-nl-note');if(note)note.style.display='none';
+  const hint=document.getElementById('hint');if(hint)hint.style.visibility='';
+  document.getElementById('tf-msg')?.remove();
+}
 function showAidHintFx(){
   const heartsEl=document.getElementById('hearts');
   if(!heartsEl)return;
@@ -3062,6 +3110,7 @@ function rebuildCard(){
       <div class="ab-wrap"><button class="ab-btn" onclick="abStep(-1)">−</button><canvas id="ab-cv"></canvas><button class="ab-btn" onclick="abStep(1)">+</button></div>
     </div>
     <div id="chain-tools" style="display:none">
+      <div id="tf-nl-note">💪 נַסִּי לְבַד. אַתְּ אַלּוּפָה!</div>
       <div class="pgm-nl"><div class="pgm-bar" id="pgm-bar"><svg class="pgm-arcs-svg" id="pgm-arcs-svg" viewBox="0 0 100 16" preserveAspectRatio="none"></svg><div class="pgm-dot" id="pgm-dot"></div></div><div class="pgm-nl-nums" id="pgm-nums"></div></div>
       <div class="pgm-scene">
         <button class="pgm-side pgm-minus" id="pgm-btn-minus" onclick="pgmMinus()">−</button>
@@ -3952,7 +4001,7 @@ const NL=(()=>{
     const rect=document.getElementById('nl-bar')?.getBoundingClientRect();if(!rect)return cv;
     return Math.round(Math.max(0,Math.min(1,(clientX-rect.left)/rect.width))*MAX/STEP)*STEP;
   }
-  function startDrag(clientX){isDragging=true;dragStartCv=cv;cv=getBarNum(clientX);updateDot();}
+  function startDrag(clientX){if(tryFirst===0)return;isDragging=true;dragStartCv=cv;cv=getBarNum(clientX);updateDot();}
   function duringDrag(clientX){if(!isDragging)return;cv=getBarNum(clientX);updateDot();}
   function endDrag(){
     if(!isDragging)return;isDragging=false;
@@ -3983,6 +4032,7 @@ const NL=(()=>{
     document.addEventListener('touchend',endDrag);
     document.addEventListener('keydown',e=>{
       if(!isVisible())return;
+      if(tryFirst===0)return;
       const ae=document.activeElement;
       if(ae&&ae.tagName==='INPUT'&&ae.type!=='number')return;
       if(e.key==='ArrowRight'){e.preventDefault();step(1);}
@@ -5027,7 +5077,7 @@ function koCheckAns(){
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   const fb=document.getElementById('ko-fb');
   if(v===correct){
-    addScore(modePts());koUpdateBtn();
+    addScore(_tfPts());koUpdateBtn();
     if(report[idx])report[idx].gotCorrect=true;
     done=true;
     const mainInp=document.getElementById('ans');
@@ -5153,7 +5203,7 @@ function paCheckAns(){
   if(isNaN(v)){if(fb){fb.textContent='נָא לְכְתּוֹב מִסְפָּר 💗';fb.style.color='#ff80ab';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   if(v===correct){
-    addScore(modePts());koUpdateBtn();paUpdateBtn();
+    addScore(_tfPts());koUpdateBtn();paUpdateBtn();
     if(report[idx])report[idx].gotCorrect=true;done=true;
     const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}
     document.getElementById('btns').innerHTML='';
@@ -5280,7 +5330,7 @@ function lgCheckAns(){
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   const fb=document.getElementById('lg-fb');
   if(v===correct){
-    addScore(modePts());koUpdateBtn();
+    addScore(_tfPts());koUpdateBtn();
     if(report[idx])report[idx].gotCorrect=true;done=true;
     document.getElementById('lg-drop-btn').disabled=true;
     document.getElementById('lg-rem-btn').disabled=true;
@@ -5419,7 +5469,7 @@ function siCheckAns(){
   if(isNaN(v)){if(fb){fb.textContent='נָא לִכְתּוֹב מִסְפָּר 🚀';fb.style.color='#7DF9FF';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   if(v===correct){
-    addScore(modePts());koUpdateBtn();
+    addScore(_tfPts());koUpdateBtn();
     if(report[idx])report[idx].gotCorrect=true;done=true;
     const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}
     document.getElementById('btns').innerHTML='';
@@ -5551,7 +5601,7 @@ function gnCheckAns(){
   if(isNaN(v)){if(fb){fb.textContent='נָא לִכְתּוֹב מִסְפָּר 🌷';fb.style.color='#FF8FAB';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   if(v===correct){
-    addScore(modePts());koUpdateBtn();
+    addScore(_tfPts());koUpdateBtn();
     if(report[idx])report[idx].gotCorrect=true;done=true;
     document.getElementById('gn-plant-btn').disabled=true;
     document.getElementById('gn-pull-btn').disabled=true;
@@ -5673,7 +5723,7 @@ function blCheckAns(){
   if(isNaN(v)){const fb=document.getElementById('bl-fb');if(fb){fb.textContent='נָא לְכְתּוֹב מִסְפָּר 💗';fb.style.color='#ff80ab';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   if(v===correct){
-    addScore(modePts());koUpdateBtn();
+    addScore(_tfPts());koUpdateBtn();
     if(report[idx])report[idx].gotCorrect=true;done=true;
     document.getElementById('bl-add-btn').disabled=true;document.getElementById('bl-rem-btn').disabled=true;
     const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}
@@ -5759,7 +5809,7 @@ function buCheckAns(){
   const el=document.getElementById('bu-ans');const v=parseInt(el?el.value:'',10);
   if(isNaN(v)){const fb=document.getElementById('bu-fb');if(fb){fb.textContent='נָא לִכְתּוֹב מִסְפָּר 💧';fb.style.color='#80D8FF';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
-  if(v===correct){addScore(modePts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('bu-blow-btn').disabled=true;document.getElementById('bu-pop-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('💧 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');const row=document.getElementById('bu-row');[...row.children].forEach((b,i)=>setTimeout(()=>{b.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';b.style.transform='scale(1.3)';setTimeout(()=>{b.style.transform='';},220);},i*40));buClose();setTimeout(showFw,300);}
+  if(v===correct){addScore(_tfPts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('bu-blow-btn').disabled=true;document.getElementById('bu-pop-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('💧 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');const row=document.getElementById('bu-row');[...row.children].forEach((b,i)=>setTimeout(()=>{b.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';b.style.transform='scale(1.3)';setTimeout(()=>{b.style.transform='';},220);},i*40));buClose();setTimeout(showFw,300);}
   else{if(report[idx])report[idx].wrongs.push(v);showSadModal();}
 }
 
@@ -5831,7 +5881,7 @@ function tnCheckAns(){
   const el=document.getElementById('tn-ans');const v=parseInt(el?el.value:'',10);
   if(isNaN(v)){const fb=document.getElementById('tn-fb');if(fb){fb.textContent='נָא לִכְתּוֹב מִסְפָּר 🚂';fb.style.color='#90CAF9';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
-  if(v===correct){addScore(modePts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('tn-add-btn').disabled=true;document.getElementById('tn-rem-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('🚂 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');const row=document.getElementById('tn-train-row');[...row.querySelectorAll('.tn-car')].forEach((c,i)=>setTimeout(()=>{c.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';c.style.transform='translateY(-8px) scale(1.06)';setTimeout(()=>{c.style.transform='';},220);},i*45));tnClose();setTimeout(showFw,300);}
+  if(v===correct){addScore(_tfPts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('tn-add-btn').disabled=true;document.getElementById('tn-rem-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('🚂 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');const row=document.getElementById('tn-train-row');[...row.querySelectorAll('.tn-car')].forEach((c,i)=>setTimeout(()=>{c.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';c.style.transform='translateY(-8px) scale(1.06)';setTimeout(()=>{c.style.transform='';},220);},i*45));tnClose();setTimeout(showFw,300);}
   else{if(report[idx])report[idx].wrongs.push(v);showSadModal();}
 }
 
@@ -5902,7 +5952,7 @@ function frCheckAns(){
   const el=document.getElementById('fr-ans');const v=parseInt(el?el.value:'',10);
   if(isNaN(v)){const fb=document.getElementById('fr-fb');if(fb){fb.textContent='נָא לִכְתּוֹב מִסְפָּר 🐸';fb.style.color='#69F0AE';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
-  if(v===correct){addScore(modePts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('fr-add-btn').disabled=true;document.getElementById('fr-rem-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('🐸 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');[...document.getElementById('fr-pads').querySelectorAll('.has-frog')].forEach((p,i)=>setTimeout(()=>{p.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';p.style.transform='scale(1.18) translateY(-6px)';setTimeout(()=>{p.style.transform='';},220);},i*45));frClose();setTimeout(showFw,300);}
+  if(v===correct){addScore(_tfPts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('fr-add-btn').disabled=true;document.getElementById('fr-rem-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('🐸 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');[...document.getElementById('fr-pads').querySelectorAll('.has-frog')].forEach((p,i)=>setTimeout(()=>{p.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';p.style.transform='scale(1.18) translateY(-6px)';setTimeout(()=>{p.style.transform='';},220);},i*45));frClose();setTimeout(showFw,300);}
   else{if(report[idx])report[idx].wrongs.push(v);showSadModal();}
 }
 
@@ -5976,7 +6026,7 @@ function ckCheckAns(){
   const el=document.getElementById('ck-ans');const v=parseInt(el?el.value:'',10);
   if(isNaN(v)){const fb=document.getElementById('ck-fb');if(fb){fb.textContent='נָא לִכְתּוֹב מִסְפָּר 🍪';fb.style.color='#FFCC80';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
-  if(v===correct){addScore(modePts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('ck-add-btn').disabled=true;document.getElementById('ck-rem-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('🍪 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');[...document.getElementById('ck-cookies-wrap').children].forEach((c,i)=>setTimeout(()=>{c.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';c.style.transform='scaleX(1.2)';setTimeout(()=>{c.style.transform='';},220);},i*40));ckClose();setTimeout(showFw,300);}
+  if(v===correct){addScore(_tfPts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('ck-add-btn').disabled=true;document.getElementById('ck-rem-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('🍪 כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');[...document.getElementById('ck-cookies-wrap').children].forEach((c,i)=>setTimeout(()=>{c.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';c.style.transform='scaleX(1.2)';setTimeout(()=>{c.style.transform='';},220);},i*40));ckClose();setTimeout(showFw,300);}
   else{if(report[idx])report[idx].wrongs.push(v);showSadModal();}
 }
 
@@ -6073,7 +6123,7 @@ function cnCheckAns(){
   if(isNaN(v)){if(fb){fb.textContent='נָא לִכְתּוֹב מִסְפָּר 🎯';fb.style.color='#FFD700';}return;}
   const cA=ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   if(v===cA){
-    addScore(modePts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;
+    addScore(_tfPts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;
     document.getElementById('cn-add-btn').disabled=true;document.getElementById('cn-rem-btn').disabled=true;
     const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}
     document.getElementById('btns').innerHTML='';setFb('🎯 פָּגַעְתְּ! תְּשׁוּבָה נְכוֹנָה!','fb-ok');
@@ -6142,7 +6192,7 @@ function stCheckAns(){
   const el=document.getElementById('st-ans');const v=parseInt(el?el.value:'',10);
   if(isNaN(v)){const fb=document.getElementById('st-fb');if(fb){fb.textContent='נָא לִכְתּוֹב מִסְפָּר ✨';fb.style.color='#C5CAE9';}return;}
   const correct=ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
-  if(v===correct){addScore(modePts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('st-light-btn').disabled=true;document.getElementById('st-dim-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('✨ כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');[...document.getElementById('st-stars').querySelectorAll('.lit')].forEach((s,i)=>setTimeout(()=>{s.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';s.style.transform='scale(1.3)';setTimeout(()=>{s.style.transform='';},220);},i*40));stClose();setTimeout(showFw,300);}
+  if(v===correct){addScore(_tfPts());koUpdateBtn();if(report[idx])report[idx].gotCorrect=true;done=true;document.getElementById('st-light-btn').disabled=true;document.getElementById('st-dim-btn').disabled=true;const mainInp=document.getElementById('ans');if(mainInp){mainInp.value=v;mainInp.disabled=true;}document.getElementById('btns').innerHTML='';setFb('✨ כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה!','fb-ok');[...document.getElementById('st-stars').querySelectorAll('.lit')].forEach((s,i)=>setTimeout(()=>{s.style.transition='transform .22s cubic-bezier(.17,1.4,.5,1)';s.style.transform='scale(1.3)';setTimeout(()=>{s.style.transform='';},220);},i*40));stClose();setTimeout(showFw,300);}
   else{if(report[idx])report[idx].wrongs.push(v);showSadModal();}
 }
 
@@ -6555,6 +6605,7 @@ document.addEventListener('keydown',e=>{
   if(e.key!==' ')return;
   const ae=document.activeElement;
   if(ae&&(ae.tagName==='TEXTAREA'||(ae.tagName==='INPUT'&&ae.type!=='number')))return;
+  if(tryFirst===0)return;
   // spacebar inside balloon panel
   if(document.getElementById('bl-panel')?.style.display==='flex'){
     e.preventDefault();if(!done){if(ptype===TA)blAddBalloon();else blRemoveTop();}return;
