@@ -1400,6 +1400,12 @@ body{
 
 /* ── Try-first gate ── */
 .tf-locked{opacity:.28!important;pointer-events:none!important}
+body.tf-locked-nl .nl-num,
+body.tf-locked-nl .pgm-nl-num,
+body.tf-locked-nl .tick{visibility:hidden}
+body.tf-locked-nl .kang{filter:grayscale(1) brightness(.55);opacity:.55}
+body.tf-locked-nl #nl-dot,
+body.tf-locked-nl #pgm-dot{filter:grayscale(1);opacity:.55}
 #tf-nl-note{display:none;text-align:center;font-size:.84rem;font-weight:800;color:#f97316;padding:1px 0 5px;letter-spacing:.02em}
 #tf-msg{text-align:center;font-size:1.45rem;font-weight:900;color:#f97316;padding:10px 0 4px;letter-spacing:.04em;animation:tfPulse 2s ease-in-out infinite;text-shadow:0 2px 6px rgba(0,0,0,.25)}
 @keyframes tfPulse{0%,100%{opacity:.78;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
@@ -1925,10 +1931,9 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
       <span class="lvl-lbl">רָמָה:</span>
       <button class="lvl-btn"        id="lb0"  onclick="setMode(0)">1+1 🌱</button>
       <button class="lvl-btn"        id="lb5"  onclick="setMode(5)">עַד 5 ⭐</button>
-      <button class="lvl-btn"        id="lb10" onclick="setMode(10)">עַד 10 ⭐</button>
+      <button class="lvl-btn"        id="lb10" onclick="setMode(10)">עַד 10 ⭐ 🎁</button>
       <span class="lvl-break"></span>
-      <button class="lvl-btn active" id="lb20" onclick="setMode(20)">מֶלֶךְ 🤴 🎁</button>
-      <button class="lvl-btn"        id="lbmx" onclick="setMode('mx')">מַלְכָּה 👸 🎁</button>
+      <button class="lvl-btn active" id="lbmx" onclick="setMode('mx')">מַלְכָּה 👸 🎁</button>
     </div>
   </header>
 
@@ -2407,40 +2412,36 @@ const RAW_TD={
   10:{A:[4,6,7,8,9,5,3,10,6,7,4,8],      S:[1,2,3,4,5,2,3,4,1,5,2,3]},
    5:{A:[2,3,4,5,3,4,5,2,3,4,5,4],        S:[1,2,3,4,1,2,3,4,1,2,3,4]}
 };
-// makeMxPool — 15 problems: TZ (add), TX (sub+add), TW (sub+sub), prefer two-digit subtrahends
+// makeMxPool — Queen pool: ≥3 of EACH type (TZ,TX,TW,TM,TS,TA,TDA,TDS,TT,TC)
+// Operands above 20 are allowed only via TT (round tens) and TC (coins, up to 50).
 function makeMxPool(){
   const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
   const out=[];
+  const pick=(arr,n)=>{const s=[...arr];for(let i=s.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[s[i],s[j]]=[s[j],s[i]];}return s.slice(0,n);};
+  const countOf=t=>out.filter(p=>p.t===t).length;
 
-  // Phase 1 (1-5): up to 20, two-digit subtrahends for TX/TW
-  while(out.length<5){
-    const r=ri(0,2);
-    if(r===0){const a=ri(3,8),b=ri(2,7),c=ri(1,6);if(a+b+c<=18&&a+b+c>=6)out.push({t:TZ,a,b,c});}
-    else if(r===1){const a=ri(12,17),b=ri(10,13),c=ri(1,6);if(a>b&&a-b+c<=16&&a-b+c>=2)out.push({t:TX,a,b,c});}
-    else{const a=ri(14,19),b=ri(10,13),c=ri(1,5);if(a>b+c&&a-b-c>=2&&a-b-c<=12)out.push({t:TW,a,b,c});}
-  }
+  // ── 3 chain problems of each kind (TZ/TX/TW) ──
+  while(countOf(TZ)<3){const a=ri(4,9),b=ri(2,7),c=ri(1,6);if(a+b+c<=20&&a+b+c>=6)out.push({t:TZ,a,b,c});}
+  while(countOf(TX)<3){const a=ri(13,18),b=ri(10,14),c=ri(1,6);if(a>b&&a-b+c<=20&&a-b+c>=3)out.push({t:TX,a,b,c});}
+  while(countOf(TW)<3){const a=ri(15,20),b=ri(10,14),c=ri(1,6);if(a>b+c&&a-b-c>=2&&a-b-c<=14)out.push({t:TW,a,b,c});}
 
-  // Phase 2 (6-10): wider range, two-digit subtrahends
-  while(out.length<10){
-    const r=ri(0,2);
-    if(r===0){
-      const withD=Math.random()<0.4,a=ri(4,9),b=ri(2,8),c=ri(1,7);
-      if(withD){const d=ri(1,2);if(a+b+c+d<=20&&a+b+c+d>=8)out.push({t:TZ,a,b,c,d});}
-      else{if(a+b+c<=20&&a+b+c>=8)out.push({t:TZ,a,b,c});}
-    }else if(r===1){const a=ri(13,18),b=ri(10,14),c=ri(1,7);if(a>b&&a-b+c<=20&&a-b+c>=3)out.push({t:TX,a,b,c});}
-    else{const a=ri(15,20),b=ri(10,14),c=ri(1,6);if(a>b+c&&a-b-c>=2&&a-b-c<=14)out.push({t:TW,a,b,c});}
-  }
+  // ── 3 King-level problems of each kind (TM/TS/TA, all ≤20) ──
+  pick(RAW[20].M,3).forEach(([a,b])=>out.push({t:TM,a,b}));
+  pick(RAW[20].S,3).forEach(([a,b])=>out.push({t:TS,a,b}));
+  pick(RAW[20].A,3).forEach(([a,b])=>out.push({t:TA,a,b}));
 
-  // Phase 3 (11-15): first number (a) > 10, two-digit subtrahends
-  while(out.length<15){
-    const r=ri(0,2);
-    if(r===0){
-      const withD=Math.random()<0.4,a=ri(11,15),b=ri(2,5),c=ri(1,4);
-      if(withD){const d=ri(1,2);if(a+b+c+d<=20)out.push({t:TZ,a,b,c,d});}
-      else{if(a+b+c<=20)out.push({t:TZ,a,b,c});}
-    }else if(r===1){const a=ri(13,18),b=ri(11,15),c=ri(1,6);if(a>b&&a-b+c<=20&&a-b+c>=3)out.push({t:TX,a,b,c});}
-    else{const a=ri(16,20),b=ri(11,14),c=ri(1,5);if(a>b+c&&a-b-c>=2&&a-b-c<=14)out.push({t:TW,a,b,c});}
-  }
+  // ── 3 two-unknown problems of each kind (TDA/TDS) ──
+  pick(RAW_TD[20].A,3).forEach(r=>out.push({t:TDA,r}));
+  pick(RAW_TD[20].S,3).forEach(r=>out.push({t:TDS,r}));
+
+  // ── 3 round-tens (TT) ──
+  for(let i=0;i<3;i++)out.push(makeTensProblem());
+
+  // ── 3 coin problems (TC) ──
+  for(let i=0;i<3;i++)out.push(makeCoinProblem('mx'));
+
+  // Shuffle the entire pool
+  for(let i=out.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[out[i],out[j]]=[out[j],out[i]];}
   return out;
 }
 const gameLen=()=>mode===0?BASIC_SEQ.length:problems.length;
@@ -2473,7 +2474,19 @@ function tcCoinSVG(v){
   return`<div class="coin-wrap"><svg width="${d}" height="${d}" viewBox="0 0 ${d} ${d}" xmlns="http://www.w3.org/2000/svg"><defs><filter id="csf" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="1" stdDeviation=".8" flood-color="${shadow}" flood-opacity=".6"/></filter></defs>${g}</svg><div class="coin-lbl">₪${v}</div></div>`;
 }
 function makeCoinProblem(m){
-  const mx=m==='mx'||m===20?20:m===10?10:5;
+  // mx (מַלְכָּה): sums up to 50, up to 8 coins, weighted toward 10 and 5
+  if(m==='mx'){
+    const weighted=[10,10,10,10,10,5,5,5,5,5,2,2,1,1];
+    const maxN=8;
+    for(let t=0;t<80;t++){
+      const n=3+Math.floor(Math.random()*(maxN-2));  // 3..8 coins
+      const cs=Array.from({length:n},()=>weighted[0|Math.random()*weighted.length]);
+      const s=cs.reduce((a,b)=>a+b,0);
+      if(s>=5&&s<=50)return{t:TC,coins:cs,correct:s};
+    }
+    return{t:TC,coins:[10,10,5],correct:25};
+  }
+  const mx=m===10?10:5;
   const vals=[1,2,5,10].filter(v=>v<=mx);
   const maxN=mx<=5?3:4;
   for(let t=0;t<80;t++){
@@ -2506,12 +2519,11 @@ function makeTensProblem(){
   const b=ri(1,maxB)*10;return{t:TT,op:'sub',a,b};
 }
 function injectTens(arr,m){
-  if(m!==20&&m!=='mx')return arr;
+  if(m!=='mx')return arr;
   const count=5;const used=new Set();let tries=0;
   while(used.size<count&&tries<80){
     const i=1+Math.floor(Math.random()*(arr.length-2));
-    const okTD=m==='mx'?true:(i+1)%4!==0;
-    if(!used.has(i)&&okTD&&arr[i]?.t!==TC){used.add(i);arr[i]=makeTensProblem();}
+    if(!used.has(i)&&arr[i]?.t!==TC){used.add(i);arr[i]=makeTensProblem();}
     tries++;
   }
   return arr;
@@ -2545,8 +2557,8 @@ function sampleWithTD(pool,k){
 function modePts(){return mode==='mx'?20:mode||5;}
 
 /* ── Gift reward thresholds (grade out of 1000) ── */
-const GIFT_GOALS={20:800,mx:800};
-const GIFT_MODE_LABELS={20:'מֶלֶךְ',mx:'מַלְכָּה'};
+const GIFT_GOALS={10:1000,mx:700};
+const GIFT_MODE_LABELS={10:'עַד 10',mx:'מַלְכָּה'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
@@ -2559,7 +2571,7 @@ function updateGiftIndicator(){
 
 /* ── State ── */
 const GL=12;
-let mode=20,score=0,idx=0,problems=[],done=false;
+let mode='mx',score=0,idx=0,problems=[],done=false;
 let aidMode='kang'; // 'kang' = kangaroo NL (default) | 'nl' = cookies | 'hearts' = hearts+abacus
 let ptype,num1,num2,num3,num4=0,hState=[],aidUsed=false,spaceDir=1;
 let ttOp='add'; // current TT problem operator: 'add' | 'sub'
@@ -2570,11 +2582,10 @@ function setMode(m){
   if(mode===m)return;
   mode=m;aidMode='kang';
   koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];pgmTensMode=false;buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];
-  [0,5,10,20,'mx'].forEach(v=>document.getElementById('lb'+v).classList.toggle('active',v===m));
+  [0,5,10,'mx'].forEach(v=>{const el=document.getElementById('lb'+v);if(el)el.classList.toggle('active',v===m);});
   score=0;idx=0;report=[];document.getElementById('score-val').textContent='0';
   problems=m===0?makePool(0):m==='mx'?makePool('mx'):sampleWithTD(makePool(m),GL);
-  if(m!==0)injectCoins(problems,m);
-  if(m===20||m==='mx')injectTens(problems,m);
+  if(m!==0&&m!=='mx')injectCoins(problems,m);
   rebuildCard();loadProblem();koUpdateBtn();updateGiftIndicator();
 }
 
@@ -2582,7 +2593,7 @@ function setMode(m){
 function loadProblem(){
   if(idx>=problems.length){endGame();return}
   ({t:ptype,a:num1,b:num2,c:num3,d:num4}=problems[idx]);num3=num3||0;num4=num4||0;
-  if(ptype===TC){tcCoins=problems[idx].coins||[];num1=problems[idx].correct||0;num2=0;num3=0;num4=0;}
+  if(ptype===TC){tcCoins=[...(problems[idx].coins||[])].sort((a,b)=>b-a);num1=problems[idx].correct||0;num2=0;num3=0;num4=0;}
   if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
@@ -2621,11 +2632,13 @@ function loadProblem(){
         :dino?'🥚 הָסֵר בֵּיצִים כְּעֶזֶר, וְאָז כְּתוֹב אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'
                :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'));}
   spaceDir=1;renderEq();renderHearts();showBtns('check');resetAidUsed();abReset();
-  // TC (coins): show kangaroo NL only, starting at 0
+  // TC (coins): show kangaroo NL only, starting at 0; range fits the coin sum
   if(ptype===TC){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec');
     if(he)he.style.display='none';if(ae)ae.style.display='none';
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
-    const nlp=document.getElementById('nl-panel');if(nlp){nlp.style.display='';NL.configure(20,1);NL.init(0);}
+    const nlp=document.getElementById('nl-panel');
+    const ncMax=mode==='mx'?50:20;
+    if(nlp){nlp.style.display='';NL.configure(ncMax,1);NL.init(0);}
     chainGnMode=false;}
   // TT (tens): kangaroo NL configured for 0-100 in steps of 10
   if(ptype===TT){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec');
@@ -2751,7 +2764,7 @@ function renderEq(){
    TS/TM: מערך num1 בלבד, כולו false (שלם, טרם נמחק) — ללא slots ריקים */
 function tdUpdateHearts(inputId,rawVal){
   if(done||inputId!=='ans1')return;
-  const maxH=(mode===20||mode==='mx')?20:mode===10?10:5;
+  const maxH=mode==='mx'?20:mode===10?10:5;
   const v=parseInt(rawVal,10);
   const empty=isNaN(v)||v<=0||rawVal==='';
   if(ptype===TDA){
@@ -2774,7 +2787,7 @@ function tdUpdateHearts(inputId,rawVal){
 function initHearts(){
   if(ptype===TC||ptype===TT){hState=[];return;}
   if(ptype===TDA||ptype===TDS){
-    const maxH=(mode===20||mode==='mx')?20:mode===10?10:5;
+    const maxH=mode==='mx'?20:mode===10?10:5;
     if(ptype===TDA){
       hState=new Array(maxH).fill(false); // TDA: full range, 0 lit — fills as user enters v1
     }else{
@@ -2784,7 +2797,7 @@ function initHearts(){
   }
   if(ptype===TA||ptype===TZ){
     // add-mode init: num1 lit slots + empty slots up to maxH
-    const maxH=(mode===20||mode==='mx')?20:10;
+    const maxH=mode==='mx'?20:10;
     hState=new Array(maxH);
     for(let i=0;i<maxH;i++) hState[i]=i<num1;
   }else{
@@ -2990,7 +3003,7 @@ function tzAddMode(){
 function markAidUsed(){if(aidUsed)return;aidUsed=true;}
 function resetAidUsed(){aidUsed=false;}
 let tryFirst=0;
-function _tfPts(){return tryFirst===0?modePts():tryFirst===1?Math.round(modePts()*.8):0;}
+function _tfPts(){return tryFirst===0?modePts():tryFirst===1?Math.round(modePts()*.67):0;}
 function _lockAids(){
   tryFirst=0;
   const gb=document.getElementById('games-drop-btn');
@@ -2998,6 +3011,7 @@ function _lockAids(){
   ['pgm-btn-plus','pgm-btn-minus','nl-btn-plus','nl-btn-minus'].forEach(id=>{
     const el=document.getElementById(id);if(el){el.disabled=true;el.classList.add('tf-locked');}});
   document.querySelectorAll('.hrt,.ab-btn,.pgm-rst').forEach(el=>{el.disabled=true;el.classList.add('tf-locked');});
+  document.body.classList.add('tf-locked-nl');
   const note=document.getElementById('tf-nl-note');if(note)note.style.display='block';
   const hint=document.getElementById('hint');if(hint)hint.style.visibility='hidden';
   // Insert prominent message above the number line (always visible regardless of aid mode)
@@ -3013,6 +3027,7 @@ function _unlockAids(){
   ['pgm-btn-plus','pgm-btn-minus','nl-btn-plus','nl-btn-minus'].forEach(id=>{
     const el=document.getElementById(id);if(el){el.disabled=false;el.classList.remove('tf-locked');}});
   document.querySelectorAll('.hrt,.ab-btn,.pgm-rst').forEach(el=>{el.disabled=false;el.classList.remove('tf-locked');});
+  document.body.classList.remove('tf-locked-nl');
   const note=document.getElementById('tf-nl-note');if(note)note.style.display='none';
   const hint=document.getElementById('hint');if(hint)hint.style.visibility='';
   document.getElementById('tf-msg')?.remove();
@@ -3130,7 +3145,7 @@ function rebuildCard(){
 
 function restart(){
   score=0;idx=0;report=[];koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];document.getElementById('score-val').textContent='0';
-  problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);if(mode!==0)injectCoins(problems,mode);if(mode===20||mode==='mx')injectTens(problems,mode);rebuildCard();loadProblem();koUpdateBtn();
+  problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);if(mode!==0&&mode!=='mx')injectCoins(problems,mode);rebuildCard();loadProblem();koUpdateBtn();
 }
 
 /* ── Success overlay ── */
@@ -4088,7 +4103,7 @@ function buildGamesMenu(picks){
       extras.push({icon,cost:null,disabled:m===aidMode,fn:()=>toggleAidMode(m)});
     });
   }
-  if((mode===5||mode===10||mode===20)&&ptype!==TDA&&ptype!==TDS&&ptype!==TZ&&ptype!==TX&&ptype!==TC){
+  if((mode===5||mode===10)&&ptype!==TDA&&ptype!==TDS&&ptype!==TZ&&ptype!==TX&&ptype!==TC){
     [{m:'kang',icon:'🦘'},{m:'nl',icon:'🍪'},{m:'hearts',icon:'❤️'}].forEach(({m,icon})=>{
       extras.push({icon,cost:null,disabled:m===aidMode,fn:()=>toggleAidMode(m)});
     });
