@@ -2633,12 +2633,14 @@ function loadProblem(){
                :'💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר, וְאָז כִּתְבִי אֶת הַתְּשׁוּבָה בָּרִיבּוּעַ!'));}
   spaceDir=1;renderEq();renderHearts();showBtns('check');resetAidUsed();abReset();
   // TC (coins): show kangaroo NL only, starting at 0; range fits the coin sum
+  // In Queen mode (sums up to 50), step by 10s only (like the TT number line)
   if(ptype===TC){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec');
     if(he)he.style.display='none';if(ae)ae.style.display='none';
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
     const nlp=document.getElementById('nl-panel');
     const ncMax=mode==='mx'?50:20;
-    if(nlp){nlp.style.display='';NL.configure(ncMax,1);NL.init(0);}
+    const ncStep=mode==='mx'?10:1;
+    if(nlp){nlp.style.display='';NL.configure(ncMax,ncStep);NL.init(0);}
     chainGnMode=false;}
   // TT (tens): kangaroo NL configured for 0-100 in steps of 10
   if(ptype===TT){const he=document.getElementById('hearts'),ae=document.querySelector('.abacus-sec');
@@ -2681,7 +2683,8 @@ function loadProblem(){
   if(_dhBtn){
     const _showDH=ptype===TT||(ptype===TS&&num1>10&&num2>10)||(ptype===TM&&num1>10&&num2>10);
     if(_showDH){
-      const _ht=ptype===TT?(ttOp==='add'?`${num1/10}+${num2/10}`:`${num1/10}-${num2/10}`):`${num1%10}-${num2%10}`;
+      const _u1=num1%10,_u2=num2%10;
+      const _ht=ptype===TT?(ttOp==='add'?`${num1/10}+${num2/10}`:`${num1/10}-${num2/10}`):(_u1<_u2?`${_u1+10}-${_u2}`:`${_u1}-${_u2}`);
       _dhBtn.dataset.hint=_ht;_dhBtn.style.display='';_dhBtn.classList.remove('hint-shown');_dhBtn.disabled=score<30;
     }else{_dhBtn.style.display='none';}
   }}
