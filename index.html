@@ -1768,6 +1768,13 @@ body.theme-savanna .lvl-btn{color:#7a3818;text-shadow:0 1px 2px rgba(255,240,200
 body.theme-savanna .lvl-btn:hover{background:rgba(255,240,200,.35);box-shadow:0 6px 20px rgba(180,80,30,.3),inset 0 1px 0 rgba(255,255,255,.25)}
 /* Plus operator in savanna — dark green (still readable on sunset) */
 body.theme-savanna .op-p{color:#1e6020;text-shadow:0 2px 6px rgba(255,240,200,.7),0 0 2px rgba(255,255,255,.4)}
+/* Gift indicator ("המתנה הבאה: 800") — brown for readability on sunset */
+body.theme-savanna .gift-indicator{
+  background:rgba(255,240,200,.45);
+  border-color:rgba(122,56,24,.4);
+  color:#7a3818;
+  text-shadow:0 1px 2px rgba(255,240,200,.7)
+}
 
 /* Title — cosmic shimmer */
 body.theme-galaxy .title{
@@ -1975,7 +1982,6 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     <div class="level-row">
       <span class="lvl-lbl">רָמָה:</span>
       <button class="lvl-btn"        id="lb0"  onclick="setMode(0)">1+1 🌱</button>
-      <button class="lvl-btn"        id="lb10" onclick="setMode(10)">עַד 10 ⭐ 🎁</button>
       <button class="lvl-btn"        id="lbbr" onclick="setMode('br')">גָּשֵׁר 10 🌈 🎁</button>
       <span class="lvl-break"></span>
       <button class="lvl-btn active" id="lbmx" onclick="setMode('mx')">מַלְכָּה 👸 🎁</button>
@@ -2674,8 +2680,8 @@ function sampleWithTD(pool,k){
 function modePts(){return mode==='mx'?20:mode==='br'?15:mode||5;}
 
 /* ── Gift reward thresholds (grade out of 1000) ── */
-const GIFT_GOALS={10:1000,br:800,mx:700};
-const GIFT_MODE_LABELS={10:'עַד 10',br:'גָּשֵׁר 10',mx:'מַלְכָּה'};
+const GIFT_GOALS={br:850,mx:700};
+const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',mx:'מַלְכָּה'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
@@ -2699,7 +2705,7 @@ function setMode(m){
   if(mode===m)return;
   mode=m;aidMode='kang';
   koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];pgmTensMode=false;buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];
-  [0,10,'br','mx'].forEach(v=>{const el=document.getElementById('lb'+v);if(el)el.classList.toggle('active',v===m);});
+  [0,'br','mx'].forEach(v=>{const el=document.getElementById('lb'+v);if(el)el.classList.toggle('active',v===m);});
   score=0;idx=0;report=[];document.getElementById('score-val').textContent='0';
   problems=m===0?makePool(0):m==='mx'?makePool('mx'):m==='br'?makePool('br'):sampleWithTD(makePool(m),GL);
   if(m!==0&&m!=='mx'&&m!=='br')injectCoins(problems,m);
@@ -2884,7 +2890,7 @@ function renderEq(){
    TS/TM: מערך num1 בלבד, כולו false (שלם, טרם נמחק) — ללא slots ריקים */
 function tdUpdateHearts(inputId,rawVal){
   if(done||inputId!=='ans1')return;
-  const maxH=mode==='mx'||mode==='br'?20:mode===10?10:5;
+  const maxH=mode==='mx'||mode==='br'?20:5;
   const v=parseInt(rawVal,10);
   const empty=isNaN(v)||v<=0||rawVal==='';
   if(ptype===TDA){
@@ -2907,7 +2913,7 @@ function tdUpdateHearts(inputId,rawVal){
 function initHearts(){
   if(ptype===TC||ptype===TT){hState=[];return;}
   if(ptype===TDA||ptype===TDS){
-    const maxH=mode==='mx'||mode==='br'?20:mode===10?10:5;
+    const maxH=mode==='mx'||mode==='br'?20:5;
     if(ptype===TDA){
       hState=new Array(maxH).fill(false); // TDA: full range, 0 lit — fills as user enters v1
     }else{
@@ -3213,7 +3219,7 @@ function endGame(){
         <div class="end-grade-max">מִתּוֹךְ 1000</div>
         <div class="end-grade-msg">${gradeMsg(calcGrade())}</div>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
-          <button class="btn b-rpl" onclick="setMode(10)">הַמְשִׁיכִי לְעַד 10 🚀</button>
+          <button class="btn b-rpl" onclick="setMode('br')">הַמְשִׁיכִי לְגָּשֵׁר 10 🚀</button>
           <button class="btn b-rep" onclick="reportOpen()">📊 סִיכּוּם</button>
         </div>
       </div>`;
