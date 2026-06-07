@@ -110,6 +110,19 @@ body{
 }
 .eq-n,.eq-op,.eq-res{font-family:'Fredoka One',cursive;font-size:3.4rem;line-height:1}
 .eq-n  {color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5);min-width:52px;text-align:center}
+.eq-n[data-num],.eq-res[data-num]{cursor:help;transition:filter .15s,transform .15s}
+.eq-n[data-num]:hover,.eq-res[data-num]:hover{filter:brightness(1.25) drop-shadow(0 0 6px rgba(255,255,255,.6));transform:scale(1.08)}
+#num-tt{position:fixed;z-index:2000;display:none;pointer-events:none;
+  background:rgba(255,255,255,.97);border:2.5px solid rgba(80,130,210,.5);
+  border-radius:12px;padding:8px 10px 9px;
+  box-shadow:0 6px 24px rgba(0,0,0,.4),0 0 0 4px rgba(255,255,255,.15);
+  font-family:'Nunito',sans-serif;}
+#num-tt .ntt-lbl{text-align:center;font-weight:900;font-size:18px;color:#2a4070;margin-bottom:5px;letter-spacing:.04em}
+/* Groups of 5: two groups per row, with visual gap between them; each group is a
+   fixed 5-column grid so columns align vertically between rows. */
+#num-tt .ntt-grid{display:flex;flex-wrap:wrap;max-width:262px;justify-content:flex-start;gap:5px 14px}
+#num-tt .ntt-group{display:grid;column-gap:3px}  /* grid-template-columns is set inline per group */
+#num-tt .ntt-group > span{font-size:18px;line-height:1.1;text-align:center}
 .eq-op {text-shadow:0 2px 8px rgba(0,0,0,.4)}
 .op-m  {color:#ff80ab}
 .op-p  {color:#80ffdb}
@@ -1728,6 +1741,33 @@ body.theme-reef #bg{
   background:linear-gradient(180deg,#3aabd8 0%,#1870a8 35%,#093058 70%,#021530 100%);
   animation:none;
 }
+body.theme-savanna #stars-layer{display:block}
+body.theme-savanna #bg{
+  background:linear-gradient(180deg,#fce896 0%,#fac765 30%,#f59a5a 55%,#d75e3a 70%,#5a2818 100%);
+  animation:none;
+}
+/* Warm brown text for savanna — readable on the bright sunset sky */
+body.theme-savanna .title{
+  background:linear-gradient(90deg,#7a3818,#9a4820,#b85a28,#9a4820,#7a3818);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:shimmer 3s linear infinite;
+}
+body.theme-savanna .eq-n{color:#7a3818;text-shadow:0 2px 6px rgba(255,240,200,.8),0 0 2px #fff}
+body.theme-savanna .eq-op{text-shadow:0 2px 4px rgba(255,240,200,.7)}
+body.theme-savanna .eq-res{color:#b85a28;text-shadow:0 0 16px rgba(255,180,80,.75)}
+body.theme-savanna .hint{color:#7a3818;text-shadow:0 1px 2px rgba(255,240,200,.7)}
+/* "ניקוד" label and progress text — dark green */
+body.theme-savanna .hdr-stats{color:#1e6020;text-shadow:0 1px 2px rgba(255,240,200,.75)}
+/* Score number itself stays warm-brown so it pops next to the green label */
+body.theme-savanna #score-val{color:#7a3818;text-shadow:0 1px 2px rgba(255,240,200,.75)}
+body.theme-savanna #tf-msg{color:#b85a28;text-shadow:0 2px 6px rgba(255,245,210,.85),0 0 2px #fff}
+/* Level row in savanna — brown labels and buttons */
+body.theme-savanna .lvl-lbl{color:#7a3818;text-shadow:0 1px 2px rgba(255,240,200,.65)}
+body.theme-savanna .lvl-btn{color:#7a3818;text-shadow:0 1px 2px rgba(255,240,200,.55);border-color:rgba(122,56,24,.35)}
+body.theme-savanna .lvl-btn:hover{background:rgba(255,240,200,.35);box-shadow:0 6px 20px rgba(180,80,30,.3),inset 0 1px 0 rgba(255,255,255,.25)}
+/* Plus operator in savanna — dark green (still readable on sunset) */
+body.theme-savanna .op-p{color:#1e6020;text-shadow:0 2px 6px rgba(255,240,200,.7),0 0 2px rgba(255,255,255,.4)}
 
 /* Title — cosmic shimmer */
 body.theme-galaxy .title{
@@ -1935,8 +1975,8 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
     <div class="level-row">
       <span class="lvl-lbl">רָמָה:</span>
       <button class="lvl-btn"        id="lb0"  onclick="setMode(0)">1+1 🌱</button>
-      <button class="lvl-btn"        id="lb5"  onclick="setMode(5)">עַד 5 ⭐</button>
       <button class="lvl-btn"        id="lb10" onclick="setMode(10)">עַד 10 ⭐ 🎁</button>
+      <button class="lvl-btn"        id="lbbr" onclick="setMode('br')">גָּשֵׁר 10 🌈 🎁</button>
       <span class="lvl-break"></span>
       <button class="lvl-btn active" id="lbmx" onclick="setMode('mx')">מַלְכָּה 👸 🎁</button>
     </div>
@@ -2360,6 +2400,8 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
 
 <div id="sad-ov"><div class="sad-box"><span class="sad-emoji">😢</span></div></div>
 
+<div id="num-tt"><div class="ntt-lbl"></div><div class="ntt-grid"></div></div>
+
 <div id="mode-creature" onclick="creatureClick(this)"></div>
 
 <div id="report-ov">
@@ -2380,6 +2422,7 @@ body.theme-boys #nfw-hr{background:linear-gradient(135deg,#002060,#0055a0,#0099C
   <button class="tm-item" onclick="pickTheme('dino')"><span class="tm-icon">🦕</span></button>
   <button class="tm-item" onclick="pickTheme('castle')"><span class="tm-icon">🏰</span></button>
   <button class="tm-item" onclick="pickTheme('reef')"><span class="tm-icon">🐠</span></button>
+  <button class="tm-item" onclick="pickTheme('savanna')"><span class="tm-icon">🦒</span></button>
 </div>
 
 <!-- ── Games dropdown menu (outside any backdrop-filter parent) ── -->
@@ -2538,11 +2581,79 @@ function injectTens(arr,m){
 function makePool(m){
   if(m===0)return BASIC_SEQ.map(([a,b])=>({t:TA,a,b}));
   if(m==='mx')return makeMxPool(); // fresh random 15 problems each game
+  if(m==='br')return makeBridgePool(); // bridging-10 focused practice (12 problems)
   return[...RAW[m].M.map(([a,b])=>({t:TM,a,b})),
          ...RAW[m].S.map(([a,b])=>({t:TS,a,b})),
          ...RAW[m].A.map(([a,b])=>({t:TA,a,b})),
          ...RAW_TD[m].A.map(r=>({t:TDA,r})),
          ...RAW_TD[m].S.map(r=>({t:TDS,r}))];
+}
+
+// makeBridgePool — 12 problems focused on "bridging 10" with result ≤ 13
+//   TA: a+b with both single-digit, a+b ∈ [11..13]   (e.g. 8+3, 9+4, 7+5)
+//   TS: a ∈ [10..13], a-b ∈ [1..9]                   (e.g. 10-2, 11-3, 13-7)
+//   TM: same math as TS, missing-subtrahend form
+//   TZ: chain (a+b+c) where a+b ∈ [11..13]
+//   TX: chain (a-b+c) where a ∈ [10..13] and a-b ∈ [1..9]
+function makeBridgePool(){
+  const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
+  const out=[];
+  const countOf=t=>out.filter(p=>p.t===t).length;
+
+  // ── 4 TA bridging: a, b ∈ [2..9], a+b ∈ [11..13] (just over 10) ──
+  while(countOf(TA)<4){
+    const a=ri(2,9);
+    const minB=Math.max(2,11-a);   // ensure a+b ≥ 11
+    const maxB=Math.min(9,13-a);   // ensure a+b ≤ 13
+    if(minB>maxB)continue;
+    const b=ri(minB,maxB);
+    out.push({t:TA,a,b});
+  }
+
+  // ── 3 TS bridging: a ∈ [10..13], b ∈ [2..9], a-b ∈ [1..9] ──
+  while(countOf(TS)<3){
+    const a=ri(10,13);
+    const minB=Math.max(2,a-9);    // a-b ≤ 9
+    const maxB=Math.min(9,a-1);    // a-b ≥ 1
+    if(minB>maxB)continue;
+    const b=ri(minB,maxB);
+    out.push({t:TS,a,b});
+  }
+
+  // ── 2 TM bridging: a ∈ [10..13], result ∈ [1..9], missing ∈ [1..9] ──
+  while(countOf(TM)<2){
+    const a=ri(10,13);
+    const result=ri(1,9);
+    const missing=a-result;        // value the user must compute
+    if(missing<2||missing>9)continue;
+    out.push({t:TM,a,b:result});
+  }
+
+  // ── 2 TZ chain: step 1 (a+b) ∈ [11..13], then add c ──
+  while(countOf(TZ)<2){
+    const a=ri(2,9);
+    const minB=Math.max(2,11-a);
+    const maxB=Math.min(9,13-a);
+    if(minB>maxB)continue;
+    const b=ri(minB,maxB);
+    const c=ri(1,7);
+    if(a+b+c<=20)out.push({t:TZ,a,b,c});
+  }
+
+  // ── 1 TX chain: a ∈ [10..13], a-b ∈ [1..9], then add c ──
+  while(countOf(TX)<1){
+    const a=ri(10,13);
+    const minB=Math.max(2,a-9);
+    const maxB=Math.min(9,a-1);
+    if(minB>maxB)continue;
+    const b=ri(minB,maxB);
+    const c=ri(1,7);
+    if(a-b+c<=20&&a-b+c>=2)out.push({t:TX,a,b,c});
+  }
+
+  // Shuffle the pool (12 problems)
+  for(let i=out.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[out[i],out[j]]=[out[j],out[i]];}
+  return out;
 }
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]]}return b}
 function sample(a,k){return shuffle(a).slice(0,k)}
@@ -2560,11 +2671,11 @@ function sampleWithTD(pool,k){
   }
   return out;
 }
-function modePts(){return mode==='mx'?20:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode||5;}
 
 /* ── Gift reward thresholds (grade out of 1000) ── */
-const GIFT_GOALS={10:1000,mx:700};
-const GIFT_MODE_LABELS={10:'עַד 10',mx:'מַלְכָּה'};
+const GIFT_GOALS={10:1000,br:800,mx:700};
+const GIFT_MODE_LABELS={10:'עַד 10',br:'גָּשֵׁר 10',mx:'מַלְכָּה'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
@@ -2588,10 +2699,10 @@ function setMode(m){
   if(mode===m)return;
   mode=m;aidMode='kang';
   koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];pgmTensMode=false;buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];
-  [0,5,10,'mx'].forEach(v=>{const el=document.getElementById('lb'+v);if(el)el.classList.toggle('active',v===m);});
+  [0,10,'br','mx'].forEach(v=>{const el=document.getElementById('lb'+v);if(el)el.classList.toggle('active',v===m);});
   score=0;idx=0;report=[];document.getElementById('score-val').textContent='0';
-  problems=m===0?makePool(0):m==='mx'?makePool('mx'):sampleWithTD(makePool(m),GL);
-  if(m!==0&&m!=='mx')injectCoins(problems,m);
+  problems=m===0?makePool(0):m==='mx'?makePool('mx'):m==='br'?makePool('br'):sampleWithTD(makePool(m),GL);
+  if(m!==0&&m!=='mx'&&m!=='br')injectCoins(problems,m);
   rebuildCard();loadProblem();koUpdateBtn();updateGiftIndicator();
 }
 
@@ -2702,12 +2813,12 @@ function loadProblem(){
 function renderEq(){
   // restore hint visibility (TC hides it and embeds it inline)
   if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
-  const n=t=>`<span class="eq-n">${t}</span>`;
+  const n=t=>`<span class="eq-n" data-num="${t}">${t}</span>`;
   const op=(t,c)=>`<span class="eq-op ${c}">${t}</span>`;
   const inp=`<input id="ans" class="ans-inp" type="number" min="0" max="20"
     oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)"
     onkeydown="if(event.key==='Enter')checkAns()">`;
-  const res=t=>`<span class="eq-res">${t}</span>`;
+  const res=t=>`<span class="eq-res" data-num="${t}">${t}</span>`;
   let h='';
   if(ptype===TM)     h=n(num1)+op('-','op-m')+inp+op('=','op-e')+res(num2);
   else if(ptype===TS)h=n(num1)+op('-','op-m')+n(num2)+op('=','op-e')+inp;
@@ -2724,7 +2835,7 @@ function renderEq(){
     const vLine=`<svg class="tz-vsv" viewBox="0 0 10 18" width="10" height="16">`+
       `<line x1="5" y1="0" x2="5" y2="18" stroke="rgba(255,215,0,.45)" stroke-width="1.5" stroke-linecap="round"/></svg>`;
     let parts=`<div class="tz-grp" id="tz-g1">`+
-        `<div class="tz-grp-top"><span class="eq-n">${num1}</span>${op1}${n(num2)}</div>`+
+        `<div class="tz-grp-top"><span class="eq-n" data-num="${num1}">${num1}</span>${op1}${n(num2)}</div>`+
         `${vPair}${subRow('tx-sub1',num4>0?'tx-sub2':'ans','tz-g1')}`+
       `</div>`;
     if(num4>0){
@@ -2773,7 +2884,7 @@ function renderEq(){
    TS/TM: מערך num1 בלבד, כולו false (שלם, טרם נמחק) — ללא slots ריקים */
 function tdUpdateHearts(inputId,rawVal){
   if(done||inputId!=='ans1')return;
-  const maxH=mode==='mx'?20:mode===10?10:5;
+  const maxH=mode==='mx'||mode==='br'?20:mode===10?10:5;
   const v=parseInt(rawVal,10);
   const empty=isNaN(v)||v<=0||rawVal==='';
   if(ptype===TDA){
@@ -2796,7 +2907,7 @@ function tdUpdateHearts(inputId,rawVal){
 function initHearts(){
   if(ptype===TC||ptype===TT){hState=[];return;}
   if(ptype===TDA||ptype===TDS){
-    const maxH=mode==='mx'?20:mode===10?10:5;
+    const maxH=mode==='mx'||mode==='br'?20:mode===10?10:5;
     if(ptype===TDA){
       hState=new Array(maxH).fill(false); // TDA: full range, 0 lit — fills as user enters v1
     }else{
@@ -2806,7 +2917,7 @@ function initHearts(){
   }
   if(ptype===TA||ptype===TZ){
     // add-mode init: num1 lit slots + empty slots up to maxH
-    const maxH=mode==='mx'?20:10;
+    const maxH=mode==='mx'||mode==='br'?20:10;
     hState=new Array(maxH);
     for(let i=0;i<maxH;i++) hState[i]=i<num1;
   }else{
@@ -3102,7 +3213,7 @@ function endGame(){
         <div class="end-grade-max">מִתּוֹךְ 1000</div>
         <div class="end-grade-msg">${gradeMsg(calcGrade())}</div>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
-          <button class="btn b-rpl" onclick="setMode(5)">הַמְשִׁיכִי לְעַד 5 🚀</button>
+          <button class="btn b-rpl" onclick="setMode(10)">הַמְשִׁיכִי לְעַד 10 🚀</button>
           <button class="btn b-rep" onclick="reportOpen()">📊 סִיכּוּם</button>
         </div>
       </div>`;
@@ -3154,7 +3265,7 @@ function rebuildCard(){
 
 function restart(){
   score=0;idx=0;report=[];koProbIdx=-1;koData=[];lgProbIdx=-1;lgData=[];blProbIdx=-1;blData=[];gnProbIdx=-1;gnData=[];siRunning=false;cnProbIdx=-1;cnData=[];pgmCV=0;pgmCk=[];pgmArcs=[];buProbIdx=-1;buData=[];tnProbIdx=-1;tnData=[];frProbIdx=-1;frState=[];ckProbIdx=-1;ckData=[];stProbIdx=-1;stState=[];document.getElementById('score-val').textContent='0';
-  problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);if(mode!==0&&mode!=='mx')injectCoins(problems,mode);rebuildCard();loadProblem();koUpdateBtn();
+  problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):mode==='br'?makePool('br'):sampleWithTD(makePool(mode),GL);if(mode!==0&&mode!=='mx'&&mode!=='br')injectCoins(problems,mode);rebuildCard();loadProblem();koUpdateBtn();
 }
 
 /* ── Success overlay ── */
@@ -3247,6 +3358,20 @@ const THEMES={
     ],
     fwSuper:{icon:'🐠',title:'✨ שׁוֹנִית מַדְהִימָה! ✨',sub:'אַתְּ כּוֹכֶבֶת הַיָּם! 🌟',
       em:['🐠','🐡','🐟','🐙','🦑','🦀','💎','✨','🐚','🌊','🐬','⭐'],dur:3500},
+  },
+  savanna:{
+    titleEmoji:'🦁',uniL:'🦒',uniR:'🐘',toggleIcon:'🌅',
+    particles:['🦒','🐘','🦓','🐆','🦏','🦅','🌳','☀️','🌾','🦋','🐾','🌅'],
+    specialEm:'🦒',
+    rbColors:['#fce896','#fac765','#f59a5a','#d75e3a','#a44030','#5a2818'],
+    fw:[
+      {icon:'🦁',title:'כָּל הַכָּבוֹד!',em:['🦁','🦒','🐘','🦓','🐆','🌳'],n:14,rainbow:true, radial:false,spd:.7},
+      {icon:'🐆',title:'מָהִיר!',       em:['🐆','💨','⚡','🦒','🌾','🦅'],n:18,rainbow:false,radial:true, spd:1.5},
+      {icon:'🦒',title:'נֶהְדָּר!',     em:['🦒','🌳','☀️','🦓','🌾','✨'],n:14,rainbow:false,radial:false,spd:.5},
+      {icon:'🐘',title:'עָצוּם!',       em:['🐘','🐾','🌳','🦏','🦅','🌅'],n:20,rainbow:false,radial:false,spd:1.1},
+    ],
+    fwSuper:{icon:'🦁',title:'✨ מֶלֶךְ הַסַּוַּאנָה! ✨',sub:'אַתָּה אַלּוּף הַחַיּוֹת! 🌟',
+      em:['🦁','🦒','🐘','🦓','🐆','🦏','🦅','🌳','☀️','🌅','🦋','🦒'],dur:3500},
   },
 };
 
@@ -4021,16 +4146,206 @@ function initUnderwaterScene(){
   requestAnimationFrame(frame);
 }
 
+/* initSavannaScene — savanna.html: sunset sky, sun, clouds, mountains, sand, acacia trees, grass, animals (giraffes, elephants, zebras, leopards, cheetahs, rhino), birds */
+function initSavannaScene(){
+  const layer=document.getElementById('stars-layer');
+  if(!layer)return;layer.innerHTML='';layer.style.overflow='hidden';
+  let W=innerWidth,H=innerHeight;
+  const cv=document.createElement('canvas');
+  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%';
+  cv.width=W;cv.height=H;
+  layer.appendChild(cv);
+  const ctx=cv.getContext('2d');
+  function lg(x1,y1,x2,y2,st){const g=ctx.createLinearGradient(x1,y1,x2,y2);st.forEach(([t,c])=>g.addColorStop(t,c));return g;}
+  function rg(x,y,r1,r2,st){const g=ctx.createRadialGradient(x,y,r1,x,y,r2);st.forEach(([t,c])=>g.addColorStop(t,c));return g;}
+  let CLOUDS,BIRDS,TREES,GRASS,GROUND_LINE,ANIMALS;
+  function buildScene(){
+    CLOUDS=Array.from({length:4},(_,i)=>({x:Math.random()*W,y:H*(.08+i*.06+Math.random()*.03),w:80+Math.random()*120,speed:.08+Math.random()*.12,opacity:.45+Math.random()*.3}));
+    BIRDS=Array.from({length:5},()=>({x:Math.random()*W,y:H*(.12+Math.random()*.25),speed:(.25+Math.random()*.35)*(Math.random()<.5?-1:1),size:6+Math.random()*5,phase:Math.random()*Math.PI*2}));
+    TREES=[{x:W*.08,y:H*.78,scale:.7},{x:W*.22,y:H*.84,scale:1.0},{x:W*.46,y:H*.77,scale:.65},{x:W*.68,y:H*.83,scale:.95},{x:W*.86,y:H*.79,scale:.75},{x:W*.95,y:H*.86,scale:1.1}];
+    GRASS=Array.from({length:28},(_,i)=>({x:(i+.5)*W/28+(Math.random()-.5)*25,h:16+Math.random()*22,phase:Math.random()*Math.PI*2}));
+    GROUND_LINE=H*.7;
+    // Animals spread across the whole savanna ground (Y ∈ [0.74..0.96]).
+    // Farther animals (higher Y) are smaller and slower; closer ones are larger.
+    ANIMALS=[
+      // ── Far back (small) ──
+      {kind:'giraffe', x:W*.20,y:H*.74, dir: 1, scale:.55, speed:.22},
+      {kind:'zebra',   x:W*.55,y:H*.76, dir:-1, scale:.50, speed:.30},
+      {kind:'cheetah', x:W*.10,y:H*.78, dir: 1, scale:.55, speed:1.40},
+      // ── Mid distance ──
+      {kind:'elephant',x:W*.65,y:H*.80, dir:-1, scale:.65, speed:.28},
+      {kind:'leopard', x:W*.30,y:H*.82, dir: 1, scale:.62, speed:.45},
+      {kind:'giraffe', x:W*.85,y:H*.83, dir:-1, scale:.78, speed:.38},
+      {kind:'zebra',   x:W*.15,y:H*.86, dir: 1, scale:.78, speed:.48},
+      // ── Closer ──
+      {kind:'cheetah', x:W*.45,y:H*.88, dir: 1, scale:.85, speed:2.10},
+      {kind:'elephant',x:W*.05,y:H*.90, dir: 1, scale:.95, speed:.32},
+      {kind:'zebra',   x:W*.70,y:H*.91, dir: 1, scale:.85, speed:.55},
+      // ── Foreground (largest, slowest in perspective for big ones) ──
+      {kind:'rhino',   x:W*.40,y:H*.93, dir:-1, scale:.95, speed:.30},
+      {kind:'leopard', x:W*.78,y:H*.95, dir:-1, scale:.95, speed:.62},
+    ];
+  }
+  buildScene();
+  function onResize(){W=cv.width=innerWidth;H=cv.height=innerHeight;buildScene();}
+  window.addEventListener('resize',onResize);
+  function drawAcacia(tx,ty,s){
+    ctx.fillStyle='#3a2014';
+    ctx.beginPath();ctx.moveTo(tx-3*s,ty);ctx.lineTo(tx-2*s,ty-60*s);ctx.lineTo(tx+2*s,ty-60*s);ctx.lineTo(tx+3*s,ty);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#3a2014';ctx.lineWidth=2*s;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(tx,ty-55*s);ctx.lineTo(tx-25*s,ty-75*s);ctx.moveTo(tx,ty-55*s);ctx.lineTo(tx+25*s,ty-75*s);ctx.moveTo(tx,ty-60*s);ctx.lineTo(tx,ty-82*s);ctx.stroke();
+    ctx.fillStyle='#3a5028';ctx.beginPath();ctx.ellipse(tx,ty-80*s,48*s,8*s,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#4a6a35';ctx.beginPath();ctx.ellipse(tx-4*s,ty-84*s,38*s,7*s,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#5a7a40';ctx.beginPath();ctx.ellipse(tx+6*s,ty-87*s,30*s,6*s,0,0,Math.PI*2);ctx.fill();
+  }
+  function drawGiraffe(s,dir){ctx.save();ctx.scale(dir,1);
+    ctx.fillStyle='#d4a04a';ctx.beginPath();ctx.ellipse(0,0,26*s,12*s,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(15*s,-5*s);ctx.lineTo(22*s,-48*s);ctx.lineTo(28*s,-48*s);ctx.lineTo(21*s,-2*s);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.ellipse(28*s,-52*s,9*s,5*s,.3,0,Math.PI*2);ctx.fill();
+    ctx.fillRect(26*s,-60*s,1.5*s,6*s);ctx.fillRect(30*s,-60*s,1.5*s,6*s);
+    ctx.beginPath();ctx.ellipse(24*s,-58*s,2.5*s,4*s,0,0,Math.PI*2);ctx.fill();
+    for(let i=0;i<4;i++)ctx.fillRect(-16*s+i*11*s,10*s,3.5*s,28*s);
+    ctx.fillRect(-26*s,-4*s,1.5*s,14*s);
+    ctx.fillStyle='#7a4820';for(let i=0;i<7;i++){ctx.beginPath();ctx.arc(-18*s+i*6*s,-3*s+(i%2)*6*s,2.5*s,0,Math.PI*2);ctx.fill();}
+    for(let i=0;i<6;i++){ctx.beginPath();ctx.arc(20*s+i*.5*s,-8*s-i*7*s,1.6*s,0,Math.PI*2);ctx.fill();}
+    ctx.fillStyle='#202020';ctx.beginPath();ctx.arc(31*s,-53*s,.9*s,0,Math.PI*2);ctx.fill();
+    ctx.restore();}
+  function drawElephant(s,dir){ctx.save();ctx.scale(dir,1);
+    ctx.fillStyle='#8d8580';ctx.beginPath();ctx.ellipse(0,0,32*s,19*s,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(26*s,-4*s,16*s,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(16*s,-8*s,13*s,11*s,.35,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(38*s,0);ctx.quadraticCurveTo(48*s,12*s,42*s,26*s);ctx.quadraticCurveTo(36*s,32*s,32*s,26*s);ctx.lineTo(36*s,2*s);ctx.closePath();ctx.fill();
+    for(let i=0;i<4;i++)ctx.fillRect(-22*s+i*16*s,14*s,9*s,18*s);
+    ctx.fillStyle='#f0e0c0';ctx.beginPath();ctx.moveTo(34*s,8*s);ctx.lineTo(42*s,14*s);ctx.lineTo(36*s,14*s);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#8d8580';ctx.fillRect(-34*s,-3*s,1.5*s,14*s);
+    ctx.fillStyle='#202020';ctx.beginPath();ctx.arc(28*s,-5*s,1.3*s,0,Math.PI*2);ctx.fill();
+    ctx.restore();}
+  function drawZebra(s,dir){ctx.save();ctx.scale(dir,1);
+    ctx.fillStyle='#f0ead8';ctx.beginPath();ctx.ellipse(0,0,22*s,11*s,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(15*s,-5*s);ctx.lineTo(23*s,-20*s);ctx.lineTo(29*s,-20*s);ctx.lineTo(20*s,-3*s);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.ellipse(30*s,-22*s,8*s,5*s,.45,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#202020';
+    for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(20*s+i*1.4*s,-22*s+i*1.5*s);ctx.lineTo(18*s+i*1.4*s,-16*s+i*1.5*s);ctx.lineTo(22*s+i*1.4*s,-16*s+i*1.5*s);ctx.closePath();ctx.fill();}
+    for(let i=0;i<7;i++)ctx.fillRect(-20*s+i*6*s,-10*s,2*s,20*s);
+    ctx.fillStyle='#f0ead8';for(let i=0;i<4;i++)ctx.fillRect(-16*s+i*11*s,9*s,4*s,22*s);
+    ctx.fillStyle='#202020';for(let i=0;i<4;i++){ctx.fillRect(-16*s+i*11*s,14*s,4*s,2*s);ctx.fillRect(-16*s+i*11*s,22*s,4*s,2*s);}
+    ctx.fillRect(-22*s,-3*s,1.5*s,12*s);
+    ctx.beginPath();ctx.arc(32*s,-22*s,.9*s,0,Math.PI*2);ctx.fill();
+    ctx.restore();}
+  function drawLeopard(s,dir){ctx.save();ctx.scale(dir,1);
+    ctx.fillStyle='#e0b46c';ctx.beginPath();ctx.ellipse(0,0,28*s,8*s,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(24*s,-4*s,9*s,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(19*s,-10*s);ctx.lineTo(17*s,-15*s);ctx.lineTo(22*s,-11*s);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(27*s,-10*s);ctx.lineTo(30*s,-15*s);ctx.lineTo(30*s,-10*s);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(-25*s,0);ctx.quadraticCurveTo(-40*s,-10*s,-36*s,-20*s);ctx.lineTo(-32*s,-20*s);ctx.quadraticCurveTo(-35*s,-10*s,-22*s,2*s);ctx.closePath();ctx.fill();
+    for(let i=0;i<4;i++)ctx.fillRect(-20*s+i*13*s,6*s,3*s,15*s);
+    ctx.fillStyle='#6a3818';
+    for(let i=0;i<14;i++){const sx=-22*s+(i*4)*s,sy=-5*s+((i*3)%9)*s;if(Math.abs(sx)<24*s){ctx.beginPath();ctx.arc(sx,sy,1.5*s,0,Math.PI*2);ctx.fill();}}
+    ctx.fillStyle='#202020';ctx.beginPath();ctx.arc(27*s,-5*s,1.1*s,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(32*s,-2*s,.9*s,0,Math.PI*2);ctx.fill();
+    ctx.restore();}
+  function drawCheetah(s,dir){ctx.save();ctx.scale(dir,1);
+    ctx.fillStyle='#f0c878';ctx.beginPath();ctx.ellipse(0,0,30*s,7*s,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(25*s,-4*s,8*s,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(20*s,-11*s,2.5*s,3*s,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(28*s,-11*s,2.5*s,3*s,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#f0c878';ctx.lineWidth=4*s;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-26*s,0);ctx.quadraticCurveTo(-44*s,-4*s,-50*s,-14*s);ctx.stroke();
+    ctx.strokeStyle='#3a1a08';ctx.beginPath();ctx.moveTo(-46*s,-10*s);ctx.lineTo(-50*s,-14*s);ctx.stroke();
+    ctx.fillStyle='#f0c878';for(let i=0;i<4;i++)ctx.fillRect(-22*s+i*14*s,5*s,2.5*s,19*s);
+    ctx.fillStyle='#1a0e04';
+    const spots=[[-22,-3],[-18,2],[-14,-4],[-10,1],[-6,-3],[-2,2],[2,-3],[6,2],[10,-3],[14,1],[18,-3],[22,2],[-20,4],[-12,5],[-4,4],[4,5],[12,4],[20,5]];
+    for(const[sx,sy]of spots){ctx.beginPath();ctx.arc(sx*s,sy*s,1.2*s,0,Math.PI*2);ctx.fill();}
+    for(let i=0;i<4;i++){const lx=-22*s+i*14*s;ctx.beginPath();ctx.arc(lx+1.2*s,11*s,1*s,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(lx+1.2*s,18*s,1*s,0,Math.PI*2);ctx.fill();}
+    ctx.strokeStyle='#1a0e04';ctx.lineWidth=1.2*s;ctx.beginPath();ctx.moveTo(27*s,-5*s);ctx.quadraticCurveTo(29*s,-2*s,30*s,1*s);ctx.stroke();
+    ctx.fillStyle='#1a0e04';ctx.beginPath();ctx.arc(27*s,-5*s,1*s,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(32*s,-2*s,.8*s,0,Math.PI*2);ctx.fill();
+    ctx.restore();}
+  function drawRhino(s,dir){ctx.save();ctx.scale(dir,1);
+    ctx.fillStyle='#7a7268';ctx.beginPath();ctx.ellipse(0,0,30*s,14*s,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(28*s,5*s,14*s,9*s,-.15,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#d8c89c';ctx.beginPath();ctx.moveTo(34*s,-3*s);ctx.lineTo(40*s,-14*s);ctx.lineTo(38*s,-3*s);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(26*s,-1*s);ctx.lineTo(29*s,-8*s);ctx.lineTo(30*s,-1*s);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#7a7268';ctx.beginPath();ctx.ellipse(18*s,-8*s,4*s,6*s,0,0,Math.PI*2);ctx.fill();
+    for(let i=0;i<4;i++)ctx.fillRect(-22*s+i*15*s,10*s,7*s,18*s);
+    ctx.fillRect(-30*s,-2*s,1.5*s,10*s);
+    ctx.fillStyle='#202020';ctx.beginPath();ctx.arc(28*s,3*s,1.1*s,0,Math.PI*2);ctx.fill();
+    ctx.restore();}
+  function drawAnimal(a,t){const bob=Math.sin(t*3+a.x*.02)*1.5*a.scale;ctx.save();ctx.translate(a.x,a.y+bob);
+    if(a.kind==='giraffe')drawGiraffe(a.scale,a.dir);
+    else if(a.kind==='elephant')drawElephant(a.scale,a.dir);
+    else if(a.kind==='zebra')drawZebra(a.scale,a.dir);
+    else if(a.kind==='leopard')drawLeopard(a.scale,a.dir);
+    else if(a.kind==='cheetah')drawCheetah(a.scale,a.dir);
+    else if(a.kind==='rhino')drawRhino(a.scale,a.dir);
+    ctx.restore();}
+  let animId=null;
+  function frame(ts){
+    if(theme!=='savanna'){window.removeEventListener('resize',onResize);return;}
+    const t=ts/1000;
+    // Sky
+    ctx.fillStyle=lg(0,0,0,H,[[0,'#fce896'],[.30,'#fac765'],[.55,'#f59a5a'],[.70,'#d75e3a'],[1,'#5a2818']]);ctx.fillRect(0,0,W,H);
+    // Sun
+    const sx=W*.78,sy=H*.42,sr=Math.min(W,H)*.075,pulse=1+Math.sin(t*.5)*.04;
+    ctx.fillStyle=rg(sx,sy,0,sr*4*pulse,[[0,'rgba(255,210,120,.45)'],[.5,'rgba(255,160,80,.18)'],[1,'rgba(255,140,80,0)']]);
+    ctx.beginPath();ctx.arc(sx,sy,sr*4*pulse,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=lg(sx,sy-sr,sx,sy+sr,[[0,'#fff2c8'],[1,'#ffae5c']]);
+    ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+    // Clouds
+    for(const c of CLOUDS){c.x+=c.speed;if(c.x-c.w>W)c.x=-c.w;ctx.fillStyle=`rgba(255,240,220,${c.opacity})`;
+      ctx.beginPath();ctx.ellipse(c.x,c.y,c.w*.5,c.w*.18,0,0,Math.PI*2);
+      ctx.ellipse(c.x+c.w*.3,c.y-6,c.w*.32,c.w*.16,0,0,Math.PI*2);
+      ctx.ellipse(c.x-c.w*.25,c.y-4,c.w*.28,c.w*.14,0,0,Math.PI*2);ctx.fill();}
+    // Birds
+    for(const b of BIRDS){b.x+=b.speed;if(b.speed>0&&b.x>W+20)b.x=-20;if(b.speed<0&&b.x<-20)b.x=W+20;
+      const flap=Math.sin(t*6+b.phase)*b.size*.4;
+      ctx.strokeStyle='rgba(35,20,10,.78)';ctx.lineWidth=b.size*.3;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(b.x-b.size,b.y);
+      ctx.quadraticCurveTo(b.x-b.size*.5,b.y-flap,b.x,b.y);
+      ctx.quadraticCurveTo(b.x+b.size*.5,b.y-flap,b.x+b.size,b.y);ctx.stroke();}
+    // Mountains
+    ctx.fillStyle='rgba(120,75,75,.55)';
+    ctx.beginPath();ctx.moveTo(0,GROUND_LINE);ctx.lineTo(0,GROUND_LINE-H*.06);
+    for(let x=0;x<=W;x+=W/12)ctx.lineTo(x,GROUND_LINE-H*.06+Math.sin(x*.005)*H*.04);
+    ctx.lineTo(W,GROUND_LINE);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(90,50,40,.75)';
+    ctx.beginPath();ctx.moveTo(0,GROUND_LINE);
+    for(let x=0;x<=W;x+=W/8)ctx.lineTo(x,GROUND_LINE-H*.025+Math.sin(x*.008+1)*H*.02);
+    ctx.lineTo(W,GROUND_LINE);ctx.closePath();ctx.fill();
+    // Far trees
+    TREES.forEach(tr=>{if(tr.scale<.8)drawAcacia(tr.x,tr.y,tr.scale);});
+    // Ground
+    ctx.fillStyle=lg(0,GROUND_LINE,0,H,[[0,'#d4a76a'],[.5,'#b88248'],[1,'#7a4828']]);
+    ctx.fillRect(0,GROUND_LINE,W,H-GROUND_LINE);
+    ctx.fillStyle='rgba(110,65,30,.3)';
+    for(let i=0;i<60;i++){const sX=(i*67)%W,sY=GROUND_LINE+4+((i*41)%(H-GROUND_LINE-8));ctx.fillRect(sX,sY,3,1);}
+    // Close trees
+    TREES.forEach(tr=>{if(tr.scale>=.8)drawAcacia(tr.x,tr.y,tr.scale);});
+    // Animals
+    for(const a of ANIMALS){a.x+=a.speed*a.dir;if(a.dir>0&&a.x>W+80)a.x=-80;if(a.dir<0&&a.x<-80)a.x=W+80;drawAnimal(a,t);}
+    // Grass
+    ctx.strokeStyle='#9a7a40';ctx.lineWidth=1.6;ctx.lineCap='round';
+    for(const g of GRASS){const baseY=H*.97;
+      for(let i=0;i<5;i++){const offset=(i-2)*4,tipSway=Math.sin(t*1.4+g.x*.012+i*.3+g.phase)*g.h*.18;
+        ctx.beginPath();ctx.moveTo(g.x+offset,baseY);
+        ctx.quadraticCurveTo(g.x+offset+tipSway*.5,baseY-g.h*.5,g.x+offset+tipSway,baseY-g.h);ctx.stroke();}}
+    animId=requestAnimationFrame(frame);
+  }
+  if(animId)cancelAnimationFrame(animId);
+  requestAnimationFrame(frame);
+}
+
 /* applyTheme — מחיל ערכה (girls/boys): body.className, כותרת, חד-קרנות, כפתור toggle */
 function applyTheme(t){
   if(t)theme=t;
-  document.body.className=theme==='boys'?'theme-boys':theme==='galaxy'?'theme-galaxy':theme==='dino'?'theme-dino':theme==='castle'?'theme-castle':theme==='reef'?'theme-reef':'theme-girls';
+  document.body.className=theme==='boys'?'theme-boys':theme==='galaxy'?'theme-galaxy':theme==='dino'?'theme-dino':theme==='castle'?'theme-castle':theme==='reef'?'theme-reef':theme==='savanna'?'theme-savanna':'theme-girls';
   if(theme==='galaxy')initGalaxyStars();
   else if(theme==='dino')initDinoScene();
   else if(theme==='girls')initUnicornScene();
   else if(theme==='boys')initFutureCityScene();
   else if(theme==='castle')initFairyPrincessScene();
   else if(theme==='reef')initUnderwaterScene();
+  else if(theme==='savanna')initSavannaScene();
   else{const _l=document.getElementById('stars-layer');if(_l)_l.innerHTML='';}
   const T=THEMES[theme]||THEMES.girls;
   const ul=document.getElementById('uni-left');
@@ -4042,7 +4357,7 @@ function applyTheme(t){
   _setUni(ul,T.uniL);_setUni(ur,T.uniR);
   const _ew=e=>`<span style="-webkit-text-fill-color:initial">${e}</span>`;
   if(tt)tt.innerHTML=`${_ew(T.titleEmoji)} מִשְׂחֲקֵי חֶשְׁבּוֹן ${_ew(T.titleEmoji)}`;
-  const _themeIcons={girls:'🦄',boys:'🤖',galaxy:'🌌',dino:'🦕',castle:'🏰',reef:'🐠'};
+  const _themeIcons={girls:'🦄',boys:'🤖',galaxy:'🌌',dino:'🦕',castle:'🏰',reef:'🐠',savanna:'🦒'};
   if(tb)tb.textContent=_themeIcons[theme]||'🎨';
   // Mark active theme in menu
   document.querySelectorAll('.tm-item').forEach(el=>{
@@ -4215,7 +4530,7 @@ function buildGamesMenu(picks){
       extras.push({icon,cost:null,disabled:m===aidMode,fn:()=>toggleAidMode(m)});
     });
   }
-  if((mode===5||mode===10)&&ptype!==TDA&&ptype!==TDS&&ptype!==TZ&&ptype!==TX&&ptype!==TC){
+  if((mode===10||mode==='br')&&ptype!==TDA&&ptype!==TDS&&ptype!==TZ&&ptype!==TX&&ptype!==TC){
     [{m:'kang',icon:'🦘'},{m:'nl',icon:'🍪'},{m:'hearts',icon:'❤️'}].forEach(({m,icon})=>{
       extras.push({icon,cost:null,disabled:m===aidMode,fn:()=>toggleAidMode(m)});
     });
@@ -4320,6 +4635,12 @@ const NFW_DATA={
     cf:{icon:'🐠',title:'כָּל הַכָּבוֹד!'},
     bu:{icon:'🐡',title:'מַדְהִים!', ptcs:['🐠','🐡','🐟','🐙','🦑','🦀','🐬','🐚','💎','✨']},
     hr:{icon:'🐠',title:'אַלּוּף הַיָּם!', stars:'🐚🐚🐚🐚🐚'},
+    rp:{label:'כָּל הַכָּבוֹד!'},
+  },
+  savanna:{
+    cf:{icon:'🦁',title:'כָּל הַכָּבוֹד!'},
+    bu:{icon:'🐆',title:'מָהִיר!', ptcs:['🦁','🦒','🐘','🦓','🐆','🦏','🦅','🌳','☀️','🌾']},
+    hr:{icon:'🦁',title:'מֶלֶךְ הַחַיּוֹת!', stars:'🌳🌳🌳🌳🌳'},
     rp:{label:'כָּל הַכָּבוֹד!'},
   },
 };
@@ -4501,7 +4822,7 @@ function fwClose(){if(_fwRaf)cancelAnimationFrame(_fwRaf);_fwDone();}
    ─────────────────────────────────────────────────────────────────────── */
 const AB={R:14,SP:28,PAD:8};
 let abL=[0,0];
-const abN   =()=>mode===5?5:10;
+const abN   =()=>10;
 const abRows=()=>mode<=10?1:2;
 const abRY  =()=>abRows()===1?[60]:[38,96];
 const abH   =()=>abRows()===1?130:178;
@@ -4975,7 +5296,7 @@ function spawnParticles(){
   }
 
   const CHAR_SVG=theme==='boys'?BOY_SVG:GIRL_SVG;
-  const charCount=(theme==='galaxy'||theme==='dino')?0:2;
+  const charCount=(theme==='galaxy'||theme==='dino'||theme==='reef'||theme==='savanna')?0:2;
   for(let i=0;i<charCount;i++){
     const d=document.createElement('div');d.className='particle anime-char glow-click';
     d.innerHTML=CHAR_SVG;
@@ -6672,8 +6993,50 @@ function creatureClick(el){
   },900);
 }
 
+/* ── Number-hover visualization tooltip ──
+   Hovering on any .eq-n or .eq-res shows that number rendered as emojis
+   (up to 10 per row). Helps young learners visualize the quantity. */
+const NTT_EMOJI={girls:'💜',boys:'⚡',galaxy:'⭐',dino:'🥚',castle:'✨',reef:'🐚'};
+function _nttShow(el){
+  const num=parseInt(el.getAttribute('data-num'),10);
+  if(isNaN(num)||num<=0||num>100)return;
+  const tt=document.getElementById('num-tt');if(!tt)return;
+  const em=NTT_EMOJI[theme]||'⭐';
+  // Build groups of up to 5 emojis. Each group is a fixed-column grid sized to
+  // its actual count so a partial last group doesn't reserve unused space —
+  // yet column 1 of every group still aligns with column 1 above (since groups
+  // are left-flushed in the flex container).
+  const groups=[];
+  for(let i=0;i<num;i+=5){
+    const count=Math.min(5,num-i);
+    let g='';for(let j=0;j<count;j++)g+=`<span>${em}</span>`;
+    groups.push(`<div class="ntt-group" style="grid-template-columns:repeat(${count},22px)">${g}</div>`);
+  }
+  tt.querySelector('.ntt-lbl').textContent=num;
+  tt.querySelector('.ntt-grid').innerHTML=groups.join('');
+  tt.style.display='block';
+  // Position: prefer below; flip above if off-screen
+  const r=el.getBoundingClientRect();
+  const tw=tt.offsetWidth,th=tt.offsetHeight;
+  let left=r.left+r.width/2-tw/2;
+  let top=r.bottom+10;
+  left=Math.max(8,Math.min(left,innerWidth-tw-8));
+  if(top+th>innerHeight-8)top=r.top-th-10;
+  tt.style.left=left+'px';
+  tt.style.top=top+'px';
+}
+function _nttHide(){const tt=document.getElementById('num-tt');if(tt)tt.style.display='none';}
+document.addEventListener('mouseover',e=>{
+  const t=e.target;
+  if(t&&t.nodeType===1&&t.hasAttribute('data-num')&&(t.classList.contains('eq-n')||t.classList.contains('eq-res')))_nttShow(t);
+});
+document.addEventListener('mouseout',e=>{
+  const t=e.target;
+  if(t&&t.nodeType===1&&t.hasAttribute('data-num')&&(t.classList.contains('eq-n')||t.classList.contains('eq-res')))_nttHide();
+});
+
 /* ── Boot ── */
-problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);if(mode!==0&&mode!=='mx')injectCoins(problems,mode);
+problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):mode==='br'?makePool('br'):sampleWithTD(makePool(mode),GL);if(mode!==0&&mode!=='mx'&&mode!=='br')injectCoins(problems,mode);
 abInit();
 NL.attachDocumentEvents();
 NL.attachBarEvents();
