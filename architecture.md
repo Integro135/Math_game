@@ -1,0 +1,354 @@
+# Math Game — Architecture (post-restructure)
+
+*Restructured 2026-06-12. Entry point: **`index.html`**. Full test suite
+green against this structure.*
+
+> **Documentation map.** This file is the top-level architecture + the
+> extension contracts (§3). Each subfolder also has its own deep `README.md`,
+> and there is a full build guide for new worlds:
+>
+> | Doc | Covers |
+> |---|---|
+> | `game/js/README.md` | the 8 global-scope engine scripts (structure / key functionality / integration, per file) |
+> | `game/css/README.md` | the 5 base stylesheets + the runtime skin-override model |
+> | `game/skins/README.md` | per-background skins — the four families a skin owns + the rules it must respect |
+> | `aids/README.md` | the aid-art variants + the shared `jar_stage.js` counting-box engine |
+> | `exercises/README.md` | one-file-per-exercise-type system + the type contract |
+> | `success_screens/README.md` | the celebration screens + the SUCCESS registry contract |
+> | `backgrounds/README.md` | scene modules + the standalone-HTML → `.bg.js` porting checklist |
+> | **`NEW_BACKGROUND_GUIDE.md`** | **step-by-step: how to build a whole new background PACK** (scene + skin + aid art + wiring) |
+
+---
+
+## 1. File map
+
+```
+subtraction_game/
+├─ index.html                      ★ THE entry point — HTML skeleton + ordered
+│                                    <link>/<script> includes + version tag
+├─ test_game.py                    pytest+Playwright suite (runs on index.html)
+│
+├─ game/
+│  ├─ css/                         loaded in this order:
+│  │  ├─ base.css                  layout, header, card, equation, buttons,
+│  │  │                            difficulty picker, end screen
+│  │  ├─ aids.css                  number-line panel, cookie jar / chain garden,
+│  │  │                            TDA toggle, TT hint, try-first lock
+│  │  ├─ effects.css               fireworks/nfw overlays, sad modal, report,
+│  │  │                            theme & games menus, gift indicator
+│  │  ├─ themes.css                per-theme body styling (boys, galaxy objects)
+│  │  └─ responsive.css            all @media breakpoints (≤768/480/360)
+│  ├─ skins/                       ★ the game's LOOK over each background:
+│  │  ├─ space.skin.css              mission HUD (no blur, ghost outlines)
+│  │  ├─ unicorns.skin.css           candy valley (rose frosted glass)
+│  │  ├─ dubai.skin.css              golden hour (navy glass, gold hairlines)
+│  │  └─ reef.skin.css               sunlit lagoon (aqua glass, bubble buttons)
+│  └─ js/                          loaded in this order:
+│     ├─ data.js                   constants: TC_MAP coin art, pools config,
+│     │                            DIFFICULTY_GROUPS
+│     ├─ problems.js               all problem generators (mx/br/coins/tens/TD)
+│     ├─ core.js                   ★ game logic: state, setMode, renderModePicker,
+│     │                            loadProblem, renderEq, checkAns, tryFirst,
+│     │                            scoring, report, endGame, creature, tooltip
+│     ├─ success.js                ★ success screens + SUCCESS registry contract
+│     ├─ aids.js                   generic NL + counting-jar ENGINE — all art
+│     │                            (rider, jar, items, icons, hints) comes from
+│     │                            the active AIDS variant; aid toggle, games
+│     │                            dropdown (aid toggles only)
+│     ├─ bg-loader.js              ★ background + skin + AIDS-variant dynamic loader
+│     ├─ themes.js                 THEMES data (girls/galaxy/reef/dubai),
+│     │                            applyTheme + _BG_THEMES mapping, click FX
+│     │                            (all scene rendering lives in backgrounds/)
+│     └─ main.js                   boot + global keyboard handlers
+│
+├─ aids/                           per-background NUMBER-LINE + JAR variants,
+│  │                                 loaded dynamically by bg-loader (see §3.5)
+│  ├─ jar_stage.js                 ★ the counting-jar DISPLAY engine (depth
+│  │                                 grid, drop/burst FX) — loaded on demand;
+│  │                                 consumes any variant's art, auto-sizes
+│  │                                 items from the itemSVG viewBox
+│  ├─ classic.aids.js              kangaroo rider + cookie jar (boot default)
+│  ├─ space.aids.js                rocket rider + asteroid capsule + planets
+│  ├─ reef.aids.js                 dolphin rider + pearl chest + coral garden
+│  ├─ dubai.aids.js                helicopter rider + gold-coin vault + palms
+│  └─ unicorns.aids.js             unicorn rider + crystal cupcake jar + flowers
+│
+├─ exercises/                      ★ ONE FILE PER EXERCISE TYPE (see §3.6);
+│  │                                 loadExercisesFor injects per game mode
+│  ├─ add.ex.js                    TA  a+b (1+1 ladder, עד5/10/20, br, mx)
+│  ├─ sub.ex.js                    TS  a−b
+│  ├─ missing.ex.js                TM  a−?=b
+│  ├─ double.ex.js                 TDA/TDS  __±__=r
+│  ├─ chain.ex.js                  TZ/TX/TW  three-term chains (mx)
+│  ├─ coins.ex.js                  TC  coin counting + pool inject hook
+│  ├─ tens.ex.js                   TT  round tens (mx)
+│  ├─ big_step.ex.js               TBG big number ± 1/2 — its own עַד 100 💯
+│  │                                 game AND mixed into Queen + Superman; no
+│  │                                 carry/borrow; only the ones digit moves
+│  └─ column_add.ex.js             TCA column addition — Superman 🦸
+│                                    (also a full interactive mount module)
+│
+├─ backgrounds/
+│  ├─ README.md                    ★ per-background docs (scene inventory, timers,
+│  │                               click interactions) + the HTML→.bg.js porting
+│  │                               checklist for game integration
+│  ├─ space.bg.js                  ★ background MODULES — single source of
+│  ├─ unicorns.bg.js                 truth, used by BOTH the game and the
+│  ├─ dubai.bg.js                    harness; themes map to them via
+│  ├─ reef.bg.js                     _BG_THEMES (themes.js)
+│  ├─ space.html                   thin dev harnesses (one per module):
+│  ├─ unicorns.html                  open directly in a browser to iterate
+│  ├─ dubai_skyline.html             on a scene in isolation
+│  └─ underwater_happy_reef.html
+│
+├─ subtraction_game.html           frozen pruned monolith (superseded, reference)
+├─ legacy_subtraction_game_v6.52.html   pristine pre-restructure original
+├─ separation_plan.md              the approved plan this executed
+└─ success_screens_spec.md         brief for building new success screens
+```
+
+Everything runs from `file://` — therefore only classic `<script src>`/`<link>`
+tags and runtime *tag injection* are used (fetch/ES-modules are CORS-blocked
+on `file://`). All JS is global-scope; inline `onclick` handlers keep working.
+
+## 2. What was removed in the restructure
+
+- **All 12 mini-games** (knockout, party, lego, balloons, garden, invaders,
+  bubbles, train, frogs, stars, cans, cookies): ≈1,500 JS lines, ≈680 CSS lines,
+  12 HTML panels, star-cost menu, spacebar/ESC panel dispatchers.
+- **Hearts & abacus** — the aid mode, the bead abacus, the in-exercise hearts
+  display, and mode-0's force-hearts rule. `aidMode` now cycles `kang ↔ nl` only.
+- ≈50 obsolete tests. Suite went 123 → 81 collected tests.
+- **The four legacy DOM themes** (boys/dino/castle/savanna) + their embedded
+  scene renderers (≈1,450 lines in themes.js: initFutureCityScene,
+  initDinoScene, initFairyPrincessScene, initSavannaScene, plus the by-then
+  dead initUnicornScene/initUnderwaterScene), their THEMES data, menu buttons,
+  theme CSS blocks, the GIRL/BOY anime-char particles and the floating emoji
+  particle spawner. Every remaining theme is a dynamically-loaded canvas
+  background module; a stale localStorage theme falls back to girls.
+
+Kept intact: every game mode (1+1/5/10/20/גשר 10/מלכה), all problem generators,
+the number line, the cookie jar + chain garden, tryFirst lock & penalties,
+digit hint, report, gift goals, themes, discovery bubble.
+
+## 3. The contracts (how to extend)
+
+### 3.1 Backgrounds — `backgrounds/<name>.bg.js`
+
+```js
+window.BACKGROUNDS = window.BACKGROUNDS || {};
+window.BACKGROUNDS.space = {
+  skin: 'space',                       // → game/skins/space.skin.css
+  aids: 'space',                       // → aids/space.aids.js   (optional,
+                                       //   defaults to 'classic' — see §3.5)
+  init({ stage }) {                    // stage = the #stars-layer element
+    /* mount everything inside stage */
+    return function cleanup() { /* stop rAF, remove listeners & DOM */ };
+  },
+};
+```
+
+`game/js/bg-loader.js` exposes `loadBackground(name)` / `unloadBackground()`:
+it injects the module script on demand, swaps the skin `<link>`, loads the
+background's AIDS variant (§3.5), and runs the previous background's
+`cleanup()`. `applyTheme('galaxy')` → `loadBackground('space')`;
+`unloadBackground()` reverts skin → none and aids → `classic`.
+
+**Adding a background:** write `backgrounds/foo.bg.js` (same shape) +
+`game/skins/foo.skin.css`, then map a theme to `loadBackground('foo')` in
+`applyTheme` (themes.js). Iterate standalone with a copy of the
+`backgrounds/space.html` harness.
+
+### 3.2 Skins — `game/skins/<name>.skin.css`
+
+Each background ships a skin that restyles **the game itself** to match it.
+A skin may override four families (see comments inside `space.skin.css`):
+
+1. **Palette** — `--skin-primary/--skin-accent/--skin-glow/--skin-text`
+   (also passed to success screens as `opts.palette`)
+2. **Fonts** — `body{font-family:...}` etc.
+3. **Glass transparency** — `.glass{background/backdrop-filter}`
+4. **Position on screen** — `.wrap{max-width/margins/padding}` to place the
+   game column so the scene's hero objects stay visible.
+
+A skin may also restyle the aids: the space skin turns `#nl-panel` into a
+comet-trail trajectory (waypoint-star ticks, golden 5-beacons, round thruster
+± buttons) — so each skin can ship a different-looking number line while the
+engine markup (aids.js) and the rider art (`aids/<name>.aids.js`) stay shared.
+
+### 3.3 Success screens — the SUCCESS registry (success.js)
+
+```js
+window.SUCCESS.styles.push({
+  name: 'comet-shower',
+  supportsSuper: true,
+  show({root, isSuper, durationMs, points, palette, praise}) {
+    /* animate inside root */
+    return cleanup;
+  },
+});
+```
+
+Registered screens join the random rotation alongside the 5 built-ins
+(canvas fireworks / confetti / burst / hero / ripple); styles with
+`supportsSuper` also join the every-5th-answer super rotation. The host owns
+the root element, the Enter/Space/click skip, timing (1700 ms / 3500 ms super)
+and cleanup. Full brief for authors: `success_screens_spec.md` (includes a
+standalone dev harness). Integration = add the file name to the
+`SUCCESS_FILES` manifest (data.js); bg-loader injects
+`success_screens/<name>.js` dynamically at boot — no index.html edit needed.
+
+### 3.4 Difficulty picker — `DIFFICULTY_GROUPS` (data.js)
+
+```js
+const DIFFICULTY_GROUPS=[
+  {id:'easy',  label:'קַל',      modes:[{id:0,label:'1+1 🌱'},{id:5,label:'עַד 5'},{id:10,label:'עַד 10'}]},
+  {id:'medium',label:'בֵּינוֹנִי', modes:[{id:20,label:'עַד 20'},{id:'br',label:'גָּשֵׁר 10 🌈 🎁'},{id:'mx',label:'מַלְכָּה 👸 🎁'},{id:'sup',label:'סוּפֶּרְמֶן 🦸'}]},
+];
+```
+
+The picker (tier tabs + game pills) is rendered from this config by
+`renderModePicker()` (core.js) into the **settings modal** (`#settings-ov`),
+opened via the ⚙️ gear button next to the theme button (or by clicking the
+header's read-only current-game indicator `#mode-ind`, also rendered by
+`renderModePicker`). Picking a game switches the mode and closes the modal;
+ESC / backdrop / ✕ close it without changing anything. Browsing a tier does
+**not** switch the mode — only clicking a game does. Buttons keep their
+historical ids (`lb0`, `lb5`, `lb10`, `lb20`, `lbbr`, `lbmx`) and stay in the
+DOM while the modal is hidden, so automation keeps working. Moving/adding/
+renaming a game = editing this config only.
+
+### 3.5 Aids (number line + counting jar) — `aids/<name>.aids.js`
+
+`game/js/aids.js` is a **generic engine**: stepping, counting, eating/adding
+items, the chain garden, the aid toggle. *All the art* — the number-line rider,
+the jar container, the counted items, the menu icons, the hint sentences —
+comes from the active **AIDS variant**, loaded dynamically by bg-loader
+(`loadAids(name)` injects `aids/<name>.aids.js` on demand, then calls
+`applyAidsVariant()` to re-render the rider + jar in place):
+
+```js
+window.AIDS = window.AIDS || { variants: {}, current: null };
+window.AIDS.variants.space = {
+  numberLine: {
+    icon: '🚀',                        // games-menu icon for the NL toggle
+    rider: '🚀',                       // what hops along the line (was 🦘)
+    hintAdd: 'טוּס קָדִימָה עַל הַיְּשַׁר 🚀',  // loadProblem hint, addition
+    hintSub: 'טוּס אָחוֹרָה עַל הַיְּשַׁר 🚀',  // loadProblem hint, subtraction
+  },
+  jar: {
+    icon: '⭐',                        // games-menu icon for the jar toggle
+    gardenIcon: '🪐',                  // games-menu icon for the chain garden
+    itemName: 'כּוֹכָבִים',              // plugged into the jar hint sentences
+    hintAdd: '...', hintSub: '...',    // optional full hint overrides
+    containerSVG: '<svg ...>',         // the jar art (glass capsule in space)
+    itemSVG(i)   { return '<svg ...>'; },  // counted item #i (glowing stars)
+    gardenSVG(ci){ return '<svg ...>'; },  // chain-garden plant, color ci
+  },
+};
+```
+
+- **`aids/classic.aids.js`** (kangaroo + cookie jar + flowers) is loaded at
+  boot and is the fallback for every field — a variant may override only
+  what it wants.
+- **The jar DISPLAY is its own module** — `aids/jar_stage.js`
+  (`window.JAR_STAGE.mount({root,variant}) → {set,add,remove,variant,cleanup}`),
+  injected on demand by `bg-loader.loadJarStage`. It renders any variant's
+  art on a pseudo-3D depth grid (front row bright, back rows raised/dimmed),
+  with squash-bounce drops, accent-colored sparkles, poof bursts and a glass
+  shine sweep. Item boxes are AUTO-SIZED from the variant's `itemSVG` viewBox
+  — a new variant needs zero CSS. Colors pull from `--skin-*`; every element
+  carries a stable `.jst-*` class that skins may restyle. The logic engine
+  (aids.js pgm*) only drives the handle.
+- A background opts in via `aids: 'space'` in its BACKGROUNDS entry;
+  `unloadBackground()` always reverts to `classic`.
+- index.html ships only empty mounts (`#nl-dot`, `#pgm-ck-jar`); nothing
+  variant-specific is copied into the game files.
+
+### 3.6 Exercise types — `exercises/<name>.ex.js` (one file per type)
+
+EVERY exercise type lives in its own file and registers itself into
+`window.EXERCISES.types` with its mode support and generator:
+
+```js
+window.EXERCISES.types.big_step = {
+  t: TBG,                      // the ptype constant(s) it serves
+  modes: ['big'],              // which game modes include this type
+  aidsReveal: 'afterMistake',  // optional: 'always' shows the aids (number
+                               // line / jar) from the first attempt;
+                               // default keeps the try-first lock
+  make(mode) { return [...problem objects...]; },
+};
+```
+
+The reveal policy is read generically by `_lockAids` (core.js) for whatever
+type is on screen — flipping one field in the type's file changes when its
+aids appear. Superman (`column_add`) declares `aidsReveal:'always'`, so its
+skinned number line is visible from the start; every other type keeps the
+hidden-until-first-mistake behavior.
+
+`EXERCISE_INDEX` (data.js) maps file → supported modes. When a game mode
+starts, `bg-loader.loadExercisesFor(mode)` injects exactly the type files
+that mode lists (synchronously when cached), then the mode RECIPE in
+problems.js (`makePool`) asks each registered type for its contribution —
+e.g. Queen = every type's `make('mx')` quota shuffled; עד5/10/20 = the basic
+four types + TD slotting + the coins type's `inject()` hook. setMode /
+restart / boot all run their pool build inside the loader callback.
+
+Shared single-input rendering (`renderEq`) and checking (`checkAns`) stay in
+core.js as generic infrastructure. A type that needs its OWN interaction
+adds a `mount` to the same registration:
+
+```js
+window.EXERCISES.types.column_add = {
+  mount({root, a, b, api}) {     // build everything inside root
+    /* api.wrong(val) — committed wrong answer (host: penalty + sad modal)
+       api.solved()   — exercise complete    (host: score + success screen) */
+    return cleanup;              // remove listeners/timers
+  },
+};
+```
+
+`EXERCISE_OF_TYPE` (data.js) maps a ptype to its file; core.js injects
+`exercises/<name>.ex.js` on demand (bg-loader.loadExercise) and mounts it
+into the equation area. The host keeps scoring (`_tfPts`), tryFirst, the
+report, the sad modal and the success flow; the module owns everything
+visual + its own checking. Module inputs carry the global `ans-inp` class so
+the green/red answer-border contract applies automatically.
+
+First module: **column addition** (`column_add.ex.js`) — the Superman 🦸 game
+(`sup` mode, medium tier): units first, a carried 1 flies up to the tens
+column, hint circles + a private 0-20 number line open after a mistake.
+`column_addition.html` is its thin dev harness (single source of truth).
+
+## 4. Verification trail
+
+| Gate | Result |
+|---|---|
+| Baseline (pre-restructure monolith) | 114 passed, 2 rotating timing flakes, 7 skips |
+| Phase 1 — after pruning mini-games/hearts/abacus | **73 passed / 0 failed** / 8 skips |
+| Phase 2 — suite pointed at split `index.html` | 70 passed + 2 flakes (both pass isolated) |
+| Phase 3 — smoke (picker, SUCCESS contract, bg loader, harness) | all pass, no JS errors |
+| **Final full run on the new structure** | **74 passed / 0 failed / 7 skips** |
+| Suite refreshed for the dynamic-exercise era — 22 new tests (dynamic loading, big/sup modes, jar stage, border contract, settings modal, fixed icons) + a real boot-race fix (stale boot callback could overwrite a freshly picked mode's pool) | **95 passed / 0 failed / 8 skips** (103 collected) |
+| TBG (big ±1/2) woven into Queen + Superman; number line now supports a `base` offset so TBG shows a window centered on the big number (e.g. 75 → 65..85); helpers hardened (`reveal_aids` re-submits via `checkAns()`, `wait_fw_and_advance` closes via `fwClose()`) — the long-standing TC load-flake is gone | **98 passed / 0 failed / 7 skips** (104 collected) |
+| Superman number line oriented to the TOP number's units digit (e.g. 13+18 → rider on 3 from the start, not 8) and shown from the first attempt; `solve_one` now waits for a ready board before reading state (kills the last boot-race flake) | **101 passed / 0 failed / 7 skips** (108 collected) |
+| Chosen game persists across refresh (localStorage `gameMode`, resolved back through DIFFICULTY_GROUPS to recover the id's original number/string type; falls back to mx on a missing/garbage value) | **109 passed / 0 failed / 8 skips** (117 collected) |
+| Per-answer success screens linger +1s (1700→2700 normal, 3500→4500 super); gift-reward coverage added (eligibility threshold-gated by GIFT_GOALS, end-of-set 🎁 + the special `SUCCESS.special.gift` screen that lives in its own `success_screens/gift/` subfolder, shown ONLY when the grade clears the mode threshold) | **115 passed / 0 failed / 7 skips** (122 collected) |
+| Success-screen praise headlines now varied (random pool, no longer always "כל הכבוד") + optional player name (settings → localStorage `playerName`) woven in on a 2–3 screen cadence ("כָּל הַכָּבוֹד נֹעָה!" / "הִצְלַחְתְּ נֹעָה!"); the gift screen greets by name too | **121 passed / 0 failed / 9 skips** (130 collected) |
+| Added permanent coverage for the success-screen display duration (the +1s linger): a no-op probe screen + `_fwOn` lifetime measurement assert ~2700ms normal / ~4500ms super and that the game advances after each | **124 passed / 0 failed / 8 skips** (132 collected) |
+
+## 5. Next steps (not yet done)
+
+- ~~Port the unicorn valley~~ — DONE: unicorns/dubai/reef are all `.bg.js`
+  modules with skins; girls→unicorns, reef→reef, dubai→dubai (new 🏙️ theme),
+  each with its own AIDS variant and skin.
+- ~~Design real per-background skins (space first)~~ — DONE: the space skin is
+  a full "mission HUD" redesign (no blur, near-transparent veils, ghost-outline
+  buttons, glow-based contrast, a comet-trail number line) built to occlude as
+  little of the scene as possible. The galaxy theme drops the title emojis
+  (THEMES data); everything else is pure `space.skin.css`.
+- Plug in externally-authored success screens as they arrive
+  (`success_screens_spec.md` is the brief).
+- Optionally port the remaining legacy themes (dino/castle/reef/savanna/boys/
+  girls) to background modules and slim themes.js down to data + applyTheme.

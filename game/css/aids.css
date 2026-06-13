@@ -1,0 +1,237 @@
+/* ── Counting jar — the DISPLAY lives in the dynamically-loaded module
+      aids/jar_stage.js (stable .jst-* classes, skin-overridable); container
+      art comes from the active aid variant in aids/<name>.aids.js ── */
+
+/* ── TDA cookie-jar toggle button ── */
+.tda-jar-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;
+  background:radial-gradient(circle at 38% 36%,#FFCC80,#E65100 70%);
+  border:3px solid rgba(255,255,255,.32);
+  box-shadow:0 4px 22px rgba(230,81,0,.55),inset 0 1px 0 rgba(255,255,255,.28);
+  cursor:pointer;font-size:1.55rem;display:none;align-items:center;justify-content:center;transition:all .22s}
+.tda-jar-btn::after{content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%);pointer-events:none}
+.tda-jar-btn:hover{transform:scale(1.16) rotate(-9deg);box-shadow:0 7px 30px rgba(230,81,0,.8)}
+.tda-jar-btn:active{transform:scale(.96) rotate(2deg)}
+/* ── Aid-mode toggle button (free, no star cost) ── */
+.aid-toggle-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#80DEEA,#00838F 70%);border:3px solid rgba(255,255,255,.32);box-shadow:0 4px 22px rgba(0,131,143,.6),inset 0 1px 0 rgba(255,255,255,.28);cursor:pointer;font-size:1.55rem;display:none;align-items:center;justify-content:center;transition:all .22s}
+.aid-toggle-btn::after{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%);pointer-events:none}
+.aid-toggle-btn:hover{transform:scale(1.16) rotate(-9deg);box-shadow:0 7px 30px rgba(0,160,175,.85)}
+.aid-toggle-btn:active{transform:scale(.96) rotate(2deg)}
+
+/* ── Chain tools (number line + cookie jar) ── */
+#chain-tools{display:none;margin:36px 0 12px}
+/* the counting jar shows ONLY the box now — the old number line above it
+   is hidden on every background (the jar's own value + ±buttons are enough) */
+.pgm-nl{display:none}
+.pgm-bar{height:10px;background:rgba(255,255,255,.08);border-radius:5px;border:1px solid rgba(255,255,255,.12);position:relative;overflow:visible}
+.pgm-dot{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#FFE57F,#FF9800);box-shadow:0 0 12px rgba(255,200,0,.9);border:2px solid rgba(255,255,255,.5);transform:translate(-50%,-50%);transition:left .3s cubic-bezier(.17,1.3,.5,1);z-index:3}
+.pgm-arcs-svg{position:absolute;bottom:0;left:0;width:100%;height:16px;overflow:visible;pointer-events:none;z-index:4}
+.pgm-arc{fill:none;stroke-width:2;stroke-linecap:round;opacity:0;animation:pgmArcFade .3s ease-out forwards}
+.pgm-arc-add{stroke:rgba(255,215,0,.85)}.pgm-arc-sub{stroke:rgba(80,180,255,.85)}
+@keyframes pgmArcFade{to{opacity:1}}
+.pgm-nl-nums{position:relative;height:22px;margin-top:6px;direction:ltr}
+.pgm-nl-num{position:absolute;font-family:'Fredoka One',cursive;font-size:.92rem;color:rgba(255,255,255,.45);transform:translateX(-50%);line-height:1}
+.pgm-nl-num5{color:rgba(255,255,255,.75);font-size:1rem}
+.pgm-scene{display:flex;align-items:flex-start;justify-content:center;gap:44px;direction:ltr;margin:6px 0}
+.pgm-side{width:72px;height:72px;border-radius:10px;border:none;font-family:'Fredoka One',cursive;font-size:2.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .16s;position:relative;overflow:hidden;flex-shrink:0}
+.pgm-side::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 52%);pointer-events:none}
+.pgm-minus{background:linear-gradient(160deg,#FF6B81,#C2185B 80%);box-shadow:0 4px 0 #880E4F,0 4px 14px rgba(194,24,91,.55);color:#FFD54F}
+.pgm-minus:hover{transform:translateY(-2px) scale(1.06)}.pgm-minus:active{transform:translateY(4px)!important}
+.pgm-plus{background:linear-gradient(160deg,#FFCC80,#BF8040 80%);box-shadow:0 4px 0 #7A5010,0 4px 14px rgba(200,130,0,.55);color:#3E2000}
+.pgm-plus:hover{transform:translateY(-2px) scale(1.06)}.pgm-plus:active{transform:translateY(4px)!important}
+.pgm-side:disabled{opacity:.28;cursor:default;transform:none!important;box-shadow:none!important;filter:grayscale(.4)}
+.pgm-jar-col{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.pgm-jar-btm{position:absolute;bottom:14px;right:-47px;display:flex;align-items:center;gap:4px;z-index:5;background:rgba(0,0,0,.38);border:1.5px solid rgba(255,215,0,.35);border-radius:20px;padding:3px 7px 3px 6px;backdrop-filter:blur(6px)}
+.pgm-val{font-family:'Fredoka One',cursive;font-size:1.4rem;color:rgba(255,215,0,.9);text-shadow:0 0 10px rgba(255,200,0,.6);line-height:1;pointer-events:none}
+.pgm-rst{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
+.pgm-rst:hover{background:rgba(255,255,255,.16);color:#fff;transform:rotate(-180deg)}
+/* ── TT tens hint icon ── */
+.tt-eq-wrap{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tt-hint-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(255,255,255,.18);color:rgba(255,255,255,.85);
+  font-size:.9rem;font-weight:900;cursor:pointer;
+  border:1.5px solid rgba(255,255,255,.25);
+  margin-right:6px;flex-shrink:0;position:relative;
+  transition:background .15s,transform .15s;
+  user-select:none;
+}
+#digit-hint-btn{
+  width:48px;height:48px;font-size:1.5rem;
+  background:radial-gradient(circle at 38% 36%,#81C784,#2E7D32 70%);
+  border:3px solid rgba(255,255,255,.32);
+  box-shadow:0 4px 0 #1B5E20,0 4px 18px rgba(46,125,50,.65),inset 0 1px 0 rgba(255,255,255,.28);
+  color:#fff;
+  transition:transform .22s,box-shadow .22s;
+}
+#digit-hint-btn:hover:not(:disabled){transform:scale(1.12);box-shadow:0 6px 0 #1B5E20,0 6px 24px rgba(76,175,80,.85)}
+#digit-hint-btn:active:not(:disabled){transform:scale(.95);box-shadow:0 1px 0 #1B5E20,0 2px 10px rgba(46,125,50,.5)}
+#digit-hint-btn:disabled{opacity:.45;cursor:default;transform:none;filter:grayscale(.25);box-shadow:0 4px 0 #1B5E20,0 4px 10px rgba(46,125,50,.3)}
+.tt-hint-icon:hover:not(:disabled){background:rgba(255,220,80,.35);transform:scale(1.12)}
+.tt-hint-icon:disabled{opacity:.3;cursor:default}
+.tt-hint-icon::before{
+  content:'30⭐';
+  position:absolute;top:-17px;left:50%;transform:translateX(-50%);
+  font-size:.6rem;font-family:'Nunito',sans-serif;font-weight:800;
+  color:rgba(255,215,0,.85);white-space:nowrap;pointer-events:none;
+}
+.tt-hint-icon.hint-shown::before{display:none}
+.tt-hint-icon::after{
+  content:attr(data-hint);
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:rgba(20,0,60,.95);color:#FFD700;
+  padding:6px 14px;border-radius:10px;white-space:nowrap;
+  font-family:'Fredoka One',cursive;font-size:1.3rem;letter-spacing:.5px;
+  opacity:0;pointer-events:none;transition:opacity .22s;
+  border:1px solid rgba(255,215,0,.35);
+  box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:20;
+}
+.tt-hint-icon.hint-shown::after{opacity:1}
+
+
+/* ── Try-first gate ── */
+.tf-locked{opacity:.28!important;pointer-events:none!important}
+body.tf-locked-nl .nl-num,
+body.tf-locked-nl .pgm-nl-num,
+body.tf-locked-nl .tick{visibility:hidden}
+body.tf-locked-nl .kang{filter:grayscale(1) brightness(.55);opacity:.55}
+body.tf-locked-nl #nl-dot,
+body.tf-locked-nl #pgm-dot{filter:grayscale(1);opacity:.55}
+#tf-nl-note{display:none;text-align:center;font-size:.84rem;font-weight:800;color:#f97316;padding:1px 0 5px;letter-spacing:.02em}
+#tf-msg{text-align:center;font-size:1.45rem;font-weight:900;color:#f97316;padding:10px 0 4px;letter-spacing:.04em;animation:tfPulse 2s ease-in-out infinite;text-shadow:0 2px 6px rgba(0,0,0,.25)}
+@keyframes tfPulse{0%,100%{opacity:.78;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
+body.theme-girls   #tf-msg{color:#8e1bd0;text-shadow:0 2px 6px rgba(255,255,255,.7),0 0 2px #fff}
+body.theme-galaxy  #tf-msg{color:#d4a8ff;text-shadow:0 2px 10px rgba(180,120,255,.7)}
+
+/* ── Number-line kangaroo panel (inline aid) ── */
+#nl-panel{
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:16px;
+  padding:10px 10px 8px;
+  width:100%;
+  display:flex;flex-direction:column;gap:6px;
+  margin-top:4px;
+}
+/* Column (Superman) exercises render on a see-through card so the column
+   math sits on the scene — but that lets the busy background wash out the
+   number line. Give ONLY that line its own frosted blur backdrop. */
+.card:has(#colx-root) #nl-panel{
+  background:rgba(26,20,48,.55);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+  border-color:rgba(255,255,255,.28);
+  box-shadow:0 6px 22px rgba(0,0,0,.28);
+}
+#nl-panel .nl-row{display:flex;align-items:center;gap:12px;direction:ltr}
+#nl-panel .side-btn{
+  flex-shrink:0;width:52px;height:52px;border-radius:12px;
+  border:none;cursor:pointer;font-size:1.9rem;font-weight:900;color:#fff;
+  transition:transform .08s,box-shadow .08s;user-select:none;
+  -webkit-tap-highlight-color:transparent;position:relative;overflow:hidden;
+}
+#nl-panel .side-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 52%);pointer-events:none}
+#nl-panel .side-btn:active{transform:translateY(3px)}
+#nl-panel .side-btn:disabled{opacity:.35;cursor:default;transform:none}
+#nl-panel .side-btn:not(:disabled):hover{transform:translateY(-2px) scale(1.05)}
+#nl-panel .btn-plus{background:linear-gradient(160deg,#FFCC80,#BF8040 80%);color:#3E2000;box-shadow:0 4px 0 #7A5010,0 4px 12px rgba(200,130,0,.5)}
+#nl-panel .btn-minus{background:linear-gradient(160deg,#FF6B81,#C2185B 80%);color:#FFD54F;box-shadow:0 4px 0 #880E4F,0 4px 12px rgba(194,24,91,.5)}
+#nl-panel .nl-wrap{flex:1;position:relative;padding-top:88px;padding-bottom:46px}
+#nl-panel .nl-arcs-svg{position:absolute;top:0;left:0;width:100%;height:88px;overflow:visible;pointer-events:none}
+#nl-panel .nl-bar-track{position:relative;height:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:5px;overflow:visible;cursor:pointer}
+#nl-panel .tick{position:absolute;top:100%;width:2px;height:12px;background:rgba(255,255,255,.22);border-radius:1px;transform:translateX(-50%)}
+#nl-panel .tick.major{height:18px;background:rgba(255,255,255,.55)}
+#nl-panel .nl-num{position:absolute;top:calc(100% + 18px);transform:translateX(-50%);font-family:'Fredoka One',cursive;font-size:.88rem;color:rgba(255,255,255,.4);line-height:1;white-space:nowrap}
+#nl-panel .nl-num.major{font-size:1.1rem;color:rgba(255,255,255,.8)}
+#nl-panel .nl-dot{
+  position:absolute;top:0;
+  transform:translate(-50%,calc(-100% - 4px));
+  width:36px;height:36px;
+  background:none;border:none;border-radius:0;box-shadow:none;
+  transition:left .3s cubic-bezier(.17,1.3,.5,1);
+  z-index:3;display:flex;align-items:flex-end;justify-content:center;
+}
+#nl-panel .kang-dir{display:block;transition:transform .15s ease}
+#nl-panel .nl-dot.face-left .kang-dir{transform:scaleX(-1)}
+#nl-panel .kang{font-size:1.8rem;line-height:1;display:block;transform-origin:50% 100%;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5)) drop-shadow(0 0 8px rgba(255,200,0,.4))}
+/* idle breathing while grounded; suspended during the rAF-driven flight */
+#nl-panel .nl-dot:not(.flying) .kang{animation:nlIdle 2.8s ease-in-out infinite}
+@keyframes nlIdle{
+  0%,100%{transform:translateY(0) scale(1,1)}
+  50%    {transform:translateY(-2.5px) scale(.985,1.02)}
+}
+/* landing squash & spring-back */
+#nl-panel .kang.nl-land{animation:nlLand .26s cubic-bezier(.2,2,.4,1)}
+@keyframes nlLand{
+  0%  {transform:scale(1.28,.72)}
+  55% {transform:scale(.92,1.1)}
+  100%{transform:scale(1,1)}
+}
+/* the landed-on number pops */
+#nl-panel .nl-num.nl-num-pop{animation:nlNumPop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes nlNumPop{
+  30% {transform:translateX(-50%) scale(1.75);color:#FFD700}
+  100%{transform:translateX(-50%) scale(1)}
+}
+/* jump-trail bits, landing dust, and the every-few-jumps firework */
+.nl-trail{position:fixed;font-size:.85rem;line-height:1;pointer-events:none;z-index:9999;animation:nlTrail .42s ease-out forwards}
+@keyframes nlTrail{
+  0%  {opacity:.95;transform:scale(1) rotate(0)}
+  100%{opacity:0;transform:scale(.35) translateY(12px) rotate(45deg)}
+}
+.nl-dust{position:fixed;width:7px;height:5px;margin:-2px 0 0 -3px;border-radius:50%;pointer-events:none;z-index:9999;animation:nlDust .46s ease-out forwards}
+@keyframes nlDust{
+  0%  {opacity:.9;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.45)}
+}
+.nl-fw-flash{position:fixed;width:10px;height:10px;margin:-5px;border-radius:50%;background:#fff;pointer-events:none;z-index:9999;animation:nlFwFlash .32s ease-out forwards}
+@keyframes nlFwFlash{
+  0%  {opacity:1;transform:scale(.6);box-shadow:0 0 8px 3px rgba(255,255,255,.9)}
+  100%{opacity:0;transform:scale(3.2)}
+}
+.nl-fw-spark{position:fixed;width:6px;height:6px;margin:-3px;border-radius:50%;pointer-events:none;z-index:9999;animation:nlFwSpark .7s cubic-bezier(.1,.8,.4,1) forwards}
+@keyframes nlFwSpark{
+  0%  {opacity:1;transform:translate(0,0) scale(1)}
+  70% {opacity:.9}
+  100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) + 20px)) scale(.4)}
+}
+#nl-panel .nl-dot::after{content:'';position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:2px;height:4px;background:rgba(255,190,50,.7);border-radius:1px}
+#nl-panel .nl-controls{display:flex;align-items:center;justify-content:center;gap:8px}
+#nl-panel .ctrl-btn{display:flex;align-items:center;gap:5px;border:none;cursor:pointer;border-radius:10px;padding:7px 14px;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:800;transition:transform .08s;user-select:none}
+#nl-panel .ctrl-btn:active{transform:translateY(2px)}
+#nl-panel .btn-reset{background:linear-gradient(145deg,#FFE57F,#FFD740,#FF8F00);color:#4a0080;box-shadow:0 3px 0 #E65100,0 4px 12px rgba(255,160,0,.4)}
+#nl-panel .btn-reset:hover{background:linear-gradient(145deg,#fff3a0,#ffe057,#ffab20)}
+#nl-panel .btn-undo{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);color:rgba(255,210,255,.85)}
+#nl-panel .btn-undo:hover{background:rgba(255,255,255,.18)}
+#nl-panel .btn-icon{font-size:1.2rem;line-height:1}
+#nl-panel .arc-add{stroke:rgba(255,215,0,.85);stroke-width:2.5;fill:none;stroke-linecap:round}
+#nl-panel .arc-sub{stroke:rgba(80,180,255,.85);stroke-width:2.5;fill:none;stroke-linecap:round}
+/* the newest arc draws itself on, tip chasing the flying rider */
+#nl-panel .arc-anim{stroke-dasharray:1;stroke-dashoffset:1;animation:nlArcDraw .5s ease-out forwards}
+@keyframes nlArcDraw{to{stroke-dashoffset:0}}
+.nl-poof-wrap{position:fixed;pointer-events:none;z-index:9999}
+@keyframes nlPoofAnim{0%{opacity:1;transform:scale(.6)}80%{opacity:.6;transform:scale(1.3)}100%{opacity:0;transform:scale(1.6)}}
+.nl-poof{position:absolute;font-size:1.3rem;animation:nlPoofAnim .38s ease-out forwards}
+
+
+/* ── Chain garden eq-button ── */
+.pgm-gn-eq-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;
+  background:radial-gradient(circle at 38% 36%,#FFE082,#F57F17 70%);
+  border:3px solid rgba(255,255,255,.32);
+  box-shadow:0 4px 22px rgba(255,160,0,.6),inset 0 1px 0 rgba(255,255,255,.28);
+  cursor:pointer;font-size:1.65rem;display:none;align-items:center;justify-content:center;transition:all .22s}
+.pgm-gn-eq-btn::before{content:'20 ⭐';position:absolute;top:-22px;left:50%;transform:translateX(-50%);
+  font-size:.72rem;font-family:'Nunito',sans-serif;font-weight:800;
+  color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.7);white-space:nowrap;pointer-events:none}
+.pgm-gn-eq-btn::after{content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.3),transparent 60%)}
+.pgm-gn-eq-btn:hover{transform:scale(1.16) rotate(-9deg);box-shadow:0 7px 30px rgba(255,160,0,.85)}
+.pgm-gn-eq-btn:active{transform:scale(.96) rotate(2deg)}
+.pgm-gn-eq-btn:disabled{opacity:.28;cursor:default;transform:none!important;box-shadow:none!important;filter:grayscale(.5)}
+/* ── Chain garden display (replaces cookie jar) ── */
+#pgm-gn-display{flex-direction:column;align-items:center;gap:3px;padding:2px 0;height:220px;overflow:hidden}
+.pgm-gn-flowers{display:flex;flex-wrap:wrap;justify-content:flex-start;align-content:flex-start;gap:1px;width:312px;height:190px;overflow-y:auto}
+.pgm-gn-flower{width:30px;height:43px;display:flex;align-items:flex-end;justify-content:center;flex-shrink:0}
+.pgm-gn-flower svg{width:100%;height:auto;display:block}
+.pgm-gn-lbl{font-family:'Fredoka One',cursive;font-size:.78rem;color:#69F0AE}

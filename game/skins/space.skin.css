@@ -1,0 +1,354 @@
+/* ── Space skin — "Mission HUD" ─────────────────────────────────────────────
+   A ground-up redesign of the game's look over the SPACE background.
+   Design goal: the game is a thin holographic instrument layer floating in
+   front of the cosmos — it should OCCLUDE AS LITTLE OF THE SCENE AS POSSIBLE.
+
+   Principles
+   ─ no backdrop blur anywhere (blur smears the stars behind the panels)
+   ─ panels are near-transparent veils with hairline borders, never solid
+   ─ contrast comes from glow + text-shadow, not from opaque backgrounds
+   ─ buttons are ghost outlines that fill only on hover / when active
+   ─ one restrained palette: starlight, comet cyan, nebula violet, star gold
+
+   A skin owns four families:  1. palette (CSS vars, also fed to success
+   screens)   2. fonts/type   3. glass transparency   4. position on screen.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root{
+  --skin-primary: #C77DFF;   /* nebula violet */
+  --skin-accent:  #FFD27D;   /* star gold     */
+  --skin-glow:    #7DC4FF;   /* comet cyan    */
+  --skin-text:    #EAF0FF;   /* starlight     */
+}
+
+/* ── 4. POSITION — a slim instrument column; the scene's heroes (Saturn,
+       the galaxy, Earth, the black hole, the sun) stay in view around it ── */
+body.theme-galaxy .wrap{max-width:700px;padding-top:8px}
+
+/* ── 3. GLASS — the veil: no blur, almost no fill, hairline rim ── */
+body.theme-galaxy .glass{
+  background:rgba(7,9,30,.34);
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border:1px solid rgba(140,165,255,.20);
+  box-shadow:0 0 0 1px rgba(10,8,40,.25),0 14px 50px rgba(2,2,16,.45);
+}
+
+/* ════ HEADER — a thin HUD strip, not a box ════ */
+body.theme-galaxy .header{
+  background:linear-gradient(180deg,rgba(7,9,30,.42),rgba(7,9,30,.12));
+  border:none;box-shadow:none;border-radius:18px;
+  padding:10px 18px 10px;margin-bottom:10px;position:relative;
+}
+/* hairline energy line closing the strip */
+body.theme-galaxy .header::after{
+  content:'';position:absolute;left:8%;right:8%;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(125,196,255,.55) 30%,
+             rgba(199,125,255,.55) 70%,transparent);
+  box-shadow:0 0 8px rgba(140,160,255,.5);
+}
+body.theme-galaxy .uni{display:none}
+body.theme-galaxy .hdr-top{gap:0}
+
+/* title — quiet, wide-tracked starlight; no shimmer, no rainbow */
+body.theme-galaxy .title{
+  font-family:'Fredoka One',cursive;font-size:1.55rem;letter-spacing:.14em;
+  animation:none;
+  background:linear-gradient(180deg,#FFFFFF 0%,#C9D8FF 55%,#8FA8E8 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 12px rgba(125,170,255,.35));
+}
+
+/* stats — small HUD readouts */
+body.theme-galaxy .hdr-stats{
+  margin-top:4px;gap:26px;font-size:.84rem;font-weight:800;
+  color:#9FB4E8;letter-spacing:.05em;
+}
+body.theme-galaxy .hdr-stats strong{color:#FFD27D;text-shadow:0 0 10px rgba(255,200,100,.45)}
+
+/* progress — a 3px comet trace */
+body.theme-galaxy .prog-wrap{
+  height:3px;max-width:320px;margin-top:8px;border-radius:2px;
+  background:rgba(125,150,255,.14);
+}
+body.theme-galaxy .prog-bar{
+  background:linear-gradient(90deg,#7DC4FF,#C77DFF 60%,#FFD27D);
+  box-shadow:0 0 10px rgba(150,170,255,.9),0 0 3px #fff;
+}
+
+/* ════ CURRENT-GAME INDICATOR + SETTINGS MODAL ════ */
+body.theme-galaxy .mode-ind{color:#AFC2F2;letter-spacing:.04em;text-shadow:0 1px 4px rgba(2,4,18,.6)}
+body.theme-galaxy .mode-ind .mi-cur{color:#FFD27D;text-shadow:0 0 9px rgba(255,200,100,.45)}
+body.theme-galaxy #settings-ov{background:rgba(3,4,16,.74)}
+body.theme-galaxy .settings-box{
+  background:linear-gradient(170deg,rgba(14,16,48,.96),rgba(7,9,30,.97));
+  border:1px solid rgba(140,165,255,.35);
+  box-shadow:0 0 50px rgba(90,110,255,.25),0 22px 60px rgba(0,0,0,.8);
+}
+body.theme-galaxy .settings-title{
+  background:linear-gradient(90deg,#EAF0FF,#9AD4FF 50%,#C77DFF);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-galaxy .set-sec-lbl{color:#9FB4E8}
+
+body.theme-galaxy .tier-tab{
+  background:transparent;border:1px solid rgba(140,165,255,.22);color:#8FA4D8;
+  letter-spacing:.03em;
+}
+body.theme-galaxy .tier-tab:hover{background:rgba(125,150,255,.10)}
+body.theme-galaxy .tier-tab.active{
+  background:rgba(124,77,255,.16);border-color:rgba(199,125,255,.65);color:#EAF0FF;
+  box-shadow:0 0 12px rgba(160,100,255,.35),inset 0 0 12px rgba(124,77,255,.12);
+}
+
+body.theme-galaxy .lvl-btn{
+  background:transparent;border:1px solid rgba(140,165,255,.26);color:#AFC2F2;
+  box-shadow:none;letter-spacing:.02em;
+}
+body.theme-galaxy .lvl-btn:hover{
+  background:rgba(125,150,255,.10);border-color:rgba(160,190,255,.5);
+  box-shadow:0 0 16px rgba(110,140,255,.3);
+}
+body.theme-galaxy .lvl-btn.active{
+  background:rgba(255,210,125,.10);
+  border:1px solid rgba(255,210,125,.85);color:#FFD27D;font-weight:900;
+  box-shadow:0 0 16px rgba(255,200,100,.4),inset 0 0 14px rgba(255,200,100,.10);
+  text-shadow:0 0 8px rgba(255,210,125,.5);
+  transform:scale(1.06);
+}
+body.theme-galaxy .lvl-btn.active:hover{transform:scale(1.08)}
+
+/* ════ THE CARD — an open holographic frame ════ */
+body.theme-galaxy .card{
+  background:radial-gradient(120% 90% at 50% 30%,rgba(8,10,32,.38),rgba(8,10,32,.16) 70%);
+  border:1px solid rgba(140,165,255,.18);border-radius:20px;
+  box-shadow:none;padding:18px 18px 14px;
+}
+/* corner light-pins — the only "frame" the eye needs */
+body.theme-galaxy .card::before,
+body.theme-galaxy .card::after{
+  content:'';position:absolute;width:7px;height:7px;border-radius:50%;
+  background:radial-gradient(circle,#CFE4FF 0%,rgba(125,196,255,.65) 40%,transparent 70%);
+  pointer-events:none;
+}
+body.theme-galaxy .card::before{top:-3px;right:-3px;box-shadow:0 0 10px rgba(125,196,255,.8)}
+body.theme-galaxy .card::after {bottom:-3px;left:-3px;box-shadow:0 0 10px rgba(199,125,255,.8);
+  background:radial-gradient(circle,#EBD8FF 0%,rgba(199,125,255,.65) 40%,transparent 70%)}
+
+/* ════ EQUATION — light itself, no container ════ */
+body.theme-galaxy .eq-n,body.theme-galaxy .eq-res{
+  color:#F4F8FF;
+  text-shadow:0 0 18px rgba(125,196,255,.6),0 0 4px rgba(220,235,255,.9),
+              0 2px 10px rgba(0,0,0,.65);
+}
+body.theme-galaxy .eq-op{text-shadow:0 0 14px rgba(255,200,100,.55),0 2px 8px rgba(0,0,0,.6)}
+body.theme-galaxy .op-m,body.theme-galaxy .op-p,body.theme-galaxy .op-e{color:#FFD27D}
+body.theme-galaxy .eq-res{color:#FFD27D;text-shadow:0 0 22px rgba(255,200,100,.7),0 2px 10px rgba(0,0,0,.6)}
+
+body.theme-galaxy .ans-inp,body.theme-galaxy .tx-sub-inp{
+  background:rgba(8,10,34,.45);
+  border:2px solid rgba(125,196,255,.45);color:#F4F8FF;
+  box-shadow:0 0 12px rgba(60,130,255,.20),inset 0 0 16px rgba(20,40,120,.25);
+}
+body.theme-galaxy .ans-inp:focus,body.theme-galaxy .tx-sub-inp:focus{
+  border-color:#9AD4FF;background:rgba(10,14,44,.55);
+  box-shadow:0 0 26px rgba(90,170,255,.55),0 0 5px rgba(190,230,255,.9),
+             inset 0 0 16px rgba(30,60,160,.3);
+}
+
+/* the check button — a pulsing ring of light */
+body.theme-galaxy .chk-btn{
+  background:rgba(10,12,38,.45);
+  border:2px solid rgba(160,190,255,.6);color:#CFE0FF;
+  box-shadow:0 0 16px rgba(110,150,255,.45),inset 0 0 14px rgba(80,110,255,.2);
+}
+body.theme-galaxy .chk-btn::after{background:none}
+body.theme-galaxy .chk-btn:hover{
+  border-color:#BFE0FF;color:#fff;
+  box-shadow:0 0 28px rgba(130,180,255,.8),inset 0 0 18px rgba(90,130,255,.35);
+}
+
+/* hint + divider */
+body.theme-galaxy .hint{color:#9FB8EE;text-shadow:0 0 10px rgba(60,110,255,.35);letter-spacing:.02em}
+body.theme-galaxy .div{
+  background:linear-gradient(90deg,transparent,rgba(140,165,255,.35),transparent);
+}
+
+/* feedback — aurora green / nova pink */
+body.theme-galaxy .fb-ok{color:#7CFFD4;text-shadow:0 0 18px rgba(60,255,190,.6)}
+body.theme-galaxy .fb-err{color:#FF8FB8;text-shadow:0 0 18px rgba(255,90,150,.55)}
+
+/* ════ ACTION BUTTONS — ghost HUD pills (flat, no 3D ledges) ════ */
+body.theme-galaxy .btn{
+  background:rgba(8,10,32,.40);text-shadow:none;
+  border:1.5px solid rgba(140,165,255,.40);color:#D6E2FF;
+  box-shadow:0 0 12px rgba(90,120,255,.18);
+  font-weight:800;letter-spacing:.03em;
+}
+body.theme-galaxy .btn::after{background:none}
+body.theme-galaxy .btn:hover{box-shadow:0 0 22px rgba(120,150,255,.4)}
+body.theme-galaxy .b-chk{border-color:rgba(199,125,255,.6);color:#E6CCFF;
+  box-shadow:0 0 14px rgba(160,90,255,.3)}
+body.theme-galaxy .b-chk:hover,body.theme-galaxy .b-chk:active{
+  background:rgba(124,77,255,.22);box-shadow:0 0 24px rgba(170,110,255,.55)}
+body.theme-galaxy .b-try{border-color:rgba(125,196,255,.6);color:#CFE6FF;
+  box-shadow:0 0 14px rgba(80,150,255,.3)}
+body.theme-galaxy .b-try:hover,body.theme-galaxy .b-try:active{
+  background:rgba(60,130,255,.18);box-shadow:0 0 24px rgba(100,170,255,.55)}
+body.theme-galaxy .b-nxt{border-color:rgba(125,196,255,.6);color:#CFE6FF;
+  box-shadow:0 0 14px rgba(80,150,255,.3)}
+body.theme-galaxy .b-nxt:hover,body.theme-galaxy .b-nxt:active{
+  background:rgba(60,130,255,.18);box-shadow:0 0 24px rgba(100,170,255,.55)}
+body.theme-galaxy .b-rpl{
+  background:rgba(255,210,125,.10);border-color:rgba(255,210,125,.85);color:#FFD27D;
+  text-shadow:0 0 10px rgba(255,200,100,.45);
+  box-shadow:0 0 18px rgba(255,200,100,.35)}
+body.theme-galaxy .b-rpl:hover,body.theme-galaxy .b-rpl:active{
+  background:rgba(255,210,125,.18);box-shadow:0 0 30px rgba(255,210,125,.55)}
+
+/* utility buttons — faint ghost circles */
+body.theme-galaxy .games-drop-btn,body.theme-galaxy .theme-toggle-btn{
+  background:rgba(8,10,32,.40);border:1px solid rgba(140,165,255,.30);
+  box-shadow:0 0 10px rgba(90,120,255,.2);
+}
+body.theme-galaxy .tt-hint-icon{
+  background:rgba(8,10,32,.40);border-color:rgba(255,210,125,.5);color:#FFD27D;
+  box-shadow:0 0 10px rgba(255,200,100,.25);
+}
+
+/* header gift pill */
+body.theme-galaxy .gift-indicator{
+  background:transparent;border:1px solid rgba(255,210,125,.35);
+  box-shadow:0 0 12px rgba(255,200,100,.18);
+}
+body.theme-galaxy #score-star{filter:drop-shadow(0 0 7px rgba(255,215,0,.8))}
+
+/* coin stage (TC) — open star-field tray */
+body.theme-galaxy .coins-stage{
+  background:rgba(8,10,32,.28);border:1px solid rgba(140,165,255,.16);
+}
+body.theme-galaxy .coin-lbl{color:#9FB4E8}
+body.theme-galaxy .tc-eq-lbl,body.theme-galaxy .tc-hint-top{color:#BFD0F5}
+
+/* ════ THE SPACE NUMBER LINE — a flight trajectory, unique to this skin ════
+   Track = a comet light-trail.  Ticks = waypoint stars.  Numbers = soft
+   starlight, every 5th a golden beacon.  The rider (🚀) comes from
+   aids/space.aids.js — art and layout stay strictly separated. */
+body.theme-galaxy #nl-panel{background:transparent;border:none;box-shadow:none}
+
+body.theme-galaxy #nl-panel .nl-bar-track{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(125,196,255,.06),
+             rgba(125,196,255,.55) 18%,rgba(199,125,255,.55) 82%,rgba(199,125,255,.06));
+  box-shadow:0 0 10px rgba(140,160,255,.45);
+}
+/* waypoint stars instead of tick bars */
+body.theme-galaxy #nl-panel .tick{
+  width:5px;height:5px;border-radius:50%;top:calc(100% + 5px);
+  background:rgba(170,200,255,.55);box-shadow:0 0 6px rgba(150,190,255,.6);
+}
+body.theme-galaxy #nl-panel .tick.major{
+  width:8px;height:8px;top:calc(100% + 3px);
+  background:#FFD27D;box-shadow:0 0 10px rgba(255,200,100,.85);
+}
+body.theme-galaxy #nl-panel .nl-num{color:rgba(159,180,232,.75)}
+body.theme-galaxy #nl-panel .nl-num.major{
+  color:#FFD27D;text-shadow:0 0 10px rgba(255,200,100,.55);
+}
+/* the rider hovers on a beam of light */
+body.theme-galaxy #nl-panel .nl-dot::after{
+  background:rgba(125,196,255,.8);box-shadow:0 0 6px rgba(125,196,255,.9);
+}
+body.theme-galaxy #nl-panel .kang{
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(125,196,255,.65));
+}
+/* jump arcs: add = gold flare, sub = comet cyan */
+body.theme-galaxy #nl-panel .arc-add{stroke:rgba(255,210,125,.9)}
+body.theme-galaxy #nl-panel .arc-sub{stroke:rgba(125,196,255,.9)}
+
+/* thruster buttons */
+body.theme-galaxy #nl-panel .side-btn{
+  background:rgba(8,10,32,.45);border-radius:50%;
+}
+body.theme-galaxy #nl-panel .btn-plus{
+  background:rgba(8,10,32,.45);color:#9AD4FF;
+  border:2px solid rgba(125,196,255,.6);
+  box-shadow:0 0 14px rgba(90,160,255,.4),inset 0 0 12px rgba(60,120,255,.18);
+}
+body.theme-galaxy #nl-panel .btn-minus{
+  background:rgba(8,10,32,.45);color:#E0B8FF;
+  border:2px solid rgba(199,125,255,.6);
+  box-shadow:0 0 14px rgba(170,100,255,.4),inset 0 0 12px rgba(140,70,255,.18);
+}
+body.theme-galaxy #nl-panel .ctrl-btn{border-radius:50px}
+body.theme-galaxy #nl-panel .btn-reset{
+  background:rgba(255,210,125,.10);border:1.5px solid rgba(255,210,125,.7);color:#FFD27D;
+  box-shadow:0 0 12px rgba(255,200,100,.3);
+}
+body.theme-galaxy #nl-panel .btn-reset:hover{background:rgba(255,210,125,.2)}
+body.theme-galaxy #nl-panel .btn-undo{
+  background:transparent;border:1.5px solid rgba(140,165,255,.4);color:#AFC2F2;
+}
+body.theme-galaxy #nl-panel .btn-undo:hover{background:rgba(125,150,255,.12)}
+
+/* ════ CHAIN MODE (mini trajectory + the star capsule) ════ */
+body.theme-galaxy #tf-nl-note{color:#FFD27D;text-shadow:0 0 8px rgba(255,200,100,.4)}
+body.theme-galaxy .pgm-bar{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(125,196,255,.06),
+             rgba(125,196,255,.5) 18%,rgba(199,125,255,.5) 82%,rgba(199,125,255,.06));
+  box-shadow:0 0 8px rgba(140,160,255,.4);
+}
+body.theme-galaxy .pgm-dot{
+  background:radial-gradient(circle at 38% 36%,#CFE4FF,#5B8DEF);
+  border-color:rgba(220,235,255,.8);box-shadow:0 0 12px rgba(130,180,255,.95);
+}
+body.theme-galaxy .pgm-nl-num{color:rgba(159,180,232,.7)}
+body.theme-galaxy .pgm-nl-num5{color:#FFD27D;text-shadow:0 0 8px rgba(255,200,100,.5)}
+body.theme-galaxy .pgm-arc-add{stroke:rgba(255,210,125,.9)}
+body.theme-galaxy .pgm-arc-sub{stroke:rgba(125,196,255,.9)}
+body.theme-galaxy .pgm-side{border-radius:50%;font-size:2.1rem}
+body.theme-galaxy .pgm-side::after{background:none}
+body.theme-galaxy .pgm-plus{
+  background:rgba(8,10,32,.45);color:#9AD4FF;
+  border:2px solid rgba(125,196,255,.6);
+  box-shadow:0 0 14px rgba(90,160,255,.4),inset 0 0 12px rgba(60,120,255,.18);
+}
+body.theme-galaxy .pgm-minus{
+  background:rgba(8,10,32,.45);color:#E0B8FF;
+  border:2px solid rgba(199,125,255,.6);
+  box-shadow:0 0 14px rgba(170,100,255,.4),inset 0 0 12px rgba(140,70,255,.18);
+}
+body.theme-galaxy .pgm-jar-btm{
+  background:rgba(8,10,32,.55);border-color:rgba(255,210,125,.45);
+}
+/* star items in the capsule need a taller box than cookies */
+body.theme-galaxy .ck-cookie{width:34px;height:28px}
+body.theme-galaxy .ck-cookie:hover{filter:brightness(1.3) drop-shadow(0 0 8px rgba(140,190,255,.8))}
+
+/* number-hover tooltip — a small starlit pane (objects come from the
+   space aid variant: glowing asteroids) */
+body.theme-galaxy #num-tt{
+  background:rgba(12,14,42,.96);
+  border:1px solid rgba(140,165,255,.45);
+  box-shadow:0 6px 24px rgba(2,4,18,.7),0 0 18px rgba(110,140,255,.25);
+}
+body.theme-galaxy #num-tt .ntt-lbl{color:#FFD27D;text-shadow:0 0 10px rgba(255,200,100,.45)}
+
+/* ════ END SCREEN ════ */
+body.theme-galaxy .end-ttl{
+  background:linear-gradient(135deg,#FFFFFF,#C9D8FF 40%,#FFD27D);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-galaxy .end-sc{color:#BFD0F5}
+body.theme-galaxy .end-grade-num{
+  background:linear-gradient(135deg,#FFD27D,#C77DFF,#7DC4FF);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(200,180,255,.5));
+}
+body.theme-galaxy .end-grade-max{color:rgba(175,194,242,.7)}
+body.theme-galaxy .end-grade-msg{color:#BFD0F5}
+
+/* compact header on small screens keeps the scene visible */
+@media(max-width:480px){
+  body.theme-galaxy .title{font-size:1.2rem;letter-spacing:.1em}
+}

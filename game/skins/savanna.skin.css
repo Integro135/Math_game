@@ -1,0 +1,26 @@
+/* ── Savanna skin — the game's look over the Pride Rock sunset ──────────────
+   Warm amber glass on the blazing sky; the game column sits center-right so
+   Pride Rock and the lions on the left stay visible. */
+
+/* 1. palette */
+:root{
+  --skin-primary:#E07028;
+  --skin-accent:#FFC568;
+  --skin-glow:#FF9A4D;
+  --skin-text:#FFF3E0;
+}
+
+/* 2. glass — warm smoked amber */
+.glass{
+  background:rgba(58,22,10,.38);
+  border-color:rgba(255,180,100,.28);
+  box-shadow:0 12px 40px rgba(20,5,4,.5),inset 0 1px 0 rgba(255,210,150,.22);
+}
+
+/* 3. position — keep the rock and the pride visible on the left */
+.wrap{max-width:760px;margin-left:auto;margin-right:max(12px,calc(50vw - 560px))}
+@media(max-width:900px){.wrap{margin:0 auto}}
+
+/* 4. accents */
+.title{background:linear-gradient(90deg,#fff 0%,#ffe2b0 30%,#ffb060 55%,#ffe2b0 80%,#fff 100%);-webkit-background-clip:text;background-clip:text}
+.prog-bar{background:linear-gradient(90deg,#ffd700,#ff8c42)}

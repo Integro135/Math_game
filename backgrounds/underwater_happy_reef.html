@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Reef — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the REEF background module.
+     The actual scene lives in reef.bg.js — the SAME file the game loads
+     dynamically (single source of truth, no more copy-porting).
+     Open this file directly to iterate on the background in isolation.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #03283f; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  #toggle {
+    position: fixed; bottom: 24px; right: 24px; z-index: 10;
+    padding: 9px 22px;
+    background: rgba(20, 90, 140, 0.45);
+    color: rgba(230, 250, 255, 0.95);
+    border: 1px solid rgba(170, 235, 255, 0.45);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(0, 30, 60, 0.3);
+    transition: background .25s, box-shadow .25s, transform .15s;
+  }
+  #toggle:hover {
+    background: rgba(40, 140, 200, 0.6);
+    box-shadow: 0 4px 24px rgba(120, 220, 255, 0.3);
+    transform: translateY(-1px);
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="toggle">Restart</button>
+<script src="reef.bg.js"></script>
+<script>
+let cleanup = null;
+function start() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.reef.init({ stage: document.getElementById('stage') });
+}
+document.getElementById('toggle').addEventListener('click', start);
+start();
+</script>
+</body>
+</html>

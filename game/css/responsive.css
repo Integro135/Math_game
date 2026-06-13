@@ -1,0 +1,73 @@
+/* ── Responsive — tablet (≤768px) ── */
+@media (max-width:768px){
+  .title{font-size:2.1rem}
+  .uni{font-size:2.2rem}
+  .eq-n,.eq-op,.eq-res{font-size:2.9rem}
+  .ans-inp{width:80px;height:64px;font-size:2.8rem}
+  .lvl-btn{padding:6px 16px;font-size:.9rem}
+  .btn{padding:12px 26px}
+}
+
+/* ── Responsive — mobile (≤480px) ── */
+@media (max-width:480px){
+  body{overflow-y:auto}
+  .wrap{padding:8px 8px 20px}
+  .header{padding:10px 14px 10px;border-radius:18px}
+  .hdr-top{gap:8px}
+  .uni{font-size:1.8rem}
+  .title{font-size:1.55rem}
+  .hdr-stats{font-size:.8rem;gap:8px;margin-top:5px}
+  .prog-wrap{max-width:200px;margin-top:5px}
+  .level-row{gap:5px;margin-top:8px}
+  .lvl-btn{padding:4px 8px;font-size:.78rem}
+  .lvl-lbl{font-size:.8rem}
+  .card{padding:14px 10px;border-radius:20px}
+  /* equation on its own row; buttons row below */
+  .equation{width:100%;justify-content:center}
+  .eq-btns-row{width:100%;justify-content:space-between}
+  /* back to normal flow so space-between works in row 2 */
+  .eq-mini-btns{position:static;transform:none}
+  .chk-btn{width:36px;height:36px;font-size:.95rem}
+  /* keep equation numbers compact so they fit one line */
+  .eq-n,.eq-op,.eq-res{font-size:1.9rem}
+  .eq-n{min-width:28px}
+  .equation{gap:5px}
+  .ans-inp{width:58px;height:50px;font-size:1.9rem;border-radius:12px}
+  /* level buttons: 3+2 split — show break element */
+  .lvl-break{display:block;flex-basis:100%;height:0}
+  .lvl-lbl{display:none}
+  .btn{padding:10px 20px;font-size:.93rem}
+  .b-rpl{padding:12px 30px;font-size:1.1rem}
+  .fb{font-size:1.2rem}
+  .hint{font-size:.82rem}
+  .ko-box{padding:14px 14px 12px;border-radius:22px}
+  .pa-box{padding:14px 14px 12px;border-radius:22px}
+  .lg-box{padding:14px 14px 12px;border-radius:22px}
+  .ko-eq-display .eq-n,.ko-eq-display .eq-res{font-size:2.2rem}
+  .ko-eq-display .eq-op{font-size:1.9rem}
+  .ko-eq-display .ans-inp{width:64px;height:52px;font-size:2rem}
+  .ko-stage{grid-template-columns:repeat(8,1fr);gap:7px}
+}
+
+/* ── Responsive — narrow mobile (≤360px) ── */
+@media (max-width:360px){
+  .eq-n,.eq-op,.eq-res{font-size:1.75rem}
+  .eq-n{min-width:24px}
+  .ans-inp{width:52px;height:46px;font-size:1.75rem}
+  .equation{gap:4px}
+}
+
+/* ══════════════════════════════════════
+   UNICORN / GIRLS THEME
+══════════════════════════════════════ */
+body.theme-girls #bg{
+  background:linear-gradient(180deg,
+    #18002e 0%, #32006a 10%, #620099 18%,
+    #960090 26%, #c030a0 35%,
+    #e060b0 44%, #f090c8 54%,
+    #f8b8d8 63%, #fcd4e0 72%,
+    #fde8d0 81%, #fef0b8 90%,
+    #fff4a0 100%);
+  animation:none;
+}
+

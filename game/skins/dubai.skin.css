@@ -1,0 +1,356 @@
+/* ── Dubai skin — "Golden Hour" ─────────────────────────────────────────────
+   A ground-up redesign of the game's look over the DUBAI-AT-DUSK background.
+   Design goal: luxury-hotel elegance — the game is a sheet of deep-navy
+   glass etched with hairline gold, resting in front of a living skyline.
+   The city lights behind MUST STAY SHARP and the Burj Khalifa (right third
+   of the screen) must stay clear.
+
+   Principles
+   ─ no backdrop blur anywhere (blur smears the city lights behind the panels)
+   ─ deep-navy near-transparent fills, background opacity never above .45
+   ─ 1px hairline gold borders — jewelry lines, never thick frames
+   ─ metallic gold gradient type with wide tracking; no emojis in the title
+   ─ buttons are restrained flat outlines that fill softly on hover
+   ─ one restrained palette: amber gold, champagne, dusk-sky blue, warm white
+
+   A skin owns four families:  1. palette (CSS vars, also fed to success
+   screens)   2. fonts/type   3. glass transparency   4. position on screen.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root{
+  --skin-primary: #FFB54D;   /* amber gold     */
+  --skin-accent:  #FFD27D;   /* champagne gold */
+  --skin-glow:    #6FB7FF;   /* dusk-sky blue  */
+  --skin-text:    #F2EEDF;   /* warm white     */
+}
+
+/* ── 4. POSITION — the game board sits CENTERED; the near-transparent glass
+       keeps the Burj, the fountain and the skyline visible through it ── */
+body.theme-dubai .wrap{max-width:700px;margin:0 auto;padding-top:10px}
+
+/* ── 3. GLASS — dark hotel glass: no blur, faint navy tint, hairline gold ── */
+body.theme-dubai .glass{
+  background:rgba(8,14,34,.38);
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border:1px solid rgba(255,191,105,.28);
+  box-shadow:0 0 0 1px rgba(4,8,24,.30),0 16px 48px rgba(2,5,18,.5);
+}
+
+/* ════ HEADER — a slim brass nameplate, not a box ════ */
+body.theme-dubai .header{
+  background:linear-gradient(180deg,rgba(8,14,34,.44),rgba(8,14,34,.10));
+  border:none;box-shadow:none;border-radius:14px;
+  padding:10px 18px 10px;margin-bottom:10px;position:relative;
+}
+/* hairline gold rule closing the nameplate */
+body.theme-dubai .header::after{
+  content:'';position:absolute;left:6%;right:6%;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,181,77,.65) 30%,
+             rgba(255,210,125,.75) 50%,rgba(255,181,77,.65) 70%,transparent);
+  box-shadow:0 0 8px rgba(255,181,77,.4);
+}
+body.theme-dubai .uni{display:none}
+body.theme-dubai .hdr-top{gap:0}
+
+/* title — engraved metallic gold, wide-tracked; no shimmer, no emojis */
+body.theme-dubai .title{
+  font-family:'Fredoka One',cursive;font-size:1.5rem;letter-spacing:.22em;
+  animation:none;
+  background:linear-gradient(180deg,#FFF3D6 0%,#FFD27D 38%,#C8961E 72%,#FFE9A8 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 1px 1px rgba(20,12,0,.55)) drop-shadow(0 0 14px rgba(255,181,77,.30));
+}
+
+/* stats — small concierge readouts */
+body.theme-dubai .hdr-stats{
+  margin-top:4px;gap:26px;font-size:.84rem;font-weight:800;
+  color:#C9BFA8;letter-spacing:.08em;
+}
+body.theme-dubai .hdr-stats strong{color:#FFD27D;text-shadow:0 0 9px rgba(255,181,77,.45)}
+
+/* progress — a 3px thread of gold leaf */
+body.theme-dubai .prog-wrap{
+  height:3px;max-width:320px;margin-top:8px;border-radius:2px;
+  background:rgba(255,210,125,.12);
+}
+body.theme-dubai .prog-bar{
+  background:linear-gradient(90deg,#B8821E,#FFB54D 45%,#FFE9A8);
+  box-shadow:0 0 10px rgba(255,181,77,.8),0 0 3px rgba(255,243,214,.9);
+}
+
+/* ════ CURRENT-GAME INDICATOR + SETTINGS MODAL ════ */
+body.theme-dubai .mode-ind{color:#C9BFA8;letter-spacing:.05em;text-shadow:0 1px 4px rgba(4,8,22,.65)}
+body.theme-dubai .mode-ind .mi-cur{color:#FFD27D;text-shadow:0 0 8px rgba(255,181,77,.45)}
+body.theme-dubai #settings-ov{background:rgba(4,7,20,.76)}
+body.theme-dubai .settings-box{
+  background:linear-gradient(168deg,rgba(13,21,48,.97),rgba(7,11,30,.98));
+  border:1px solid rgba(255,191,105,.42);
+  box-shadow:0 0 46px rgba(255,160,60,.14),0 22px 60px rgba(0,0,0,.8);
+}
+body.theme-dubai .settings-title{
+  background:linear-gradient(180deg,#FFF3D6,#FFD27D 45%,#C8961E);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:.06em;
+}
+body.theme-dubai .set-sec-lbl{color:#C9BFA8;letter-spacing:.05em}
+
+body.theme-dubai .tier-tab{
+  background:transparent;border:1px solid rgba(255,191,105,.24);color:#B8AE96;
+  letter-spacing:.04em;
+}
+body.theme-dubai .tier-tab:hover{background:rgba(255,191,105,.08)}
+body.theme-dubai .tier-tab.active{
+  background:rgba(255,181,77,.13);border-color:rgba(255,181,77,.7);color:#F2EEDF;
+  box-shadow:0 0 12px rgba(255,160,60,.25),inset 0 0 12px rgba(255,181,77,.08);
+}
+
+body.theme-dubai .lvl-btn{
+  background:transparent;border:1px solid rgba(214,200,168,.26);color:#D9D0BC;
+  box-shadow:none;letter-spacing:.02em;
+}
+body.theme-dubai .lvl-btn:hover{
+  background:rgba(255,210,125,.08);border-color:rgba(255,210,125,.45);
+  box-shadow:0 0 14px rgba(255,170,70,.22);
+}
+body.theme-dubai .lvl-btn.active{
+  background:rgba(255,210,125,.12);
+  border:1px solid rgba(255,210,125,.9);color:#FFD27D;font-weight:900;
+  box-shadow:0 0 14px rgba(255,181,77,.35),inset 0 0 12px rgba(255,200,100,.08);
+  text-shadow:0 0 8px rgba(255,210,125,.45);
+  transform:scale(1.05);
+}
+body.theme-dubai .lvl-btn.active:hover{transform:scale(1.07)}
+
+/* ════ THE CARD — a pane of hotel glass with a gilt edge ════ */
+body.theme-dubai .card{
+  background:linear-gradient(180deg,rgba(8,14,34,.42),rgba(8,14,34,.20));
+  border:1px solid rgba(255,191,105,.26);border-radius:16px;
+  box-shadow:0 18px 50px rgba(2,5,18,.45);padding:18px 18px 14px;
+}
+/* a single gilt highlight along the top edge — the only ornament */
+body.theme-dubai .card::before{
+  content:'';position:absolute;left:24px;right:24px;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,233,168,.8),transparent);
+  pointer-events:none;
+}
+
+/* ════ EQUATION — warm light against the dusk ════ */
+body.theme-dubai .eq-n,body.theme-dubai .eq-res{
+  color:#F7F2E2;
+  text-shadow:0 0 16px rgba(255,181,77,.45),0 0 4px rgba(255,240,210,.7),
+              0 2px 10px rgba(2,5,18,.7);
+}
+body.theme-dubai .eq-op{text-shadow:0 0 12px rgba(255,181,77,.5),0 2px 8px rgba(2,5,18,.65)}
+body.theme-dubai .op-m,body.theme-dubai .op-p,body.theme-dubai .op-e{color:#FFB54D}
+body.theme-dubai .eq-res{color:#FFD27D;text-shadow:0 0 20px rgba(255,181,77,.65),0 2px 10px rgba(2,5,18,.65)}
+
+body.theme-dubai .ans-inp,body.theme-dubai .tx-sub-inp{
+  background:rgba(7,12,30,.45);
+  border:1px solid rgba(255,191,105,.55);color:#F7F2E2;
+  box-shadow:0 0 10px rgba(255,160,60,.12),inset 0 0 14px rgba(3,6,18,.35);
+}
+body.theme-dubai .ans-inp:focus,body.theme-dubai .tx-sub-inp:focus{
+  border-color:#FFB54D;background:rgba(9,15,36,.55);
+  box-shadow:0 0 22px rgba(255,170,70,.5),0 0 4px rgba(255,233,168,.8),
+             inset 0 0 14px rgba(60,40,10,.25);
+}
+
+/* the check button — a hairline-gold signet ring */
+body.theme-dubai .chk-btn{
+  background:rgba(8,13,32,.45);
+  border:1px solid rgba(255,210,125,.7);color:#FFD27D;
+  box-shadow:0 0 14px rgba(255,170,70,.3),inset 0 0 10px rgba(255,181,77,.08);
+}
+body.theme-dubai .chk-btn::after{background:none}
+body.theme-dubai .chk-btn:hover{
+  border-color:#FFE9A8;color:#FFF3D6;background:rgba(255,181,77,.14);
+  box-shadow:0 0 24px rgba(255,190,90,.55),inset 0 0 12px rgba(255,200,100,.14);
+}
+
+/* hint + divider */
+body.theme-dubai .hint{color:#C9BFA8;text-shadow:0 0 8px rgba(255,160,60,.2);letter-spacing:.03em}
+body.theme-dubai .div{
+  background:linear-gradient(90deg,transparent,rgba(255,191,105,.4),transparent);
+}
+
+/* feedback — mint-gold approval / warm coral apology */
+body.theme-dubai .fb-ok{color:#9CF0C8;text-shadow:0 0 16px rgba(120,240,190,.5)}
+body.theme-dubai .fb-err{color:#FF9D8A;text-shadow:0 0 16px rgba(255,130,100,.45)}
+
+/* ════ ACTION BUTTONS — flat tailored outlines, soft fill on hover ════ */
+body.theme-dubai .btn{
+  background:rgba(8,13,32,.42);text-shadow:none;
+  border:1px solid rgba(255,191,105,.45);color:#F2EEDF;
+  box-shadow:0 0 10px rgba(255,160,60,.12);
+  font-weight:800;letter-spacing:.05em;
+}
+body.theme-dubai .btn::after{background:none}
+body.theme-dubai .btn:hover{box-shadow:0 0 18px rgba(255,180,80,.3)}
+body.theme-dubai .b-chk{border-color:rgba(255,181,77,.6);color:#FFD8A0;
+  box-shadow:0 0 12px rgba(255,170,70,.22)}
+body.theme-dubai .b-chk:hover,body.theme-dubai .b-chk:active{
+  background:rgba(255,181,77,.14);box-shadow:0 0 22px rgba(255,180,80,.45)}
+body.theme-dubai .b-try{border-color:rgba(111,183,255,.55);color:#CFE4FF;
+  box-shadow:0 0 12px rgba(80,150,255,.2)}
+body.theme-dubai .b-try:hover,body.theme-dubai .b-try:active{
+  background:rgba(111,183,255,.13);box-shadow:0 0 22px rgba(110,180,255,.45)}
+body.theme-dubai .b-nxt{border-color:rgba(255,210,125,.6);color:#FFE3B0;
+  box-shadow:0 0 12px rgba(255,180,80,.22)}
+body.theme-dubai .b-nxt:hover,body.theme-dubai .b-nxt:active{
+  background:rgba(255,210,125,.13);box-shadow:0 0 22px rgba(255,200,100,.45)}
+body.theme-dubai .b-rpl{
+  background:rgba(255,210,125,.10);border-color:rgba(255,210,125,.85);color:#FFD27D;
+  text-shadow:0 0 9px rgba(255,181,77,.4);
+  box-shadow:0 0 16px rgba(255,180,80,.32)}
+body.theme-dubai .b-rpl:hover,body.theme-dubai .b-rpl:active{
+  background:rgba(255,210,125,.18);box-shadow:0 0 28px rgba(255,200,100,.5)}
+
+/* utility buttons — discreet gilt-rim discs */
+body.theme-dubai .games-drop-btn,body.theme-dubai .theme-toggle-btn{
+  background:rgba(8,13,32,.42);border:1px solid rgba(255,191,105,.32);
+  box-shadow:0 0 9px rgba(255,160,60,.15);
+}
+body.theme-dubai .tt-hint-icon{
+  background:rgba(8,13,32,.42);border-color:rgba(255,210,125,.5);color:#FFD27D;
+  box-shadow:0 0 9px rgba(255,180,80,.22);
+}
+
+/* header gift pill */
+body.theme-dubai .gift-indicator{
+  background:transparent;border:1px solid rgba(255,210,125,.38);
+  box-shadow:0 0 10px rgba(255,180,80,.16);
+}
+body.theme-dubai #score-star{filter:drop-shadow(0 0 7px rgba(255,200,80,.85))}
+
+/* coin stage (TC) — a velvet display tray */
+body.theme-dubai .coins-stage{
+  background:rgba(8,13,32,.30);border:1px solid rgba(255,191,105,.18);
+}
+body.theme-dubai .coin-lbl{color:#C9BFA8}
+body.theme-dubai .tc-eq-lbl,body.theme-dubai .tc-hint-top{color:#DAD2BE}
+
+/* ════ THE DUBAI NUMBER LINE — a runway of city lights, unique to this skin ═
+   Track = a lit boulevard at night: dusk blue at the ends, amber sodium glow
+   at the heart.  Ticks = warm streetlamp dots, every 5th a golden lamp.
+   The rider (🚁) comes from aids/dubai.aids.js — art and layout stay
+   strictly separated. */
+body.theme-dubai #nl-panel{background:transparent;border:none;box-shadow:none}
+
+body.theme-dubai #nl-panel .nl-bar-track{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(111,183,255,.15),rgba(255,181,77,.6) 22%,
+             rgba(255,210,125,.65) 50%,rgba(255,181,77,.6) 78%,rgba(111,183,255,.15));
+  box-shadow:0 0 12px rgba(255,181,77,.45),0 0 4px rgba(255,210,125,.5);
+}
+/* streetlamp dots instead of tick bars */
+body.theme-dubai #nl-panel .tick{
+  width:4px;height:4px;border-radius:50%;top:calc(100% + 5px);
+  background:rgba(255,240,214,.65);box-shadow:0 0 5px rgba(255,220,160,.55);
+}
+body.theme-dubai #nl-panel .tick.major{
+  width:8px;height:8px;top:calc(100% + 3px);
+  background:#FFD27D;box-shadow:0 0 11px rgba(255,181,77,.9),0 0 4px rgba(255,233,168,.8);
+}
+body.theme-dubai #nl-panel .nl-num{color:#C9BFA8}
+body.theme-dubai #nl-panel .nl-num.major{
+  color:#FFD27D;text-shadow:0 0 9px rgba(255,181,77,.55);
+}
+/* the rider hovers on a warm landing beam */
+body.theme-dubai #nl-panel .nl-dot::after{
+  background:rgba(255,210,125,.85);box-shadow:0 0 6px rgba(255,181,77,.9);
+}
+body.theme-dubai #nl-panel .kang{
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,181,77,.55));
+}
+/* jump arcs: add = gold, sub = dusk-sky blue */
+body.theme-dubai #nl-panel .arc-add{stroke:rgba(255,210,125,.9)}
+body.theme-dubai #nl-panel .arc-sub{stroke:rgba(111,183,255,.9)}
+
+/* flight controls — round navy buttons with hairline rims */
+body.theme-dubai #nl-panel .side-btn{
+  background:rgba(8,13,32,.5);border-radius:50%;
+}
+body.theme-dubai #nl-panel .btn-plus{
+  background:rgba(8,13,32,.5);color:#FFC97E;
+  border:1px solid rgba(255,181,77,.65);
+  box-shadow:0 0 12px rgba(255,170,70,.35),inset 0 0 10px rgba(255,160,60,.10);
+}
+body.theme-dubai #nl-panel .btn-minus{
+  background:rgba(8,13,32,.5);color:#CFE4FF;
+  border:1px solid rgba(111,183,255,.6);
+  box-shadow:0 0 12px rgba(90,160,255,.32),inset 0 0 10px rgba(70,130,255,.10);
+}
+body.theme-dubai #nl-panel .ctrl-btn{border-radius:50px}
+body.theme-dubai #nl-panel .btn-reset{
+  background:rgba(255,210,125,.10);border:1px solid rgba(255,210,125,.7);color:#FFD27D;
+  box-shadow:0 0 10px rgba(255,180,80,.28);
+}
+body.theme-dubai #nl-panel .btn-reset:hover{background:rgba(255,210,125,.18)}
+body.theme-dubai #nl-panel .btn-undo{
+  background:transparent;border:1px solid rgba(214,200,168,.4);color:#C9BFA8;
+}
+body.theme-dubai #nl-panel .btn-undo:hover{background:rgba(214,200,168,.12)}
+
+/* ════ CHAIN MODE (mini boulevard + the gold vault) ════ */
+body.theme-dubai #tf-nl-note{color:#FFD27D;text-shadow:0 0 8px rgba(255,181,77,.4)}
+body.theme-dubai .pgm-bar{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(111,183,255,.15),rgba(255,181,77,.55) 22%,
+             rgba(255,210,125,.6) 50%,rgba(255,181,77,.55) 78%,rgba(111,183,255,.15));
+  box-shadow:0 0 10px rgba(255,181,77,.4);
+}
+body.theme-dubai .pgm-dot{
+  background:radial-gradient(circle at 38% 36%,#FFF3D6,#FFB54D 70%);
+  border-color:rgba(255,240,214,.85);box-shadow:0 0 12px rgba(255,190,90,.95);
+}
+body.theme-dubai .pgm-nl-num{color:#C9BFA8}
+body.theme-dubai .pgm-nl-num5{color:#FFD27D;text-shadow:0 0 8px rgba(255,181,77,.5)}
+body.theme-dubai .pgm-arc-add{stroke:rgba(255,210,125,.9)}
+body.theme-dubai .pgm-arc-sub{stroke:rgba(111,183,255,.9)}
+body.theme-dubai .pgm-side{border-radius:50%;font-size:2.1rem}
+body.theme-dubai .pgm-side::after{background:none}
+body.theme-dubai .pgm-plus{
+  background:rgba(8,13,32,.5);color:#FFC97E;
+  border:1px solid rgba(255,181,77,.65);
+  box-shadow:0 0 12px rgba(255,170,70,.35),inset 0 0 10px rgba(255,160,60,.10);
+}
+body.theme-dubai .pgm-minus{
+  background:rgba(8,13,32,.5);color:#CFE4FF;
+  border:1px solid rgba(111,183,255,.6);
+  box-shadow:0 0 12px rgba(90,160,255,.32),inset 0 0 10px rgba(70,130,255,.10);
+}
+body.theme-dubai .pgm-jar-btm{
+  background:rgba(8,13,32,.55);border-color:rgba(255,191,105,.5);
+}
+/* gold-coin items (52×20 viewBox art) need a wide flat box, not a cookie square */
+body.theme-dubai .ck-cookie{width:42px;height:17px}
+body.theme-dubai .ck-cookie:hover{filter:brightness(1.25) drop-shadow(0 0 8px rgba(255,200,100,.8))}
+
+/* number-hover tooltip — a navy nameplate (objects come from the dubai aid
+   variant: gold coins) */
+body.theme-dubai #num-tt{
+  background:rgba(8,14,34,.97);
+  border:1px solid rgba(255,191,105,.5);
+  box-shadow:0 6px 24px rgba(2,5,18,.7),0 0 16px rgba(255,181,77,.2);
+}
+body.theme-dubai #num-tt .ntt-lbl{color:#FFD27D;text-shadow:0 0 10px rgba(255,200,100,.4)}
+
+/* ════ END SCREEN ════ */
+body.theme-dubai .end-ttl{
+  background:linear-gradient(180deg,#FFF3D6,#FFD27D 45%,#C8961E);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:.06em;
+}
+body.theme-dubai .end-sc{color:#DAD2BE}
+body.theme-dubai .end-grade-num{
+  background:linear-gradient(180deg,#FFF3D6,#FFB54D 55%,#C8961E);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(255,181,77,.45));
+}
+body.theme-dubai .end-grade-max{color:rgba(201,191,168,.75)}
+body.theme-dubai .end-grade-msg{color:#DAD2BE}
+
+/* compact header on small screens keeps the skyline visible */
+@media(max-width:480px){
+  body.theme-dubai .title{font-size:1.15rem;letter-spacing:.15em}
+}

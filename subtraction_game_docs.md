@@ -1,0 +1,872 @@
+# תיעוד טכני — מִשְׂחֲקֵי חֶשְׁבּוֹן
+
+**קובץ:** `subtraction_game.html` (קובץ HTML יחיד, ללא תלויות חיצוניות מלבד Google Fonts)  
+**גרסה נוכחית:** v6.39  
+**שפה:** Vanilla HTML + CSS + JavaScript  
+**גופנים:** `Fredoka One` (מספרים ומשוואות), `Nunito 700/900` (ממשק)  
+**קהל יעד:** ילדים גן–כיתה א׳; תמיכה בשבע ערכות עיצוב (בנות/בנים/גלקסיה/דינוזאורים/טירה/שונית/סוואנה); כל הטקסט מנוקד  
+**תצוגה:** רספונסיבי — desktop (≥769px), tablet (≤768px), mobile (≤480px), narrow (≤360px)
+
+---
+
+## היסטוריית גרסאות (עיקרי)
+
+| גרסה | שינויים עיקריים |
+|---|---|
+| v6.39 | **שלושה רקעים עוצבו מחדש ושולבו במשחק** (החלפה מלאה של מנועי הסצנה, הכול inline ב-HTML — ראו סעיף "רקעים מצוירים חדשים"): **סוואנה** — `initSavannaScene` הוחלף במנוע "שעת זהב" מ-`savanna.html` (כוכבים, שמש פועמת, גבעות פרלקס, בריכת מים, חיות עם הליכה מונפשת + צל + rim-light; פריסת 12 החיות בעומק נשמרה); **שונית** — `initUnderwaterScene` הוחלף במנוע "גן אלמוגים" מ-`underwater_reef.html` (קאוסטיקות, צב ים, מדוזות, מנטה, סוסון ים, שושנות ים); **גלקסיה** — `initGalaxyStars` הוחלף במנוע "חלל עמוק" מ-`space.html` (חור שחור עם דיסקת ספיחה ועיקום עדשתי, גלקסיות ספירליות, כדור הארץ מסתובב); כל המנועים: HiDPI (DPR≤2) + שכבות סטטיות prerendered; CSS: `#bg` של reef/savanna עודכן; טקסט ה-header בסוואנה הוחלף לזהב בהיר (ראש השמיים כהה עכשיו); `.eq-res` בסוואנה תוקן מכתום `#b85a28` (נבלע בשקיעה) לחום `#7a3818` עם הילת קרם; `NTT_EMOJI.savanna='🌾'` |
+| v5.91–v6.38 | סשנים קודמים — לא תועדו בטבלה זו |
+| v5.90 | רמת "עד 10" הוסרה — הכפתור `#lb10` הוסר, `GIFT_GOALS[10]` הוסר, הפניית "המשיכי" אחרי 1+1 → עכשיו ל-`br`; ערכת סוואנה: כפתורי הרמה + תווית הרמה צבועים חום (`#7a3818`), הטקסטים "ניקוד:" ו"תרגיל" צבועים ירוק כהה (`#1e6020`), `+` בתרגיל ירוק כהה, אינדיקטור המתנה (`.gift-indicator`) צבוע חום + רקע קרם; מהירות הצ'יטות הוכפלה (פי 2 — עכשיו הכי מהירות בסוואנה: 1.40 ו-2.10); 12 חיות פזורות על כל הסוואנה (Y ∈ [0.74..0.96]) — קטנות בריחוק, גדולות בקדמה |
+| v5.89 | רמת "עד 5" הוסרה; אייקון "גָּשֵׁר 10" שונה מ-🌉 ל-🌈 + 🎁 (מתנה); רקע סוואנה (`theme-savanna`) שולב במשחק: `initSavannaScene` עם שקיעה, שמש, עננים, הרים, חול, עצי שיטה, דשא, 12 חיות **פזורות על כל אזור הסוואנה** (Y ∈ [0.74..0.96], קטנות ואיטיות בריחוק, גדולות ומהירות בקדמה); טקסט בגווני **חום חם** (`#7a3818`, `#9a4820`, `#b85a28`) — כותרת בגרדיאנט-חום עם shimmer (לא שחור), אימוג'י הכותרת נשאר טבעי (`-webkit-text-fill-color:initial`); דמויות `anime-char` (הבחור/בחורה הצף) הוסר מ-reef ו-savanna; טול-טיפ של מספר באימוג'ים: קבוצות של 5 (לא 10!) — שתי קבוצות בשורה עם רווח של 14px ביניהן, מיושרות אנכית בין שורות; קבוצה חלקית (3 אימוג'ים) מקבלת רוחב 72px בלבד (לא 122px); תרגילי "גָּשֵׁר 10" צומצמו: TA `a+b ∈ [11..13]`, TS `a ∈ [10..13]` ו-`a-b ∈ [1..9]` (כמו 10-2, 11-3) |
+| v5.88 | קטגוריה חדשה "גָּשֵׁר 10 🌉" (mode `br`) — 12 תרגילים שכולם גושרים מעל 10: TA (חיבור חד-ספרתיים שתוצאתם 11-18), TS/TM (עשרים מינוס חד-ספרתי עם תוצאה <10), TZ (שרשרת שבה שלב 1 גושר), TX (שרשרת חיסור שגושרת למטה); 15 נקודות לתשובה נכונה; פרס ב-800; כפתור 🌉 בתפריט אחרי "עד 10"; טול-טיפ ה-`#num-tt` מקבל רווח של ½ ס"מ אחרי כל 5 אימוג'ים (`:nth-child(10n+5){margin-right:16px}`); 15 בדיקות אוטומציה חדשות (10 ל-bridging, 5 לטול-טיפ) |
+| v5.87 | רחיפה (`hover`) על מספר בתרגיל מציגה טול-טיפ עם אותו מספר באימוג'ים (10 בשורה, ואז ירידה לשורה הבאה); תומך בתרגילי שרשרת ובמסך כולו (תווית `data-num` ב-`.eq-n`/`.eq-res`); אימוג'י הספירה לפי ערכת עיצוב (💜/⚡/⭐/🥚/✨/🐚); רקע חדש standalone `savanna.html` עם 12+ חיות (ג'ירפות, פילים, זברות, נמרים, צ'יטות מהירות, קרנף, ציפורים) ועצי שיטה |
+| v5.86 | ערכת שונית תת-ימית (`theme-reef`): `initUnderwaterScene` — מים בגרדיאנט, 5 קרני שמש, 36 בועות עולות, חול גלי, 8 אלמוגים (מניפה/צינור/מוח/ענפים), 8 אצות מתנדנדות, 3 כוכבי ים, 12 דגים שוחים, להקת 14 דגיגי כסף; `body.theme-reef #bg` בגווני ים; כפתור 🐠 בתפריט; resize handler ל-fullscreen; החלפת 🪸 ל-🐬 (תאימות אימוג'ים) |
+| v5.85 | קטגוריית "מלכה" משולבת (מלך הוסר): 15 תרגילים, ≥1 מכל סוג (TZ/TX/TW/TM/TS/TA/TDA/TDS/TT/TC); תרגילי מטבעות עד 50 עם ≤8 מטבעות (מועדפים 10/5), ממוינים יורד; ישר מספרים של מטבעות בצעדי 10; פרס מלכה ירד ל-700, פרס חדש "עד 10" ב-1000; שער "נסה לבד" (עזרים+חיצים+רווח חסומים, ניקוד -33% לאחר טעות, 0 לאחר שתי טעויות); seamless retry (אין כפתור נסה שוב); רמז ספרות מציג השאלה (20-13 → 10-3); רקע חדש standalone `underwater_reef.html` |
+| v5.84 | ערכת טירת נסיכה (`theme-castle`): `initFairyPrincessScene` — שתי טירות canvas (שמאל: סגול-חם, ימין: כחול-גותי), גשם מנוקד, ברקים קלים (segment-only, ללא shadowBlur), ירחיות, ארוריות, אשכולי אש; `body.theme-castle #bg` כהה; כפתור 🏰 בתפריט; resize handler ל-fullscreen |
+| v5.83 | ערכת dino חדשה: `initDinoScene` עם SVG `animateMotion` (mountains.html) — הרים, עננים, ירח, 8 דינוזאורים על שבילים; מחזור themes: girls→boys→galaxy→dino→girls |
+| v5.82 | הסרה מלאה של ערכת dino הישנה — CSS, canvas, THEMES, NFW, hints, hearts, particles, abDraw, MODE_CREATURES_DINO |
+| v5.81 | ניסיון שילוב mountains.html ב-dino — הוספת `animateMotion` ל-SVG; הסרת canvas walking dinos |
+| v5.80 | (גרסה לפני שינויי session זה) |
+| v5.75 | חלקיקי גלקסיה: 🌌/🛸/🪨 אקראי; 2 אסטרואידים גדולים + 2 קטנים (scale 0.48) |
+| v5.74 | הוספת 🌌/🛸 לחלקיקים; ptcCount 1→3; אסטרואיד קטן SVG × 2 |
+| v5.73 | תיקון `titleEmoji` שקוף (`-webkit-text-fill-color`); גלקסיה: 🌠 במקום 🌟 |
+| v5.72 | תיקון canvas ellipses — גודל CSS מפורש בפיקסלים במקום `100%` |
+| v5.71 | חשבוניה גלקסיה (ציאן/שקוף); שביט + תחנת חלל SVG; תיקון טקסט רמז גלקסיה |
+| v5.70 | גלקסיה ספירלית SVG מסתובבת ליד כותרת (`__GALAXY_SVG__`); `@keyframes galSpin` |
+| v5.69 | אסטרואידים (3 SVG מתגלגלים) + לוויינים (2 SVG נדנוד) בחלקיקי גלקסיה |
+| v5.68 | הסרת דמויות anime-char SVG מגלקסיה (`charCount=0`); סרגל גרסה מדויק |
+| v5.67 | `updateModeCreature` — הסתרת יצור מצב לחלוטין בגלקסיה |
+| v5.66 | הסרת 🛸/🌌 מחלקיקי גלקסיה; `MODE_CREATURES_GALAXY` ללא 🛸 |
+| v5.65 | צמצום 90% חלקיקים צפים בגלקסיה (`ptcCount=1`, `specCount=0`) |
+| v5.64 | ערכת גלקסיה: `MODE_CREATURES_GALAXY`, חללית canvas, חור שחור canvas |
+| v5.63 | הסרת 🌌/🛸 מחלקיקים; `specialEm:'🚀'`; ביצוע תיקוני גלקסיה |
+| v5.62 | כדור הארץ + שבתאי מופיעים מיד (cd:0); גלקסיה v5.58+ |
+| v5.61 | 5 גלקסיות ספירליות + שביטים + שבתאי + 3 אסטרואידים + לוויין בגלקסיה |
+| v5.60 | ערפיליות גדולות 3×; גלקסיה ספירלית 3×; כדור הארץ כל 1-3 שניות |
+| v5.59 | גלואה כוכבים קטנה (2.2×); ביטול cross-flare; גלקסיה ספירלית; כדור הארץ+ירח |
+| v5.58 | ערכת גלקסיה (theme-galaxy): רקע חלל, 320 כוכבים, ערפיליות, CSS buttons; `initGalaxyStars` |
+| v5.57 | רווח מוסיף/מסיר אובייקטים ב-TDA/TDS (לבבות ו-jar); תיקון גרסה |
+| v5.56 | `makeMxPool`: תרגיל 5 ואילך עד 20; Phase 2 עד 20 (הושלם v5.55) |
+| v5.55 | `openChainGarden` טוגל — חזרה לצנצנת חינם; כפתור 🌻/🍪 לפי מצב |
+| v5.54 | `Delete` מנקה שדה קלט ממוקד + pgmUndo; מחוון מתנה שורה אחת |
+| v5.53 | פרחים בשרשרת: 10 פרחים לשורה; `.pgm-scene` align:flex-start קבוע |
+| v5.52 | `tda-jar-btn` גם ב-TDS; `toggleTdaJar` תמיכה בשניהם; `tdUpdateHearts` מעדכן jar |
+| v5.51 | כפתור 🌻 ↔ 🍪 לתרגילי TDA — מחליף לבבות בצנצנת עוגיות; `tdaJarMode` |
+| v5.50 | תיקון `tdUpdateHearts` + `toggleTdaJar` — עדכון jar בהקלדה + TDS |
+| v5.49 | מסיבת דמויות מוגבלת ל-10; מחוון מתנה (GIFT_GOALS 700/750); 🎁 לכפתורי רמה |
+| v5.48 | `tzSubJarSync` מעדכן גם tx-sub2 (4 מספרים בשרשרת) |
+| v5.47 | TDA: maxH לבבות כבויים; TDS: R לבבות מוארים; `tdUpdateHearts`; 6 טסטים חדשים |
+| v5.46 | תיקון `tzSubJarSync` — עדכון צנצנת גם לאחר tx-sub2 |
+| v5.45 | `pgm-gn-eq-btn` (🌻) בשורת משחקונים לתרגילי שרשרת; תיקון `pgm-ck-jar` ID |
+| v5.44 | גינת פרחים בשרשרת — `chainGnMode`, `pgmRenderGarden`, `openChainGarden` |
+| v5.43 | 4 מסכי הצלחה חדשים (קונפטי/פיצוץ/גיבור/גלים) — רנדומלי ב-`showFw`; `NFW_DATA` |
+| v5.42 | צפרדעים — ביטול `frStartHopTimer`; צפרדעים נשארים במקום |
+| v5.41 | כפתורי "נסה שוב" ו"דלג" ממוקמים בצד ימין של הכרטיס |
+| v5.40 | רווח מזיז סמן בתרגיל מטבעות TC; קוד debug הוסר לקובץ נפרד |
+| v5.39 | TC: ישר מספרים (ללא צנצנת) עם pgmCV=0; גינת פרחים בשרשרת — תיקונים |
+| v5.38 | TC מציג ישר מספרים; makeMxPool Phase 1→10, Phase 3 אחרון 4 עם a>10 |
+| v5.37 | `makeMxPool` Phase 1 עד 10; 4 אחרונים a>10; 3 טסטים חדשים |
+| v5.36 | בסיס — גרסה לפני שינויים עיקריים של session זה |
+| v5.32 | תיקון `injectCoins` — לא מחליף slots של TD (i+1)%4===0 |
+| v5.31 | TDA/TDS שני נעלמים: `___ + ___ = R` / `___ − ___ = R`; `sampleWithTD` — TD בפוזיציות 4,8,12; TC מטבעות; הסרת ck ממאגרי המשחקונים |
+| v5.18 | `tzSubJarSync` — עדכון צנצנת + סימון sub-ok/err ב-onblur/Enter |
+| v5.17 | עדכון צנצנת רק ב-blur/Enter (לא oninput); צנצנת מתאפסת בעזיבת tx-sub1 |
+| v5.16 | צנצנת מתעדכנת לתת-תוצאה בהקלדה ב-tx-sub1 (oninput) |
+| v5.15 | הגדלת פונט ספרות ישר המספרים (.8rem / .88rem) |
+| v5.14 | אנימציית poof (💨 + 6 נקודות) בחיסור עוגייה מהצנצנת |
+| v5.13 | כפתורי ±: 72×72px ריבוע, gap:44px, border-radius:10px |
+| v5.12 | כפתורי ± נעשו גדולים יותר ורחוקים יותר מהצנצנת |
+| v5.11 | לבבות מעל חשבוניה; mode 0 תמיד hearts+abacus; hint לפי aidMode; הסרת 🍪 ממשחקונים |
+| v5.10 | מצב תצוגה כפול (aidMode): עוגיות+NL (ברירת מחדל) או לבבות+חשבוניה; כפתור החלפה חינמי |
+| v5.9  | לבבות הוזזו מתחת לעוגיות |
+| v5.8  | ישר המספרים + עוגיות בכל סוגי התרגילים (לא רק TZ/TX) |
+| v5.7  | piles_game שולב כמסך ראשי לתרגילי שרשרת (TZ/TX); הסרת pgm כמשחקון overlay |
+| v5.6  | TZ/TX: סוגי תרגילים עם תת-תשובות, קווי V, פולסציה; makeMxPool שלבי |
+| v4.x  | TDA/TDS (פירוק); יצור בונוס; aisHintFx; ספרי גרסה hover |
+| v3.0  | פאנל בלונים גדול; −כפתור לבלונים; אובייקטי רקע +5⭐ |
+| v2.x  | 12 משחקונים; cans_game; GAME_COSTS; אקראיות משחקון |
+| v1.x  | standalone games → integrated |
+
+---
+
+## ערכת עיצוב Dino — `theme-dino` (v5.83)
+
+ערכת הדינוזאורים מבוססת על **mountains.html** — נוף הרים ליל/שקיעה עם דינוזאורים SVG.
+
+### רקע — `body.theme-dino #bg`
+
+```css
+background: linear-gradient(180deg,
+  #0a0e2e 0%, #1a1a5e 15%, #2d2d8f 25%, #4a4ac0 35%,
+  #6666d4 45%, #8888e0 55%, #ffb347 70%, #ff7043 80%,
+  #ff5722 90%, #e64a19 100%);
+animation: none; /* גרדיאנט סטטי */
+```
+
+### `initDinoScene()` — שכבות הסצנה (`#stars-layer`)
+
+| שכבה | תיאור |
+|---|---|
+| כוכבים | 180 `div` עם `@keyframes twinkleStar` (opacity 0.2→1, 2–5s) |
+| ירח | `div` עגול, `radial-gradient` צהוב, `box-shadow` זוהר |
+| עננים | 2× SVG עם `@keyframes dnDrift` — אחד ימין/שמאל, השני הפוך ושקוף |
+| הרים | SVG `viewBox="0 0 1440 540"`, `height:75%`, `bottom:0` |
+
+### SVG הרים — שכבות
+
+| שכבה | gradient ID | תיאור |
+|---|---|---|
+| הרים רחוקים | `dnFar` | סגול-כחול, opacity 0.7 + שלגים |
+| הרים אמצעיים | `dnMid` | כחול-כהה, opacity 0.85 + שלגים |
+| הרים קרובים | `dnNear` | כמעט שחור + שלגים |
+| פסי דשא (×3) | `dnGF/dnGM/dnGN` | ירוק מדורג על שיפועי ההרים |
+| רצפת עמק | `dnGrass` | ירוק כהה, `Q`-curves |
+| אדמה | `dnGnd` | כהה, `Q`-curves |
+| עצי אורן | SVG polygons | 4 אשכולות, `fill:#0a1020` |
+
+### שבילים ונתיבי תנועה
+
+| ID | תיאור | שימוש |
+|---|---|---|
+| `dn-trail1` | שביל שמאלי, עולה מ-`(0,498)` ל-`(590,220)` | 🦖 26s, 🦕 40s (begin:16s) |
+| `dn-trail2` | שביל ימני, עולה מ-`(680,490)` ל-`(1195,238)` | 🦖 32s (begin:8s), 🦕 44s (begin:22s) |
+| `dn-trail3` | שביל קצר ימין קיצוני, מ-`(1250,490)` ל-`(1418,282)` | 🐊 18s, 🦎 22s (begin:5s) |
+| `dn-sky1` | נתיב שמיים שמאל→ימין (גובה ~85px) | 🦅 55s |
+| `dn-sky2` | נתיב שמיים ימין→שמאל (גובה ~124px) | 🦅 42s (begin:20s) |
+
+### דינוזאורים — `animateMotion` + `animateTransform` (bounce)
+
+| emoji | גודל | שביל | מחזור | התחלה | bounce dur |
+|---|---|---|---|---|---|
+| 🦖 T-Rex | 36px | trail1 | 26s | 0s | 0.7s |
+| 🦕 Sauropod | 40px | trail1 | 40s | 16s | 1.1s |
+| 🦖 T-Rex | 34px | trail2 | 32s | 8s | 0.65s |
+| 🦕 Sauropod | 44px | trail2 | 44s | 22s | 1.2s |
+| 🐊 Raptor | 30px | trail3 | 18s | 0s | 0.5s |
+| 🦅 Pterodactyl | 32px | sky1 | 55s | 0s | — |
+| 🦅 Pterodactyl | 26px | sky2 | 42s | 20s | — |
+| 🦎 Lizard | 26px | trail3 | 22s | 5s | 0.45s |
+
+> כל דינוזאור משתמש ב-`keyPoints="0;1;0"` — הלוך וחזור על השביל.
+
+### אינטגרציה בשאר המשחק
+
+| מקום | ערך dino |
+|---|---|
+| לבבות (TA/TZ/TDA/TDS) | 🥚 (lit) / 🌿 (unlit) |
+| לבבות (TS/TM) | 🥚 (intact) / 🦴 (deleted) |
+| hint text | `'🥚 הָסֵר בֵּיצִים כְּעֶזֶר...'` |
+| mode creature | 🥚/🌿/🦴/🦕/🦖 (לפי רמה) |
+| חלקיקים | `['🦕','🦖','🥚','🌿','🦴','🌱',...]`, ptcCount=3 |
+| abDraw palette | ירוק (`#2a5810`, `#60AA30`, `#A0EE60`) |
+| toggleIcon (galaxy) | 🦕 (מציין שהבא הוא dino) |
+| מחזור | `galaxy:'dino', dino:'girls'` |
+
+---
+
+## ערכת עיצוב Castle — `theme-castle` (v5.84)
+
+ערכת הטירה מבוססת על **`backgrounds/fairy_princess_castle.html`** — שמיים סגולים ליליים, שתי טירות, גשם וברקים.
+
+### רקע — `body.theme-castle #bg`
+
+```css
+background: linear-gradient(180deg,
+  #0a0520 0%, #1a0a3a 45%, #2d1060 70%, #5a1a80 100%);
+animation: none;
+```
+
+### `initFairyPrincessScene()` — מבנה הסצנה
+
+הסצנה כולה מצוירת על **canvas יחיד** (`position:fixed; inset:0`) — מכסה את כל ה-viewport כולל fullscreen (F11). כל המצב מאוגד בתוך closure — אין משתנים גלובליים.
+
+| שכבה | תיאור |
+|---|---|
+| שמיים | `linear-gradient` כהה — `#0a0520` → `#5a1a80` |
+| ארוריות (×3) | `linear-gradient` אנכי, opacity מונפשת לפי `sin(t)` — סגול/כחול/ורוד |
+| ירח | רדיאל גרדיאנט, 2 מכתשים; ממוקם במרכז השמיים (בין שתי הטירות) |
+| כוכבים | 140 נקודות; ריצוד (`phase += speed` בכל פריים) |
+| כוכבי שביט | 3 שבילים עם `globalAlpha = sin(progress * π)` |
+| הרים | 2 שכבות `bezierCurveTo` |
+| עצים | 6 עצי חרוט משוכפלים, שמאל וימין |
+| טירה 1 (שמאל) | `cx = W×0.22`, `unit = min(W,H)×0.048` — סגול חם, 4 מגדלים, 5 צריחים, דגלים ורודים |
+| טירה 2 (ימין) | `cx = W×0.83`, `unit = min(W,H)×0.038` — כחול-סגול, 2 מגדלים, 3 צריחים, שער גותי מחודד, דגלים כחולים |
+| גשם | 70 טיפות — **`beginPath` אחד + `stroke` אחד** לכל הפריים; `rgba(180,210,255,0.22)` |
+| ברקים | segment-based (ללא shadowBlur, ללא offscreen canvas) — 2 `stroke` calls; שמאל קיצוני (2–15%) או ימין קיצוני (85–98%) בלבד |
+| פיות אש (fireflies) | 28 נקודות ירוקות דועכות (`rgba(200,255,150,α)`) |
+
+### ביצועים — עקרונות עיצוב
+
+| טכניקה | יישום |
+|---|---|
+| אפס `shadowBlur` | ברקים מצוירים כ-flat segments בלבד |
+| אפס offscreen canvas | bolt segments מאוחסנים כ-flat Float array |
+| גשם: קריאה אחת | כל 70 הטיפות ב-`beginPath` יחיד |
+| Resize תמיד נכון | `window.addEventListener('resize', onResize)` בתוך הפונקציה; מוסר כש-`theme !== 'castle'` |
+
+### מבנה הברק
+
+```javascript
+// ייצור: רקורסיה עם midpoint displacement
+function genBolt(x1,y1,x2,y2,off,dep,seg)  // offset<7 → push 4 floats
+// ציור: 2 passes בלבד
+// 1. glow: rgba(110,150,255,0.28), lineWidth=7
+// 2. core: rgba(235,245,255,0.92), lineWidth=1.2
+// boltAlpha מדעך ×0.79 כל פריים
+```
+
+### אינטגרציה בשאר המשחק
+
+| מקום | ערך castle |
+|---|---|
+| `THEMES.castle.titleEmoji` | 🏰 |
+| `THEMES.castle.uniL / uniR` | 👸 / 🌙 |
+| חלקיקים | `['✨','💫','🌸','🌟','💎','🌷','🦋','⭐','💖','🔮','🌙','✨']` |
+| fireworks | 4 מסכי הצלחה (🏰/👸/💖/🌙) + fwSuper נסיכה |
+| `_themeIcons` | `castle: '🏰'` |
+| תפריט themes | כפתור 🏰 — 5ה אחרי 🦕 |
+| body.className | `'theme-castle'` |
+
+### קובץ רקע עצמאי
+
+`backgrounds/fairy_princess_castle.html` — גרסה standalone עם אותה סצנה בדיוק; משמש לפיתוח ולבדיקה לפני שילוב במשחק. מכיל גם כפתור Pause/Resume.
+
+---
+
+## רקעים מצוירים חדשים — סוואנה / שונית / חלל (v6.39)
+
+שלושת הרקעים עוצבו מחדש כקבצים עצמאיים ב-`backgrounds/` (savanna.html, underwater_reef.html, space.html) ושולבו במשחק כהחלפה מלאה של מנועי הסצנה הקודמים. **כל הקוד inline ב-HTML** — קובצי ה-backgrounds משמשים לפיתוח/תצוגה מקדימה בלבד, המשחק לא טוען אותם.
+
+### תבנית מנוע משותפת
+
+| עיקרון | פירוט |
+|---|---|
+| HiDPI | `DPR = min(devicePixelRatio, 2)`; canvas בגודל פיזי W×DPR עם `setTransform(DPR,...)` |
+| שכבות סטטיות | רקע/קרקע/וינייטה מצוירים פעם אחת ל-offscreen canvas (`makeLayer()`), ומוצגים ב-`drawImage` בכל פריים — רוב עלות הציור משולמת פעם אחת ב-resize |
+| חיי סצנה | `frame()` בודק `theme !== '<x>'` — מסיר את ה-resize listener ועוצר את ה-rAF בהחלפת ערכה |
+| resize | `onResize` בונה מחדש את הסצנה ואת השכבות הסטטיות |
+| canvas | `position:fixed;inset:0` בתוך `#stars-layer` (כמו שאר הערכות) |
+
+### `initSavannaScene()` — שעת זהב (savanna.html)
+
+- שמיים: אינדיגו-דמדומים ← זהב מותך; 90 כוכבים מנצנצים בחלק העליון; שמש עם בלום רחב + הילה פועמת (`lighter`)
+- עננים סגלגלים מוארים מלמטה בזהב; 3 רכסי גבעות פרלקס נמסים באובך; צלליות שיטה זעירות על הרכס הרחוק
+- בריכת מים המשקפת את השקיעה + פסי נצנוץ מונפשים; תלוליות טרמיטים עם קצה מואר; עצי שיטה ציוריים (גזע מעוקל, ענפים מניפתיים, חופת בלובים אורגנית, כתר מוזהב)
+- 12 חיות בפריסת עומק (Y ∈ [0.74..0.96], קטנות/איטיות מאחור) — **רגליים מונפשות בקצב התלוי במהירות (gait)**, זנב/אוזניים/חדק נעים, צ'יטה דוהרת עם מתיחת גוף ועננות אבק, צל קרקע אליפטי, rim-light חם על הגב
+- 2 שכבות דשא מתנדנד (זהוב באמצע + צללית כהה בקדמה), גרגרי אבק זהובים מרחפים (בהירים יותר ליד השמש), וינייטה
+
+### `initUnderwaterScene()` — גן אלמוגים (underwater_reef.html)
+
+- עמודת מים: טורקיז מואר ← כחול תהום; בלום שמש; נצנוץ פני-מים גלי בראש המסך; קרני אור נושמות ונודדות
+- **קאוסטיקות מרצדות על החול** — clip ל-`Path2D` של קו הדיונות
+- יצורים חדשים: צב ים גולש (סנפירים מתנפנפים, שריון עם דוגמה), 4 מדוזות זוהרות (פעימת פעמון, חצאית מסולסלת, זרועות נגררות, הילת `lighter`), מנטה רחוקה באובך, סוסון ים ליד האצות, 2 שושנות ים עם זרועות מתנועעות וקצוות זוהרים
+- דגים ב-3 צורות גוף (round/tall/slim) עם גרדיאנט, סנפירים שקופים-למחצה וסנפיר חזה מרפרף; להקת 18 דגיגי כסף עם glint
+- אלמוגים משודרגים: מניפה שקופה עם עורקי תחרה וצלעות-רוחב, צינורות עם הצללה גלילית ופיות כהים, מוח עם תאורה רדיאלית, ענפים עם קצוות פוליפ זוהרים — כולם עם צל קרקע; צלליות שונית רחוקות, צדפות, חלוקים, שלג ימי, בועות גם מ-3 פתחי שונית קבועים
+
+### `initGalaxyStars()` — חלל עמוק (space.html)
+
+- **חור שחור** ליד הקצה הימני (`W×0.90, H×0.36` — לא מוסתר ע"י כרטיס המשחק): צל שחור מוחלט, טבעת פוטונים פועמת, דיסקת ספיחה קפלריאנית (פנים מהיר/לוהט, חוץ איטי/אדום) עם **עיקום עדשתי** — החצי האחורי מתרומם מעל הצל, Doppler beaming, 26 חלקיקי חומר נופל עם פסי תנועה, סילוני קוטב עדינים
+- 3 גלקסיות ספירליות מסתובבות עם 130 כוכבי-זרוע כ"א; שביל החלב כפס אלכסוני גרגירי; 4 ערפיליות רכות
+- כדור הארץ מסתובב לאט (יבשות נודדות עם foreshortening בקצוות, כיפות קרח, עננים מהירים יותר, טרמינטור לילה, הילת אטמוספירה, שפת אור), כוכב לכת מטובע עם פסים
+- 340 כוכבי רקע + 60 קרובים (חלקם עם diffraction spikes), 18 "כוכבים נודדים" חוצי-מסך עם שובל, שביטים עם delay אקראי
+
+### התאמות CSS ואינטגרציה (v6.39)
+
+| מקום | שינוי |
+|---|---|
+| `body.theme-reef #bg` | גרדיאנט עודכן לפלטת המים החדשה (`#5ecfe6 → #021430`) |
+| `body.theme-savanna #bg` | גרדיאנט עודכן לשקיעה החדשה (`#2b1840 → #ffd98c → #3a1c14`) |
+| header בסוואנה | title / `.hdr-stats` / `#score-val` / `.lvl-lbl` / `.lvl-btn` / `.gift-indicator` — הוחלפו מחום כהה ל**זהב בהיר** עם צל כהה: ראש השמיים כהה עכשיו (אינדיגו), בעוד טקסט המשוואה נשאר חום כי הוא יושב על פס השקיעה הבהיר |
+| `.eq-res` בסוואנה | תוקן: היה `#b85a28` כתום עם זוהר כתום — בלתי-נראה על פס השקיעה (תרגילי `19 − X = 13`); עכשיו `#7a3818` חום כהה עם הילת קרם/לבן, תואם `.eq-n` |
+| `NTT_EMOJI` | נוסף `savanna:'🌾'` (טול-טיפ ספירת אימוג'ים) |
+| גלקסיה | שם הפונקציה `initGalaxyStars` נשמר — אין שינוי ב-`applyTheme`; ה-`#bg` הקיים (אינדיגו כהה) תואם ולא שונה |
+
+---
+
+## מבנה הקובץ
+
+```
+subtraction_game.html
+├── <style>               — כל ה-CSS (inline, ~1800 שורות)
+├── <body>
+│   ├── #bg               — רקע גרדיאנט מונפש (bgshift 14s)
+│   ├── #particles        — שכבת חלקיקים צפים (z-index:2, pointer-events:none)
+│   ├── .wrap
+│   │   ├── header.glass  — כותרת, ניקוד, סרגל התקדמות, כפתורי רמה
+│   │   └── .card.glass#card — כרטיס תרגיל (נבנה מחדש ע"י rebuildCard)
+│   │       ├── .eq-row          — wrapper ראשי
+│   │       │   ├── .equation    — המשוואה (ptype-aware)
+│   │       │   └── .eq-btns-row
+│   │       │       ├── #chk-btn         — כפתור ✔?
+│   │       │       └── .eq-mini-btns    — כפתורי משחקונים
+│   │       │           ├── .gn-eq-btn   — 🌸 גינה (15⭐)
+│   │       │           ├── .bu-eq-btn   — בועות (15⭐)
+│   │       │           ├── .tn-eq-btn   — 🚂 רכבת (25⭐)
+│   │       │           ├── .fr-eq-btn   — 🐸 צפרדעים (30⭐)
+│   │       │           ├── .st-eq-btn   — ✨ כוכבים (40⭐)
+│   │       │           ├── .cn-eq-btn   — 🥫 פחיות (10⭐, חיסור)
+│   │       │           ├── .si-eq-btn   — 🚀 פולשים (50⭐, חיסור)
+│   │       │           ├── .bl-eq-btn   — 🎈 בלונים (20⭐)
+│   │       │           ├── .lg-eq-btn   — 🧱 לגו (15⭐)
+│   │       │           ├── .ko-eq-btn   — 🥊 אגרוף (10⭐, חיסור)
+│   │       │           ├── .pa-eq-btn   — 🎉 מסיבה (10⭐, חיבור)
+│   │       │           └── .aid-toggle-btn — 💜/🍪 החלפת תצוגה (חינם, mode 5/10/20 בלבד)
+│   │       ├── .hint          — הוראה מנוקדת (מותאמת theme + aidMode)
+│   │       ├── .hearts        — לבבות/מכוניות (גלוי בaidMode=hearts; תמיד ב-mode0/TDA/TDS)
+│   │       ├── .abacus-sec    — חשבונייה canvas (גלויה רק ב-aidMode=hearts)
+│   │       ├── #chain-tools   — ישר מספרים + צנצנת (גלוי ב-aidMode=nl; תמיד ב-TZ/TX)
+│   │       ├── .fb            — פידבק טקסטואלי
+│   │       └── #btns          — כפתורי פעולה
+│   ├── 11× mini-game panels   — #ko/#pa/#lg/#bl/#gn/#si/#cn/#bu/#tn/#fr/#st (fixed overlays)
+│   │   (הוסר: #ck-panel — צנצנת העוגיות עוברה למסך הראשי)
+│   ├── #mode-creature    — יצור לחיץ עם גלו
+│   ├── #fw-ov            — מסך הצלחה canvas
+│   ├── #sad-ov           — מודל סמיילי עצוב
+│   └── #report-ov        — דוח סיכום
+└── <script>              — כל לוגיקת המשחק (~4500 שורות, inline)
+```
+
+---
+
+## רמות המשחק
+
+| `mode` | כפתור | תיאור | נקודות |
+|---|---|---|---|
+| `0` | 1+1 🌱 | חיבור בסיסי ≤10 — תמיד aidMode=hearts (ללא toggle) | 5 |
+| `'br'` | גָּשֵׁר 10 🌈 🎁 | תרגילי גישור-10 ממוקדים — 12 תרגילים; TA `a+b∈[11..13]`, TS/TM `a∈[10..13]` ו-`a-b∈[1..9]`, TZ/TX שרשרת שגושרת בשלב 1; פרס ב-900 | 15 |
+| `'mx'` | מַלְכָּה 👸 🎁 | משולב: TZ/TX/TW + TM/TS/TA + TDA/TDS + TT + TC — 15 תרגילים, ≥1 מכל סוג; פרס ב-850; ברירת מחדל | 20 |
+| `5`,`10` | (הוסרו מה-UI) | קוד פנימי קיים (RAW data) — נגיש רק דרך `setMode()` ב-JS לצורך מבחנים | 5,10 |
+
+```javascript
+const GL = 12;
+const TM='missing', TS='sub', TA='add', TX='mixed', TZ='triple';
+const TDA='dbl_add', TDS='dbl_sub';   // שני נעלמים
+const TC='coins';                      // מטבעות — מוזרק ע"י injectCoins
+```
+
+---
+
+## סוגי תרגילים
+
+| קבוע | ערך | תצוגה | תשובה נכונה |
+|---|---|---|---|
+| `TM` | `'missing'` | `num1 − ___ = num2` | `num1 − num2` |
+| `TS` | `'sub'` | `num1 − num2 = ___` | `num1 − num2` |
+| `TA` | `'add'` | `num1 + num2 = ___` | `num1 + num2` |
+| `TX` | `'mixed'` | `num1 − num2 + num3 = ___` (tz-inline + תת-תשובה) | `num1 − num2 + num3` |
+| `TZ` | `'triple'` | `num1 + num2 + num3 [+ num4] = ___` (tz-inline + תת-תשובות) | `num1+num2+num3+num4` |
+| `TDA` | `'dbl_add'` | `___ + ___ = num1` | זוג v1,v2 כך ש-v1+v2=num1 (כל זוג חוקי מתקבל) |
+| `TDS` | `'dbl_sub'` | `___ − ___ = num1` | זוג v1,v2 כך ש-v1−v2=num1 (כל זוג חוקי מתקבל) |
+| `TC`  | `'coins'`   | מטבעות + `סְכוּם = ___` | סכום ערכי המטבעות (coins[]) |
+
+### תרגיל TZ/TX — tz-inline layout
+
+```
+[num1 op num2]        (tz-grp #tz-g1)
+   V V  (tz-vsv SVG)
+  [= tx-sub1 →]      (sub-answer input)  onblur/Enter → tzSubJarSync
+          + num3 [+num4]
+      [= tx-sub2 →]  (אם num4>0)
+             = [ans]
+```
+
+- **`tzSubUpd(id,gid)`** — oninput: מסמן tz-solved/tz-live על הקבוצה
+- **`tzSubJarSync(id)`** — onblur+Enter: מסמן sub-ok/sub-err; מעדכן צנצנת לתת-תוצאה (tx-sub1 בלבד)
+- **`tzAddMode()`** — true אם TZ, או TX כשtx-sub1 כבר מלא (שלב החיבור)
+
+---
+
+## מצב תצוגת עזר — `aidMode`
+
+```javascript
+let aidMode = 'nl'; // 'nl' (ברירת מחדל) | 'hearts'
+// מאופס ל-'nl' בכל החלפת רמה (setMode)
+```
+
+| תנאי | aidMode | גלוי | מוסתר |
+|---|---|---|---|
+| mode 0 (1+1) | נעול ל-hearts | hearts + abacus | chain-tools, toggle |
+| mode 5/10/20, aidMode='nl' | ברירת מחדל | chain-tools | hearts, abacus |
+| mode 5/10/20, aidMode='hearts' | לאחר toggle | hearts + abacus | chain-tools |
+| TZ/TX (שרשרת) | נעול ל-nl | chain-tools | hearts, abacus, toggle |
+| TDA/TDS | ללא שינוי | hearts | chain-tools, toggle |
+
+### כפתור המיתוג — `.aid-toggle-btn`
+
+- מוצג: mode 5/10/20 בלבד, לא TZ/TX, לא TDA/TDS
+- **aidMode=nl** → מציג 💜 (לחץ לתצוגת לבבות)
+- **aidMode=hearts** → מציג 🍪 (לחץ לתצוגת עוגיות)
+- ללא עלות כוכבים; עיצוב ציאן (`#00838F`)
+
+```javascript
+function toggleAidMode(){
+  // מחליף aidMode, מציג/מסתיר elements, מעדכן hint text
+}
+```
+
+---
+
+## כלי שרשרת — `#chain-tools`
+
+ה-DOM של chain-tools (ישר מספרים + צנצנת עוגיות) מופיע ישירות בכרטיס הראשי:
+
+```html
+#chain-tools
+  .pgm-nl                     — ישר מספרים 0–20
+    .pgm-bar
+      .pgm-arcs-svg (SVG)     — קשתות הקפיצות
+      .pgm-dot                — כדור מיקום
+    .pgm-nl-nums              — ספרות (0,5,10,15,20 מודגשות)
+  .pgm-scene (space-between)
+    #pgm-btn-minus (.pgm-side 72×72) — כפתור −
+    .pgm-jar-col
+      .pgm-ctop  (#pgm-val + ↺)
+      .ck-jar + #pgm-wrap     — צנצנת + עוגיות
+    #pgm-btn-plus (.pgm-side 72×72) — כפתור +
+```
+
+### מצב גלובלי — Piles
+
+```javascript
+const PGM_NL = 20;           // מקסימום ישר המספרים
+const PGM_CK = [5 cookie types];
+
+let pgmCV  = 0;              // ערך נוכחי על הישר
+let pgmCk  = [];             // מערך טיפוסי עוגיות בצנצנת
+let pgmArcs = [];            // [{ a, b, type:'add'|'sub' }]
+```
+
+### פונקציות chain-tools
+
+| פונקציה | תיאור |
+|---|---|
+| `pgmBuildNL()` | בונה ספרות בישר (absolute, .58rem→.8rem) |
+| `pgmUpdateNL()` | מזיז pgm-dot לאחוז הנכון |
+| `pgmDrawArcs(animLast)` | מצייר קשתות SVG; הקשת האחרונה מונפשת |
+| `pgmRenderJar()` | בונה מחדש את ck-cookies-wrap |
+| `pgmUpdateAll()` | עדכון pgm-val + NL + disable/enable כפתורים |
+| `pgmPlus()` | CV++; ביטול קשת חיסור אם קיימת / הוספת קשת חיבור; cookie drop |
+| `pgmMinus()` | pgmPoof(); CV--; קשת חיסור; הסרת עוגייה מיידית |
+| `pgmUndo()` | ביטול הפעולה האחרונה |
+| `pgmInitChain()` | איפוס לערך num1 (כפתור ↺) |
+| `pgmMakeCookie(ti, drop)` | יוצר `.ck-cookie` div עם CSS vars לנדנוד |
+| `pgmCkSVG(idx)` | SVG עוגייה לפי טיפוס (choc/sugar/oreo/ginger/sprinkles) |
+
+### אנימציית Poof (חיסור עוגייה)
+
+```javascript
+function pgmPoof(){
+  // מאתר .ck-cookie אחרון, getBoundingClientRect
+  // מוסיף .pgm-poof (💨, @keyframes pgmPoofAnim 0.44s)
+  // + 6× .pgm-poof-dot (כדורים כתומים, @keyframes pgmPoofDot 0.4s)
+  // כולם מוסרים אוטומטית אחרי האנימציה
+}
+```
+
+### עדכון צנצנת בתרגיל שרשרת
+
+ב-`tzSubJarSync('tx-sub1')` (מופעל ב-onblur ו-Enter של tx-sub1):
+1. מחשב sc1 (תת-תוצאה נכונה)
+2. מסמן tx-sub1 כ-`.sub-ok` / `.sub-err`
+3. מאפס pgmCV לערך הנקלד (max PGM_NL) + מרנדר מחדש
+
+---
+
+## RAW_TD, sampleWithTD, injectCoins
+
+### `RAW_TD` — נתוני תרגילי שני נעלמים
+
+```javascript
+// r = הערך הידוע (מוצג בצד ימין)
+// TDA: ___ + ___ = r    TDS: ___ − ___ = r
+const RAW_TD = {
+  20: { A: [8,10,12,14,15,6,9,11,13,7,16,5],  S: [3,5,6,7,8,4,2,9,1,10,3,6] },
+  10: { A: [4,6,7,8,9,5,3,10,6,7,4,8],         S: [1,2,3,4,5,2,3,4,1,5,2,3] },
+   5: { A: [2,3,4,5,3,4,5,2,3,4,5,4],          S: [1,2,3,4,1,2,3,4,1,2,3,4] }
+};
+```
+
+`makePool(m)` — מוסיף TDA ו-TDS לכל מאגר mode 5/10/20:
+
+```javascript
+return [
+  ...RAW[m].M.map(([a,b])=>({t:TM,a,b})),
+  ...RAW[m].S.map(([a,b])=>({t:TS,a,b})),
+  ...RAW[m].A.map(([a,b])=>({t:TA,a,b})),
+  ...RAW_TD[m].A.map(r=>({t:TDA,r})),   // 12 בעיות TDA
+  ...RAW_TD[m].S.map(r=>({t:TDS,r})),   // 12 בעיות TDS
+];
+```
+
+### `sampleWithTD(pool, k)` — דגימה עם ערבות TD
+
+בניגוד ל-`sample()` (דגימה אקראית פשוטה), `sampleWithTD` מבטיח שהתרגיל ה-4, ה-8 וה-12 בכל סשן יהיו תמיד TDA או TDS:
+
+```javascript
+function sampleWithTD(pool, k) {
+  const tdArr  = shuffle(pool.filter(p => p.t===TDA || p.t===TDS));
+  const regArr = shuffle(pool.filter(p => p.t!==TDA && p.t!==TDS));
+  const tdCount  = Math.floor(k / 4);   // = 3 כאשר GL=12
+  const regCount = k - tdCount;          // = 9
+  // ממקם TD בפוזיציות (i+1)%4===0 → אינדקסים 3,7,11
+}
+```
+
+| פוזיציה (0-based) | סוג |
+|---|---|
+| 0, 1, 2 | תרגיל רגיל (TM/TS/TA) |
+| 3 | TDA או TDS |
+| 4, 5, 6 | תרגיל רגיל |
+| 7 | TDA או TDS |
+| 8, 9, 10 | תרגיל רגיל |
+| 11 | TDA או TDS |
+
+### `injectCoins(arr, m)` — הזרקת תרגילי מטבעות (TC)
+
+```javascript
+function injectCoins(arr, m) {
+  // מבטיח 1–2 תרגילי TC בסשן
+  // לא מחליף פוזיציות TD ((i+1)%4===0 → דילוג)
+  // לא מחליף תרגיל ראשון או אחרון
+}
+```
+
+`makeCoinProblem(m)` מייצר `{ t:TC, coins:[...], correct:sum }` עם סכום בין 2 ל-mx (בהתאם לרמה).
+
+---
+
+## makeMxPool() — מאגר תרגילי שרשרת
+
+```javascript
+function makeMxPool(){
+  // שלב 1: 5 TZ פשוטים (a∈[3..6], b∈[1..3], c∈[1..3], a+b+c≤10)
+  // שלב 2: 5 TZ מאתגרים (a∈[4..8], b∈[2..4], c∈[2..4], ≤15)
+  // שלב 3: 5 TX מעורבים (a∈[5..9], b∈[1..4], c∈[1..4], a-b+c≤12)
+  // + מגוון עם num4 אקראי (0 ברוב, לפעמים 1-3)
+}
+```
+
+---
+
+## משתני מצב גלובליים
+
+```javascript
+// ─── משחק ───
+let mode     = 20;
+let score    = 0;
+let idx      = 0;
+let problems = [];
+let done     = false;
+let report   = [];
+let aidMode  = 'nl';   // 'nl' | 'hearts' — ברירת מחדל NL, מאופס ב-setMode
+
+// ─── תרגיל נוכחי ───
+let ptype;             // TM | TS | TA | TX | TZ | TDA | TDS | TC
+let num1, num2, num3, num4;
+let tcCoins = [];      // TC בלבד: [val, val, ...] ערכי המטבעות
+let hState   = [];
+let aidUsed  = false;
+let spaceDir = 1;
+
+// ─── עיצוב ───
+let theme = localStorage.getItem('gameTheme') || 'girls';
+
+// ─── chain-tools ───
+let pgmCV  = 0;
+let pgmCk  = [];
+let pgmArcs = [];
+const PGM_NL = 20;
+const PGM_CK = [/* 5 cookie type objects */];
+
+// ─── משחקוני mini-game ───
+let koData=[], koProbIdx=-1;
+let paData=[], paProbIdx=-1;
+let lgData=[], lgProbIdx=-1;
+let blData=[], blProbIdx=-1, blAnimating=false;
+let gnData=[], gnProbIdx=-1, gnAnimating=false;
+let siAliens=[], siRunning=false, siRafId=null;
+let cnData=[], cnProbIdx=-1, cnAnimating=false;
+let buData=[], buProbIdx=-1, buAnimating=false;
+let tnData=[], tnProbIdx=-1, tnAnimating=false;
+let frState=[], frProbIdx=-1;
+let stState=[], stProbIdx=-1, stAnimating=false;
+// הוסר: ckData/ckProbIdx — צנצנת עוגיות עוברה למסך הראשי כ-pgm*
+```
+
+---
+
+## מערכת עלויות משחקונים — `GAME_COSTS`
+
+```javascript
+const GAME_COSTS = {
+  ko: 10,   // 🥊 אגרוף
+  pa: 10,   // 🎉 מסיבה
+  cn: 10,   // 🥫 פחיות
+  gn: 15,   // 🌸 גינה
+  bu: 15,   // בועות
+  lg: 15,   // 🧱 לגו
+  bl: 20,   // 🎈 בלונים
+  tn: 25,   // 🚂 רכבת
+  fr: 30,   // 🐸 צפרדעים
+  // ck הוסר — עוגיות = מסך ראשי
+  st: 40,   // ✨ כוכבים
+  si: 50,   // 🚀 פולשים
+};
+```
+
+---
+
+## בחירת משחקון אקראי לכל תרגיל
+
+```javascript
+const _allGames = ['pa','lg','bl','gn','si','bu','tn','fr','st'];
+const _subGames = ['ko','lg','bl','gn','si','cn','bu','tn','fr','st'];
+// הוסר 'ck' משני המאגרים
+
+// שולף 2 משחקונים אקראיים; null ל-mode=0 / TDA / TDS / TC / TX / TZ
+```
+
+---
+
+## קיצורי מקלדת
+
+### מקש רווח
+
+| תנאי | פעולה |
+|---|---|
+| TZ/TX + chain-tools גלוי | TZ/שלב-חיבור TX → `pgmPlus()`; שלב-חיסור TX → `pgmMinus()` |
+| פאנל bl פתוח | TA→blAddBalloon; אחר→blRemoveTop |
+| פאנל אחר פתוח | פעולת הפאנל הרלוונטית |
+| aidMode=nl (לבבות מוסתרים) | לחיצת לב + `pgmPlus/Minus` בהתאם |
+| aidMode=hearts | לחיצת לב + `abStep(±1)` |
+| TDA/TDS | ללא פעולה |
+
+### Delete / Escape
+
+- בכרטיס ראשי + TZ/TX + chain-tools גלוי → `pgmUndo()`
+- Escape + פאנל פתוח → סגירת הפאנל
+
+---
+
+## hint text לפי aidMode
+
+| ptype | aidMode=nl | aidMode=hearts |
+|---|---|---|
+| TA (girls) | 🍪 הוֹסִיפִי עוּגִיּוֹת כְּעֶזֶר... | 🤍 הוֹסִיפִי לְבָבוֹת כְּעֶזֶר... |
+| TA (boys) | 🍪 הוֹסֵף עוּגִיּוֹת כְּעֶזֶר... | 🚗 הוֹסֵף מְכוֹנִיּוֹת כְּעֶזֶר... |
+| TS/TM (girls) | 🍪 הָסִירִי עוּגִיּוֹת כְּעֶזֶר... | 💗 מִחֲקִי לְבָבוֹת כְּעֶזֶר... |
+| TS/TM (boys) | 🍪 הָסֵר עוּגִיּוֹת כְּעֶזֶר... | 🚗 מְחַק מְכוֹנִיּוֹת כְּעֶזֶר... |
+| TX | 🧮 חַשְׁבִי בְּשָׁלָבִים: תְּחִלָּה חִסְרִי... | (זהה) |
+| TZ | 🧮 חַשְׁבִי בְּשָׁלָבִים: קוֹדֶם חַבְּרִי שְׁנַיִם... | (זהה) |
+
+---
+
+## זרימת תרגיל
+
+```
+loadProblem()
+  ├─ set ptype, num1..num4 from problems[idx]
+  ├─ done=false; close all panels
+  ├─ pick 2 random mini-games from pool
+  ├─ initHearts() → renderEq() → renderHearts()
+  ├─ showBtns('check') → resetAidUsed() → abReset()
+  ├─ Aid display logic:
+  │   ├─ TZ/TX → chain-tools, hide hearts+abacus (aidMode irrelevant)
+  │   ├─ mode=0, TDA/TDS → hearts+abacus (forced)
+  │   ├─ aidMode='nl' → chain-tools, hide hearts+abacus
+  │   └─ aidMode='hearts' → hearts+abacus, hide chain-tools
+  ├─ if NL shown → pgmCV=num1; pgmCk=…; pgmBuildNL; pgmRenderJar; pgmDrawArcs; pgmUpdateAll
+  ├─ toggle button: show only for mode 5/10/20, non-chain, non-TDA/TDS
+  └─ setTimeout(focus tx-sub1 / ans1 / ans, 60) + setTimeout(updateModeCreature, 300)
+```
+
+---
+
+## מערכת הניקוד
+
+| אירוע | שינוי |
+|---|---|
+| תשובה נכונה | `+modePts()` → mode 0→5, 5→5, 10→10, 20→20, mx→20 |
+| חלקיק/דמות/חד-קרן ברקע | +5 |
+| יצור בונוס | +20 |
+| פתיחת משחקון | `-GAME_COSTS[game]` |
+
+---
+
+## CSS classes מרכזיים — chain-tools
+
+| Class / ID | תיאור |
+|---|---|
+| `#chain-tools` | wrapper; `display:none` ברירת מחדל |
+| `.pgm-nl` | section ישר מספרים |
+| `.pgm-bar` | רצועת הישר (10px גובה, overflow:visible) |
+| `.pgm-dot` | כדור מיקום (20×20, transition left .3s) |
+| `.pgm-arcs-svg` | SVG קשתות (bottom:0, height:16px, overflow:visible) |
+| `.pgm-arc-add` | קשת חיבור זהב |
+| `.pgm-arc-sub` | קשת חיסור כחול |
+| `@keyframes pgmArcFade` | opacity 0→1 (0.3s) |
+| `.pgm-nl-nums` | שורת ספרות (height:20px, margin-top:5px) |
+| `.pgm-nl-num` | ספרה (font-size:.8rem, opacity:.45) |
+| `.pgm-nl-num5` | מכפלות 5 (.88rem, opacity:.75) |
+| `.pgm-scene` | flex, justify:center, gap:44px |
+| `.pgm-side` | כפתור ± (72×72px, border-radius:10px) |
+| `.pgm-minus` | רקע ורוד-אדום |
+| `.pgm-plus` | רקע חום-זהב |
+| `.pgm-jar-col` | עמודת צנצנת |
+| `.pgm-val` | מספר נוכחי (Fredoka, .9rem) |
+| `.pgm-rst` | כפתור ↺ (22×22, עיגול) |
+| `.pgm-poof` | אנימציית 💨 (fixed, @keyframes pgmPoofAnim) |
+| `.pgm-poof-dot` | נקודת פיצוץ (fixed, 7×7px, @keyframes pgmPoofDot) |
+| `.aid-toggle-btn` | כפתור מיתוג תצוגה (48×48, ציאן, חינם) |
+
+---
+
+## מערכת הלבבות / מכוניות
+
+### `initHearts()`
+
+| `ptype` | אורך `hState` | ערך ראשוני |
+|---|---|---|
+| TA/TX/TZ | maxH (10 או 20) | true לnum1 ראשונים, false לשאר |
+| TS/TM | num1 בלבד | false (שלם) |
+| TDA/TDS | num1 (הערך המוצג) | true (כולם מוארים — לספירה ויזואלית) |
+| TC | 0 (ריק) | — (לבבות מוסתרים לחלוטין) |
+
+### אנימציות — `clickHeart(i, b)`
+
+| מצב | class | אנימציה |
+|---|---|---|
+| מחיקה TS/TM | `deleted` | `heartDel` 0.28s |
+| שחזור TS/TM | `undel-pop` | `heartUnDel` 0.22s |
+| הוספה TA/TX | `pop` | `heartPop` 0.28s |
+| ביטול TA/TX | `shrink-pop` | `heartShrink` 0.18s |
+
+---
+
+## החשבונייה (Abacus) — גלויה ב-aidMode=hearts בלבד
+
+| רמה | שורות | חרוזים | קיבולת |
+|---|---|---|---|
+| 5 | 1 | 5 | 5 |
+| 10 | 1 | 10 | 10 |
+| 20/mx | 2 | 10 | 20 |
+
+---
+
+## 11 משחקונים — תיאור קצר
+
+| משחקון | Panel | עלות | רמות |
+|---|---|---|---|
+| 🥊 אגרוף | `#ko-panel` | 10⭐ | TS/TM/TX |
+| 🎉 מסיבה | `#pa-panel` | 10⭐ | TA |
+| 🥫 פחיות | `#cn-panel` | 10⭐ | TS/TM/TX |
+| 🌸 גינה | `#gn-panel` | 15⭐ | כל הסוגים |
+| בועות | `#bu-panel` | 15⭐ | כל הסוגים |
+| 🧱 לגו | `#lg-panel` | 15⭐ | כל הסוגים |
+| 🎈 בלונים | `#bl-panel` | 20⭐ | כל הסוגים |
+| 🚂 רכבת | `#tn-panel` | 25⭐ | כל הסוגים |
+| 🐸 צפרדעים | `#fr-panel` | 30⭐ | כל הסוגים |
+| ✨ כוכבים | `#st-panel` | 40⭐ | כל הסוגים |
+| 🚀 פולשים | `#si-panel` | 50⭐ | TS/TM/TX |
+| ~~🍪 עוגיות~~ | ~~`#ck-panel`~~ | ~~35⭐~~ | **הוסר — עוגיות = מסך ראשי** |
+
+---
+
+## מסכי הצלחה — `showFw()`
+
+כל 5 הצלחות → סופר-הצלחה (3500ms, 40 חלקיקים).
+
+---
+
+## מערכת הדוח — `calcGrade()`
+
+100 נקודות לכל תרגיל שנפתר נכון בפעם הראשונה (ללא שגיאות).
+
+| ציון | תיאור |
+|---|---|
+| ≥950 | מְעֻלֶּה! 🌟 |
+| ≥850 | כָּל הַכָּבוֹד! ⭐ |
+| ≥700 | יָפֶה מְאֹד 💫 |
+| ≥550 | טוֹב 👍 |
+| ≥400 | אֶפְשָׁר יוֹתֵר 🙂 |
+| <400 | צְרִיכָה לְהִתְאַמֵּן 💪 |
+
+---
+
+## פונקציות JavaScript — עיקריות
+
+### ניהול משחק
+
+| פונקציה | תיאור |
+|---|---|
+| `setMode(m)` | מחליף רמה; מאפס aidMode='nl', score, idx, xProbIdx |
+| `loadProblem()` | טוען תרגיל; מחיל aid display לפי aidMode/ptype/mode |
+| `checkAns()` | בודק #ans; sub-answer marking ל-TX/TZ |
+| `rebuildCard()` | בונה מחדש DOM של .card כולל chain-tools |
+| `toggleAidMode()` | מחליף aidMode; מציג/מסתיר chain-tools ↔ hearts+abacus; מעדכן hint |
+| `restart()` | מאפס הכל |
+
+### chain-tools
+
+| פונקציה | תיאור |
+|---|---|
+| `pgmBuildNL()` | בונה ספרות ישר |
+| `pgmDrawArcs(animLast)` | מצייר קשתות SVG |
+| `pgmRenderJar()` | בונה צנצנת עוגיות |
+| `pgmUpdateAll()` | עדכון display + כפתורים |
+| `pgmPlus()` | +1; cookie drop; קשת |
+| `pgmMinus()` | pgmPoof; -1; הסרת עוגייה |
+| `pgmUndo()` | ביטול פעולה אחרונה |
+| `pgmInitChain()` | איפוס לnum1 (כפתור ↺) |
+| `pgmPoof()` | אנימציית 💨 + 6 נקודות בעת חיסור |
+
+### משוואה ולבבות
+
+| פונקציה | תיאור |
+|---|---|
+| `renderEq()` | בונה HTML; TZ/TX → tz-inline + tx-sub inputs |
+| `tzSubUpd(id,gid)` | oninput: מסמן tz-solved/tz-live |
+| `tzSubJarSync(id)` | onblur+Enter: sub-ok/err + עדכון צנצנת |
+| `tzAddMode()` | true אם בשלב חיבור |
+| `initHearts()` | אתחול hState |
+| `renderHearts()` | בנייה DOM לבבות/מכוניות |
+| `clickHeart(i,b)` | toggle + אנימציה |
+
+### חשבונייה
+
+| פונקציה | תיאור |
+|---|---|
+| `abInit()` | הגדרת canvas |
+| `abReset()` | איפוס לפי num1 |
+| `abStep(d)` | ±1, מוגבל; markAidUsed |
+| `abDraw()` | ציור frame+rods+stars |
+
+---
+
+## קובץ בדיקות — `test_game.py`
+
+קובץ Python יחיד (ללא conftest.py) המריץ 66 בדיקות אוטומטיות עם Playwright על Chrome.
+
+```
+py -m pytest test_game.py              # headless (~2.5 דקות)
+set HEADED=1 && py -m pytest test_game.py          # חלון נראה
+set HEADED=1 && set SLOW_MO=600 && py -m pytest    # איטי + נראה
+```
+
+### קבוצות בדיקות
+
+| קבוצה | # | מה נבדק |
+|---|---|---|
+| `TestReport` | 5 | דוח סיכום: ציון 1000, סימון טעויות, "דולג", זוג TDA/TDS, ניקוד מלא |
+| `TestDoubleUnknown` | 11 | TDA/TDS: פוזיציות, שתי תיבות, כל זוג חוקי, modal שגוי, Enter→focus |
+| `TestMiniGames` | 3 | כפתורי משחקון: אין ב-X±X, אין בשרשרת, 2 בדיוק בתרגיל רגיל |
+| `TestScoreAndMode` | 7 | ניקוד: 0 בהתחלה, +5/+10/+20 לפי רמה, איפוס החלפת רמה |
+| `TestGameFlow` | 6 | 12 תרגילים, סרגל התקדמות, מסך סיום, restart |
+| `TestCoinProblems` | 4 | תרגיל מטבעות קיים בכל סשן — רמות 5, 10, 20 (5× כל אחת) |
+| `TestMiniGameFunctionality` | 31 | 10 משחקונים × (עלות נכונה + תשובה נכונה + תשובה שגויה) + si |
+
+### תלויות
+
+```
+Python 3.13+  ·  pytest  ·  playwright (chromium)
+Chrome מותקן ב: C:\Program Files\Google\Chrome\Application\chrome.exe
+```

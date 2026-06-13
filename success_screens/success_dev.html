@@ -1,0 +1,156 @@
+<!DOCTYPE html><html lang="he"><head><meta charset="UTF-8">
+<title>Success Screens — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Dev harness for the external success screens. It mirrors the real host
+     (game/js/success.js): it creates a full-viewport root, lays a RANDOM
+     scene-tinted DARK BACKDROP (built from the skin palette, like
+     _skinBackdrop) behind the screen as a modal cover over a mock game, fades
+     it in/out, picks the skin palette, and skips on Enter. Switch skins from
+     the top bar to preview each scene's matching cover.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;height:100vh;font-family:'Comic Sans MS',sans-serif;overflow:hidden}
+  /* the mock "live game" behind the success modal — proves the cover works.
+     each skin paints its bright scene here; the random dark backdrop covers it. */
+  #scene{position:fixed;inset:0;z-index:0;transition:background .3s}
+  .mock-card{position:fixed;inset:18% 26%;z-index:1;border-radius:26px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.30);
+    display:flex;align-items:center;justify-content:center;
+    font-size:42px;color:rgba(255,255,255,.7);font-weight:bold}
+  .bar{position:fixed;bottom:10px;left:10px;z-index:99;display:flex;flex-wrap:wrap;
+    gap:7px;max-width:96vw;align-items:center}
+  .skins{position:fixed;top:10px;left:10px;z-index:99;display:flex;gap:7px;flex-wrap:wrap}
+  button{font-size:14px;padding:7px 12px;border-radius:9px;border:none;cursor:pointer}
+  button.super{background:#FFD27D;font-weight:bold}
+  .skins button{background:#bbb}
+  .skins button.on{background:#7DC4FF;font-weight:bold;outline:2px solid #fff}
+  .lbl{color:#fff;font-size:13px;opacity:.7;align-self:center;margin-inline-end:4px}
+</style></head><body>
+
+<div id="scene"></div>
+<div class="mock-card" id="mockCard">המשחק כאן</div>
+
+<div class="skins" id="skins"><span class="lbl">סקין:</span></div>
+<div class="bar" id="bar"></div>
+
+<script src="success-comet-shower.js"></script>
+<script src="success-constellation-heart.js"></script>
+<script src="success-unicorn-rainbow.js"></script>
+<script src="success-supernova.js"></script>
+<script src="success-lightning-storm.js"></script>
+<script src="success-electric-orb.js"></script>
+<script src="success-blooming-garden.js"></script>
+<script src="success-black-hole-stars.js"></script>
+<script src="success-star-race.js"></script>
+<script src="success-aurora-glow.js"></script>
+<script src="success-bubble-pop.js"></script>
+<script src="success-magic-wand.js"></script>
+<script src="success-rocket-launch.js"></script>
+<script src="success-princess-crown.js"></script>
+<script src="success-butterfly-swarm.js"></script>
+<script src="success-snow-sparkle.js"></script>
+<script src="success-dolphin-splash.js"></script>
+<script src="success-fireworks-show.js"></script>
+<script src="success-confetti-cannon.js"></script>
+<script src="success-shooting-stars.js"></script>
+<script src="success-balloon-float.js"></script>
+<script src="success-trophy-shine.js"></script>
+<script src="success-paint-splash.js"></script>
+<script src="success-music-notes.js"></script>
+<script src="success-pinwheel-spin.js"></script>
+<script src="success-firefly-dance.js"></script>
+<script src="success-ribbon-streamers.js"></script>
+<!-- special reward screen — NOT in the rotation; registers into SUCCESS.special.gift -->
+<script src="gift/success-gift-surprise.js"></script>
+<script>
+// ── skins: palette (--skin-*) + bright mock scene ──
+// palettes mirror game/skins/*.skin.css; the dark modal backdrop is generated
+// at random from each palette (mirrors success.js _skinBackdrop)
+const SKINS={
+  girls:{   label:'🦄 בנות',
+    palette:{primary:'#FF6FB5',accent:'#7DC4FF',glow:'#C77DFF',text:'#FFFFFF'},
+    scene:'linear-gradient(180deg,#ffd1ec,#ffc3e2 45%,#f49ac9)'},
+  galaxy:{  label:'🌌 חלל',
+    palette:{primary:'#C77DFF',accent:'#FFD27D',glow:'#7DC4FF',text:'#EAF0FF'},
+    scene:'radial-gradient(circle at 70% 30%,#2a1147,#0a0420 60%,#05020f)'},
+  reef:{    label:'🐠 שונית',
+    palette:{primary:'#22C8C2',accent:'#FFD166',glow:'#66E0FF',text:'#EAFBFF'},
+    scene:'linear-gradient(180deg,#5ecfe6,#0a6a8a 45%,#021430)'},
+  dubai:{   label:'🏙️ דובאי',
+    palette:{primary:'#FFB54D',accent:'#FFD27D',glow:'#6FB7FF',text:'#F2EEDF'},
+    scene:'linear-gradient(180deg,#16294a,#e8a03a 70%,#ff7a4d)'},
+  savanna:{ label:'🦁 סוואנה',
+    palette:{primary:'#E07028',accent:'#FFC568',glow:'#FF9A4D',text:'#FFF3E0'},
+    scene:'linear-gradient(180deg,#2b1840,#ff9a4d 55%,#ffd98c 75%,#3a1c14)'},
+};
+// random scene-tinted dark backdrop from the palette (mirrors _skinBackdrop)
+function _hex2rgb(c){c=c.replace('#','');if(c.length===3)c=c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+  return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)];}
+function _mix(a,b,t){const A=_hex2rgb(a),B=_hex2rgb(b);
+  return'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')+')';}
+function randBackdrop(p){
+  const cols=[p.primary,p.glow,p.accent],c=cols[Math.floor(Math.random()*cols.length)],near='#05030c';
+  const inner=_mix(c,near,0.82+Math.random()*0.08),mid=_mix(c,near,0.93);
+  const cx=42+Math.floor(Math.random()*16),cy=32+Math.floor(Math.random()*14);
+  return'radial-gradient(circle at '+cx+'% '+cy+'%,'+inner+' 0%,'+mid+' 55%,#04020a 100%)';
+}
+let skin='girls';
+function setSkin(s){
+  skin=s;
+  document.getElementById('scene').style.background=SKINS[s].scene;
+  document.querySelectorAll('.skins button').forEach(b=>b.classList.toggle('on',b.dataset.skin===s));
+}
+
+let cleanup=null, to=null, bdTO=null;
+function stop(){
+  if(cleanup){cleanup();cleanup=null;}
+  if(to){clearTimeout(to);to=null;}
+  if(bdTO){clearTimeout(bdTO);bdTO=null;}
+}
+function runScreen(style,isSuper,praise){
+  stop();
+  const sk=SKINS[skin];
+  const root=document.createElement('div');
+  root.style.cssText='position:fixed;inset:0;z-index:50;pointer-events:none';
+  // random scene-tinted dark backdrop (matches game/js/success.js _showExternal)
+  const bd=document.createElement('div');
+  bd.className='success-backdrop';
+  bd.style.cssText='position:absolute;inset:0;opacity:0;transition:opacity .26s ease;background:'+randBackdrop(sk.palette);
+  root.appendChild(bd);
+  document.body.appendChild(root);
+  const dur=isSuper?3500:1700;
+  requestAnimationFrame(()=>{bd.style.opacity='1';});
+  bdTO=setTimeout(()=>{bd.style.transition='opacity .34s ease';bd.style.opacity='0';},Math.max(0,dur-300));
+  const c=style.show({root,isSuper,durationMs:dur,points:20,palette:sk.palette,praise:praise||'כָּל הַכָּבוֹד!'});
+  cleanup=()=>{c();root.remove();};
+  to=setTimeout(()=>{stop();},dur+100);
+}
+function run(idx,isSuper){runScreen(window.SUCCESS.styles[idx],isSuper);}
+function runGift(){runScreen(window.SUCCESS.special.gift,true,'מַתָּנָה בִּשְׁבִילֵךְ! 🎁');}
+
+// skin buttons
+const skinsBar=document.getElementById('skins');
+Object.keys(SKINS).forEach(s=>{
+  const b=document.createElement('button');
+  b.textContent=SKINS[s].label; b.dataset.skin=s;
+  b.onclick=()=>setSkin(s);
+  skinsBar.appendChild(b);
+});
+// special gift reward (end-of-set only) — its own button, NOT in the rotation
+const bar=document.getElementById('bar');
+if(window.SUCCESS.special&&window.SUCCESS.special.gift){
+  const bg=document.createElement('button');
+  bg.textContent='🎁 מתנה (פרס סוף)'; bg.className='super'; bg.style.background='#FF8AC2';
+  bg.onclick=runGift; bar.appendChild(bg);
+}
+// rotation style buttons (normal + super each)
+(window.SUCCESS.styles||[]).forEach((s,i)=>{
+  const b1=document.createElement('button');
+  b1.textContent=s.name+' רגיל'; b1.onclick=()=>run(i,false); bar.appendChild(b1);
+  const b2=document.createElement('button');
+  b2.textContent=s.name+' סופר'; b2.className='super'; b2.onclick=()=>run(i,true); bar.appendChild(b2);
+});
+addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&cleanup){e.preventDefault();stop();}});
+setSkin('girls');
+</script></body></html>

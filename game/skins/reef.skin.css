@@ -1,0 +1,329 @@
+/* ── Reef skin — "Open Water" ───────────────────────────────────────────────
+   Redesigned to the space-skin standard: the game is a thin instrument layer
+   floating in the open water — it should OCCLUDE AS LITTLE OF THE REEF AS
+   POSSIBLE. Panels are near-transparent with NO blur; the ONLY blurred
+   element is the equation island itself (a small water-glass pane behind the
+   exercise), so the fish, corals and sunbeams stay sharp everywhere else.
+   No title emojis; buttons are ghost bubbles; gold marks active states.
+
+   A skin owns four families:  1. palette (CSS vars, also fed to success
+   screens)   2. fonts/type   3. glass transparency   4. position on screen.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root{
+  --skin-primary: #22C8C2;   /* lagoon aqua  */
+  --skin-accent:  #FFD166;   /* sunbeam gold */
+  --skin-glow:    #66E0FF;   /* bubble cyan  */
+  --skin-text:    #EAFBFF;   /* sea white    */
+}
+
+/* ── 4. POSITION — top-center, the calm open-water zone ── */
+body.theme-reef .wrap{max-width:720px;padding-top:6px}
+
+/* ── 3. GLASS — near-transparent, NO blur: the reef shows through ── */
+body.theme-reef .glass{
+  background:rgba(4,32,48,.22);
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border:1px solid rgba(102,224,255,.22);
+  box-shadow:0 0 0 1px rgba(2,18,30,.18),0 14px 44px rgba(1,12,22,.30);
+}
+
+/* ════ HEADER — a thin waterline strip ════ */
+body.theme-reef .header{
+  background:linear-gradient(180deg,rgba(4,32,48,.30),rgba(4,32,48,.08));
+  border:none;box-shadow:none;border-radius:18px;
+  padding:10px 18px 10px;margin-bottom:10px;position:relative;
+}
+body.theme-reef .header::after{
+  content:'';position:absolute;left:8%;right:8%;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(102,224,255,.6) 30%,
+             rgba(255,209,102,.5) 70%,transparent);
+  box-shadow:0 0 8px rgba(102,224,255,.45);
+}
+body.theme-reef .uni{display:none}
+body.theme-reef .hdr-top{gap:0}
+
+/* title — aqua-to-sand, wide tracking, no shimmer, no emojis */
+body.theme-reef .title{
+  font-family:'Fredoka One',cursive;font-size:1.55rem;letter-spacing:.14em;
+  animation:none;
+  background:linear-gradient(180deg,#FFFFFF 0%,#BDEFFF 50%,#7ED8E8 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 12px rgba(102,224,255,.4));
+}
+
+/* stats — small aqua readouts */
+body.theme-reef .hdr-stats{
+  margin-top:4px;gap:26px;font-size:.84rem;font-weight:800;
+  color:#A8DCEE;letter-spacing:.05em;text-shadow:0 1px 4px rgba(2,20,34,.6);
+}
+body.theme-reef .hdr-stats strong{color:#FFD166;text-shadow:0 0 10px rgba(255,200,80,.45)}
+body.theme-reef .mode-ind{color:#A8DCEE;letter-spacing:.04em;text-shadow:0 1px 4px rgba(2,20,34,.6)}
+body.theme-reef .mode-ind .mi-cur{color:#FFD166;text-shadow:0 0 8px rgba(255,200,80,.45)}
+
+/* progress — a 3px sunbeam */
+body.theme-reef .prog-wrap{
+  height:3px;max-width:320px;margin-top:8px;border-radius:2px;
+  background:rgba(102,224,255,.14);
+}
+body.theme-reef .prog-bar{
+  background:linear-gradient(90deg,#66E0FF,#22C8C2 55%,#FFD166);
+  box-shadow:0 0 10px rgba(120,220,255,.85),0 0 3px #fff;
+}
+
+/* ════ SETTINGS MODAL (a dialog — stays readable and mostly opaque) ════ */
+body.theme-reef #settings-ov{background:rgba(2,16,28,.7)}
+body.theme-reef .settings-box{
+  background:linear-gradient(170deg,rgba(5,46,66,.97),rgba(4,30,48,.97));
+  border:1px solid rgba(102,224,255,.35);
+  box-shadow:0 0 50px rgba(40,160,210,.25),0 22px 60px rgba(0,8,16,.8);
+}
+body.theme-reef .settings-title{
+  background:linear-gradient(90deg,#EAFBFF,#66E0FF 50%,#FFD166);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-reef .set-sec-lbl{color:#A8DCEE}
+body.theme-reef .tier-tab{
+  background:transparent;border:1px solid rgba(102,224,255,.28);color:#8FC8DD;
+}
+body.theme-reef .tier-tab:hover{background:rgba(102,224,255,.10)}
+body.theme-reef .tier-tab.active{
+  background:rgba(34,200,194,.16);border-color:rgba(102,224,255,.6);color:#EAFBFF;
+  box-shadow:0 0 12px rgba(80,200,230,.3);
+}
+body.theme-reef .lvl-btn{
+  background:transparent;border:1px solid rgba(102,224,255,.26);color:#A8DCEE;
+  box-shadow:none;
+}
+body.theme-reef .lvl-btn:hover{
+  background:rgba(102,224,255,.10);border-color:rgba(140,230,255,.5);
+  box-shadow:0 0 14px rgba(90,200,240,.3);
+}
+body.theme-reef .lvl-btn.active{
+  background:rgba(255,209,102,.12);
+  border:1px solid rgba(255,209,102,.85);color:#FFD166;font-weight:900;
+  box-shadow:0 0 14px rgba(255,200,80,.4),inset 0 0 12px rgba(255,200,80,.10);
+  text-shadow:0 0 8px rgba(255,209,102,.5);
+  transform:scale(1.06);
+}
+body.theme-reef .lvl-btn.active:hover{transform:scale(1.08)}
+
+/* ════ THE CARD — an open frame; the water flows through it ════ */
+body.theme-reef .card{
+  background:radial-gradient(120% 90% at 50% 30%,rgba(4,32,48,.24),rgba(4,32,48,.08) 70%);
+  border:1px solid rgba(102,224,255,.20);border-radius:20px;
+  box-shadow:none;padding:18px 18px 14px;
+}
+/* corner air-bubbles */
+body.theme-reef .card::before,
+body.theme-reef .card::after{
+  content:'';position:absolute;width:7px;height:7px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#FFFFFF 0%,rgba(102,224,255,.65) 45%,transparent 72%);
+  pointer-events:none;
+}
+body.theme-reef .card::before{top:-3px;right:-3px;box-shadow:0 0 10px rgba(140,230,255,.8)}
+body.theme-reef .card::after {bottom:-3px;left:-3px;box-shadow:0 0 10px rgba(255,209,102,.7);
+  background:radial-gradient(circle at 35% 30%,#FFF6DC 0%,rgba(255,209,102,.6) 45%,transparent 72%)}
+
+/* ════ THE EQUATION ISLAND — the ONLY blurred pane in the scene ════
+   A small water-glass sheet sits behind the exercise itself so the numbers
+   stay readable over busy fish, while everything else stays crystal clear. */
+body.theme-reef .eq-row{
+  background:rgba(4,38,56,.34);
+  backdrop-filter:blur(9px) saturate(1.1);-webkit-backdrop-filter:blur(9px) saturate(1.1);
+  border:1px solid rgba(102,224,255,.24);border-radius:18px;
+  padding:10px 14px;
+}
+body.theme-reef .eq-n,body.theme-reef .eq-res{
+  color:#F4FDFF;
+  text-shadow:0 0 16px rgba(102,224,255,.55),0 0 4px rgba(220,248,255,.9),
+              0 2px 8px rgba(0,10,18,.6);
+}
+body.theme-reef .eq-op{text-shadow:0 0 12px rgba(255,200,80,.55),0 2px 6px rgba(0,10,18,.55)}
+body.theme-reef .op-m,body.theme-reef .op-p,body.theme-reef .op-e{color:#FFD166}
+body.theme-reef .eq-res{color:#FFD166;text-shadow:0 0 18px rgba(255,200,80,.65),0 2px 8px rgba(0,10,18,.55)}
+
+body.theme-reef .ans-inp,body.theme-reef .tx-sub-inp{
+  background:rgba(3,28,42,.5);
+  border:2px solid rgba(102,224,255,.45);color:#F4FDFF;
+  box-shadow:0 0 10px rgba(60,180,230,.2),inset 0 0 12px rgba(8,60,90,.3);
+}
+body.theme-reef .ans-inp:focus,body.theme-reef .tx-sub-inp:focus{
+  border-color:#9AE8FF;background:rgba(4,36,54,.6);
+  box-shadow:0 0 22px rgba(90,210,255,.55),0 0 5px rgba(200,240,255,.9),
+             inset 0 0 12px rgba(10,70,105,.35);
+}
+
+/* the check button — a ring bubble */
+body.theme-reef .chk-btn{
+  background:rgba(4,30,46,.4);
+  border:2px solid rgba(140,230,255,.55);color:#CFF2FF;
+  box-shadow:0 0 14px rgba(90,200,240,.4),inset 0 0 12px rgba(60,160,210,.2);
+}
+body.theme-reef .chk-btn::after{background:none}
+body.theme-reef .chk-btn:hover{
+  border-color:#BDEFFF;color:#fff;
+  box-shadow:0 0 24px rgba(120,220,255,.7),inset 0 0 16px rgba(80,190,240,.3);
+}
+
+/* hint + divider + feedback */
+body.theme-reef .hint{color:#9FD8EA;text-shadow:0 1px 6px rgba(2,20,34,.65);letter-spacing:.02em}
+body.theme-reef .div{background:linear-gradient(90deg,transparent,rgba(102,224,255,.32),transparent)}
+body.theme-reef .fb-ok{color:#7CFFC4;text-shadow:0 0 16px rgba(60,255,180,.55)}
+body.theme-reef .fb-err{color:#FF8FA0;text-shadow:0 0 16px rgba(255,90,130,.5)}
+body.theme-reef #tf-msg{color:#8FE8FF;text-shadow:0 0 10px rgba(80,200,240,.6)}
+body.theme-reef #tf-nl-note{color:#FFD166;text-shadow:0 0 8px rgba(255,200,80,.4)}
+
+/* ════ ACTION BUTTONS — ghost bubbles ════ */
+body.theme-reef .btn{
+  background:rgba(4,30,46,.36);text-shadow:none;
+  border:1.5px solid rgba(102,224,255,.4);color:#D6F4FF;
+  box-shadow:0 0 10px rgba(70,180,230,.18);
+  font-weight:800;letter-spacing:.03em;
+}
+body.theme-reef .btn::after{background:none}
+body.theme-reef .btn:hover{box-shadow:0 0 20px rgba(100,210,250,.4)}
+body.theme-reef .b-chk{border-color:rgba(34,200,194,.65);color:#BDF5EF}
+body.theme-reef .b-chk:hover,body.theme-reef .b-chk:active{
+  background:rgba(34,200,194,.18);box-shadow:0 0 22px rgba(60,210,200,.5)}
+body.theme-reef .b-try,body.theme-reef .b-nxt{border-color:rgba(102,224,255,.55);color:#CFF2FF}
+body.theme-reef .b-try:hover,body.theme-reef .b-try:active,
+body.theme-reef .b-nxt:hover,body.theme-reef .b-nxt:active{
+  background:rgba(80,190,240,.16);box-shadow:0 0 22px rgba(100,210,250,.5)}
+body.theme-reef .b-rpl{
+  background:rgba(255,209,102,.12);border-color:rgba(255,209,102,.85);color:#FFD166;
+  text-shadow:0 0 8px rgba(255,200,80,.4);
+  box-shadow:0 0 16px rgba(255,200,80,.3)}
+body.theme-reef .b-rpl:hover,body.theme-reef .b-rpl:active{
+  background:rgba(255,209,102,.2);box-shadow:0 0 26px rgba(255,209,102,.5)}
+
+/* utility buttons — faint bubbles */
+body.theme-reef .games-drop-btn,body.theme-reef .theme-toggle-btn{
+  background:rgba(4,30,46,.4);border:1px solid rgba(102,224,255,.3);
+  box-shadow:0 0 10px rgba(70,180,230,.2);
+}
+body.theme-reef .tt-hint-icon{
+  background:rgba(4,30,46,.4);border-color:rgba(255,209,102,.5);color:#FFD166;
+  box-shadow:0 0 8px rgba(255,200,80,.25);
+}
+body.theme-reef .gift-indicator{
+  background:transparent;border:1px solid rgba(255,209,102,.35);
+  box-shadow:0 0 10px rgba(255,200,80,.18);
+}
+body.theme-reef #score-star{filter:drop-shadow(0 0 7px rgba(255,215,0,.8))}
+
+/* coin stage — an open sandy tray */
+body.theme-reef .coins-stage{
+  background:rgba(4,32,48,.22);border:1px solid rgba(102,224,255,.16);
+}
+body.theme-reef .coin-lbl{color:#9FD8EA}
+body.theme-reef .tc-eq-lbl,body.theme-reef .tc-hint-top{color:#BDE8F5}
+
+/* ════ THE REEF NUMBER LINE — a current of bubbles ════
+   Track = a glowing aqua stream. Ticks = pearl bubbles, golden pearls on
+   the fives. ± controls are round bubbles (teal / deep blue). */
+body.theme-reef #nl-panel{background:transparent;border:none;box-shadow:none}
+body.theme-reef #nl-panel .nl-bar-track{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(102,224,255,.08),
+             rgba(102,224,255,.55) 18%,rgba(34,200,194,.55) 82%,rgba(34,200,194,.08));
+  box-shadow:0 0 10px rgba(90,200,240,.45);
+}
+body.theme-reef #nl-panel .tick{
+  width:5px;height:5px;border-radius:50%;top:calc(100% + 5px);
+  background:rgba(200,240,255,.6);box-shadow:0 0 6px rgba(150,225,255,.6);
+}
+body.theme-reef #nl-panel .tick.major{
+  width:8px;height:8px;top:calc(100% + 3px);
+  background:radial-gradient(circle at 35% 30%,#FFF,#FFD166);
+  box-shadow:0 0 10px rgba(255,209,102,.85);
+}
+body.theme-reef #nl-panel .nl-num{color:rgba(168,220,238,.75)}
+body.theme-reef #nl-panel .nl-num.major{color:#FFD166;text-shadow:0 0 10px rgba(255,200,80,.55)}
+body.theme-reef #nl-panel .nl-dot::after{
+  background:rgba(102,224,255,.8);box-shadow:0 0 6px rgba(102,224,255,.9);
+}
+body.theme-reef #nl-panel .kang{
+  filter:drop-shadow(0 2px 5px rgba(0,12,20,.6)) drop-shadow(0 0 10px rgba(102,224,255,.6));
+}
+body.theme-reef #nl-panel .arc-add{stroke:rgba(255,209,102,.9)}
+body.theme-reef #nl-panel .arc-sub{stroke:rgba(102,224,255,.9)}
+
+body.theme-reef #nl-panel .side-btn{border-radius:50%}
+body.theme-reef #nl-panel .btn-plus{
+  background:radial-gradient(circle at 34% 30%,#7FE8E0,#0E8C86 75%);color:#03332F;
+  border:2px solid rgba(220,250,255,.6);
+  box-shadow:0 0 14px rgba(50,200,190,.45),inset 0 1px 0 rgba(255,255,255,.4);
+}
+body.theme-reef #nl-panel .btn-minus{
+  background:radial-gradient(circle at 34% 30%,#7FB8F0,#1E4E9E 75%);color:#EAF4FF;
+  border:2px solid rgba(220,240,255,.55);
+  box-shadow:0 0 14px rgba(70,140,230,.45),inset 0 1px 0 rgba(255,255,255,.35);
+}
+body.theme-reef #nl-panel .btn-reset{
+  background:rgba(255,209,102,.12);border:1.5px solid rgba(255,209,102,.7);color:#FFD166;
+  box-shadow:0 0 12px rgba(255,200,80,.3);
+}
+body.theme-reef #nl-panel .btn-reset:hover{background:rgba(255,209,102,.2)}
+body.theme-reef #nl-panel .btn-undo{
+  background:transparent;border:1.5px solid rgba(102,224,255,.4);color:#A8DCEE;
+}
+body.theme-reef #nl-panel .btn-undo:hover{background:rgba(102,224,255,.12)}
+
+/* ════ CHAIN MODE — mirrored bubble stream ════ */
+body.theme-reef .pgm-bar{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(102,224,255,.08),
+             rgba(102,224,255,.5) 18%,rgba(34,200,194,.5) 82%,rgba(34,200,194,.08));
+  box-shadow:0 0 8px rgba(90,200,240,.4);
+}
+body.theme-reef .pgm-dot{
+  background:radial-gradient(circle at 35% 30%,#FFF,#9ADCF0);
+  border-color:rgba(235,250,255,.85);box-shadow:0 0 12px rgba(140,225,255,.95);
+}
+body.theme-reef .pgm-nl-num{color:rgba(168,220,238,.7)}
+body.theme-reef .pgm-nl-num5{color:#FFD166;text-shadow:0 0 8px rgba(255,200,80,.5)}
+body.theme-reef .pgm-arc-add{stroke:rgba(255,209,102,.9)}
+body.theme-reef .pgm-arc-sub{stroke:rgba(102,224,255,.9)}
+body.theme-reef .pgm-side{border-radius:50%;font-size:2.1rem}
+body.theme-reef .pgm-side::after{background:none}
+body.theme-reef .pgm-plus{
+  background:radial-gradient(circle at 34% 30%,#7FE8E0,#0E8C86 75%);color:#03332F;
+  border:2px solid rgba(220,250,255,.6);
+  box-shadow:0 0 14px rgba(50,200,190,.45),inset 0 1px 0 rgba(255,255,255,.4);
+}
+body.theme-reef .pgm-minus{
+  background:radial-gradient(circle at 34% 30%,#7FB8F0,#1E4E9E 75%);color:#EAF4FF;
+  border:2px solid rgba(220,240,255,.55);
+  box-shadow:0 0 14px rgba(70,140,230,.45),inset 0 1px 0 rgba(255,255,255,.35);
+}
+body.theme-reef .pgm-jar-btm{
+  background:rgba(3,26,40,.55);border-color:rgba(255,209,102,.45);
+}
+
+/* number-hover tooltip — a deep-water pane (objects come from the reef aid
+   variant: pearls) */
+body.theme-reef #num-tt{
+  background:rgba(4,38,56,.97);
+  border:1px solid rgba(102,224,255,.45);
+  box-shadow:0 6px 24px rgba(0,8,16,.7),0 0 18px rgba(80,200,240,.25);
+}
+body.theme-reef #num-tt .ntt-lbl{color:#FFD166;text-shadow:0 0 10px rgba(255,200,80,.4)}
+
+/* ════ END SCREEN ════ */
+body.theme-reef .end-ttl{
+  background:linear-gradient(135deg,#FFFFFF,#9AE8FF 40%,#FFD166);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-reef .end-sc{color:#BDE8F5}
+body.theme-reef .end-grade-num{
+  background:linear-gradient(135deg,#FFD166,#22C8C2,#66E0FF);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(120,220,255,.5));
+}
+body.theme-reef .end-grade-max{color:rgba(168,220,238,.7)}
+body.theme-reef .end-grade-msg{color:#BDE8F5}
+
+@media(max-width:480px){
+  body.theme-reef .title{font-size:1.2rem;letter-spacing:.1em}
+}

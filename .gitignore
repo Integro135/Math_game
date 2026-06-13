@@ -1,0 +1,15 @@
+# Python test artifacts
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# logs
+logs/
+*.log
+
+# local repro / scratch scripts
+_repro_*.py
+
+# OS junk
+.DS_Store
+Thumbs.db

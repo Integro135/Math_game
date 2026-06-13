@@ -1,0 +1,342 @@
+/* ── Unicorns skin — "Valley Light" ─────────────────────────────────────────
+   Redesigned to the space-skin standard: the game is a thin translucent
+   layer floating over the candy valley — it should OCCLUDE AS LITTLE OF THE
+   SCENE AS POSSIBLE (no blur, near-transparent veils, hairline borders,
+   ghost-outline buttons, no title emojis). Because the valley is LIGHT,
+   contrast comes from deep-plum ink + soft white halos instead of
+   glow-on-dark. The ± controls are LILAC and STRAWBERRY — no green.
+
+   A skin owns four families:  1. palette (CSS vars, also fed to success
+   screens)   2. fonts/type   3. glass transparency   4. position on screen.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root{
+  --skin-primary: #FF6FB5;   /* candy pink   */
+  --skin-accent:  #7DC4FF;   /* sky tchelet  */
+  --skin-glow:    #C77DFF;   /* royal lilac  */
+  --skin-text:    #5A2A52;   /* deep plum    */
+}
+
+/* ── 4. POSITION — center band, between the flyers above and the herd below ── */
+body.theme-girls .wrap{max-width:700px;padding-top:8px}
+
+/* ── 3. GLASS — a breath of rose, no blur: the valley shows through ── */
+body.theme-girls .glass{
+  background:rgba(255,247,252,.30);
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border:1px solid rgba(214,112,171,.34);
+  box-shadow:0 10px 36px rgba(120,40,90,.14);
+}
+
+/* ════ HEADER — a thin ribbon, not a box ════ */
+body.theme-girls .header{
+  background:linear-gradient(180deg,rgba(255,247,252,.38),rgba(255,247,252,.10));
+  border:none;box-shadow:none;border-radius:18px;
+  padding:10px 18px 10px;margin-bottom:10px;position:relative;
+}
+/* a rainbow thread closes the strip */
+body.theme-girls .header::after{
+  content:'';position:absolute;left:8%;right:8%;bottom:0;height:2px;border-radius:1px;
+  background:linear-gradient(90deg,transparent,#FF8FAB 18%,#FFD166 38%,#8AE08A 55%,#7DC4FF 72%,#C77DFF 88%,transparent);
+  opacity:.7;
+}
+body.theme-girls .uni{display:none}
+body.theme-girls .hdr-top{gap:0}
+
+/* title — quiet plum-rose, wide tracking, no shimmer, no emojis */
+body.theme-girls .title{
+  font-family:'Fredoka One',cursive;font-size:1.55rem;letter-spacing:.14em;
+  animation:none;
+  background:linear-gradient(180deg,#8E3C7E 0%,#C2519C 55%,#E66FB2 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 1px 6px rgba(255,255,255,.55));
+}
+
+/* stats — small plum readouts */
+body.theme-girls .hdr-stats{
+  margin-top:4px;gap:26px;font-size:.84rem;font-weight:800;
+  color:#7A4070;letter-spacing:.05em;text-shadow:0 1px 3px rgba(255,255,255,.55);
+}
+body.theme-girls .hdr-stats strong{color:#9A4ED9;text-shadow:0 1px 3px rgba(255,255,255,.6)}
+body.theme-girls .mode-ind{color:#7A4070;letter-spacing:.04em;text-shadow:0 1px 3px rgba(255,255,255,.6)}
+body.theme-girls .mode-ind .mi-cur{color:#E0489C}
+
+/* progress — a 3px rainbow thread */
+body.theme-girls .prog-wrap{
+  height:3px;max-width:320px;margin-top:8px;border-radius:2px;
+  background:rgba(160,80,140,.18);
+}
+body.theme-girls .prog-bar{
+  background:linear-gradient(90deg,#FF8FAB,#FFD166,#8AE08A,#7DC4FF,#C77DFF);
+  box-shadow:0 0 8px rgba(255,140,190,.7);
+}
+
+/* ════ SETTINGS MODAL (a dialog — stays readable and mostly opaque) ════ */
+body.theme-girls #settings-ov{background:rgba(60,18,52,.5)}
+body.theme-girls .settings-box{
+  background:linear-gradient(170deg,rgba(255,250,253,.97),rgba(255,238,248,.97));
+  border:1px solid rgba(214,112,171,.5);
+  box-shadow:0 0 40px rgba(200,90,160,.25),0 22px 60px rgba(90,30,70,.35);
+}
+body.theme-girls .settings-title{
+  background:linear-gradient(90deg,#C2519C,#9A4ED9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-girls .set-sec-lbl{color:#7A4070}
+/* the extra-settings text (intro toggle, name label/input) sits on the light
+   settings box — recolor it plum so it stays readable (base default is light) */
+body.theme-girls .set-toggle,
+body.theme-girls .set-name{color:#7A4070}
+body.theme-girls .set-name input{
+  color:#5A2A52;border-color:rgba(194,81,156,.4);background:rgba(255,255,255,.55);
+}
+body.theme-girls .set-name input:focus{
+  border-color:#9A4ED9;background:rgba(255,255,255,.8);
+}
+body.theme-girls .set-name input::placeholder{color:rgba(122,64,112,.5)}
+body.theme-girls .tier-tab{
+  background:transparent;border:1px solid rgba(194,81,156,.35);color:#9A5588;
+}
+body.theme-girls .tier-tab:hover{background:rgba(255,111,181,.10)}
+body.theme-girls .tier-tab.active{
+  background:rgba(199,125,255,.16);border-color:rgba(155,85,200,.6);color:#5A2A52;
+  box-shadow:0 0 10px rgba(170,100,220,.25);
+}
+body.theme-girls .lvl-btn{
+  background:transparent;border:1px solid rgba(194,81,156,.32);color:#8E4A7E;
+  box-shadow:none;
+}
+body.theme-girls .lvl-btn:hover{
+  background:rgba(255,111,181,.10);border-color:rgba(214,112,171,.55);
+  box-shadow:0 0 12px rgba(230,120,180,.25);
+}
+body.theme-girls .lvl-btn.active{
+  background:rgba(125,196,255,.18);
+  border:1px solid rgba(60,130,220,.65);color:#2A5AA8;font-weight:900;
+  box-shadow:0 0 12px rgba(110,180,255,.4),inset 0 0 12px rgba(150,200,255,.12);
+  transform:scale(1.06);
+}
+body.theme-girls .lvl-btn.active:hover{transform:scale(1.08)}
+
+/* ════ THE CARD — an open frame of light ════ */
+body.theme-girls .card{
+  background:radial-gradient(120% 90% at 50% 30%,rgba(255,247,252,.34),rgba(255,247,252,.12) 70%);
+  border:1px solid rgba(214,112,171,.30);border-radius:20px;
+  box-shadow:none;padding:18px 18px 14px;
+}
+/* corner light-pins — pink and lilac */
+body.theme-girls .card::before,
+body.theme-girls .card::after{
+  content:'';position:absolute;width:7px;height:7px;border-radius:50%;
+  background:radial-gradient(circle,#FFE3F2 0%,rgba(255,111,181,.7) 40%,transparent 70%);
+  pointer-events:none;
+}
+body.theme-girls .card::before{top:-3px;right:-3px;box-shadow:0 0 10px rgba(255,111,181,.8)}
+body.theme-girls .card::after {bottom:-3px;left:-3px;box-shadow:0 0 10px rgba(199,125,255,.8);
+  background:radial-gradient(circle,#F0E0FF 0%,rgba(199,125,255,.7) 40%,transparent 70%)}
+
+/* ════ EQUATION — plum ink with a soft white halo ════ */
+body.theme-girls .eq-n,body.theme-girls .eq-res{
+  color:#4A2244;
+  text-shadow:0 0 10px rgba(255,255,255,.85),0 1px 3px rgba(255,255,255,.6);
+}
+body.theme-girls .eq-op{text-shadow:0 0 8px rgba(255,255,255,.8)}
+body.theme-girls .op-p{color:#2E8FD9}   /* plus  — sky blue   */
+body.theme-girls .op-m{color:#E0489C}   /* minus — candy pink */
+body.theme-girls .op-e{color:#9A4ED9}   /* equals — lilac     */
+body.theme-girls .eq-res{color:#8E2BC8}
+
+body.theme-girls .ans-inp,body.theme-girls .tx-sub-inp{
+  background:rgba(255,255,255,.45);
+  border:2px solid rgba(214,112,171,.55);color:#4A2244;
+  box-shadow:0 0 10px rgba(230,120,180,.18),inset 0 0 10px rgba(255,255,255,.35);
+}
+body.theme-girls .ans-inp:focus,body.theme-girls .tx-sub-inp:focus{
+  border-color:#C77DFF;background:rgba(255,255,255,.6);
+  box-shadow:0 0 18px rgba(180,110,240,.45),inset 0 0 10px rgba(255,255,255,.4);
+}
+
+/* the check button — a lilac ring of light */
+body.theme-girls .chk-btn{
+  background:rgba(255,250,253,.4);
+  border:2px solid rgba(170,100,220,.6);color:#7A3E9E;
+  box-shadow:0 0 12px rgba(170,100,220,.35),inset 0 0 10px rgba(220,180,255,.2);
+}
+body.theme-girls .chk-btn::after{background:none}
+body.theme-girls .chk-btn:hover{
+  border-color:#B07FE8;color:#5A2A82;
+  box-shadow:0 0 22px rgba(170,100,220,.6),inset 0 0 14px rgba(220,180,255,.3);
+}
+
+/* hint + divider + feedback */
+body.theme-girls .hint{color:#8E4A7E;text-shadow:0 1px 3px rgba(255,255,255,.6);letter-spacing:.02em}
+body.theme-girls .div{background:linear-gradient(90deg,transparent,rgba(214,112,171,.4),transparent)}
+body.theme-girls .fb-ok{color:#157A4E;text-shadow:0 1px 4px rgba(255,255,255,.7)}
+body.theme-girls .fb-err{color:#D6336C;text-shadow:0 1px 4px rgba(255,255,255,.7)}
+body.theme-girls #tf-msg{color:#8E1BD0;text-shadow:0 1px 4px rgba(255,255,255,.75)}
+body.theme-girls #tf-nl-note{color:#9A4ED9}
+
+/* ════ ACTION BUTTONS — ghost outlines on light glass ════ */
+body.theme-girls .btn{
+  background:rgba(255,250,253,.38);text-shadow:none;
+  border:1.5px solid rgba(194,81,156,.45);color:#8E3C7E;
+  box-shadow:0 0 10px rgba(230,120,180,.15);
+  font-weight:800;letter-spacing:.03em;
+}
+body.theme-girls .btn::after{background:none}
+body.theme-girls .btn:hover{box-shadow:0 0 18px rgba(230,120,180,.35)}
+body.theme-girls .b-chk{border-color:rgba(170,100,220,.6);color:#7A3E9E}
+body.theme-girls .b-chk:hover,body.theme-girls .b-chk:active{
+  background:rgba(199,125,255,.16);box-shadow:0 0 20px rgba(170,100,220,.4)}
+body.theme-girls .b-try,body.theme-girls .b-nxt{border-color:rgba(214,112,171,.6);color:#B0467E}
+body.theme-girls .b-try:hover,body.theme-girls .b-try:active,
+body.theme-girls .b-nxt:hover,body.theme-girls .b-nxt:active{
+  background:rgba(255,111,181,.14);box-shadow:0 0 20px rgba(230,120,180,.4)}
+body.theme-girls .b-rpl{
+  background:rgba(125,196,255,.16);border-color:rgba(60,130,220,.7);color:#2A5AA8;
+  text-shadow:none;box-shadow:0 0 14px rgba(110,180,255,.35)}
+body.theme-girls .b-rpl:hover,body.theme-girls .b-rpl:active{
+  background:rgba(125,196,255,.26);box-shadow:0 0 24px rgba(110,180,255,.5)}
+
+/* utility buttons — faint rose circles; the aid-toggle icon ink is plum */
+body.theme-girls .games-drop-btn,body.theme-girls .theme-toggle-btn{
+  background:rgba(255,250,253,.45);border:1px solid rgba(214,112,171,.4);
+  box-shadow:0 0 8px rgba(230,120,180,.2);
+}
+body.theme-girls .games-drop-btn{color:#7A3E9E}
+body.theme-girls .tt-hint-icon{
+  background:rgba(255,250,253,.45);border-color:rgba(154,78,217,.5);color:#7A3E9E;
+  box-shadow:0 0 8px rgba(170,100,220,.25);
+}
+body.theme-girls .gift-indicator{
+  background:transparent;border:1px solid rgba(214,112,171,.5);color:#B0467E;
+  box-shadow:0 0 10px rgba(230,120,180,.2);
+}
+body.theme-girls #score-star{filter:drop-shadow(0 0 6px rgba(255,200,40,.8))}
+
+/* coin stage — an airy tray */
+body.theme-girls .coins-stage{
+  background:rgba(255,247,252,.28);border:1px solid rgba(214,112,171,.22);
+}
+body.theme-girls .coin-lbl{color:#9A5588}
+body.theme-girls .tc-eq-lbl,body.theme-girls .tc-hint-top{color:#7A4070}
+
+/* ════ THE VALLEY NUMBER LINE — the rainbow laid flat ════
+   Track = a pastel rainbow ribbon. Ticks = sugar-pink pearls, golden beads
+   on the fives. ± controls: plus = LILAC, minus = STRAWBERRY (no green). */
+body.theme-girls #nl-panel{background:transparent;border:none;box-shadow:none}
+body.theme-girls #nl-panel .nl-bar-track{
+  height:5px;border:none;border-radius:3px;
+  background:linear-gradient(90deg,#FF8FAB,#FFD166 28%,#8AE08A 50%,#7DC4FF 72%,#C77DFF);
+  box-shadow:0 0 8px rgba(255,150,200,.45);
+}
+body.theme-girls #nl-panel .tick{
+  width:5px;height:5px;border-radius:50%;top:calc(100% + 5px);
+  background:rgba(214,112,171,.55);box-shadow:0 0 4px rgba(230,120,180,.5);
+}
+body.theme-girls #nl-panel .tick.major{
+  width:8px;height:8px;top:calc(100% + 3px);
+  background:#E8A800;box-shadow:0 0 8px rgba(255,190,60,.8);
+}
+/* the panel is transparent, so labels sit over the scene. Happy yellow numbers
+   (white for the 0/5/10/15/20 anchors), wrapped in a deep-plum outline so the
+   bright text pops over the light candy valley instead of washing out */
+body.theme-girls #nl-panel .nl-num{
+  color:#FFD93D;
+  text-shadow:0 1px 2px rgba(74,34,68,.95),0 -1px 2px rgba(74,34,68,.85),
+              1px 0 2px rgba(74,34,68,.85),-1px 0 2px rgba(74,34,68,.85);
+}
+body.theme-girls #nl-panel .nl-num.major{
+  color:#FFFFFF;
+  text-shadow:0 1px 2px rgba(74,34,68,.95),0 -1px 2px rgba(74,34,68,.9),
+              1px 0 2px rgba(74,34,68,.9),-1px 0 2px rgba(74,34,68,.9);
+}
+body.theme-girls #nl-panel .nl-dot::after{
+  background:rgba(199,125,255,.85);box-shadow:0 0 6px rgba(199,125,255,.9);
+}
+body.theme-girls #nl-panel .kang{
+  filter:drop-shadow(0 2px 4px rgba(120,40,90,.35)) drop-shadow(0 0 8px rgba(255,255,255,.7));
+}
+body.theme-girls #nl-panel .arc-add{stroke:rgba(232,168,0,.9)}
+body.theme-girls #nl-panel .arc-sub{stroke:rgba(199,125,255,.95)}
+
+body.theme-girls #nl-panel .side-btn{border-radius:50%}
+body.theme-girls #nl-panel .btn-plus{
+  background:linear-gradient(160deg,#D9A6FF,#9A4ED9 80%);color:#FFF;
+  border:2px solid rgba(255,255,255,.55);
+  box-shadow:0 4px 0 #6A2A9E,0 4px 12px rgba(154,78,217,.45);
+}
+body.theme-girls #nl-panel .btn-minus{
+  background:linear-gradient(160deg,#FF9DBE,#E0557E 80%);color:#FFF;
+  border:2px solid rgba(255,255,255,.55);
+  box-shadow:0 4px 0 #A93358,0 4px 12px rgba(224,85,126,.45);
+}
+body.theme-girls #nl-panel .btn-reset{
+  background:rgba(125,196,255,.16);border:1.5px solid rgba(60,130,220,.6);color:#2A5AA8;
+  box-shadow:0 0 10px rgba(110,180,255,.3);
+}
+body.theme-girls #nl-panel .btn-reset:hover{background:rgba(125,196,255,.26)}
+body.theme-girls #nl-panel .btn-undo{
+  background:transparent;border:1.5px solid rgba(194,81,156,.4);color:#9A5588;
+}
+body.theme-girls #nl-panel .btn-undo:hover{background:rgba(255,111,181,.12)}
+
+/* ════ CHAIN MODE — mirrored ribbon + lilac/strawberry ± ════ */
+body.theme-girls .pgm-bar{
+  height:5px;border:none;border-radius:3px;
+  background:linear-gradient(90deg,#FF8FAB,#FFD166 28%,#8AE08A 50%,#7DC4FF 72%,#C77DFF);
+  box-shadow:0 0 7px rgba(255,150,200,.4);
+}
+body.theme-girls .pgm-dot{
+  background:radial-gradient(circle at 38% 36%,#FFF,#E8A1D8);
+  border-color:rgba(255,255,255,.85);box-shadow:0 0 10px rgba(230,130,200,.85);
+}
+body.theme-girls .pgm-nl-num{color:rgba(122,64,112,.75)}
+body.theme-girls .pgm-nl-num5{color:#7A3E9E;text-shadow:0 1px 2px rgba(255,255,255,.6)}
+body.theme-girls .pgm-arc-add{stroke:rgba(232,168,0,.9)}
+body.theme-girls .pgm-arc-sub{stroke:rgba(199,125,255,.95)}
+body.theme-girls .pgm-side{border-radius:50%;font-size:2.1rem}
+body.theme-girls .pgm-side::after{background:none}
+body.theme-girls .pgm-plus{
+  background:linear-gradient(160deg,#D9A6FF,#9A4ED9 80%);color:#FFF;
+  border:2px solid rgba(255,255,255,.55);
+  box-shadow:0 4px 0 #6A2A9E,0 4px 12px rgba(154,78,217,.45);
+}
+body.theme-girls .pgm-minus{
+  background:linear-gradient(160deg,#FF9DBE,#E0557E 80%);color:#FFF;
+  border:2px solid rgba(255,255,255,.55);
+  box-shadow:0 4px 0 #A93358,0 4px 12px rgba(224,85,126,.45);
+}
+body.theme-girls .pgm-jar-btm{
+  background:rgba(255,250,253,.7);border-color:rgba(154,78,217,.45);
+}
+body.theme-girls .pgm-val{color:#8E2BC8;text-shadow:0 1px 2px rgba(255,255,255,.7)}
+body.theme-girls .pgm-rst{border-color:rgba(122,64,112,.3);color:rgba(122,64,112,.6)}
+body.theme-girls .pgm-rst:hover{background:rgba(255,111,181,.15);color:#5A2A52}
+
+/* number-hover tooltip — a candy card (objects come from the unicorn aid
+   variant: pastel cupcakes) */
+body.theme-girls #num-tt{
+  background:rgba(255,250,253,.98);
+  border:1px solid rgba(214,112,171,.55);
+  box-shadow:0 6px 22px rgba(120,40,90,.25),0 0 14px rgba(230,120,180,.2);
+}
+body.theme-girls #num-tt .ntt-lbl{color:#8E3C7E}
+
+/* ════ END SCREEN ════ */
+body.theme-girls .end-ttl{
+  background:linear-gradient(135deg,#C2519C,#7DC4FF 60%,#9A4ED9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-girls .end-sc{color:#7A4070}
+body.theme-girls .end-grade-num{
+  background:linear-gradient(135deg,#7DC4FF,#E66FB2,#9A4ED9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 1px 6px rgba(255,255,255,.6));
+}
+body.theme-girls .end-grade-max{color:rgba(122,64,112,.7)}
+body.theme-girls .end-grade-msg{color:#7A4070}
+
+@media(max-width:480px){
+  body.theme-girls .title{font-size:1.2rem;letter-spacing:.1em}
+}

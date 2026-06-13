@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧪 Manual Tester — כל ממשק המשחק</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f1e;--sb:#16162a;--bdr:rgba(255,255,255,.08);
+  --gold:#ffd700;--txt:#e8e8f0;--muted:rgba(255,255,255,.45);--r:10px;
+}
+body{font-family:'Nunito','Segoe UI',sans-serif;background:var(--bg);color:var(--txt);
+     display:flex;height:100vh;overflow:hidden;font-size:13px;}
+
+/* ── Sidebar ── */
+#sb{width:268px;min-width:268px;background:var(--sb);border-left:1px solid var(--bdr);
+    display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+#sb::-webkit-scrollbar{width:3px}
+#sb::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:2px}
+
+.sb-hdr{padding:11px 14px 9px;font-size:.95rem;font-weight:900;color:var(--gold);
+        border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.sec{padding:9px 12px 6px;border-bottom:1px solid var(--bdr);}
+.sec-h{font-size:.68rem;font-weight:900;letter-spacing:1.6px;text-transform:uppercase;
+        color:var(--muted);margin-bottom:6px;}
+.pills{display:flex;flex-wrap:wrap;gap:4px;}
+.p{padding:4px 10px;border-radius:20px;border:1.5px solid rgba(255,255,255,.13);
+   background:rgba(255,255,255,.05);color:var(--txt);font-family:'Nunito',sans-serif;
+   font-size:.78rem;font-weight:800;cursor:pointer;transition:all .14s;white-space:nowrap;}
+.p:hover{background:rgba(255,255,255,.14);transform:scale(1.04)}
+.p:active{transform:scale(.94)}
+.p.on{background:var(--gold);color:#1a1200;border-color:var(--gold);box-shadow:0 0 10px rgba(255,215,0,.35);}
+.p.g{border-color:rgba(105,240,174,.3)}.p.g:hover{background:rgba(105,240,174,.12)}.p.g.on{background:#69F0AE;color:#012a0c;border-color:#69F0AE;box-shadow:0 0 10px rgba(105,240,174,.35)}
+.p.b{border-color:rgba(100,181,246,.3)}.p.b:hover{background:rgba(100,181,246,.12)}.p.b.on{background:#64B5F6;color:#001a3a;border-color:#64B5F6}
+.p.pk{border-color:rgba(244,143,177,.3)}.p.pk:hover{background:rgba(244,143,177,.12)}.p.pk.on{background:#F48FB1;color:#2a0010;border-color:#F48FB1}
+.p.pu{border-color:rgba(206,147,216,.3)}.p.pu:hover{background:rgba(206,147,216,.12)}.p.pu.on{background:#CE93D8;color:#1a001a;border-color:#CE93D8}
+.p.or{border-color:rgba(255,183,77,.3)}.p.or:hover{background:rgba(255,183,77,.12)}.p.or.on{background:#FFB74D;color:#2a1000;border-color:#FFB74D}
+/* emoji grid */
+.mg{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;}
+.mp{aspect-ratio:1;border-radius:9px;border:1.5px solid rgba(255,255,255,.11);
+    background:rgba(255,255,255,.04);font-size:1.25rem;cursor:pointer;
+    transition:all .14s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
+.mp:hover{background:rgba(255,255,255,.14);transform:scale(1.08)}
+.mp:active{transform:scale(.9)}
+.mp small{font-size:.54rem;font-weight:900;color:var(--gold);}
+/* score row */
+.sr{display:flex;align-items:center;gap:5px;margin-top:4px;}
+.sr input{flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid rgba(255,255,255,.13);
+           background:rgba(255,255,255,.06);color:var(--txt);font-family:'Nunito',sans-serif;
+           font-size:.82rem;font-weight:800;text-align:center;}
+.sr input:focus{outline:none;border-color:var(--gold);}
+.ib{padding:5px 9px;border-radius:8px;border:1.5px solid rgba(255,255,255,.13);
+    background:rgba(255,255,255,.06);color:var(--txt);cursor:pointer;font-family:'Nunito',sans-serif;
+    font-size:.8rem;font-weight:800;transition:all .13s;}
+.ib:hover{background:rgba(255,255,255,.16);}
+/* status + load */
+#stat{padding:7px 12px;background:rgba(0,0,0,.35);border-top:1px solid var(--bdr);
+      flex-shrink:0;font-size:.72rem;color:var(--muted);}
+#stat-t{color:var(--gold);font-weight:800;}
+#load-sec{display:flex;flex-direction:column;align-items:center;gap:8px;
+          padding:20px 16px;text-align:center;flex-shrink:0;}
+#load-sec p{color:rgba(255,214,255,.7);font-size:.82rem;line-height:1.5;}
+.load-btn{padding:9px 18px;border-radius:24px;border:1.5px dashed rgba(255,215,0,.45);
+           background:rgba(255,215,0,.07);color:var(--gold);font-family:'Nunito',sans-serif;
+           font-size:.85rem;font-weight:900;cursor:pointer;transition:all .15s;}
+.load-btn:hover{background:rgba(255,215,0,.15);}
+
+/* ── Frame area ── */
+#fw{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.ftop{padding:5px 12px;background:rgba(0,0,0,.4);border-bottom:1px solid var(--bdr);
+       display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--muted);flex-shrink:0;}
+.ftop-note{margin-right:auto;opacity:.6;font-size:.7rem;}
+.ftop button{padding:3px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.14);
+             background:rgba(255,255,255,.06);color:var(--txt);cursor:pointer;
+             font-size:.72rem;font-weight:800;font-family:'Nunito',sans-serif;}
+.ftop button:hover{background:rgba(255,255,255,.14);}
+iframe{width:100%;flex:1;border:none;display:block;}
+</style>
+</head>
+<body>
+
+<!-- ══════ SIDEBAR ══════ -->
+<aside id="sb">
+  <div class="sb-hdr">🧪 Manual Tester</div>
+
+  <!-- load section (shown until game HTML is loaded) -->
+  <div id="load-sec">
+    <p>בחר את <code>subtraction_game.html</code><br>כדי להתחיל</p>
+    <input type="file" id="fp" accept=".html" style="display:none">
+    <button class="load-btn" onclick="document.getElementById('fp').click()">📂 בחר קובץ משחק</button>
+  </div>
+
+  <!-- controls (hidden until loaded) -->
+  <div id="ctrl" style="display:none">
+
+    <!-- Mode -->
+    <div class="sec">
+      <div class="sec-h">📊 רמה</div>
+      <div class="pills" id="mode-row">
+        <span class="p g" data-m="0"  onclick="setM(0)"   >1+1 🌱</span>
+        <span class="p g" data-m="5"  onclick="setM(5)"   >עד 5 ⭐</span>
+        <span class="p g" data-m="10" onclick="setM(10)"  >עד 10 ⭐</span>
+        <span class="p g on" data-m="20" onclick="setM(20)">עד 20 ⭐ 🎁</span>
+        <span class="p g" data-m="mx" onclick="setM('mx')">שרשרת 💪 🎁</span>
+      </div>
+    </div>
+
+    <!-- Problem type -->
+    <div class="sec">
+      <div class="sec-h">📝 סוג תרגיל</div>
+      <div class="pills">
+        <span class="p b"  onclick="loadT('TA')">➕ חיבור</span>
+        <span class="p b"  onclick="loadT('TS')">➖ חיסור</span>
+        <span class="p b"  onclick="loadT('TM')">❓ חסר</span>
+        <span class="p pu" onclick="loadT('TDA')">➕➕ TDA</span>
+        <span class="p pu" onclick="loadT('TDS')">➖➖ TDS</span>
+        <span class="p or" onclick="loadT('TC')">🪙 מטבעות</span>
+        <span class="p pk" onclick="loadT('TZ')">🔗 שרשרת+</span>
+        <span class="p pk" onclick="loadT('TX')">🔗 שרשרת±</span>
+      </div>
+    </div>
+
+    <!-- Mini-games -->
+    <div class="sec">
+      <div class="sec-h">🎮 משחקון (ע"ג התרגיל הנוכחי)</div>
+      <div class="mg">
+        <div class="mp" onclick="openMG('gn')"  title="גינת פרחים">🌸<small>15⭐</small></div>
+        <div class="mp" onclick="openMG('bu')"  title="בועות">💧<small>15⭐</small></div>
+        <div class="mp" onclick="openMG('lg')"  title="לגו">🧱<small>15⭐</small></div>
+        <div class="mp" onclick="openMG('bl')"  title="בלונים">🎈<small>20⭐</small></div>
+        <div class="mp" onclick="openMG('tn')"  title="רכבת">🚂<small>25⭐</small></div>
+        <div class="mp" onclick="openMG('fr')"  title="צפרדעים">🐸<small>30⭐</small></div>
+        <div class="mp" onclick="openMG('st')"  title="כוכבים">✨<small>40⭐</small></div>
+        <div class="mp" onclick="openMG('si')"  title="פולשים">🚀<small>50⭐</small></div>
+        <div class="mp" onclick="openMG('ko')"  title="אגרוף">🥊<small>10⭐</small></div>
+        <div class="mp" onclick="openMG('cn')"  title="פחיות">🥫<small>10⭐</small></div>
+        <div class="mp" onclick="openMG('pa')"  title="מסיבה">🎉<small>10⭐</small></div>
+      </div>
+    </div>
+
+    <!-- Special screens -->
+    <div class="sec">
+      <div class="sec-h">✨ מסכים מיוחדים</div>
+      <div class="pills">
+        <span class="p" onclick="showSuccess()">🎉 הצלחה</span>
+        <span class="p" onclick="showSuper()">🌟 סופר ×5</span>
+        <span class="p" onclick="showEnd()">🏁 סיום</span>
+        <span class="p" onclick="showSad()">😢 שגיאה</span>
+        <span class="p" onclick="showReport()">📊 דוח</span>
+      </div>
+    </div>
+
+    <!-- Tools -->
+    <div class="sec">
+      <div class="sec-h">⚙️ כלים</div>
+      <div class="sr">
+        <span style="color:var(--gold);font-weight:900">⭐</span>
+        <input id="sc" type="number" value="200" min="0" max="9999" placeholder="ניקוד">
+        <button class="ib" onclick="applyScore()">✓</button>
+      </div>
+      <div class="pills" style="margin-top:6px">
+        <span class="p" onclick="flipTheme()">👦↔👧 ערכה</span>
+        <span class="p" onclick="newProb()">🔄 חדש</span>
+        <span class="p" onclick="reload()">🔃 רענן</span>
+      </div>
+    </div>
+
+  </div><!-- /ctrl -->
+
+  <div style="flex:1"></div>
+  <div id="stat"><span id="stat-t">טרם נטען</span></div>
+</aside>
+
+<!-- ══════ FRAME ══════ -->
+<div id="fw">
+  <div class="ftop">
+    <button onclick="reload()">🔃 Reload</button>
+    <span class="ftop-note" id="ftop-note">פתח את subtraction_game.html</span>
+    <button onclick="document.getElementById('fp').click()">📂 קובץ אחר</button>
+  </div>
+  <iframe id="frame"></iframe>
+</div>
+
+<script>
+/* ─── State ─── */
+let gameHtml = null;
+let curMode  = 20;
+let curType  = null;
+
+const frame = document.getElementById('frame');
+
+/* ─── File picker ─── */
+document.getElementById('fp').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    gameHtml = ev.target.result;
+    document.getElementById('load-sec').style.display = 'none';
+    document.getElementById('ctrl').style.display = '';
+    document.getElementById('ftop-note').textContent = file.name;
+    reload();
+  };
+  reader.readAsText(file, 'UTF-8');
+});
+
+/* ─── srcdoc injection ─── */
+const BOOT_START = '/* ── Boot ── */';
+const BOOT_END   = 'loadProblem();';
+
+function buildBoot(code) {
+  if (!gameHtml) return;
+  const si = gameHtml.indexOf(BOOT_START);
+  const ei = gameHtml.indexOf(BOOT_END, si) + BOOT_END.length;
+  if (si === -1) { st('❌ Boot marker not found'); return null; }
+  return gameHtml.slice(0, si) + code + gameHtml.slice(ei);
+}
+
+function injectSrcdoc(bootCode) {
+  const html = buildBoot(bootCode);
+  if (!html) return;
+  frame.srcdoc = html;
+}
+
+/* ─── Helpers ─── */
+function st(txt) { document.getElementById('stat-t').textContent = txt; }
+
+function mLbl(m) {
+  return {0:'1+1 🌱',5:'עד5',10:'עד10',20:'עד20 🎁',mx:'שרשרת 🎁'}[m] ?? m;
+}
+
+function pickMode(m) {
+  document.querySelectorAll('#mode-row .p').forEach(p =>
+    p.classList.toggle('on', String(p.dataset.m) === String(m)));
+}
+
+function scoreVal() { return +document.getElementById('sc').value || 200; }
+
+/* ─── Mode ─── */
+function setM(m) {
+  curMode = m;
+  pickMode(m);
+  // Just reload with same type if any, else just set mode
+  if (curType) loadT(curType);
+  else {
+    injectSrcdoc(`/* tester boot */
+mode=${JSON.stringify(m)};
+problems=m===0?makePool(0):m==='mx'?makePool('mx'):sampleWithTD(makePool(m),GL);
+if(m!==0)injectCoins(problems,m);
+score=${scoreVal()};
+abInit();applyTheme();spawnParticles();updateGiftIndicator();loadProblem();`);
+    st('📊 ' + mLbl(m));
+  }
+}
+
+/* ─── Problem types ─── */
+const ri = `(Math.floor(Math.random()*p.length))`;
+
+function probExpr(type, m) {
+  const nm = (m === 'mx' || m === 0) ? 20 : m;
+  switch(type) {
+    case 'TA':  return `(()=>{const p=RAW[${nm}].A;const[a,b]=p[${ri}];return{t:TA,a,b};})()`;
+    case 'TS':  return `(()=>{const p=RAW[${nm}].S;const[a,b]=p[${ri}];return{t:TS,a,b};})()`;
+    case 'TM':  return `(()=>{const p=RAW[${nm}].M;const[a,b]=p[${ri}];return{t:TM,a,b};})()`;
+    case 'TDA': return `(()=>{const p=RAW_TD[${nm}].A;const r=p[${ri}];return{t:TDA,r};})()`;
+    case 'TDS': return `(()=>{const p=RAW_TD[${nm}].S;const r=p[${ri}];return{t:TDS,r};})()`;
+    case 'TC':  return `makeCoinProblem(${nm})`;
+    case 'TZ':  return `(()=>{const p=makeMxPool().filter(x=>x.t===TZ);return p[${ri}];})()`;
+    case 'TX':  return `(()=>{const p=makeMxPool().filter(x=>x.t===TX);return p[${ri}];})()`;
+  }
+}
+
+function loadT(type) {
+  curType = type;
+  const m = (type==='TZ'||type==='TX') ? 'mx' : curMode;
+  const s = scoreVal();
+  injectSrcdoc(`/* tester boot */
+mode=${JSON.stringify(m)};score=${s};
+problems=[${probExpr(type, m)}];idx=0;report=[];done=false;
+abInit();applyTheme();spawnParticles();updateGiftIndicator();
+rebuildCard();loadProblem();updateAllMiniGameBtns();`);
+  st('📝 ' + type + '  |  ' + mLbl(m) + '  |  ⭐' + s);
+}
+
+function newProb() {
+  if (curType) loadT(curType);
+  else setM(curMode);
+}
+
+/* ─── Mini-games ─── */
+const COSTS = {ko:10,pa:10,cn:10,gn:15,bu:15,lg:15,bl:20,tn:25,fr:30,st:40,si:50};
+
+function openMG(name) {
+  const needed = COSTS[name] || 0;
+  const s = Math.max(scoreVal(), needed + 50);
+  // Inject a TA problem + high score + open panel
+  injectSrcdoc(`/* tester boot */
+mode=20;score=${s};
+problems=[(()=>{const p=RAW[20].A;const[a,b]=p[${ri}];return{t:TA,a,b};})()];
+idx=0;report=[];done=false;
+abInit();applyTheme();spawnParticles();updateGiftIndicator();
+rebuildCard();loadProblem();
+['ko','pa','lg','bl','gn','si','cn','bu','tn','fr','st'].forEach(g=>{
+  const b=document.querySelector('.'+g+'-eq-btn');if(b)b.style.display='flex';
+});
+updateAllMiniGameBtns();
+${name}Open();`);
+  st('🎮 ' + name.toUpperCase() + ' (' + needed + '⭐)');
+}
+
+/* ─── Special screens ─── */
+function showSuccess() {
+  injectSrcdoc(`/* tester boot */
+mode=20;score=200;
+problems=[(()=>{const p=RAW[20].A;const[a,b]=p[${ri}];return{t:TA,a,b};})()];
+idx=0;report=[];done=false;
+abInit();applyTheme();spawnParticles();updateGiftIndicator();
+rebuildCard();loadProblem();
+setTimeout(()=>{_fwOn=false;showFw();},400);`);
+  st('✨ הצלחה רגילה');
+}
+
+function showSuper() {
+  injectSrcdoc(`/* tester boot */
+mode=20;score=200;fwCount=4;
+problems=[(()=>{const p=RAW[20].A;const[a,b]=p[${ri}];return{t:TA,a,b};})()];
+idx=0;report=[];done=false;
+abInit();applyTheme();spawnParticles();updateGiftIndicator();
+rebuildCard();loadProblem();
+setTimeout(()=>{_fwOn=false;showFw();},400);`);
+  st('🌟 הצלחת-על (×5)');
+}
+
+function showEnd() {
+  injectSrcdoc(`/* tester boot */
+mode=20;score=160;
+report=Array.from({length:12},(_,i)=>({ptype:TA,num1:5,num2:3,correct:8,wrongs:i%3===0?[99]:[],gotCorrect:i%3!==0}));
+problems=report.map(r=>({t:r.ptype,a:r.num1,b:r.num2}));
+idx=12;done=false;
+abInit();applyTheme();spawnParticles();updateGiftIndicator();
+rebuildCard();endGame();`);
+  st('🏁 מסך סיום');
+}
+
+function showSad() {
+  injectSrcdoc(`/* tester boot */
+mode=20;score=200;
+problems=[(()=>{const p=RAW[20].A;const[a,b]=p[${ri}];return{t:TA,a,b};})()];
+idx=0;report=[];done=false;
+abInit();applyTheme();spawnParticles();updateGiftIndicator();
+rebuildCard();loadProblem();
+setTimeout(()=>showSadModal(),300);`);
+  st('😢 מסך שגיאה');
+}
+
+function showReport() {
+  injectSrcdoc(`/* tester boot */
+mode=20;score=160;
+report=Array.from({length:12},(_,i)=>({ptype:TA,num1:5,num2:3,correct:8,wrongs:i%3===0?[99]:[],gotCorrect:i%3!==0,skipped:i===7}));
+problems=report.map(r=>({t:r.ptype,a:r.num1,b:r.num2}));idx=12;done=false;
+abInit();applyTheme();spawnParticles();updateGiftIndicator();
+rebuildCard();endGame();
+setTimeout(()=>reportOpen(),300);`);
+  st('📊 דוח');
+}
+
+/* ─── Tools ─── */
+function applyScore() {
+  // Re-inject current state with new score
+  if (curType) loadT(curType);
+  else setM(curMode);
+}
+
+function flipTheme() {
+  // Quick theme flip — reload with toggled theme stored in localStorage
+  if (!gameHtml) return;
+  injectSrcdoc(`/* tester boot */
+mode=${JSON.stringify(curMode)};score=${scoreVal()};
+const _t=localStorage.getItem('gameTheme')||'girls';
+localStorage.setItem('gameTheme',_t==='girls'?'boys':'girls');
+problems=mode===0?makePool(0):mode==='mx'?makePool('mx'):sampleWithTD(makePool(mode),GL);
+if(mode!==0)injectCoins(problems,mode);score=${scoreVal()};
+abInit();applyTheme();spawnParticles();updateGiftIndicator();loadProblem();`);
+  st('👦↔👧 ערכה');
+}
+
+function reload() {
+  if (!gameHtml) return;
+  setM(curMode);
+}
+</script>
+</body>
+</html>
