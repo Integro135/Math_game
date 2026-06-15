@@ -86,7 +86,7 @@ function pickTheme(t){
 
 /* toggleTheme — cycles themes, persists the choice */
 function toggleTheme(){
-  const cycle={girls:'galaxy',galaxy:'reef',reef:'dubai',dubai:'girls'};
+  const cycle={girls:'galaxy',galaxy:'reef',reef:'dubai',dubai:'savanna',savanna:'girls'};
   applyTheme(cycle[theme]||'girls');
   spawnParticles();
   localStorage.setItem('gameTheme',theme);

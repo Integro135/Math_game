@@ -34,6 +34,9 @@ window.BACKGROUNDS.unicorns={
   // ── Helpers ──────────────────────────────────────────────────────────────
   function lg(c, x1,y1,x2,y2,st){const g=c.createLinearGradient(x1,y1,x2,y2);st.forEach(([t,col])=>g.addColorStop(t,col));return g;}
   function rg(c, x,y,r1,r2,st){const g=c.createRadialGradient(x,y,r1,x,y,r2);st.forEach(([t,col])=>g.addColorStop(t,col));return g;}
+  function clamp01(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
+  function hexA(hex, a){ const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n>>16) + ',' + (n>>8&255) + ',' + (n&255) + ',' + a + ')'; }
   function makeLayer(){
     const cv = document.createElement('canvas');
     cv.width = W * DPR; cv.height = H * DPR;
@@ -44,8 +47,20 @@ window.BACKGROUNDS.unicorns={
 
   // ── Scene state ──────────────────────────────────────────────────────────
   let CLOUDS, SPARKLES, PETALS, HEARTS, BUTTERFLIES, FLYER, UNICORNS, BURSTS, FARTS;
-  let RAINFX, CASTLEFX, CASTLE, nextSceneryAt;
+  let RAINFX, CASTLEFX, CASTLE, CASTLE_BFLY, nextSceneryAt;
+  let SUN, SUNSPOTS, sunBoostT = null, sunSpin = 0;   // click the sun → it spins
   let skyLayer;
+  // colour variants for the roaming unicorns (null = the classic white +
+  // rainbow mane); the others are cyan and pink
+  const CYAN_PAL = { body: '#DDF2FF', out: '#8FC8E0', bodyFar: '#CDEAF7', outFar: '#7FB6D0',
+                     mane: ['#42C6EE', '#7DC4FF', '#A9E4FF', '#D9F4FF'] };
+  const PINK_PAL = { body: '#FFE2EF', out: '#F0A0C4', bodyFar: '#FAD2E5', outFar: '#E892B6',
+                     mane: ['#FF5FA8', '#FF8FC8', '#FFB6DE', '#FFD7EC'] };
+  const UNI_PALS = [null, CYAN_PAL, PINK_PAL];
+  // every 5th click on a unicorn fires a random horn effect (lightning / nova)
+  const HORN_EVERY = 5;
+  const HORN_AUTO_EVERY_SEC = 180;                  // also fire on a timer: once every 3 min
+  let hornClicks = 0, HORNFX = [], hornTimerStart = null;
   // a unicorn toots on a deliberate cadence: once every 3 minutes OR every 5
   // clicks, whichever comes first (both counters reset when a toot fires).
   // Kept at closure scope so a window resize (which re-runs init) never resets it.
@@ -63,6 +78,13 @@ window.BACKGROUNDS.unicorns={
   }
 
   function init() {
+    // the dreamy sun — geometry for click-to-spin (matches paintScenery)
+    SUN = { x: W * 0.76, y: H * 0.20, r: Math.min(W, H) * 0.09 };
+    SUNSPOTS = Array.from({ length: 6 }, () => ({
+      rad: 0.18 + Math.random() * 0.6, ang: Math.random() * TAU,
+      rx: 0.07 + Math.random() * 0.1, ry: 0.05 + Math.random() * 0.08,
+    }));
+    sunBoostT = null; sunSpin = 0;
     // Puffy candy clouds drifting across the sky
     CLOUDS = Array.from({length: 6}, (_, i) => ({
       x: Math.random() * W,
@@ -93,14 +115,14 @@ window.BACKGROUNDS.unicorns={
       ph: Math.random() * TAU,
       hue: Math.random() < 0.5 ? '#FF6FB5' : '#C77DFF',
     }));
-    // Winged unicorns crossing the sky, each with its own sparkle trail
-    FLYER = Array.from({length: 3}, (_, i) => spawnFlyer(true, i));
-    // Standing unicorns on the hills (x, ground-y, scale, facing)
-    UNICORNS = [
-      { x: W * 0.16, gy: H * 0.870, sc: Math.min(W, H) / 760, dir:  1, ph: 0.0 },
-      { x: W * 0.80, gy: H * 0.905, sc: Math.min(W, H) / 660, dir: -1, ph: 2.1 },
-      { x: W * 0.64, gy: H * 0.950, sc: Math.min(W, H) / 1150, dir: -1, ph: 4.0 },  // the foal
-    ];
+    // Winged unicorns crossing the sky, each with its own sparkle trail.
+    // Keep the scene light: at most 5 unicorns on screen at once (sky + ground),
+    // so 2 sky flyers + 3 roaming = 5 total.
+    FLYER = Array.from({length: 2}, (_, i) => spawnFlyer(true, i));
+    // Roaming unicorns: solo wanderers that walk the meadow and slip in/out of
+    // the screen edges (like the savanna herds); 3 on stage, mixed colours.
+    UNICORNS = Array.from({ length: 3 }, () => spawnUnicorn(true));
+    CASTLE_BFLY = [];   // butterflies that burst from the castle on click
     // Click-burst particles (sparkles + hearts)
     BURSTS = [];
     FARTS = [];   // gentle green toots
@@ -109,6 +131,7 @@ window.BACKGROUNDS.unicorns={
     CASTLEFX = { t0: null };
     nextSceneryAt = null;
     CASTLE = { x: W * 0.855, y: H * 0.655, s: Math.min(W, H) * 0.0016 };
+    HORNFX = [];
   }
 
   function spawnPetal(anywhere) {
@@ -135,6 +158,24 @@ window.BACKGROUNDS.unicorns={
       ph: Math.random() * TAU,
       wait: first ? i * 4 + Math.random() * 4 : 5 + Math.random() * 10,
       trail: [],
+    };
+  }
+
+  // a solo roaming unicorn: walks the meadow, exits an edge, re-enters from a
+  // side. onScreen=true seeds it somewhere visible; otherwise it waits off-edge.
+  function spawnUnicorn(onScreen) {
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const sc = Math.min(W, H) / (660 + Math.random() * 540);
+    const pad = 150 * sc + 80;
+    return {
+      x: onScreen ? Math.random() * W : (dir > 0 ? -pad : W + pad),
+      gy: H * (0.86 + Math.random() * 0.09),
+      sc, dir, ph: Math.random() * TAU,
+      spd: 26 + Math.random() * 26,
+      wt: Math.random() * TAU,
+      pal: UNI_PALS[Math.random() * UNI_PALS.length | 0],
+      wait: onScreen ? 0 : Math.random() * 1.6,
+      act: null, nextActAt: undefined,
     };
   }
 
@@ -331,6 +372,20 @@ window.BACKGROUNDS.unicorns={
     ridge(c, H * 0.62, H * 0.17, 6, '#DD93CF', true);
     // Near mountains — deep raspberry, no snow
     ridge(c, H * 0.72, H * 0.13, 5, '#C66BB4', false);
+    // A broad earthen mound under the castle so it sits on connected ground
+    // (rises from the foreground hills up to the castle base, not floating).
+    {
+      const cx = W * 0.855, cs = Math.min(W, H) * 0.0016;
+      const top = H * 0.655 + 30 * cs;                  // just under the castle plateau
+      c.fillStyle = lg(c, 0, top, 0, H, [[0, '#BE63AE'], [1, '#A14A8C']]);
+      c.beginPath();
+      c.moveTo(cx - W * 0.30, H);
+      c.quadraticCurveTo(cx - W * 0.20, top + H * 0.05, cx - W * 0.07, top);
+      c.quadraticCurveTo(cx, top - H * 0.012, cx + W * 0.07, top);
+      c.quadraticCurveTo(cx + W * 0.20, top + H * 0.05, cx + W * 0.31, H);
+      c.closePath();
+      c.fill();
+    }
     // Princess castle perched on the right-side ridge
     drawCastle(c, W * 0.855, H * 0.655, Math.min(W, H) * 0.0016);
 
@@ -432,13 +487,17 @@ window.BACKGROUNDS.unicorns={
     ctx.restore();
   }
 
-  function drawUnicorn(x, y, sc, dir, t, ph, pose) {
+  function drawUnicorn(x, y, sc, dir, t, ph, pose, opts) {
+    opts = opts || {};
     ctx.save();
     ctx.translate(x, y + Math.sin(t * 1.2 + ph) * 2.2 * sc);  // gentle idle bob
     ctx.scale(sc * dir, sc);
 
     const fly = pose === 'fly';
-    const maneCols = ['#FF6FB5', '#C77DFF', '#7DC4FF', '#FFD2E8'];
+    // colour palette (shadows the module defaults so cyan/pink variants work)
+    const BODY = opts.body || '#FFFBFE', OUT = opts.out || '#E9B9D6';
+    const FAR_BODY = opts.bodyFar || '#F3DCEC', FAR_OUT = opts.outFar || '#DDB3CF';
+    const maneCols = opts.mane || ['#FF6FB5', '#C77DFF', '#7DC4FF', '#FFD2E8'];
     const wave = i => Math.sin(t * 2.2 + ph + i * 1.7) * 4;
 
     drawWing(t, ph, true, fly ? 1 : 0.45);              // far wing behind the body
@@ -464,8 +523,8 @@ window.BACKGROUNDS.unicorns={
       ctx.save();
       ctx.translate(hx, hy);
       ctx.rotate(a1);
-      ctx.fillStyle = far ? '#F3DCEC' : BODY;
-      ctx.strokeStyle = far ? '#DDB3CF' : OUT;
+      ctx.fillStyle = far ? FAR_BODY : BODY;
+      ctx.strokeStyle = far ? FAR_OUT : OUT;
       ctx.lineWidth = 1.6;
       ctx.beginPath();                                  // tapered upper segment
       ctx.moveTo(-5.5, -2); ctx.lineTo(5.5, -2);
@@ -487,6 +546,12 @@ window.BACKGROUNDS.unicorns={
       leg(-32, 10, 0.65, 0.22, false);
       leg(30, 8,  -0.80, -0.45, true);                  // front pair reaching out
       leg(22, 10, -0.55, -0.50, false);
+    } else if (pose === 'walk') {
+      const wk = opts.wt || 0, s1 = Math.sin(wk), s2 = Math.sin(wk + Math.PI);
+      leg(-30, 9,  0.10 + s2 * 0.34, -0.10, true);      // diagonal gait
+      leg(-28, 12, 0.10 + s1 * 0.34, -0.06, false);
+      leg(30, 9,  -0.10 + s1 * 0.34,  0.06, true);
+      leg(22, 12, -0.10 + s2 * 0.34,  0.04, false);
     } else {
       leg(-26, 10,  0.14, -0.08, true);
       leg(-34, 12,  0.04, -0.02, false);
@@ -520,6 +585,19 @@ window.BACKGROUNDS.unicorns={
     ctx.beginPath(); ctx.ellipse(-8, 8, 28, 10, 0, 0, TAU); ctx.fill();
     ctx.beginPath(); ctx.ellipse(48, -38, 7, 15, -0.65, 0, TAU); ctx.fill();
 
+    // ── cutie mark on the haunch: a little heart / star, like real unicorns ──
+    {
+      const marks = ['💜', '⭐', '💗', '🌟', '✨'];
+      const cm = marks[Math.abs(Math.floor(ph * 7)) % marks.length];
+      ctx.save();
+      ctx.translate(-27, -5);
+      ctx.scale(dir, 1);                 // keep the emoji upright when facing left
+      ctx.font = '17px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(cm, 0, 0);
+      ctx.restore();
+    }
+
     // ── nostril + mouth line on the long muzzle ──
     ctx.fillStyle = '#E8A0C8';
     ctx.beginPath(); ctx.ellipse(77, -71.5, 1.6, 2.0, -0.5, 0, TAU); ctx.fill();
@@ -539,20 +617,55 @@ window.BACKGROUNDS.unicorns={
     ctx.moveTo(48.5, -83); ctx.lineTo(50.6, -91); ctx.lineTo(53, -82.5);
     ctx.closePath(); ctx.fill();
 
-    // ── slender golden horn on the forehead + twinkling tip ──
-    const horng = lg(ctx, 54, -86, 66, -114, [[0, '#FFDF8A'], [1, '#FFAE3D']]);
-    ctx.fillStyle = horng;
-    ctx.strokeStyle = '#E8A24C';
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    ctx.moveTo(53.5, -82.5); ctx.lineTo(65, -113); ctx.lineTo(59.5, -81);
-    ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = 'rgba(232, 162, 76, 0.85)';
-    ctx.beginPath(); ctx.moveTo(55.4, -88); ctx.lineTo(60.2, -86.8); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(57.2, -95); ctx.lineTo(61.4, -94.0); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(59.2, -102); ctx.lineTo(62.6, -101.2); ctx.stroke();
-    drawSparkle(65, -114, 3.4 + Math.sin(t * 3 + ph) * 1.4,
-                0.55 + 0.45 * Math.sin(t * 3 + ph), t, '#FFF6D8');
+    // ── the horn: a slim, gently curved, spiralled golden spike with a glow ──
+    {
+      const bx = 53, by = -81, tx = 66.5, ty = -117;          // base centre → tip
+      const aL = Math.hypot(tx - bx, ty - by);
+      const ux = (tx - bx) / aL, uy = (ty - by) / aL;          // axis unit
+      const nx = -uy, ny = ux;                                 // perpendicular unit
+      const wB = 3.4, mx = bx + (tx - bx) * 0.5, my = by + (ty - by) * 0.5;  // base half-width, midpoint
+      // the tip twinkles only once every few tens of seconds (not continuously):
+      // a short bright burst on a per-unicorn cycle, dim and calm in between
+      const TWK_PERIOD = 26;                                   // ~26 s between twinkles
+      const TWK_DUR = 1.1;                                     // each twinkle lasts ~1.1 s
+      const cyc = ((t / TWK_PERIOD) + (ph * 0.61) % 1) % 1;    // 0..1 progress, staggered by ph
+      const twk = cyc < TWK_DUR / TWK_PERIOD                   // smooth in/out during the burst
+                ? Math.sin((cyc / (TWK_DUR / TWK_PERIOD)) * Math.PI) : 0;
+      // soft glowing aura at the tip — faint at rest, flares during a twinkle
+      const glow = 0.12 + 0.62 * twk;
+      ctx.fillStyle = rg(ctx, tx, ty, 0, 15, [
+        [0, `rgba(255,246,205,${glow.toFixed(3)})`], [1, 'rgba(255,246,205,0)']]);
+      ctx.beginPath(); ctx.arc(tx, ty, 15, 0, TAU); ctx.fill();
+      // the horn body — a tapering spike, edges bowed slightly out then to a point
+      ctx.fillStyle = lg(ctx, bx, by, tx, ty, [
+        [0, '#E89B28'], [0.35, '#FFCF66'], [0.72, '#FFE7A2'], [1, '#FFF7DC']]);
+      ctx.strokeStyle = '#C9821F'; ctx.lineWidth = 0.8; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(bx + nx * wB, by + ny * wB);
+      ctx.quadraticCurveTo(mx + nx * wB * 0.55, my + ny * wB * 0.55, tx, ty);          // one edge to the tip
+      ctx.quadraticCurveTo(mx - nx * wB * 0.55, my - ny * wB * 0.55, bx - nx * wB, by - ny * wB);  // other edge
+      ctx.quadraticCurveTo(bx - ux * 2, by - uy * 2, bx + nx * wB, by + ny * wB);      // rounded root
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      // spiral ridges wrapping up the horn (chevrons bowed toward the tip)
+      ctx.strokeStyle = 'rgba(168,108,22,.5)'; ctx.lineCap = 'round';
+      for (let i = 0; i < 7; i++) {
+        const u = 0.1 + i * 0.12, w = wB * (1 - u * 0.9);
+        const cx = bx + (tx - bx) * u, cy = by + (ty - by) * u;
+        ctx.lineWidth = Math.max(0.4, 1.0 * (1 - u * 0.55));
+        ctx.beginPath();
+        ctx.moveTo(cx + nx * w, cy + ny * w);
+        ctx.quadraticCurveTo(cx + ux * 3, cy + uy * 3, cx - nx * w, cy - ny * w);
+        ctx.stroke();
+      }
+      // a bright sheen running up the front edge
+      ctx.strokeStyle = 'rgba(255,250,228,.7)'; ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(bx - nx * wB * 0.4, by - ny * wB * 0.4);
+      ctx.quadraticCurveTo(mx - nx * wB * 0.2, my, tx, ty);
+      ctx.stroke();
+      if (twk > 0.02)                                         // sparkle only during a twinkle burst
+        drawSparkle(tx, ty, 2.4 + 4.0 * twk, twk, t * 2, '#FFF6D8');
+    }
 
     // ── big sparkly eye with lashes, high on the face + blush on the cheek ──
     ctx.fillStyle = '#5A3A55';
@@ -592,7 +705,7 @@ window.BACKGROUNDS.unicorns={
     ctx.bezierCurveTo(42, -67 + wave(0) * 0.6, 36, -50, 18, -33 + wave(1) * 0.5);
     ctx.stroke();
     // forelock falling over the brow
-    ctx.strokeStyle = '#FF6FB5';
+    ctx.strokeStyle = maneCols[0];
     ctx.lineWidth = 4.4;
     ctx.beginPath();
     ctx.moveTo(52, -84);
@@ -721,6 +834,159 @@ window.BACKGROUNDS.unicorns={
     }
   }
 
+  // ── castle butterfly burst — clicking the keep sends a flurry of butterflies
+  //    fluttering outward, then fading ──
+  function spawnCastleButterflies(t) {
+    const { x, y, s } = CASTLE;
+    const cols = ['#FF6FB5', '#C77DFF', '#7DC4FF', '#FFD166', '#8AE08A', '#FF9FCB'];
+    const n = 16 + (Math.random() * 8 | 0);
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.5;   // up & outward
+      const spd = 38 + Math.random() * 95;
+      CASTLE_BFLY.push({
+        x: x + (Math.random() - 0.5) * 90 * s, y: y - (30 + Math.random() * 70) * s,
+        vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+        ph: Math.random() * TAU, t0: t, life: 2.6 + Math.random() * 2.2,
+        hue: cols[i % cols.length], sc: 0.7 + Math.random() * 0.8,
+      });
+    }
+  }
+  function drawCastleButterflies(t, dt) {
+    for (let i = CASTLE_BFLY.length - 1; i >= 0; i--) {
+      const b = CASTLE_BFLY[i], age = t - b.t0;
+      if (age > b.life) { CASTLE_BFLY.splice(i, 1); continue; }
+      b.x += (b.vx + Math.sin(t * 3 + b.ph) * 18) * dt;     // flutter sideways
+      b.y += b.vy * dt;
+      b.vx *= (1 - 0.4 * dt); b.vy *= (1 - 0.4 * dt);       // ease out the launch
+      const k = age / b.life, alpha = k < 0.12 ? k / 0.12 : 1 - (k - 0.12) / 0.88;
+      const flap = 0.25 + 0.75 * Math.abs(Math.sin(t * 16 + b.ph));
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.translate(b.x, b.y); ctx.scale(b.sc, b.sc);
+      ctx.fillStyle = b.hue;
+      ctx.beginPath(); ctx.ellipse(-4, 0, 5.5, 7.5 * flap, -0.5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(4, 0, 5.5, 7.5 * flap, 0.5, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#7A4068';
+      ctx.beginPath(); ctx.ellipse(0, 0, 1.4, 5, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ── horn effects (fired every 5th unicorn click): a lightning bolt or a
+  //    supernova, both bursting from the horn tip ──
+  function hornTip(u) {                                  // world position of the horn tip
+    const bob = Math.sin(lastT * 1.2 + u.ph) * 2.2 * u.sc;
+    const drawY = u.gy - 70 * u.sc + bob;
+    return { x: u.x + 66.5 * u.sc * u.dir, y: drawY + (-117) * u.sc };
+  }
+  function fireHornFx(u, t, force) {
+    u.recoilT0 = t;                                   // knock the firing unicorn backward (recoil)
+    const tip = hornTip(u), unit = Math.max(0.7, u.sc * 0.95);
+    if ((force || (Math.random() < 0.5 ? 'bolt' : 'nova')) === 'bolt') {
+      // lightning bolt: a jagged forked spear up & forward from the tip
+      const ax = 0.35 * u.dir, ay = -0.94, len = (80 + Math.random() * 45) * unit;
+      const px = -ay, py = ax, segs = 6, pts = [];
+      for (let i = 0; i <= segs; i++) {
+        const f = i / segs, jit = (i === 0 || i === segs) ? 0 : (Math.random() - 0.5) * 18 * unit;
+        pts.push([tip.x + ax * len * f + px * jit, tip.y + ay * len * f + py * jit]);
+      }
+      HORNFX.push({ type: 'bolt', t0: t, x: tip.x, y: tip.y, pts, dir: u.dir, unit });
+    } else {
+      // supernova (ported from the success screen), scaled to the horn
+      const maxR = 120 * unit, ej = [], inf = [];
+      const ec = ['#7DC4FF', '#C77DFF', '#FFD27D', '#FFFFFF', '#FFFFFF'];
+      for (let j = 0; j < 56; j++) ej.push({ ang: Math.random() * TAU,
+        speed: 0.25 + Math.pow(Math.random(), 1.5) * 0.75, life: 1.1 * (0.7 + Math.random() * 0.3),
+        size: (1 + Math.random() * 2) * unit, streak: Math.random() < 0.3, color: ec[j % 5] });
+      for (let i = 0; i < 14; i++) { const born = Math.random() * 0.22;
+        inf.push({ ang: Math.random() * TAU, r0: (40 + Math.random() * 70) * unit, born, life: 0.45 - born, w: 0.7 + Math.random() }); }
+      HORNFX.push({ type: 'nova', t0: t, x: tip.x, y: tip.y, unit, maxR, ej, inf });
+    }
+  }
+  function drawHornFxAll(t) {
+    for (let i = HORNFX.length - 1; i >= 0; i--)
+      if (!(HORNFX[i].type === 'bolt' ? drawHornBolt(HORNFX[i], t) : drawHornNova(HORNFX[i], t)))
+        HORNFX.splice(i, 1);
+  }
+  function drawHornBolt(fx, t) {
+    const p = (t - fx.t0) / 0.55;
+    if (p >= 1) return false;
+    const flick = (Math.sin(t * 60) > 0 ? 1 : 0.45) * (1 - p * 0.7);
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.fillStyle = `rgba(205,232,255,${(0.5 * flick).toFixed(3)})`;          // muzzle flash
+    ctx.beginPath(); ctx.arc(fx.x, fx.y, 4 + 9 * fx.unit * flick, 0, TAU); ctx.fill();
+    const trace = () => { ctx.beginPath(); ctx.moveTo(fx.pts[0][0], fx.pts[0][1]);
+      for (let i = 1; i < fx.pts.length; i++) ctx.lineTo(fx.pts[i][0], fx.pts[i][1]); ctx.stroke(); };
+    ctx.strokeStyle = `rgba(150,200,255,${(0.4 * flick).toFixed(3)})`; ctx.lineWidth = 7 * fx.unit; trace();
+    ctx.strokeStyle = `rgba(247,251,255,${(0.95 * flick).toFixed(3)})`; ctx.lineWidth = 2.3 * fx.unit; trace();
+    const b = fx.pts[3];                                                       // a small fork
+    ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(b[0] + 14 * fx.dir * fx.unit, b[1] - 20 * fx.unit); ctx.stroke();
+    ctx.restore();
+    return true;
+  }
+  function drawHornNova(fx, t) {
+    const dur = 1.7, tE = 0.45, te0 = t - fx.t0;
+    if (te0 >= dur) return false;
+    const cx = fx.x, cy = fx.y, unit = fx.unit, maxR = fx.maxR, gF = clamp01((dur - te0) / 0.25);
+    ctx.save(); ctx.lineCap = 'round';
+    if (te0 < tE) {
+      const charge = te0 / tE;
+      for (const f of fx.inf) {
+        const fq = clamp01((te0 - f.born) / f.life); if (fq <= 0 || fq >= 1) continue;
+        const fr = f.r0 * (1 - fq * fq), len = (8 + 12 * fq) * unit;
+        ctx.strokeStyle = `rgba(222,240,255,${(fq * 0.8 * gF).toFixed(3)})`; ctx.lineWidth = f.w;
+        ctx.beginPath(); ctx.moveTo(cx + Math.cos(f.ang) * fr, cy + Math.sin(f.ang) * fr);
+        ctx.lineTo(cx + Math.cos(f.ang) * (fr + len), cy + Math.sin(f.ang) * (fr + len)); ctx.stroke();
+      }
+      const cr = (4 + 7 * charge) * unit * (charge > 0.85 ? 1 + (charge - 0.85) * 4 : 1);
+      ctx.fillStyle = rg(ctx, cx, cy, 0, cr * 6, [[0, `rgba(255,255,255,${0.5 + 0.5 * charge})`],
+        [0.3, hexA('#FFD27D', 0.5 * charge + 0.2)], [1, hexA('#FFD27D', 0)]]);
+      ctx.beginPath(); ctx.arc(cx, cy, cr * 6, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(cx, cy, cr, 0, TAU); ctx.fill();
+    } else {
+      const te = te0 - tE;
+      const sq = clamp01(te / (dur * 0.55));               // shock ring
+      if (sq < 1) {
+        const sr = maxR * 1.05 * (1 - Math.pow(1 - sq, 3)), sa = (1 - sq) * gF;
+        ctx.strokeStyle = hexA('#7DC4FF', 0.22 * sa); ctx.lineWidth = (12 * (1 - sq) + 4) * unit;
+        ctx.beginPath(); ctx.arc(cx, cy, sr, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = `rgba(255,255,255,${(0.7 * sa).toFixed(3)})`; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(cx, cy, sr, 0, TAU); ctx.stroke();
+      }
+      for (const e of fx.ej) {                             // ejecta
+        const eq = clamp01(te / e.life); if (eq >= 1) continue;
+        const ed = e.speed * maxR * (1 - Math.pow(1 - eq, 3));
+        const ex = cx + Math.cos(e.ang) * ed, ey = cy + Math.sin(e.ang) * ed, ea = (1 - eq) * gF;
+        if (e.streak) {
+          const sl = (14 * (1 - eq) + 4) * unit;
+          ctx.strokeStyle = hexA(e.color, 0.85 * ea); ctx.lineWidth = e.size;
+          ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - Math.cos(e.ang) * sl, ey - Math.sin(e.ang) * sl); ctx.stroke();
+        } else {
+          ctx.fillStyle = hexA(e.color, 0.9 * ea);
+          ctx.beginPath(); ctx.arc(ex, ey, e.size * (1 - eq * 0.5), 0, TAU); ctx.fill();
+        }
+      }
+      const fa = 0.45 * Math.exp(-te / 0.18) * gF;          // soft flash
+      if (fa > 0.01) {
+        ctx.fillStyle = rg(ctx, cx, cy, 0, maxR * 2, [[0, `rgba(255,255,255,${fa.toFixed(3)})`],
+          [0.4, hexA('#FFD27D', fa * 0.5)], [1, hexA('#FFD27D', 0)]]);
+        ctx.beginPath(); ctx.arc(cx, cy, maxR * 2, 0, TAU); ctx.fill();
+      }
+      const pa = clamp01((te - 0.25) / 0.3) * gF;           // lingering pulsar
+      if (pa > 0) {
+        const prr = (3 + Math.sin(t * 9) * 1.2) * unit;
+        ctx.fillStyle = rg(ctx, cx, cy, 0, prr * 6, [[0, `rgba(255,255,255,${0.9 * pa})`],
+          [0.4, hexA('#7DC4FF', 0.5 * pa)], [1, hexA('#7DC4FF', 0)]]);
+        ctx.beginPath(); ctx.arc(cx, cy, prr * 6, 0, TAU); ctx.fill();
+        ctx.fillStyle = `rgba(255,255,255,${pa.toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(cx, cy, prr, 0, TAU); ctx.fill();
+      }
+    }
+    ctx.restore();
+    return true;
+  }
+
   function drawFlyer(t, dt) {
     const cols = ['#FF6F91', '#FFD166', '#8AE08A', '#7DC4FF', '#C77DFF'];
     for (const f of FLYER) {
@@ -836,10 +1102,56 @@ window.BACKGROUNDS.unicorns={
   // ── Main loop ────────────────────────────────────────────────────────────
   let rafId = null, lastT = 0, lastFrameT = 0;
 
+  // click-spin envelope + a sun that visibly spins when tapped (ported from the
+  // savanna scene): sunspots sweep the disc and the soft rays rotate, then ease.
+  function clickEnv(t0, t, dur){
+    if (t0 == null) return 0;
+    const e = t - t0;
+    if (e < 0 || e > dur) return 0;
+    return e < 0.35 ? e / 0.35 : 1 - (e - 0.35) / (dur - 0.35);
+  }
+  function drawSunSpin(t, dt){
+    const f = clickEnv(sunBoostT, t, 4);
+    if (f <= 0) return;
+    sunSpin += dt * (0.5 + 2.4 * f);
+    const { x, y, r } = SUN;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.save();
+    ctx.rotate(sunSpin * 0.5);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 12; i++){
+      const a = i / 12 * TAU;
+      ctx.strokeStyle = `rgba(255,238,190,${(0.30 * f).toFixed(3)})`;
+      ctx.lineWidth = 2 + (i % 2) * 2.5;
+      const r2 = r * (1.18 + 0.07 * Math.sin(t * 3 + i));
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r * 1.02, Math.sin(a) * r * 1.02);
+      ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
+    ctx.fillStyle = rg(ctx, 0, 0, r * 0.1, r, [
+      [0, '#FFFDF2'], [0.75, '#FFF3CE'], [1, '#FFE9B8'],
+    ]);
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+    ctx.rotate(sunSpin);
+    for (const sp of SUNSPOTS){
+      const sx2 = Math.cos(sp.ang) * sp.rad * r, sy2 = Math.sin(sp.ang) * sp.rad * r;
+      ctx.fillStyle = 'rgba(255,206,150,.4)';
+      ctx.beginPath(); ctx.ellipse(sx2, sy2, sp.rx * r, sp.ry * r, sp.ang, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,252,235,.45)';
+      ctx.beginPath(); ctx.ellipse(sx2 - sp.rx * r * 0.4, sy2 - sp.ry * r * 0.4, sp.rx * r * 0.5, sp.ry * r * 0.5, sp.ang, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function renderFrame(t) {
     const dt = Math.min(0.05, t - lastFrameT);
     lastFrameT = t;
     ctx.drawImage(skyLayer.cv, 0, 0, W, H);
+    drawSunSpin(t, dt);
     // every so often the scenery joins in too
     if (nextSceneryAt === null) nextSceneryAt = t + 10 + Math.random() * 15;
     if (t >= nextSceneryAt) {
@@ -861,28 +1173,68 @@ window.BACKGROUNDS.unicorns={
         fartPending = false; fartClicks = 0; fartTimerStart = t;
       }
     }
+    // ── scheduled horn effect: a random unicorn fires a bolt/nova every 3 min ──
+    if (hornTimerStart === null) hornTimerStart = t;
+    if (t - hornTimerStart >= HORN_AUTO_EVERY_SEC) {
+      const free = UNICORNS.filter(u => !u.act && u.wait <= 0 && u.x > 0 && u.x < W);
+      if (free.length) {                                  // on-stage, idle unicorn fires
+        fireHornFx(free[0 | Math.random() * free.length], t);
+        hornTimerStart = t;
+      }
+    }
     for (const u of UNICORNS) {
-      // every so often a standing unicorn jumps or rears (toots are scheduled above)
+      if (u.wait > 0) { u.wait -= dt; continue; }       // brief stagger off-stage
+      // every so often: jump / rear / somersault / a toot / fire the horn —
+      // 'horn' shares the same odds as the others so the bolt/nova is seen often
       if (!u.act) {
         if (u.nextActAt === undefined) u.nextActAt = t + 4 + Math.random() * 12;
         if (t >= u.nextActAt) {
-          u.act = { type: Math.random() < 0.5 ? 'jump' : 'rear', t0: t };
+          const pick = ['jump', 'rear', 'spin', 'fart', 'horn'][Math.random() * 5 | 0];
+          if (pick === 'horn') fireHornFx(u, t);          // bolt/nova + recoil
+          else u.act = { type: pick, t0: t };
           u.nextActAt = t + 8 + Math.random() * 18;
         }
       }
-      // click actions: a joyful jump, or rearing up on the hind legs
-      let yOff = 0, rot = 0, pose = 'stand', pivX = u.x;
+      // recoil from firing a horn effect — a sharp backward jolt that eases back
+      const RECOIL_DUR = 0.5;
+      let recoiling = u.recoilT0 != null && (t - u.recoilT0) < RECOIL_DUR;
+      // walk the meadow when not mid-act and not kicking back; slip out an edge and re-enter
+      const moving = !u.act && !recoiling;
+      if (moving) {
+        u.wt += dt * (u.spd / 26);
+        u.x += u.dir * u.spd * dt;
+        const pad = 150 * u.sc + 80;
+        if ((u.dir > 0 && u.x - pad > W) || (u.dir < 0 && u.x + pad < 0)) {
+          Object.assign(u, spawnUnicorn(false));        // exited → a new wanderer enters
+          continue;
+        }
+      }
+      let yOff = 0, rot = 0, pose = moving ? 'walk' : 'stand', pivX = u.x, pivY = u.gy, recX = 0;
+      if (recoiling) {
+        const re = (t - u.recoilT0) / RECOIL_DUR;
+        const k = (1 - re) * (1 - re);                      // sharp impulse, quick settle
+        recX = -u.dir * 46 * u.sc * k;                      // shoved opposite to facing
+        yOff -= 10 * u.sc * Math.sin(re * Math.PI);         // small upward kick
+        rot += 0.18 * u.dir * k;                            // rocked back on its haunches
+        pose = 'fly';
+        if (re >= 1) { recoiling = false; u.recoilT0 = null; }
+      }
       const act = u.act;
       if (act) {
-        const dur = act.type === 'jump' ? 0.9 : act.type === 'fart' ? 2.2 : 1.25;
+        const dur = act.type === 'jump' ? 0.9 : act.type === 'fart' ? 2.2
+                  : act.type === 'spin' ? 1.0 : 1.25;
         const p = (t - act.t0) / dur;
         if (p >= 1) u.act = null;
         else if (act.type === 'jump') {
           yOff = -Math.sin(p * Math.PI) * 95 * u.sc;          // parabolic hop
           rot = -Math.sin(p * TAU) * 0.10 * u.dir;            // nose up, then down
           if (p > 0.10 && p < 0.90) pose = 'fly';             // gallop legs + wings
+        } else if (act.type === 'spin') {
+          rot = -u.dir * TAU * (p * p * (3 - 2 * p));         // eased 360° somersault
+          pivY = u.gy - 70 * u.sc;                            // around the body centre
+          pose = 'fly';
         } else if (act.type === 'fart') {
-          // an embarrassed little shimmy + gentle green puffs from the rear
+          if (act.pink === undefined) act.pink = Math.random() < 0.5;  // colour the whole toot once
           rot = Math.sin(p * 40) * 0.018 * (1 - p) * u.dir;
           yOff = -Math.abs(Math.sin(p * Math.PI * 3)) * 4 * u.sc;
           if ((u.lastPuff || 0) < t - 0.11 && p < 0.6) {
@@ -891,7 +1243,8 @@ window.BACKGROUNDS.unicorns={
               FARTS.push({ x: u.x - (48 + Math.random() * 8) * u.sc * u.dir,
                            y: u.gy - (58 + Math.random() * 12) * u.sc,
                            dx: -u.dir * (14 + Math.random() * 20), t0: t,
-                           r: (12 + Math.random() * 9) * u.sc, ph: Math.random() * TAU });
+                           r: (12 + Math.random() * 9) * u.sc, ph: Math.random() * TAU,
+                           pink: act.pink });
           }
         } else {
           rot = -0.55 * Math.sin(p * Math.PI) * u.dir;        // rear up and settle
@@ -903,23 +1256,25 @@ window.BACKGROUNDS.unicorns={
       const air = Math.min(1, -yOff / (60 * u.sc + 1));
       ctx.fillStyle = `rgba(150, 40, 110, ${(0.16 * (1 - 0.55 * air)).toFixed(3)})`;
       ctx.beginPath();
-      ctx.ellipse(u.x, u.gy + 3 * u.sc, 56 * u.sc * (1 - 0.3 * air), 8 * u.sc * (1 - 0.3 * air), 0, 0, TAU);
+      ctx.ellipse(u.x + recX, u.gy + 3 * u.sc, 56 * u.sc * (1 - 0.3 * air), 8 * u.sc * (1 - 0.3 * air), 0, 0, TAU);
       ctx.fill();
       ctx.save();
-      ctx.translate(pivX, u.gy);
+      ctx.translate(pivX + recX, pivY);
       ctx.rotate(rot);
-      ctx.translate(-pivX, -u.gy);
-      drawUnicorn(u.x, u.gy - 70 * u.sc + yOff, u.sc, u.dir, t, u.ph, pose);
+      ctx.translate(-(pivX + recX), -pivY);
+      drawUnicorn(u.x + recX, u.gy - 70 * u.sc + yOff, u.sc, u.dir, t, u.ph, pose, { wt: u.wt, ...(u.pal || {}) });
       ctx.restore();
     }
     drawFarts(t);
     drawButterflies(t, dt);
+    drawCastleButterflies(t, dt);
     drawPetals(t, dt);
     drawHearts(t, dt);
     drawBursts(t);
+    drawHornFxAll(t);   // lightning / supernova from a clicked unicorn's horn
   }
 
-  // ── Bold green toot clouds — vivid, linger longer, drift up and fade ──
+  // ── Bold toot clouds — green or (randomly) pink, vivid, linger and drift up ──
   function drawFarts(t) {
     const LIFE = 3.4;                               // lingers longer for emphasis
     for (let i = FARTS.length - 1; i >= 0; i--) {
@@ -932,9 +1287,15 @@ window.BACKGROUNDS.unicorns={
       const r = f.r * (1 + q * 1.9);
       const a = 0.68 * (1 - q * 0.85);              // bolder, fades late
       const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0,   `rgba(170, 255, 90, ${a.toFixed(3)})`);
-      g.addColorStop(0.5, `rgba(96, 230, 55, ${(a * 0.78).toFixed(3)})`);
-      g.addColorStop(1,   'rgba(60, 200, 40, 0)');
+      if (f.pink) {                                 // pink toot variant
+        g.addColorStop(0,   `rgba(255, 170, 220, ${a.toFixed(3)})`);
+        g.addColorStop(0.5, `rgba(255, 110, 185, ${(a * 0.78).toFixed(3)})`);
+        g.addColorStop(1,   'rgba(230, 70, 150, 0)');
+      } else {                                      // classic green toot
+        g.addColorStop(0,   `rgba(170, 255, 90, ${a.toFixed(3)})`);
+        g.addColorStop(0.5, `rgba(96, 230, 55, ${(a * 0.78).toFixed(3)})`);
+        g.addColorStop(1,   'rgba(60, 200, 40, 0)');
+      }
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
     }
@@ -993,12 +1354,19 @@ window.BACKGROUNDS.unicorns={
       })),
     });
 
-    // standing unicorns are in the foreground — test them first
+    // click the sun → it spins (same as the savanna sun)
+    if (SUN && (mx - SUN.x) ** 2 + (my - SUN.y) ** 2 < SUN.r * SUN.r){
+      sunBoostT = t; burst(); return;
+    }
+    // roaming unicorns are in the foreground — test them first
     for (const u of UNICORNS) {
+      if (u.wait > 0) continue;
       if (mx > u.x - 95 * u.sc && mx < u.x + 95 * u.sc &&
           my > u.gy - 190 * u.sc && my < u.gy + 10 * u.sc) {
-        // clicking a unicorn makes it jump or rear (toots run on the cadence above)
-        if (!u.act) u.act = { type: Math.random() < 0.5 ? 'jump' : 'rear', t0: t };
+        // every 5th unicorn-click fires a horn effect (lightning / supernova);
+        // the others make it jump, rear or somersault
+        if (++hornClicks >= HORN_EVERY) { hornClicks = 0; fireHornFx(u, t); }
+        else if (!u.act) u.act = { type: ['jump', 'rear', 'spin'][Math.random() * 3 | 0], t0: t };
         burst();
         return;
       }
@@ -1020,6 +1388,7 @@ window.BACKGROUNDS.unicorns={
       if (mx > c.x - 110 * c.s && mx < c.x + 110 * c.s &&
           my > c.y - 140 * c.s && my < c.y + 36 * c.s) {
         CASTLEFX.t0 = t;
+        spawnCastleButterflies(t);   // many butterflies fly out of the castle
         burst();
         return;
       }

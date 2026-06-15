@@ -14,7 +14,8 @@ Two kinds of files live here:
   jar, the counted items, the chain-garden plant, menu icons and the hint
   sentences for one background's theme. `classic.aids.js` is the boot default
   and the per-field fallback for every other variant. The current variants are
-  `classic`, `space`, `dubai`, `reef`, `unicorns`.
+  `classic`, `space`, `dubai`, `reef`, `unicorns`, `savanna` (cheetah
+  number-line rider + a warm amber jar of marula fruits, acacia chain-garden).
 - **`jar_stage.js` — the display engine.** A single self-contained module
   (`window.JAR_STAGE`) that owns *all* the counting-jar visuals: layout,
   drop/burst/sparkle animations, depth grid, glass shine. It is theme-agnostic

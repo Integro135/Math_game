@@ -119,6 +119,39 @@ function loadBackground(name){
   _injectScript('backgrounds/' + name + '.bg.js', start);
 }
 
+/* ── boot preload: warm EVERY background (+ its aid art & skin) and EVERY
+   exercise type up front, so later theme/level switches are seamless instead
+   of loading their objects on the first visit. Called during the intro splash
+   (main.js). Idempotent — _injectScript de-dupes, so the active theme/mode
+   already loading is never fetched twice. */
+function preloadAll(){
+  const bgNames = (typeof _BG_THEMES !== 'undefined')
+    ? [...new Set(Object.values(_BG_THEMES))] : [];
+  bgNames.forEach(n => {
+    const warm = () => {
+      const mod = window.BACKGROUNDS[n];
+      if(!mod) return;
+      if(mod.aids && !window.AIDS.variants[mod.aids])
+        _injectScript('aids/' + mod.aids + '.aids.js');
+      const skin = mod.skin || n;
+      if(!document.querySelector('link[data-pre-skin="' + skin + '"]')){
+        const l = document.createElement('link');
+        l.rel = 'prefetch'; l.setAttribute('as', 'style');
+        l.href = 'game/skins/' + skin + '.skin.css';
+        l.setAttribute('data-pre-skin', skin);
+        document.head.appendChild(l);
+      }
+    };
+    if(window.BACKGROUNDS[n]) warm(); else _injectScript('backgrounds/' + n + '.bg.js', warm);
+  });
+  // every exercise type across all modes ("all levels")
+  (typeof EXERCISE_INDEX !== 'undefined' ? EXERCISE_INDEX : []).forEach(e => {
+    if(!window.EXERCISES.types[e.file]) _injectScript('exercises/' + e.file + '.ex.js');
+  });
+  // the counting-jar display engine
+  loadJarStage();
+}
+
 /* ── boot: default aid variant + externally-authored success screens ── */
 loadAids('classic');
 if(typeof SUCCESS_FILES !== 'undefined'){

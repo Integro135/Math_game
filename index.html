@@ -21,7 +21,7 @@
 
   <header class="header glass">
     <button id="theme-toggle" class="theme-toggle-btn" onclick="openThemeMenu(event)" title="בְּחַר עִיצּוּב">🎨</button>
-    <button id="settings-btn" class="theme-toggle-btn settings-gear" onclick="openSettings(event)" title="הַגְדָּרוֹת מִשְׂחָק">⚙️</button>
+    <button id="settings-btn" class="theme-toggle-btn settings-gear" onclick="openParentGate(event)" title="הַגְדָּרוֹת מִשְׂחָק">⚙️</button>
     <!-- top corner: the current game as read-only TEXT, above the gift goal;
          changing the game lives only in the settings modal (⚙️) -->
     <div class="hdr-corner">
@@ -32,7 +32,7 @@
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v6.88">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v7.51">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -69,11 +69,11 @@
 <!-- success celebrations are external screens (success_screens/*.js); the host
      (game/js/success.js) creates their full-screen modal root at runtime -->
 
-<div id="sad-ov"><div class="sad-box"><span class="sad-emoji">😢</span></div></div>
+<div id="sad-ov" style="display:none"><div class="sad-box"><span class="sad-emoji">😢</span></div></div>
 
 <div id="num-tt"><div class="ntt-lbl"></div><div class="ntt-grid"></div></div>
 
-<div id="report-ov">
+<div id="report-ov" style="display:none">
   <div class="report-box">
     <div class="report-hdr">
       <span class="report-title">📊 סִיכּוּם תַּרְגִּילִים</span>
@@ -85,7 +85,7 @@
 
 <!-- ── Settings modal — difficulty + game selection (rendered from
      DIFFICULTY_GROUPS by renderModePicker into #level-row) ── -->
-<div id="settings-ov" onclick="if(event.target===this)closeSettings()">
+<div id="settings-ov" style="display:none" onclick="if(event.target===this)closeSettings()">
   <div class="settings-box">
     <div class="settings-hdr">
       <span class="settings-title">⚙️ הַגְדָּרוֹת מִשְׂחָק</span>
@@ -106,12 +106,33 @@
   </div>
 </div>
 
+<!-- ── Parent gate — a multiplication challenge guarding the settings modal.
+     Same box style/position as #settings-ov; settings open only on a correct
+     answer. ── -->
+<div id="parent-ov" style="display:none" onclick="if(event.target===this)closeParentGate()">
+  <div class="settings-box">
+    <div class="settings-hdr">
+      <span class="settings-title">הוֹכֵחַ שֶׁאַתָּה הוֹרֶה</span>
+      <button class="ko-close" onclick="closeParentGate()">✕</button>
+    </div>
+    <div class="set-sec-lbl">פִּתְרוּ אֶת תַּרְגִּיל הַכֶּפֶל כְּדֵי לְהִכָּנֵס לַהַגְדָּרוֹת:</div>
+    <div id="parent-q" style="font-family:'Fredoka One',cursive;font-size:2.2rem;text-align:center;color:#ffe9a8;margin:6px 0 14px"></div>
+    <div style="display:flex;gap:14px;justify-content:center;align-items:center">
+      <input type="number" id="parent-ans" inputmode="numeric" autocomplete="off" class="ans-inp"
+             onkeydown="if(event.key==='Enter')checkParentGate()">
+      <button class="chk-btn" onclick="checkParentGate()" title="אִשּׁוּר">✔</button>
+    </div>
+    <div id="parent-err" style="text-align:center;color:#ff9ab0;font-weight:800;min-height:1.3em;margin-top:10px"></div>
+  </div>
+</div>
+
 <!-- ── Theme picker menu (outside any backdrop-filter parent) ── -->
 <div id="theme-menu">
   <button class="tm-item" onclick="pickTheme('girls')"><span class="tm-icon">🦄</span></button>
   <button class="tm-item" onclick="pickTheme('galaxy')"><span class="tm-icon">🌌</span></button>
   <button class="tm-item" onclick="pickTheme('reef')"><span class="tm-icon">🐠</span></button>
   <button class="tm-item" onclick="pickTheme('dubai')"><span class="tm-icon">🏙️</span></button>
+  <button class="tm-item" onclick="pickTheme('savanna')"><span class="tm-icon">🦁</span></button>
 </div>
 
 <!-- ── Games dropdown menu (outside any backdrop-filter parent) ── -->

@@ -14,7 +14,10 @@
   --skin-primary: #FF6FB5;   /* candy pink   */
   --skin-accent:  #7DC4FF;   /* sky tchelet  */
   --skin-glow:    #C77DFF;   /* royal lilac  */
-  --skin-text:    #5A2A52;   /* deep plum    */
+  --skin-text:    #5A2A52;   /* deep plum — in-game ink over the LIGHT valley */
+  /* success/gift/intro screens draw over near-black: the deep-plum ink above
+     vanishes there, so override JUST the overlay text to bright candy pink */
+  --skin-ov-text: #FF8FC8;
 }
 
 /* ── 4. POSITION — center band, between the flyers above and the herd below ── */
@@ -82,6 +85,9 @@ body.theme-girls .settings-title{
   background:linear-gradient(90deg,#C2519C,#9A4ED9);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
+/* parent gate ("הוכח שאתה הורה") — the multiplication question in purple
+   (!important overrides the element's inline gold; readable on the light box) */
+body.theme-girls #parent-q{color:#9A4ED9 !important}
 body.theme-girls .set-sec-lbl{color:#7A4070}
 /* the extra-settings text (intro toggle, name label/input) sits on the light
    settings box — recolor it plum so it stays readable (base default is light) */

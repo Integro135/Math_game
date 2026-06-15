@@ -85,13 +85,7 @@ the **chain mini-line** (`.pgm-bar`, `.pgm-dot`, `.pgm-nl-num*`,
 | `unicorns` | candy valley (`theme-girls`) | `#FF6FB5` / `#7DC4FF` / `#C77DFF` / `#5A2A52` | "Valley Light" — translucent layer over a *light* valley; contrast from deep-plum ink + white halos; `±` are lilac/strawberry, no green | `max-width:700px`, center band |
 | `dubai` | Dubai dusk (`theme-dubai`) | `#FFB54D` / `#FFD27D` / `#6FB7FF` / `#F2EEDF` | "Golden Hour" — deep-navy glass etched with hairline gold; luxury-hotel elegance; keep the Burj + skyline sharp | `max-width:700px`, `margin:0 auto` (centered) |
 | `reef` | coral reef (`theme-reef`) | `#22C8C2` / `#FFD166` / `#66E0FF` / `#EAFBFF` | "Open Water" — instrument layer in open water; **the only blurred element is the equation island** (`.eq-row`), everything else stays crystal clear | `max-width:720px`, top-center calm zone |
-| `savanna` | Pride Rock sunset (`theme-savanna`) | `#E07028` / `#FFC568` / `#FF9A4D` / `#FFF3E0` | Warm smoked-amber glass on the blazing sky; the smallest skin — palette + glass + position + a couple of accents only | `max-width:760px`, pushed center-**right** so the rock + lions on the left stay visible (`margin:0 auto` below 900px) |
-
-Note: `savanna.skin.css` is deliberately minimal — unlike the others it does
-not restyle the number line, settings modal, buttons, etc.; it relies on the
-base styles for everything beyond palette, glass, position and title/progress
-accents. It is also the one skin whose rules are **not** scoped to a body class
-(see §5).
+| `savanna` | Pride Rock sunset (`theme-savanna`) | `#E07028` / `#FFC568` / `#FF9A4D` / `#FFF3E0` | Warm amber dusk glass with a gentle blur so the sky/rock/herds glow through; add = golden sun, subtract = grass-green; a full skin (header, card, equation, buttons, number line, chain jar, end screen) | `max-width:640px`, pushed to the lower-**right** (`margin:0 calc(16px + 5cm) 0 auto`) so Pride Rock + the lions on the left stay visible (`margin:8px auto 0` below 900px) |
 
 ## 5. Scoping discipline
 
@@ -110,11 +104,6 @@ Theme → body-class mapping (set by `applyTheme`, themes.js):
 | dubai | `theme-dubai` |
 | reef | `theme-reef` |
 | savanna | `theme-savanna` |
-
-**Exception:** `savanna.skin.css` uses *unscoped* selectors (`.glass`,
-`.wrap`, `.title`, …). This works only because exactly one skin is ever loaded
-at a time, but it does not follow the scoping convention the other skins use —
-prefer the scoped pattern for any new skin.
 
 ## 6. Adding a skin
 

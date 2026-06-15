@@ -1010,8 +1010,9 @@ window.BACKGROUNDS.space={
       let ax=tg.x,ay=tg.y,effR;
       if(tg.kind==='orbiter'){ax=EARTH.x;ay=EARTH.y;effR=EARTH.r*3.1;}
       else if(tg.kind==='bh')effR=BH.r*2.4;
-      else if(tg.kind==='galaxy')effR=tg.g.scale*1.5;
-      else effR=Math.min(tg.r,170);
+      else if(tg.kind==='galaxy')effR=tg.r*0.7;    // hug the galaxy (was scale*1.5 — the bubble sat way too far)
+      else if(tg.kind==='planet')effR=tg.r*0.45;   // Saturn: hug the rings (was the generic ≤170 cap — too far)
+      else effR=Math.min(tg.r,140);
       let top=ay-effR-fh-12;
       if(top<8)top=ay+effR+12;
       top=Math.max(8,Math.min(H-fh-8,top));

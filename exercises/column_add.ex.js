@@ -213,8 +213,8 @@ window.EXERCISES.types.column_add=(()=>{
       if(api.nl)api.nl(phase==='units'?P.aU:P.aT);
     }
 
-    /* units stage — commit=true only on Enter; live typing accepts a correct
-       answer but never judges a wrong one */
+    /* units stage — only ever called on Enter (commit=true): judges the answer
+       (correct OR wrong) and colors the box green/red. Never runs while typing. */
     function checkUnits(commit){
       if(phase!=='units'||iU.value==='')return;
       if(iU.classList.contains('ans-err'))return;
@@ -273,14 +273,12 @@ window.EXERCISES.types.column_add=(()=>{
       }
     }
 
-    iU.addEventListener('input',function(){
-      this.value=this.value.replace(/\D/g,'');
-      if(phase==='units'&&this.value.length>=+this.maxLength)checkUnits(false);
-    });
-    iT.addEventListener('input',function(){
-      this.value=this.value.replace(/\D/g,'');
-      if(phase==='tens'&&this.value.length>=1)checkTens(false);
-    });
+    // answers are checked ONLY on Enter — never live while typing. Otherwise a
+    // child could brute-force digits and the box would auto-accept (and advance
+    // to the tens column) the moment the right number happened to appear.
+    // Live input just sanitizes to digits; the green/red mark waits for Enter.
+    iU.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
+    iT.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
     iU.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();checkUnits(true);}});
     iT.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();checkTens(true);}});
     const onResize=()=>{positionPlus();drawLines();};

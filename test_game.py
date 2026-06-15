@@ -1636,6 +1636,30 @@ class TestTryFirstScoring:
         assert page.evaluate("tryFirst") == 2, \
             "A different wrong value must count as a second mistake"
 
+    def test_chain_step_box_mistake_reduces_final_score(self, page):
+        """END-TO-END: a wrong value typed in a chain STEP box penalises the
+        exercise even when the final answer is ultimately correct — the correct
+        final answer then awards only 67%, not full points."""
+        page.evaluate("setMode(10)")          # modePts()=10 → 67% == 7
+        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+        page.evaluate("problems[0] = {t: TX, a: 8, b: 2, c: 3}; idx = 0; loadProblem()")
+        page.wait_for_selector("#tx-sub1", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+        assert page.evaluate("score") == 0 and page.evaluate("tryFirst") == 0
+        # wrong intermediate step value (8-2=6, so 9 is wrong)
+        page.fill("#tx-sub1", "9")
+        page.evaluate("document.getElementById('tx-sub1').blur()")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        # now solve the whole exercise CORRECTLY (8-2+3 = 9)
+        page.fill("#ans", "9")
+        page.click("#chk-btn")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("report[0].gotCorrect") is True, \
+            "the final answer was correct"
+        assert page.evaluate("score") == 7, \
+            f"a step-box mistake must drop the award to 67% (7), got {page.evaluate('score')}"
+
     def test_theme_switch_keeps_nl_lock(self, page):
         """Switching the background theme must not reveal the number-line
         numbers before the first mistake (applyTheme rewrites body.className,
@@ -2289,6 +2313,33 @@ class TestSupermanColumnAdd:
             "[...document.querySelectorAll('#nl-panel .nl-num')].map(n=>+n.textContent)")
         assert len(nums) >= 1, "the number line must render its numbers from the start"
 
+    def test_sup_nl_numbers_visible_after_switch_from_locked_mode(self, page):
+        """Regression: entering Superman from a normal mode (whose fresh problem
+        left `tf-locked-nl` on <body>) used to leave that lock sticky, so the
+        number-line NUMBERS were CSS-hidden until a page refresh. The always-on
+        reveal must actively clear the stale lock — numbers visible, no refresh."""
+        page.evaluate("setMode(10)")
+        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
+        page.wait_for_timeout(120)
+        assert page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
+            "precondition: normal mode locks the aids on a fresh problem"
+        page.evaluate("setMode('sup')")
+        page.wait_for_function("problems.length === 14", timeout=TIMEOUT)
+        page.evaluate("problems[0] = {t: TCA, a: 13, b: 18}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
+        page.wait_for_timeout(250)
+        assert not page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
+            "the stale try-first lock must be cleared for an always-on type"
+        visible = page.evaluate("""
+            [...document.querySelectorAll('#nl-panel .nl-num')]
+              .filter(n => getComputedStyle(n).visibility !== 'hidden').length
+        """)
+        assert visible >= 1, \
+            "number-line numbers must be VISIBLE without a refresh (not CSS-hidden)"
+        assert page.evaluate("!document.getElementById('nl-btn-plus').disabled"), \
+            "± buttons must be enabled (not left tf-locked)"
+
     def test_sup_nl_anchored_to_top_units_digit(self, page):
         """The rider parks on the TOP number's units digit from the start —
         13+18 → rider at 3 (top units), NOT 8 (the larger of the two units)."""
@@ -2299,6 +2350,26 @@ class TestSupermanColumnAdd:
             "parseFloat(document.getElementById('nl-dot').style.left)")
         assert abs(left - 15) < 0.5, \
             f"rider must sit on top units digit 3 (15%), got {left}%"
+
+    def test_sup_arrow_keys_move_rider_from_start(self, page):
+        """Regression: in the column exercise the left/right arrows must move
+        the rider FROM THE START (always-on line, tryFirst 0) — even while a
+        column digit box (type='text') holds focus. They used to be inert
+        because the handler was gated on tryFirst>0 AND ignored non-number
+        inputs."""
+        self._enter_sup(page, 13, 18)
+        assert page.evaluate("tryFirst") == 0
+        page.focus("#colx-iU")
+        before = page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)")
+        page.keyboard.press("ArrowRight")
+        page.wait_for_function(
+            f"parseFloat(document.getElementById('nl-dot').style.left) > {before}",
+            timeout=TIMEOUT)
+        mid = page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)")
+        page.keyboard.press("ArrowLeft")
+        page.wait_for_function(
+            f"parseFloat(document.getElementById('nl-dot').style.left) < {mid}",
+            timeout=TIMEOUT)
 
     def test_sup_space_advances_number_line_in_add_direction(self, page):
         """In column addition, pressing SPACE hops the kangaroo forward (add
@@ -2329,6 +2400,7 @@ class TestSupermanColumnAdd:
         page.wait_for_function(
             "!document.getElementById('colx-iT').disabled", timeout=TIMEOUT)
         page.fill("#colx-iT", "3")
+        page.keyboard.press("Enter")
         page.wait_for_function("score === 15", timeout=TIMEOUT)
         assert page.evaluate("report[0].gotCorrect") is True
 
@@ -2341,6 +2413,27 @@ class TestSupermanColumnAdd:
         assert page.evaluate("report[0].wrongs.length") == 1
         assert page.evaluate(
             "document.getElementById('colx-iU').classList.contains('ans-err')")
+
+    def test_sup_units_mistake_reduces_final_score(self, page):
+        """END-TO-END: a wrong digit in the column units box penalises the
+        exercise even when the columns are ultimately completed correctly —
+        the solved exercise then awards only 67% (round(15*.67)=10), not 15."""
+        self._enter_sup(page, 17, 15)        # modePts()=15 → 67% == 10
+        assert page.evaluate("score") == 0 and page.evaluate("tryFirst") == 0
+        # wrong units first (7+5=12, so 13 is wrong)
+        page.fill("#colx-iU", "13")
+        page.keyboard.press("Enter")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        # now finish the columns CORRECTLY: units 12 (carry), tens 3
+        page.fill("#colx-iU", "12")
+        page.keyboard.press("Enter")
+        page.wait_for_function(
+            "!document.getElementById('colx-iT').disabled", timeout=TIMEOUT)
+        page.fill("#colx-iT", "3")
+        page.keyboard.press("Enter")
+        page.wait_for_function("report[0].gotCorrect === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 10, \
+            f"a units mistake must drop the solved award to 67% (10), got {page.evaluate('score')}"
 
     def test_sup_module_cleanup_on_mode_exit(self, page):
         """Leaving Superman removes the column DOM and restores the check button."""
@@ -2758,3 +2851,70 @@ class TestSuccessDuration:
         assert 4250 <= ms <= 5100, \
             f"super success screen should linger ~4500ms (3500+1000), got {ms:.0f}ms"
         assert page.evaluate("idx") >= 1, "game advances after the screen closes"
+
+
+# ─────────────────────────────────────────────────────────
+# Number line (#nl-panel) interactivity across exercise types
+# ─────────────────────────────────────────────────────────
+class TestNumberLineInteraction:
+    """Wherever the kangaroo number line (#nl-panel) is displayed, it must react
+    to BOTH the ± arrow buttons (#nl-btn-plus / #nl-btn-minus) AND the spacebar —
+    in every exercise type that uses it. The arrow onclick and the spacebar
+    handler both call NL.step(), so we spy on NL.step and assert each input
+    triggers it (after the line is revealed, exactly like the first mistake)."""
+
+    # (label, setMode arg, problem-construction JS) — one problem per NL type
+    CASES = [
+        ("add (TA)",       "20",    "problems[0]={t:TA,a:6,b:7}"),
+        ("subtract (TS)",  "20",    "problems[0]={t:TS,a:15,b:6}"),
+        ("missing (TM)",   "20",    "problems[0]={t:TM,a:14,b:5}"),
+        ("coins (TC)",     "20",    "problems[0]={t:TC,coins:[10,5,2],correct:17}"),
+        ("tens (TT)",      "'mx'",  "problems[0]={t:TT,a:30,b:20,op:'add'}"),
+        ("big-step (TBG)", "'mx'",  "problems[0]={t:TBG,a:34,b:2,op:'add'}"),
+        ("column (TCA)",   "'sup'", "problems[0]={t:'col_add',a:14,b:8}"),
+    ]
+
+    def _activate(self, page, mode_arg, problem_js):
+        """Load the given problem and reveal the number line (enable the ±
+        buttons + lift the spacebar's try-first guard, as a first mistake does)."""
+        page.evaluate(f"setMode({mode_arg})")
+        page.wait_for_function("problems.length > 0", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        page.evaluate(f"{problem_js}; idx = 0; loadProblem();")
+        page.wait_for_timeout(230)   # TCA mounts its column module asynchronously
+        page.evaluate("tryFirst = 1; if (typeof _unlockAids === 'function') _unlockAids();")
+        page.wait_for_timeout(120)
+
+    def test_arrows_and_space_drive_the_line(self, page):
+        failures = []
+        for label, mode_arg, problem_js in self.CASES:
+            self._activate(page, mode_arg, problem_js)
+            disp = page.evaluate(
+                "(()=>{const n=document.getElementById('nl-panel');"
+                "return n?getComputedStyle(n).display:'(missing)';})()")
+            if disp in ('none', '(missing)'):
+                failures.append(f"{label}: number line not displayed (display={disp})")
+                continue
+            # spy on NL.step — both the ± onclick and the spacebar handler call it
+            page.evaluate(
+                "if(!NL.__spied){const _s=NL.step;"
+                "NL.step=function(d){window.__steps=(window.__steps||0)+1;return _s.call(NL,d);};"
+                "NL.__spied=true;} window.__steps=0;")
+            # + arrow button
+            page.click("#nl-btn-plus")
+            page.wait_for_timeout(70)
+            n_plus = page.evaluate("window.__steps")
+            # − arrow button (now enabled — the rider moved off the origin)
+            page.click("#nl-btn-minus")
+            page.wait_for_timeout(70)
+            n_minus = page.evaluate("window.__steps")
+            # spacebar — blur first so focus is on neither a button nor an input
+            page.evaluate("document.activeElement&&document.activeElement.blur&&document.activeElement.blur()")
+            page.keyboard.press("Space")
+            page.wait_for_timeout(70)
+            n_space = page.evaluate("window.__steps")
+            if not (n_plus >= 1 and n_minus >= 2 and n_space >= 3):
+                failures.append(
+                    f"{label}: NL.step calls after +/-/space = "
+                    f"{n_plus}/{n_minus}/{n_space} (expected >=1/>=2/>=3)")
+        assert not failures, "Number line did not respond:\n  " + "\n  ".join(failures)

@@ -50,6 +50,16 @@ window.BACKGROUNDS.reef = {
     const n = parseInt(hex.slice(1), 16);
     return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
   }
+  // ── Unified sea current ──────────────────────────────────────────────────
+  // One slowly-wandering horizontal current that every swaying thing (kelp,
+  // seagrass, sediment, anemone tentacles, the seahorse) leans to together, so
+  // the whole reef breathes with the same water instead of jittering randomly.
+  // Returns a value in roughly [-1, 1]: sign = direction, magnitude = strength.
+  function curX(t) {
+    return 0.62 * Math.sin(t * 0.07)
+         + 0.28 * Math.sin(t * 0.123 + 1.7)
+         + 0.10 * Math.sin(t * 0.31  + 3.1);
+  }
   function makeLayer(){
     const cv = document.createElement('canvas');
     cv.width = W * DPR; cv.height = H * DPR;
@@ -60,11 +70,20 @@ window.BACKGROUNDS.reef = {
 
   // ── Scene state ────────────────────────────────────────────────────────────
   let RAYS, MOTES, BUBBLES, SCHOOL, KELP, GRASS;
-  let SHARKS, DORIES, NEMOS, ANEMONES, CRAB, PUFFER, BUTTERS, CHEST, DOLPHS;
+  let SHARKS, DORIES, NEMOS, ANEMONES, CRABS, PUFFER, BUTTERS, CHEST, DOLPHS, POD, SHOALS;
   let sandTopAt, sandPath, OUTCROPS;
   let staticLayer, vigLayer;
-  let FXBUB, FXHEARTS, FXPUFF, FXRINGS, nextFishActAt;   // click/scheduled action state
+  let FXBUB, FXHEARTS, FXPUFF, FXRINGS, FXSPARK, nextFishActAt;   // click/scheduled action state
   let WHALE, ORCA;                      // passing giants (blue whale / killer whale)
+  let BOAT;                             // a wooden boat hull gliding across the surface
+  let CLOUDSHADE;                        // drifting cloud shadow that dims the scene
+  let SEAHORSE, SEAHORSE2;               // a clinging seahorse + one roaming the sandy bottom
+  let FLATFISH, FXSAND;                   // camouflaged sole + its sand-puff particles
+  let CLEANSTATION;                       // a cleaner wrasse + visiting client fish
+  let SPAWN;                              // rare coral-spawning egg bundles drifting up
+  let RAIN;                               // occasional rain: surface dimples + soft dimming
+  let STARS;                              // clickable sea stars (animate on tap)
+  let JELLIES;                            // a drifting group of pulsing jellyfish
 
   function resize() {
     W = innerWidth; H = innerHeight;
@@ -98,6 +117,10 @@ window.BACKGROUNDS.reef = {
       speed: 0.3 + Math.random() * 0.4,
     }));
 
+    // Passing cloud shadow — a soft darkening blob that drifts overhead now and
+    // then, dimming the whole scene as if a cloud crossed the sun above the water
+    CLOUDSHADE = { active: false, next: null };
+
     // Suspended sediment — real water is never perfectly empty
     MOTES = Array.from({length: 65}, () => ({
       x: Math.random() * W,
@@ -123,13 +146,15 @@ window.BACKGROUNDS.reef = {
     });
 
     // A school of silvery fusiliers
-    SCHOOL = Array.from({length: 18}, () => ({
+    SCHOOL = Array.from({length: 8}, () => ({
       ox: (Math.random() - 0.5) * 130,
       oy: (Math.random() - 0.5) * 55,
       size: 3.4 + Math.random() * 2.4,
       phase: Math.random() * TAU,
     }));
     SCHOOL.leader = { x: W * 0.3, y: H * 0.32, vx: 0.6 };
+    SCHOOL.avoid = { x: 0, y: 0, t0: -99, strength: 0 };   // boids parting around cursor/click
+    SCHOOL.ballF = 0;                                       // bait-ball intensity (shark near → 1)
 
     // Kelp — tall olive stipes with blades
     KELP = [
@@ -154,6 +179,73 @@ window.BACKGROUNDS.reef = {
         })),
       };
     });
+
+    // Two seahorses that slowly roam the WHOLE screen (not just the bottom):
+    // they drift horizontally and wander up/down across the full height.
+    const mkSeahorse = hue => ({
+      s: Math.min(W, H) * 0.0276, dir: Math.random() < 0.5 ? 1 : -1, phase: Math.random() * TAU,
+      hue, state: 'roam', spd: 0.28 + Math.random() * 0.12,
+      x: W * (0.15 + Math.random() * 0.7), y: H * (0.18 + Math.random() * 0.6),
+      vy: (Math.random() - 0.5) * 0.5, reactT0: null,
+    });
+    SEAHORSE = mkSeahorse('#F2B23C');
+    SEAHORSE2 = mkSeahorse('#E89BC0');
+
+    // A camouflaged sole buried in the open sand — invisible until a sand click
+    // makes it bolt out in a sand puff and re-bury somewhere else (see §click).
+    FXSAND = [];
+    {
+      const fx = W * (0.30 + Math.random() * 0.4), s = Math.min(W, H) * 0.052;
+      FLATFISH = {
+        x: fx, y: sandTopAt(fx) + s * 0.32, s, state: 'buried', cool: 0,
+        t0: 0, dur: 0, fromX: 0, fromY: 0, toX: 0, toY: 0, phase: Math.random() * TAU,
+      };
+    }
+
+    // A drifting group of 3–5 pulsing jellyfish (shared drift direction → a loose school)
+    {
+      const jdir = Math.random() < 0.5 ? -1 : 1;
+      const pal = ['#E89BD0', '#C79BE8', '#9BB8E8'];
+      JELLIES = Array.from({ length: 2 + (Math.random() * 2 | 0) }, (_, i) => ({
+        x: W * (0.2 + Math.random() * 0.6), y: H * (0.28 + Math.random() * 0.30),
+        s: Math.min(W, H) * (0.03 + Math.random() * 0.018),
+        vx: jdir * (0.3 + Math.random() * 0.22), phase: Math.random() * TAU,
+        pulseSpd: 1.5 + Math.random() * 0.8, hue: pal[i % pal.length],
+      }));
+    }
+
+    // A cleaning station above a coral head: a tiny cleaner wrasse hovers here;
+    // every ~40–80 s a bigger "client" fish swims in, hovers (mouth gaping)
+    // while the cleaner fusses over it, then swims on.
+    CLEANSTATION = {
+      x: W * 0.40, y: sandTopAt(W * 0.40) - H * 0.11,
+      cphase: Math.random() * TAU, client: null, nextAt: null, signF: 0,
+    };
+
+    // Coral spawning — a rare spectacle: the coral heads release clouds of tiny
+    // pale egg bundles that drift up like reverse snow.
+    // Each spawn point sits at the coral it belongs to (x + the height eggs
+    // emerge from). Bommie corals ride high on the outcrops; garden corals mount
+    // on the sand. Listing them here keeps clicks and auto-spawns aligned to the
+    // actual coral art — including the raised bommie staghorn & tube sponges.
+    const O0 = OUTCROPS[0], O1 = OUTCROPS[1];
+    SPAWN = {
+      parts: [], active: false, t0: 0, nextAt: null,
+      points: [
+        { x: O0.x - O0.w * 0.42, y: O0.topY + 8 },                      // bommie A — staghorn
+        { x: O0.x + O0.w * 0.42, y: O0.topY + 8 },                      // bommie A — sea fan
+        { x: O0.x - O0.w * 0.78, y: sandTopAt(O0.x - O0.w * 0.78) },    // bommie A — tube sponges
+        { x: O1.x - O1.w * 0.40, y: O1.topY + 8 },                      // bommie B — sea fan
+        { x: O1.x + O1.w * 0.40, y: O1.topY + 10 },                     // bommie B — boulder
+        { x: O1.x + O1.w * 0.85, y: sandTopAt(O1.x + O1.w * 0.85) },    // bommie B — tube sponges
+        ...[0.20, 0.305, 0.355, 0.395, 0.475, 0.55, 0.635, 0.715, 0.92]
+          .map(f => ({ x: W * f, y: sandTopAt(W * f) })),              // coral garden (on the sand)
+      ],
+    };
+
+    // Occasional rain seen from below: dimples pock the surface and the whole
+    // scene dims softly under an overcast sky.
+    RAIN = { active: false, t0: 0, dur: 0, nextAt: null, intensity: 0, dimples: [] };
 
     // Bubble-tip anemones — tentacles generated once so they keep their shape
     ANEMONES = [
@@ -189,24 +281,36 @@ window.BACKGROUNDS.reef = {
     ];
 
     // Bottlenose dolphins cruising the open blue
-    DOLPHS = [
-      { x: W * 0.35, baseY: H * 0.14, vx: 1.35,  s: Math.min(W, H) * 0.058, phase: Math.random() * TAU },
-      { x: W * 0.75, baseY: H * 0.26, vx: -1.05, s: Math.min(W, H) * 0.042, phase: Math.random() * TAU },
-    ];
+    // A dolphin pod — 1–3 adults plus a baby — travelling together (see spawnPod)
+    spawnPod();
 
-    // Blue tangs drifting along the reef face
-    DORIES = Array.from({length: 3}, (_, i) => ({
-      x: Math.random() * W,
-      baseY: H * (0.30 + i * 0.13),
-      vx: (i % 2 ? -1 : 1) * (0.45 + Math.random() * 0.35),
-      s: Math.min(W, H) * (0.024 + Math.random() * 0.007),
-      phase: Math.random() * TAU,
-      // every tang has a little clownfish friend swimming with it
-      buddy: { s: Math.min(W, H) * (0.015 + Math.random() * 0.004), phase: Math.random() * TAU },
+    // Fish shoals — small same-species groups (clownfish OR tangs), 3–4 each,
+    // and occasionally a mixed Nemo+Dory pair (see spawnShoal)
+    SHOALS = Array.from({ length: 2 }, () => spawnShoal(true));
+
+    // Reef crabs working the sand (5 of them, each on its own patrol range;
+    // actT = click-reaction time)
+    // Five crabs, each its own species colour (limb = legs/claw-arms,
+    // claw = pincer ball, cara = carapace top→bottom gradient, dark = stalks/mottling).
+    const CRAB_PALS = [
+      { limb: '#8e4524', claw: '#a85530', cara: ['#b05a30', '#7e3a1c'], dark: '#5a2810' },  // red-brown
+      { limb: '#b33a1a', claw: '#e0633a', cara: ['#ef6a36', '#b23a16'], dark: '#7a2510' },  // bright orange
+      { limb: '#6a3a72', claw: '#9a5aa8', cara: ['#a862b8', '#5e3268'], dark: '#3e1f48' },  // purple
+      { limb: '#256a62', claw: '#3a9a8e', cara: ['#46a99a', '#236158'], dark: '#143e38' },  // teal
+      { limb: '#9a7a1a', claw: '#cfa82e', cara: ['#dcb83e', '#8a6e15'], dark: '#5e4a0e' },  // sandy yellow
+    ];
+    CRABS = [[0.06, 0.22], [0.27, 0.45], [0.42, 0.60], [0.62, 0.80], [0.80, 0.96]].map(([lo, hi], i) => ({
+      lo: W * lo, hi: W * hi, x: W * (lo + Math.random() * (hi - lo)),
+      dir: Math.random() < 0.5 ? 1 : -1, s: Math.min(W, H) * (0.013 + Math.random() * 0.006),
+      phase: Math.random() * TAU, actT: null, pal: CRAB_PALS[i % CRAB_PALS.length],
     }));
 
-    // A small reef crab working the sand
-    CRAB = { x: W * 0.42, dir: 1, s: Math.min(W, H) * 0.016, phase: Math.random() * TAU };
+    // Sea stars on the open sand — clickable, animate (wiggle) on a tap. Drawn
+    // dynamically per frame (no longer painted into the static layer).
+    STARS = [
+      { x: W * 0.245, y: H * 0.945, s: Math.min(W, H) * 0.016, col: '#d8703a', rot: 0.3, actT: null },
+      { x: W * 0.785, y: H * 0.952, s: Math.min(W, H) * 0.014, col: '#b84e60', rot: -0.6, actT: null },
+    ];
 
     // A pufferfish that balloons up on schedule
     PUFFER = {
@@ -234,11 +338,13 @@ window.BACKGROUNDS.reef = {
     // every few minutes, and an orca ~5× the dolphin cruising by now and then
     WHALE = { active: false, nextAt: null, x: 0, y: 0, dir: 1, s: 0, phase: Math.random() * TAU };
     ORCA  = { active: false, nextAt: null, x: 0, y: 0, dir: 1, s: 0, phase: Math.random() * TAU };
+    BOAT  = { active: false, nextAt: null, x: 0, dir: 1, s: 0 };
 
     FXBUB = [];
     FXHEARTS = [];
     FXPUFF = [];     // white blow-mist puffs (dolphin breaths)
     FXRINGS = [];    // dolphin bubble rings
+    FXSPARK = [];    // twinkle sparkles (e.g. a freshly-cleaned fish)
     nextFishActAt = null;
   }
 
@@ -328,23 +434,28 @@ window.BACKGROUNDS.reef = {
     paintSeaFan(c,   OUTCROPS[0].x + OUTCROPS[0].w * 0.42, OUTCROPS[0].topY + 8, H * 0.125, '#b8385c');
     paintSponges(c,  OUTCROPS[0].x - OUTCROPS[0].w * 0.78, sandTopAt(OUTCROPS[0].x - OUTCROPS[0].w * 0.78) + 4, H * 0.075, '#8a62b8');
 
-    // Bommie B — sea fan, plate coral, sponges
+    // Bommie B — sea fan, a polyp boulder, sponges
     paintSeaFan(c,   OUTCROPS[1].x - OUTCROPS[1].w * 0.40, OUTCROPS[1].topY + 8, H * 0.105, '#c44a78');
-    paintPlate(c,    OUTCROPS[1].x + OUTCROPS[1].w * 0.40, OUTCROPS[1].topY + 8, H * 0.055, '#caa05e');
+    coralBoulder(c,  OUTCROPS[1].x + OUTCROPS[1].w * 0.40, OUTCROPS[1].topY + 10, W * 0.05, H * 0.045, '#caa05e');
     paintSponges(c,  OUTCROPS[1].x + OUTCROPS[1].w * 0.85, sandTopAt(OUTCROPS[1].x + OUTCROPS[1].w * 0.85) + 4, H * 0.065, '#9a6aae');
 
-    // Coral garden across the sand flat
-    paintTable(c,    W * 0.305, sandTopAt(W * 0.305) + 4, H * 0.085, '#cf9a72');
-    paintBrain(c,    W * 0.395, sandTopAt(W * 0.395) + 4, H * 0.052, '#aa9a58');
-    paintStaghorn(c, W * 0.475, sandTopAt(W * 0.475) + 4, H * 0.095, '#b888c0');
-    paintSoft(c,     W * 0.635, sandTopAt(W * 0.635) + 4, H * 0.060, '#dcc294');
-    paintBrain(c,    W * 0.715, sandTopAt(W * 0.715) + 4, H * 0.045, '#9ba662');
-    paintTable(c,    W * 0.92,  sandTopAt(W * 0.92) + 4,  H * 0.07,  '#c2a06a');
-    paintSeaFan(c,   W * 0.355, sandTopAt(W * 0.355) + 4, H * 0.08,  '#7a4ea0');
-
-    // Sea stars on the open sand
-    paintStarfish(c, W * 0.245, H * 0.945, Math.min(W, H) * 0.016, '#d8703a', 0.3);
-    paintStarfish(c, W * 0.785, H * 0.952, Math.min(W, H) * 0.014, '#b84e60', -0.6);
+    // Coral garden — rock bases topped with corals built from many polyps.
+    // The good elements stay: the staghorn (white-tipped branches), sea fans,
+    // tube sponges, kelp, sea stars and the anemones are kept.
+    const SY = f => sandTopAt(W * f) + 4;
+    rockBase(c,      W * 0.20,  SY(0.20),  W * 0.075, H * 0.060, '#6f7a82');
+    coralBoulder(c,  W * 0.20,  SY(0.20) - H * 0.018, W * 0.07,  H * 0.058, '#d98c4a');
+    coralFingers(c,  W * 0.305, SY(0.305), H * 0.115, '#caa0d8');
+    coralBoulder(c,  W * 0.395, SY(0.395), W * 0.058, H * 0.050, '#5fae8a');
+    paintStaghorn(c, W * 0.475, SY(0.475), H * 0.095, '#b888c0');   // kept — branching white-tips
+    paintSeaFan(c,   W * 0.355, SY(0.355), H * 0.08,  '#7a4ea0');   // kept
+    rockBase(c,      W * 0.55,  SY(0.55),  W * 0.07,  H * 0.052, '#7c7064');
+    coralPolyPlate(c, W * 0.55, SY(0.55) - H * 0.012, H * 0.058, '#e0b85e');
+    coralFingers(c,  W * 0.635, SY(0.635), H * 0.12,  '#e07a86');
+    coralBoulder(c,  W * 0.715, SY(0.715), W * 0.058, H * 0.048, '#b56a9a');
+    rockBase(c,      W * 0.92,  SY(0.92),  W * 0.07,  H * 0.060, '#677787');
+    coralBoulder(c,  W * 0.92,  SY(0.92) - H * 0.02,  W * 0.065, H * 0.056, '#5fae8a');
+    // (sea stars are now drawn dynamically — see drawStars — so they can react to taps)
   }
 
   function paintOutcrop(c, o) {
@@ -389,6 +500,103 @@ window.BACKGROUNDS.reef = {
     c.beginPath();
     c.ellipse(x, y + 3, r, r * 0.16, 0, 0, TAU);
     c.fill();
+  }
+
+  // ── Polyp-built corals on rock bases (ported from reef_coral_lab) ─────────
+  // A single corallite: a domed bead with a lit cap and a tiny mouth pit.
+  function polyp(c, x, y, r, base, lit) {
+    c.fillStyle = base; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+    c.fillStyle = lit;  c.beginPath(); c.arc(x - r * 0.26, y - r * 0.3, r * 0.6, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(35, 22, 38, 0.32)'; c.beginPath(); c.arc(x, y, r * 0.26, 0, TAU); c.fill();
+  }
+  // A lumpy rock boulder — varied colour / height / shape, the base for corals.
+  function rockBase(c, cx, baseY, w, h, hue) {
+    c.fillStyle = 'rgba(12, 34, 52, 0.30)';
+    c.beginPath(); c.ellipse(cx, baseY + 3, w * 1.02, h * 0.16, 0, 0, TAU); c.fill();
+    const top = baseY - h;
+    c.beginPath(); c.moveTo(cx - w, baseY);
+    for (let i = 0; i <= 24; i++) {
+      const f = i / 24, px = cx - w + f * 2 * w;
+      const env = Math.sin(f * Math.PI);
+      const lump = Math.sin(f * 3.6 * Math.PI + cx) * 0.16 + Math.sin(f * 9 + cx) * 0.05;
+      const py = baseY - h * env * (0.82 + lump);
+      i === 0 ? c.moveTo(px, py) : c.lineTo(px, py);
+    }
+    c.lineTo(cx + w, baseY); c.closePath();
+    c.fillStyle = lg(c, cx, top, cx, baseY, [[0, shade(hue, 1.22)], [0.5, hue], [1, shade(hue, 0.58)]]);
+    c.fill();
+    c.save(); c.clip();
+    c.strokeStyle = 'rgba(20, 30, 40, 0.28)'; c.lineWidth = Math.max(1, w * 0.02); c.lineCap = 'round';
+    for (let k = 0; k < 5; k++) {
+      const rx0 = cx - w * 0.7 + Math.random() * w * 1.4;
+      c.beginPath(); c.moveTo(rx0, top + Math.random() * h * 0.3);
+      c.quadraticCurveTo(rx0 + (Math.random() - 0.5) * w * 0.5, baseY - h * 0.4, rx0 + (Math.random() - 0.5) * w * 0.6, baseY);
+      c.stroke();
+    }
+    for (let k = 0; k < 50; k++) {
+      const px = cx - w + Math.random() * 2 * w, py = top + Math.random() * h * 0.8;
+      c.fillStyle = `rgba(${180 + Math.random() * 50 | 0}, ${190 + Math.random() * 40 | 0}, ${170 + Math.random() * 40 | 0}, ${(0.05 + Math.random() * 0.1).toFixed(3)})`;
+      c.beginPath(); c.arc(px, py, 1 + Math.random() * 1.6, 0, TAU); c.fill();
+    }
+    c.restore();
+  }
+  // Massive boulder coral — a dome packed with hundreds of polyps.
+  function coralBoulder(c, cx, baseY, rx, ry, hue) {
+    coralShadow(c, cx, baseY, rx * 1.05);
+    const cy = baseY - ry;
+    c.fillStyle = rg(c, cx - rx * 0.3, cy - ry * 0.4, rx * 0.1, rx * 1.8, [[0, shade(hue, 1.1)], [1, shade(hue, 0.55)]]);
+    c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, TAU); c.fill();
+    const pr = Math.max(2.2, rx * 0.075);
+    c.save(); c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, TAU); c.clip();
+    for (let yy = -ry; yy <= ry * 0.55; yy += pr * 1.05) {
+      for (let xx = -rx; xx <= rx; xx += pr * 1.05) {
+        if ((xx / rx) ** 2 + (yy / ry) ** 2 > 1) continue;
+        const jx = (Math.random() - 0.5) * pr * 0.7, jy = (Math.random() - 0.5) * pr * 0.7;
+        const litAmt = 1 - (yy + ry) / (ry * 1.7);
+        polyp(c, cx + xx + jx, cy + yy + jy, pr * (0.8 + Math.random() * 0.4),
+              shade(hue, 0.74 + 0.32 * litAmt), shade(hue, 1.12 + 0.3 * litAmt));
+      }
+    }
+    c.restore();
+  }
+  // Branching/finger coral — knobbly fingers of stacked polyps, pale tips.
+  function coralFingers(c, cx, baseY, size, hue) {
+    coralShadow(c, cx, baseY, size * 0.7);
+    const fingers = 5 + (Math.random() * 3 | 0);
+    for (let f = 0; f < fingers; f++) {
+      const fx = cx + (f - (fingers - 1) / 2) * size * 0.26 + (Math.random() - 0.5) * size * 0.1;
+      const fh = size * (0.7 + Math.random() * 0.6);
+      const lean = (Math.random() - 0.5) * 0.5;
+      const pr = Math.max(2.2, size * 0.075);
+      const steps = Math.max(3, Math.round(fh / (pr * 0.95)));
+      for (let i = 0; i <= steps; i++) {
+        const u = i / steps;
+        const px = fx + Math.sin(u * 2 + f) * size * 0.05 + lean * u * size * 0.4;
+        const py = baseY - u * fh;
+        const r = pr * (1.05 - u * 0.35);
+        const tip = u > 0.82;
+        polyp(c, px, py, r, tip ? shade(hue, 1.25) : shade(hue, 0.85 + u * 0.15), tip ? '#f3efe0' : shade(hue, 1.2));
+        if (i % 3 === 0 && !tip) polyp(c, px + (i % 6 ? 1 : -1) * r * 0.9, py + r * 0.2, r * 0.7, shade(hue, 0.8), shade(hue, 1.1));
+      }
+    }
+  }
+  // Plate/cabbage coral — a disc tiled with concentric polyp rings.
+  function coralPolyPlate(c, cx, baseY, size, hue) {
+    coralShadow(c, cx, baseY, size * 1.1);
+    const cy = baseY - size * 0.5;
+    c.fillStyle = shade(hue, 0.6);
+    c.beginPath(); c.ellipse(cx, baseY - size * 0.1, size * 0.18, size * 0.2, 0, 0, TAU); c.fill();
+    c.fillStyle = lg(c, cx, cy - size * 0.2, cx, cy + size * 0.2, [[0, shade(hue, 1.18)], [1, shade(hue, 0.7)]]);
+    c.beginPath(); c.ellipse(cx, cy, size * 1.15, size * 0.4, 0, 0, TAU); c.fill();
+    const pr = Math.max(2, size * 0.06);
+    for (let ring = 1; ring <= 6; ring++) {
+      const rr = ring / 6, n = Math.round(8 * ring);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * TAU + ring;
+        polyp(c, cx + Math.cos(a) * size * 1.05 * rr, cy + Math.sin(a) * size * 0.36 * rr,
+              pr * (0.9 + Math.random() * 0.3), shade(hue, 0.82), shade(hue, 1.18));
+      }
+    }
   }
 
   // Staghorn acropora — branching antlers with pale growth tips
@@ -458,33 +666,52 @@ window.BACKGROUNDS.reef = {
       c.arc(x + Math.cos(a) * rr * size * 1.35, ty - size * 0.04 + Math.sin(a) * rr * size * 0.16, 0.9 + Math.random() * 0.8, 0, TAU);
       c.fill();
     }
+    // bright sunlit rim along the upper edge + a soft sheen
+    c.strokeStyle = 'rgba(255, 250, 235, 0.55)'; c.lineWidth = Math.max(1, size * 0.04);
+    c.beginPath(); c.ellipse(x, ty - size * 0.015, size * 1.46, size * 0.22, 0, Math.PI * 1.08, -Math.PI * 0.08); c.stroke();
+    c.fillStyle = 'rgba(255, 252, 240, 0.18)';
+    c.beginPath(); c.ellipse(x - size * 0.4, ty - size * 0.06, size * 0.55, size * 0.09, 0, 0, TAU); c.fill();
   }
 
-  // Brain coral — weathered dome scored with meandering valleys
+  // Brain coral — a lit dome densely scored with meandering ridges & valleys
   function paintBrain(c, x, base, size, col) {
-    coralShadow(c, x, base, size * 1.4);
-    c.fillStyle = rg(c, x - size * 0.5, base - size * 1.0, 0, size * 2.5, [
-      [0, shade(col, 1.22)],
-      [0.6, col],
-      [1, shade(col, 0.62)],
+    coralShadow(c, x, base, size * 1.5);
+    const cyc = base - size * 0.5, rx = size * 1.4, ry = size * 0.95;
+    c.save();
+    c.beginPath(); c.ellipse(x, cyc, rx, ry, 0, 0, TAU); c.clip();
+    // domed body, lit from the upper-left
+    c.fillStyle = rg(c, x - rx * 0.35, cyc - ry * 0.45, rx * 0.1, rx * 1.9, [
+      [0, shade(col, 1.34)], [0.45, shade(col, 1.06)], [1, shade(col, 0.56)],
     ]);
-    c.beginPath();
-    c.ellipse(x, base - size * 0.35, size * 1.4, size * 0.95, 0, 0, TAU);
-    c.fill();
-    c.strokeStyle = 'rgba(55, 50, 25, 0.45)';
-    c.lineWidth = Math.max(1.2, size * 0.05);
-    c.lineCap = 'round';
-    for (let i = 0; i < 6; i++) {
-      c.beginPath();
-      const cy = base - size * 0.95 + i * size * 0.22;
-      const span = Math.sqrt(Math.max(0, 1 - Math.pow((i - 2.5) / 3.2, 2)));
-      for (let j = 0; j <= 9; j++) {
-        const px = x - size * 1.25 * span + j * size * 0.28 * span;
-        const py = cy + Math.sin(j * 1.6 + i * 1.1) * size * 0.08;
-        j === 0 ? c.moveTo(px, py) : c.lineTo(px, py);
+    c.fillRect(x - rx, cyc - ry, rx * 2, ry * 2);
+    // meandering brain folds — a dark groove with a rounded lit ridge below it
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    const rows = 10;
+    for (let i = 0; i < rows; i++) {
+      const fy = cyc - ry * 0.9 + (i / (rows - 1)) * ry * 1.8;
+      const ph = i * 2.3, f1 = 0.055 + (i % 3) * 0.006;
+      const pts = [];
+      for (let j = 0; j <= 18; j++) {
+        const px = x - rx * 1.15 + (j / 18) * rx * 2.3;
+        const py = fy + Math.sin(px * f1 + ph) * size * 0.11 + Math.sin(px * 0.135 + ph * 1.6) * size * 0.045;
+        pts.push([px, py]);
       }
-      c.stroke();
+      c.strokeStyle = shade(col, 0.46); c.lineWidth = size * 0.055;     // dark valley
+      c.beginPath(); pts.forEach(([px, py], k) => k ? c.lineTo(px, py) : c.moveTo(px, py)); c.stroke();
+      c.strokeStyle = shade(col, 1.24); c.lineWidth = size * 0.03;      // rounded lit ridge
+      c.beginPath(); pts.forEach(([px, py], k) => k ? c.lineTo(px, py + size * 0.05) : c.moveTo(px, py + size * 0.05)); c.stroke();
     }
+    // soft top sheen + fine polyp speckle
+    c.fillStyle = 'rgba(255,252,240,0.16)';
+    c.beginPath(); c.ellipse(x - rx * 0.25, cyc - ry * 0.42, rx * 0.5, ry * 0.3, -0.3, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,248,235,0.14)';
+    for (let k = 0; k < 38; k++) {
+      c.beginPath(); c.arc(x + (Math.random() - 0.5) * rx * 1.9, cyc + (Math.random() - 0.5) * ry * 1.7, 0.7, 0, TAU); c.fill();
+    }
+    c.restore();
+    // ambient-occlusion rim
+    c.strokeStyle = shade(col, 0.5); c.lineWidth = Math.max(1, size * 0.035);
+    c.beginPath(); c.ellipse(x, cyc, rx, ry, 0, 0, TAU); c.stroke();
   }
 
   // Gorgonian sea fan — a lattice of fine branches in one plane
@@ -592,6 +819,11 @@ window.BACKGROUNDS.reef = {
       c.arc(fx, fy, 0.8, 0, TAU);
       c.fill();
     }
+    // glossy sheen over the cap crown
+    c.fillStyle = 'rgba(255, 252, 242, 0.20)';
+    c.beginPath();
+    c.ellipse(x - size * 0.18, base - size * 0.86, size * 0.55, size * 0.16, -0.1, 0, TAU);
+    c.fill();
   }
 
   // Plate (lettuce) coral on rock
@@ -610,6 +842,11 @@ window.BACKGROUNDS.reef = {
       c.lineWidth = 1;
       c.beginPath();
       c.ellipse(x, py + 1, pr * 0.94, pr * 0.27, 0, 0, Math.PI);
+      c.stroke();
+      c.strokeStyle = 'rgba(255, 248, 232, 0.5)';        // sunlit upper rim
+      c.lineWidth = Math.max(1, size * 0.03);
+      c.beginPath();
+      c.ellipse(x, py - size * 0.01, pr * 0.96, pr * 0.30, 0, Math.PI * 1.05, -Math.PI * 0.05);
       c.stroke();
     }
   }
@@ -717,10 +954,12 @@ window.BACKGROUNDS.reef = {
 
   // ── Particles ──────────────────────────────────────────────────────────────
   function drawMotes(t) {
+    const cur = curX(t);
     for (const p of MOTES) {
-      p.x += p.vx;
+      p.x += p.vx + cur * 0.35;          // the suspended sediment drifts with the current
       p.y += p.vy;
       if (p.x > W + 4) p.x = -4;
+      if (p.x < -4)    p.x = W + 4;       // can now flow either way
       if (p.y > H + 4) p.y = -4;
       const a = 0.05 + 0.07 * (0.5 + 0.5 * Math.sin(t * 1.1 + p.phase));
       ctx.fillStyle = `rgba(230, 245, 250, ${a.toFixed(3)})`;
@@ -755,6 +994,7 @@ window.BACKGROUNDS.reef = {
   // ── Flora ──────────────────────────────────────────────────────────────────
   function drawKelp(t) {
     ctx.lineCap = 'round';
+    const cur = curX(t);
     for (const s of KELP) {
       const baseY = sandTopAt(s.x) + 4;
       const segs = 13;
@@ -767,7 +1007,8 @@ window.BACKGROUNDS.reef = {
       for (let i = 1; i <= segs; i++) {
         const fr = i / segs;
         const y = baseY - s.h * fr;
-        const sway = Math.sin(t * 1.1 + s.x * 0.008 + i * 0.32) * fr * 20;
+        // current sets the lean (all kelp bows the same way); a small ripple on top
+        const sway = (cur + Math.sin(t * 1.1 + s.x * 0.008 + i * 0.32) * 0.32) * fr * 24;
         pts.push([s.x + sway, y]);
         ctx.lineTo(s.x + sway, y);
       }
@@ -791,16 +1032,18 @@ window.BACKGROUNDS.reef = {
 
   function drawGrass(t) {
     ctx.lineCap = 'round';
+    const cur = curX(t);
     for (const g of GRASS) {
       const baseY = sandTopAt(g.x) + 3;
       for (const b of g.blades) {
-        const sway = Math.sin(t * 1.2 + b.phase) * b.len * 0.18;
+        // tip leans with the current (dominant) plus a small per-blade ripple
+        const sway = (cur + Math.sin(t * 1.2 + b.phase) * 0.28) * b.len * 0.26;
         ctx.strokeStyle = b.hue;
         ctx.lineWidth = b.w;
         ctx.beginPath();
         ctx.moveTo(g.x + b.dx, baseY);
         ctx.quadraticCurveTo(
-          g.x + b.dx + b.lean * b.len * 0.4,
+          g.x + b.dx + b.lean * b.len * 0.4 + sway * 0.45,
           baseY - b.len * 0.6,
           g.x + b.dx + b.lean * b.len + sway,
           baseY - b.len
@@ -808,6 +1051,641 @@ window.BACKGROUNDS.reef = {
         ctx.stroke();
       }
     }
+  }
+
+  // ── Seahorse ─────────────────────────────────────────────────────────────
+  // Clings to the seagrass by a curled prehensile tail and sways with the
+  // current; every ~12–22 s it lets go and swims upright to another grass
+  // cluster, tail uncurling, then re-grips.
+  function updateSeahorse(sh, t) {                      // drifts the whole screen, up & down
+    sh.x += sh.dir * sh.spd;
+    if (sh.x < W * 0.05) sh.dir = 1;
+    if (sh.x > W * 0.95) sh.dir = -1;
+    sh.y += sh.vy;
+    if (sh.y < H * 0.10) sh.vy = Math.abs(sh.vy);
+    if (sh.y > H * 0.84) sh.vy = -Math.abs(sh.vy);
+    if (Math.random() < 0.01) sh.vy = (Math.random() - 0.5) * 0.6;   // occasionally change drift
+  }
+  function drawSeahorse(sh, t) {
+    const S = sh.s, cur = curX(t);
+    let yOff = Math.sin(t * 1.6 + sh.phase) * S * 0.18, curlTurns = 1.25, lean = 0, finRate = 13;
+    if (sh.reactT0 != null) {                           // tapped → a quick startled hop + tilt
+      const re = (t - sh.reactT0) / 0.7;
+      if (re >= 1) sh.reactT0 = null;
+      else { const k = Math.sin(Math.min(1, re) * Math.PI); yOff -= k * S * 1.3; lean = sh.dir * 0.22 * k; finRate = 22; }
+    }
+    const baseY = sh.y + yOff;
+    ctx.save();
+    ctx.translate(sh.x, baseY);
+    ctx.rotate(cur * 0.12 + Math.sin(t * 1.3 + sh.phase) * 0.05 + lean);
+    ctx.scale(sh.dir, 1);
+
+    const body = sh.hue, out = '#C8861F', belly = '#FFD06A';
+
+    // curled prehensile tail — a tapering spiral (uncurls while swimming)
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = out;
+    const cxT = -0.02 * S, cyT = 0.30 * S;
+    let prev = null;
+    for (let i = 0; i <= 24; i++) {
+      const f = i / 24;
+      const ang = -Math.PI * 0.5 + f * curlTurns * TAU;
+      const rr = 0.30 * S * (1 - 0.64 * f);
+      const x = cxT + Math.cos(ang) * rr, y = cyT + Math.sin(ang) * rr;
+      if (prev) {
+        ctx.lineWidth = Math.max(1, 0.15 * S * (1 - 0.7 * f));
+        ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(x, y); ctx.stroke();
+      }
+      prev = { x, y };
+    }
+
+    // dorsal fin — translucent, on the back, fluttering
+    const flut = Math.sin(t * finRate + sh.phase) * 0.5;
+    ctx.fillStyle = 'rgba(255, 224, 138, 0.7)';
+    ctx.beginPath();
+    ctx.moveTo(-0.16 * S, -0.22 * S);
+    ctx.quadraticCurveTo((-0.44 + flut * 0.06) * S, -0.40 * S, -0.18 * S, -0.58 * S);
+    ctx.quadraticCurveTo(-0.32 * S, -0.40 * S, -0.16 * S, -0.22 * S);
+    ctx.closePath(); ctx.fill();
+
+    // body + horse-like head silhouette (muzzle, brow "stop", crown, spiny back)
+    ctx.beginPath();
+    ctx.moveTo(0.10 * S, 0);
+    ctx.quadraticCurveTo(0.32 * S, -0.16 * S, 0.30 * S, -0.40 * S);   // belly bulge
+    ctx.quadraticCurveTo(0.28 * S, -0.58 * S, 0.20 * S, -0.70 * S);   // chest → throat
+    ctx.quadraticCurveTo(0.26 * S, -0.78 * S, 0.36 * S, -0.80 * S);   // lower jaw
+    ctx.lineTo(0.60 * S, -0.85 * S);                                  // muzzle underside → tip
+    ctx.lineTo(0.58 * S, -0.91 * S);                                  // snout tip (tubular mouth)
+    ctx.lineTo(0.40 * S, -0.92 * S);                                  // muzzle top
+    ctx.quadraticCurveTo(0.31 * S, -0.90 * S, 0.30 * S, -0.95 * S);   // the brow "stop" dip
+    ctx.quadraticCurveTo(0.26 * S, -1.06 * S, 0.12 * S, -1.04 * S);   // rounded crown
+    ctx.quadraticCurveTo(-0.04 * S, -1.02 * S, -0.06 * S, -0.86 * S); // nape
+    ctx.quadraticCurveTo(-0.16 * S, -0.62 * S, -0.16 * S, -0.42 * S); // upper back
+    ctx.quadraticCurveTo(-0.20 * S, -0.26 * S, -0.12 * S, -0.12 * S); // back bulge
+    ctx.quadraticCurveTo(-0.10 * S, -0.04 * S, 0.10 * S, 0);          // down to base
+    ctx.closePath();
+    ctx.fillStyle = body;
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, 0.028 * S);
+    ctx.strokeStyle = out;
+    ctx.stroke();
+
+    // little spiny bumps (חודחודים) marching down the back ridge
+    ctx.fillStyle = body;
+    ctx.strokeStyle = out;
+    ctx.lineWidth = Math.max(0.6, 0.016 * S);
+    const ridge = [[-0.05, -0.84], [-0.11, -0.68], [-0.155, -0.52], [-0.17, -0.36], [-0.145, -0.22]];
+    for (const [rx, ry] of ridge) {
+      ctx.beginPath();
+      ctx.moveTo(rx * S, (ry + 0.05) * S);
+      ctx.lineTo((rx - 0.11) * S, (ry - 0.01) * S);      // spike points back/out
+      ctx.lineTo(rx * S, (ry - 0.06) * S);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+
+    // lighter belly highlight
+    ctx.fillStyle = belly;
+    ctx.beginPath();
+    ctx.moveTo(0.12 * S, -0.04 * S);
+    ctx.quadraticCurveTo(0.26 * S, -0.22 * S, 0.22 * S, -0.42 * S);
+    ctx.quadraticCurveTo(0.16 * S, -0.28 * S, 0.08 * S, -0.10 * S);
+    ctx.closePath(); ctx.fill();
+
+    // segment bands across the body
+    ctx.strokeStyle = rgba('#C8861F', 0.5);
+    ctx.lineWidth = Math.max(0.6, 0.016 * S);
+    for (let i = 1; i <= 4; i++) {
+      const fy = -i * 0.12 * S;
+      ctx.beginPath();
+      ctx.moveTo(-0.12 * S, fy);
+      ctx.quadraticCurveTo(0.06 * S, fy - 0.02 * S, 0.24 * S, fy + 0.03 * S);
+      ctx.stroke();
+    }
+
+    // coronet on the crown — a few upright spikes
+    ctx.fillStyle = body; ctx.strokeStyle = out;
+    for (let i = 0; i < 3; i++) {
+      const bx = (0.04 + i * 0.07) * S, by = -1.05 * S;
+      ctx.beginPath();
+      ctx.moveTo(bx - 0.03 * S, by + 0.04 * S);
+      ctx.lineTo(bx, by - 0.07 * S);
+      ctx.lineTo(bx + 0.03 * S, by + 0.04 * S);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+
+    // cheek + snout shading and the tubular mouth
+    ctx.strokeStyle = rgba('#C8861F', 0.6);
+    ctx.lineWidth = Math.max(0.6, 0.016 * S);
+    ctx.beginPath(); ctx.moveTo(0.40 * S, -0.88 * S); ctx.lineTo(0.57 * S, -0.88 * S); ctx.stroke();
+
+    // eye on the head
+    ctx.fillStyle = '#2a1a08';
+    ctx.beginPath(); ctx.arc(0.26 * S, -0.84 * S, 0.05 * S, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(0.275 * S, -0.855 * S, 0.018 * S, 0, TAU); ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ── Hidden flatfish (sole) + sand puffs ──────────────────────────────────
+  // Lies camouflaged in the open sand; a click on the sand makes it bolt out in
+  // a puff of disturbed sand, swim a short hop, and re-bury somewhere else.
+  function spawnSandPuff(x, y, scale) {
+    const n = 5 + (Math.random() * 4 | 0);
+    for (let i = 0; i < n; i++) {
+      FXSAND.push({
+        x: x + (Math.random() - 0.5) * FLATFISH.s * 1.2,
+        y: y + (Math.random() - 0.5) * FLATFISH.s * 0.5,
+        r0: (3 + Math.random() * 4) * scale,
+        vx: (Math.random() - 0.5) * 26,
+        vy: -(8 + Math.random() * 16) * scale,
+        t0: lastT, life: 0.7 + Math.random() * 0.5,
+      });
+    }
+  }
+  function flatfishSandSpot() {
+    const fx = W * (0.15 + Math.random() * 0.7);
+    return { x: fx, y: sandTopAt(fx) + FLATFISH.s * 0.32 };
+  }
+  function startFlatfishDart(t) {
+    const f = FLATFISH;
+    if (f.state !== 'buried' || t < f.cool) return;
+    spawnSandPuff(f.x, f.y - f.s * 0.1, 1);              // bursts from its hiding spot
+    let spot = flatfishSandSpot(), tries = 0;
+    while (Math.abs(spot.x - f.x) < W * 0.18 && tries++ < 6) spot = flatfishSandSpot();
+    f.fromX = f.x; f.fromY = f.y; f.toX = spot.x; f.toY = spot.y;
+    f.state = 'dart'; f.t0 = t; f.dur = 1.2 + Math.random() * 0.5;
+  }
+  function updateFlatfish(t) {
+    const f = FLATFISH;
+    if (f.state === 'buried') {                          // also moves on its own every few minutes
+      if (f.nextAuto == null) f.nextAuto = t + 120 + Math.random() * 120;
+      if (t >= f.nextAuto && t >= f.cool) { startFlatfishDart(t); f.nextAuto = null; }
+      return;
+    }
+    const p = (t - f.t0) / f.dur;
+    if (p >= 1) {
+      f.state = 'buried'; f.x = f.toX; f.y = f.toY; f.cool = t + 0.8;
+      spawnSandPuff(f.x, f.y - f.s * 0.1, 0.7);          // settling puff as it re-buries
+      return;
+    }
+    const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;   // ease in-out
+    f.x = f.fromX + (f.toX - f.fromX) * e;
+    f.y = f.fromY + (f.toY - f.fromY) * e - Math.sin(p * Math.PI) * f.s * 1.7;  // hops off the sand
+  }
+  function drawFlatfish(t) {
+    const f = FLATFISH, s = f.s;
+    const darting = f.state === 'dart';
+    const alpha = darting ? 1 : 0.5;                     // camouflaged when at rest
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    let undul = 0;
+    if (darting) {
+      ctx.scale(f.toX >= f.fromX ? 1 : -1, 1);           // face travel direction
+      undul = Math.sin(t * 14 + f.phase);
+    }
+    ctx.globalAlpha = alpha;
+    // flat leaf-shaped body — snout at the right, tail to the left.
+    // brighter/contrastier while darting so the motion reads; sandy at rest.
+    ctx.fillStyle = darting ? '#dcae5e' : '#c2a474';
+    ctx.beginPath();
+    ctx.moveTo(s * 0.95, 0);
+    ctx.quadraticCurveTo(s * 0.3, -s * 0.5, -s * 0.6, -s * 0.22 + undul * s * 0.14);
+    ctx.quadraticCurveTo(-s * 1.05, 0, -s * 0.6, s * 0.22 + undul * s * 0.14);
+    ctx.quadraticCurveTo(s * 0.3, s * 0.5, s * 0.95, 0);
+    ctx.closePath();
+    ctx.fill();
+    // wavy fin fringe
+    ctx.strokeStyle = darting ? 'rgba(120,86,40,0.9)' : 'rgba(150,120,80,0.5)';
+    ctx.lineWidth = s * (darting ? 0.06 : 0.05);
+    ctx.stroke();
+    // mottled spots for camouflage
+    ctx.fillStyle = darting ? 'rgba(120,95,60,0.5)' : 'rgba(120,95,60,0.42)';
+    for (const [sx, sy, sr] of [[0.1, -0.12, 0.12], [-0.25, 0.1, 0.1], [0.35, 0.18, 0.08], [-0.45, -0.08, 0.07]]) {
+      ctx.beginPath(); ctx.ellipse(sx * s, sy * s, sr * s, sr * s * 0.8, 0, 0, TAU); ctx.fill();
+    }
+    // both eyes on the up-facing side (flounder), near the head
+    ctx.fillStyle = '#2a1d0c';
+    ctx.beginPath(); ctx.arc(s * 0.46, -s * 0.12, s * 0.07, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(s * 0.46, s * 0.06, s * 0.07, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+  function drawFxSand(t) {
+    for (let i = FXSAND.length - 1; i >= 0; i--) {
+      const p = FXSAND[i];
+      const age = t - p.t0;
+      if (age > p.life) { FXSAND.splice(i, 1); continue; }
+      const q = age / p.life;
+      const x = p.x + p.vx * age;
+      const y = p.y + p.vy * age + 70 * age * age;        // puff up, then settle back
+      const r = p.r0 * (1 + q * 2.2);
+      ctx.fillStyle = `rgba(198, 170, 122, ${(0.5 * (1 - q)).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    }
+  }
+
+  // ── Twinkle sparkles (a 4-point glint with a soft glow) ──────────────────
+  function drawSparkleShape(x, y, s, a, rot) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = rg(ctx, 0, 0, 0, s * 1.7, [[0, 'rgba(255,255,255,0.85)'], [1, 'rgba(255,255,255,0)']]);
+    ctx.beginPath(); ctx.arc(0, 0, s * 1.7, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const ang = i / 8 * TAU - Math.PI / 2, rr = i % 2 === 0 ? s : s * 0.32;
+      const px = Math.cos(ang) * rr, py = Math.sin(ang) * rr;
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+  function spawnSparkles(x, y, n) {
+    const m = Math.min(W, H);
+    for (let i = 0; i < n; i++)
+      FXSPARK.push({ x: x + (Math.random() - 0.5) * m * 0.13, y: y + (Math.random() - 0.5) * m * 0.10,
+                     born: lastT, life: 0.6 + Math.random() * 0.55, s: 2.5 + Math.random() * 3.5, rot: Math.random() * TAU });
+  }
+  function drawFxSpark(t) {
+    for (let i = FXSPARK.length - 1; i >= 0; i--) {
+      const p = FXSPARK[i], age = t - p.born;
+      if (age > p.life) { FXSPARK.splice(i, 1); continue; }
+      const env = Math.sin((age / p.life) * Math.PI);
+      drawSparkleShape(p.x, p.y, p.s * (0.5 + 0.7 * env), env, p.rot + age * 4);
+    }
+  }
+
+  // ── Jellyfish (a drifting, pulsing group) ────────────────────────────────
+  function drawOneJelly(x, y, s, pulse, hue, t, ph, flash) {
+    flash = flash || 0;
+    const bw = s * (1.1 - 0.12 * pulse), bh = s * (0.75 + 0.18 * pulse);  // bell squashes as it pulses
+    ctx.save();
+    ctx.translate(x, y);
+    // soft glow — flares bright white when the jelly is tapped (flash)
+    const gR = bw * (1.9 + flash * 1.6);
+    ctx.fillStyle = rg(ctx, 0, -bh * 0.2, 0, gR, [
+      [0, flash > 0.04 ? `rgba(255,255,255,${(0.2 + 0.6 * flash).toFixed(3)})` : rgba(hue, 0.16)],
+      [1, rgba(hue, 0)]]);
+    ctx.beginPath(); ctx.arc(0, -bh * 0.2, gR, 0, TAU); ctx.fill();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = rgba(hue, 0.45);                                      // trailing tentacles
+    ctx.lineWidth = Math.max(1, s * 0.06);
+    const nT = 5;
+    for (let i = 0; i < nT; i++) {
+      const tx0 = -bw * 0.6 + (i / (nT - 1)) * bw * 1.2, len = s * (2.2 + (i % 2) * 0.9);
+      ctx.beginPath(); ctx.moveTo(tx0, 0);
+      for (let k = 1; k <= 4; k++) { const f = k / 4; ctx.lineTo(tx0 + Math.sin(t * 3 + ph + i + f * 4) * s * 0.4 * f, f * len); }
+      ctx.stroke();
+    }
+    ctx.strokeStyle = rgba(hue, 0.62);                                      // thicker oral arms
+    ctx.lineWidth = Math.max(1.5, s * 0.12);
+    for (let i = 0; i < 3; i++) {
+      const tx0 = (-1 + i) * bw * 0.28;
+      ctx.beginPath(); ctx.moveTo(tx0, 0);
+      for (let k = 1; k <= 3; k++) { const f = k / 3; ctx.lineTo(tx0 + Math.sin(t * 2.5 + ph + i + f * 3) * s * 0.3 * f, f * s * 1.3); }
+      ctx.stroke();
+    }
+    ctx.fillStyle = rgba(hue, 0.5 + 0.35 * flash);                         // translucent bell (brighter when flashing)
+    ctx.beginPath();
+    ctx.ellipse(0, 0, bw, bh, 0, Math.PI, TAU);
+    const sc = 5;
+    for (let i = 1; i <= sc; i++) { const fx = bw - (i / sc) * 2 * bw; ctx.quadraticCurveTo(fx + bw / sc, bh * 0.34, fx, 0); }
+    ctx.closePath(); ctx.fill();
+    if (flash > 0.04) {                                                    // white flash overlay on the bell
+      ctx.fillStyle = `rgba(255,255,255,${(0.7 * flash).toFixed(3)})`;
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';                              // inner highlight
+    ctx.beginPath(); ctx.ellipse(-bw * 0.25, -bh * 0.3, bw * 0.3, bh * 0.4, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = rgba(hue, 0.7); ctx.lineWidth = Math.max(1, s * 0.05);  // rim
+    ctx.beginPath(); ctx.ellipse(0, 0, bw, bh, 0, Math.PI, TAU); ctx.stroke();
+    ctx.restore();
+  }
+  function drawJellies(t) {
+    const cur = curX(t), pred = giantNear();
+    for (const j of JELLIES) {
+      const margin = j.s * 4;
+      if (j.parked) {                                  // hid off-screen while a giant passed
+        if (!pred) { j.parked = false; j.x = j.vx > 0 ? -margin : W + margin; j.y = H * (0.22 + Math.random() * 0.34); }
+        else { continue; }
+      }
+      j.x += j.vx * (pred ? 4.5 : 1) + cur * 0.3;       // pulse hard away from a giant
+      // drift off the screen, then re-enter from the far side at a fresh depth
+      if ((j.vx > 0 && j.x > W + margin) || (j.vx < 0 && j.x < -margin)) {
+        if (pred) { j.parked = true; continue; }        // stay hidden until it leaves
+        j.x = j.vx > 0 ? -margin : W + margin;
+        j.y = H * (0.22 + Math.random() * 0.34);
+        j.phase = Math.random() * TAU;
+      }
+      const pulse = 0.5 + 0.5 * Math.sin(t * j.pulseSpd + j.phase);
+      const y = j.y + Math.sin(t * j.pulseSpd + j.phase - 0.6) * j.s * 0.5 + Math.sin(t * 0.5 + j.phase) * 8;
+      let flash = 0;
+      if (j.flashT != null) {
+        const age = t - j.flashT;
+        if (age > 0.8) j.flashT = null;
+        else flash = Math.abs(Math.sin(age * 16)) * (1 - age / 0.8);      // a few quick blinks, fading
+      }
+      j.drawY = y;                                                        // remember for click hit-testing
+      drawOneJelly(j.x, y, j.s, pulse, j.hue, t, j.phase, flash);
+    }
+  }
+
+  // ── Cleaning station ─────────────────────────────────────────────────────
+  function spawnCleanClient(t) {
+    const cs = CLEANSTATION;
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const ex = dir > 0 ? -Math.min(W, H) * 0.12 : W + Math.min(W, H) * 0.12;
+    const kind = ['tang', 'tang', 'dolphin', 'shark'][Math.random() * 4 | 0];   // tang most common
+    cs.client = {
+      kind, dir, state: 'in', t0: t, x: ex, y: cs.y + (Math.random() - 0.5) * H * 0.05,
+      entryX: ex, outFrom: 0, dur: 0, s: Math.min(W, H) * (kind === 'tang' ? 0.05 : 0.06), gape: 0,
+      phase: Math.random() * TAU, col: ['#A65E4A', '#8C7A48', '#6E8A6A'][Math.random() * 3 | 0],
+      cleanFrac: 0, sparkled: false,                     // parasite spots get picked off, then it sparkles
+      spots: Array.from({ length: 5 + (Math.random() * 4 | 0) }, () => ({
+        ox: (Math.random() - 0.5) * 1.3, oy: (Math.random() - 0.5) * 0.8,
+        r: 0.05 + Math.random() * 0.05, off: Math.random(),
+      })),
+    };
+    cs.nextAt = null;
+  }
+  function updateCleanStation(t, dt) {
+    const cs = CLEANSTATION;
+    if (!cs.client) {
+      if (cs.nextAt == null) cs.nextAt = t + 285 + Math.random() * 30;   // a client visits about once every 5 minutes
+      if (t >= cs.nextAt) spawnCleanClient(t);
+    } else {
+      const cl = cs.client;
+      if (cl.state === 'in') {
+        const p = (t - cl.t0) / 2.0;
+        const e = p < 1 ? p * p * (3 - 2 * p) : 1;
+        cl.x = cl.entryX + (cs.x - cl.entryX) * e;
+        cl.y += (cs.y - cl.y) * 0.08;
+        if (p >= 1) { cl.state = 'clean'; cl.t0 = t; cl.dur = 5 + Math.random() * 3; }
+      } else if (cl.state === 'clean') {
+        cl.x += (cs.x - cl.x) * 0.1;
+        cl.y += (cs.y - cl.y) * 0.1 + Math.sin(t * 1.5 + cl.phase) * 0.15;
+        cl.gape = 0.5 + 0.5 * Math.sin(t * 2.4);          // mouth opens & closes
+        cl.cleanFrac = Math.min(1, (t - cl.t0) / (cl.dur * 0.8));  // spots picked off over time
+        if (cl.cleanFrac >= 1 && !cl.sparkled) { spawnSparkles(cl.x, cl.y, 9); cl.sparkled = true; }  // all clean → sparkle
+        if ((t - cl.t0) / cl.dur >= 1) { cl.state = 'out'; cl.t0 = t; cl.outFrom = cl.x; cl.gape = 0; }
+      } else {                                            // out — swims on the way it came
+        const p = (t - cl.t0) / 2.4;
+        const target = cl.dir > 0 ? W + Math.min(W, H) * 0.14 : -Math.min(W, H) * 0.14;
+        cl.x = cl.outFrom + (target - cl.outFrom) * (p * p);
+        if (p >= 1) { cs.client = null; cs.nextAt = t + 285 + Math.random() * 30; }   // next visit ~5 minutes later
+      }
+    }
+    // the signboard shows while a client is visiting, fades out when it leaves
+    const want = (cs.client && cs.client.state !== 'out') ? 1 : 0;
+    cs.signF += (want - cs.signF) * 0.08;
+  }
+  // a little signboard reading "תַּחֲנַת נִיקּוּי" (Cleaning Station) on a post
+  function drawCleanSign(t, f) {
+    const cs = CLEANSTATION, m = Math.min(W, H);
+    const bx = cs.x + m * 0.17, groundY = sandTopAt(bx) + 4;
+    const postH = m * 0.14, boardW = m * 0.27, boardH = m * 0.072;
+    ctx.save();
+    ctx.globalAlpha = f;
+    ctx.translate(bx, groundY);
+    ctx.rotate(Math.sin(t * 1.2) * 0.02);
+    ctx.strokeStyle = '#7a5230'; ctx.lineWidth = Math.max(2, m * 0.012); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -postH); ctx.stroke();
+    const by = -postH - boardH, x0 = -boardW / 2, r = Math.max(3, m * 0.012);
+    ctx.fillStyle = '#f3e1b8'; ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = Math.max(1.5, m * 0.006);
+    ctx.beginPath();
+    ctx.moveTo(x0 + r, by); ctx.lineTo(x0 + boardW - r, by);
+    ctx.quadraticCurveTo(x0 + boardW, by, x0 + boardW, by + r);
+    ctx.lineTo(x0 + boardW, by + boardH - r);
+    ctx.quadraticCurveTo(x0 + boardW, by + boardH, x0 + boardW - r, by + boardH);
+    ctx.lineTo(x0 + r, by + boardH);
+    ctx.quadraticCurveTo(x0, by + boardH, x0, by + boardH - r);
+    ctx.lineTo(x0, by + r); ctx.quadraticCurveTo(x0, by, x0 + r, by);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#5a3a1c';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'rtl';
+    ctx.font = `700 ${Math.round(boardH * 0.46)}px 'Nunito','Arial Hebrew',sans-serif`;
+    ctx.fillText('תַּחֲנַת נִיקּוּי', 0, by + boardH * 0.54);
+    // carnival-marquee bulbs chasing around the board edge
+    const bulbs = [], nx = 7, ny = 2, cols = ['#FFE066', '#FF6F91', '#7DE0FF', '#9BE88B'];
+    for (let i = 0; i < nx; i++) { const fx = x0 + (i / (nx - 1)) * boardW; bulbs.push([fx, by]); bulbs.push([fx, by + boardH]); }
+    for (let j = 1; j <= ny; j++) { const fy = by + (j / (ny + 1)) * boardH; bulbs.push([x0, fy]); bulbs.push([x0 + boardW, fy]); }
+    const br = Math.max(1.5, boardH * 0.13);
+    bulbs.forEach(([bxp, byp], i) => {
+      const lit = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 6 - i * 0.9));   // chase/blink
+      ctx.fillStyle = `rgba(255,250,210,${(0.25 * lit).toFixed(3)})`;       // glow
+      ctx.beginPath(); ctx.arc(bxp, byp, br * 2.2, 0, TAU); ctx.fill();
+      ctx.globalAlpha = f * (0.4 + 0.6 * lit);
+      ctx.fillStyle = cols[i % cols.length];
+      ctx.beginPath(); ctx.arc(bxp, byp, br, 0, TAU); ctx.fill();
+      ctx.globalAlpha = f;
+    });
+    ctx.restore();
+  }
+  // parasite spots the cleaner picks off — drawn in a fish's own body-local
+  // frame (so they ride along), vanishing one by one as f.cleanFrac rises
+  function bodySpots(f) {
+    if (!f.cleanSpots) return;
+    ctx.fillStyle = 'rgba(30, 24, 18, 0.72)';
+    for (const sp of f.cleanSpots) {
+      if (sp.off < (f.cleanFrac || 0)) continue;
+      ctx.beginPath(); ctx.ellipse(sp.ox * f.s, sp.oy * f.s, sp.r * f.s, sp.r * f.s, 0, 0, TAU); ctx.fill();
+    }
+  }
+  // the cleaning "client" — reuses the SAME art as the free-swimming reef
+  // creatures (a blue tang / a dolphin / a shark), hovering to be cleaned, with
+  // parasite spots that the cleaner picks off
+  function drawClient(cl, t) {
+    const common = { vx: cl.dir * 0.001, s: cl.s, phase: cl.phase, rollT: null, dashT: null,
+                     cleanSpots: cl.spots, cleanFrac: cl.cleanFrac };
+    if (cl.kind === 'dolphin')
+      drawDolphin({ ...common, x: cl.x, baseY: cl.y, nextBreathAt: 1e9, breathT0: null }, t);
+    else if (cl.kind === 'shark')
+      drawShark({ ...common, x: cl.x, y: cl.y, hue: '#8d9aa6' }, t);
+    else                                              // 'tang' — Dory template, recoloured purple/orange
+      drawDory({ ...common, x: cl.x, baseY: cl.y, buddy: null,
+                 pal: { body: ['#8a4fc4', '#6e37a8', '#4f2480'], tail: '#F08A2C',
+                        ink: '#241433', window: '#a96fe0', pec: 'rgba(240,138,44,0.9)' } }, t);
+  }
+  // cleaner wrasse — built on the clownfish (Nemo) rig but recoloured: a blue
+  // body with bold horizontal lateral stripes
+  function drawCleanerFish(x, y, dir, t, ph) {
+    const s = Math.max(5, Math.min(W, H) * 0.016);
+    const wag = Math.sin(t * 10 + ph) * 0.4;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(dir, 1);
+    const BLUE = '#5BB6E6', BODYLO = '#3E92C8', DARK = '#12303f';
+
+    // rounded caudal fin
+    ctx.save();
+    ctx.translate(-s * 0.9, 0);
+    ctx.rotate(wag * 0.4);
+    ctx.fillStyle = rgba(BLUE, 0.92); ctx.strokeStyle = DARK; ctx.lineWidth = s * 0.04;
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 0.14);
+    ctx.quadraticCurveTo(-s * 0.5, -s * 0.3, -s * 0.56, 0);
+    ctx.quadraticCurveTo(-s * 0.5, s * 0.3, 0, s * 0.14);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    // slim body
+    ctx.fillStyle = lg(ctx, 0, -s * 0.5, 0, s * 0.5, [[0, BLUE], [0.6, BODYLO], [1, '#2f7aa8']]);
+    ctx.beginPath(); ctx.ellipse(0, 0, s * 1.05, s * 0.5, 0, 0, TAU); ctx.fill();
+
+    // low dorsal + anal fins
+    ctx.fillStyle = rgba(BLUE, 0.95); ctx.strokeStyle = DARK; ctx.lineWidth = s * 0.035;
+    ctx.beginPath();
+    ctx.moveTo(s * 0.5, -s * 0.4); ctx.quadraticCurveTo(0, -s * 0.66, -s * 0.55, -s * 0.4);
+    ctx.quadraticCurveTo(-s * 0.1, -s * 0.46, s * 0.5, -s * 0.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(s * 0.4, s * 0.4); ctx.quadraticCurveTo(-s * 0.05, s * 0.66, -s * 0.5, s * 0.4);
+    ctx.quadraticCurveTo(-s * 0.1, s * 0.46, s * 0.4, s * 0.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    // horizontal stripes (clipped to the body) — bold midline one widening to the
+    // tail, plus a thinner lower stripe
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(0, 0, s * 1.05, s * 0.5, 0, 0, TAU); ctx.clip();
+    ctx.fillStyle = DARK;
+    ctx.beginPath();
+    ctx.moveTo(s * 1.05, -s * 0.05);
+    ctx.lineTo(-s * 1.15, -s * 0.2);
+    ctx.lineTo(-s * 1.15, s * 0.18);
+    ctx.lineTo(s * 1.05, s * 0.07);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = rgba(DARK, 0.65);
+    ctx.fillRect(-s * 1.15, s * 0.26, s * 2.2, s * 0.07);
+    ctx.restore();
+
+    // pectoral fin
+    ctx.save();
+    ctx.translate(s * 0.25, s * 0.06);
+    ctx.rotate(0.4 + wag * 0.5);
+    ctx.fillStyle = 'rgba(150, 215, 245, 0.85)'; ctx.strokeStyle = rgba(DARK, 0.6); ctx.lineWidth = s * 0.025;
+    ctx.beginPath(); ctx.ellipse(0, s * 0.13, s * 0.09, s * 0.2, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    // big sweet eye with a sparkle (over the stripe)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(s * 0.62, -s * 0.05, s * 0.15, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#0f2230';
+    ctx.beginPath(); ctx.arc(s * 0.66, -s * 0.04, s * 0.085, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(s * 0.69, -s * 0.08, s * 0.03, 0, TAU); ctx.fill();
+    // little smile
+    ctx.strokeStyle = '#0e2433'; ctx.lineWidth = s * 0.045; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(s * 0.98, s * 0.07); ctx.quadraticCurveTo(s * 0.84, s * 0.17, s * 0.66, s * 0.16); ctx.stroke();
+    ctx.restore();
+  }
+  function drawCleanStation(t) {
+    const cs = CLEANSTATION;
+    if (cs.client) drawClient(cs.client, t);
+    // the cleaner: weaves around a visiting client, else hovers over the station
+    let cx, cy, cdir;
+    const c = cs.client;
+    if (c && c.state === 'clean') {
+      const a = t * 2.2 + cs.cphase;
+      cx = c.x + Math.cos(a) * c.s * 0.95 * c.dir;
+      cy = c.y + Math.sin(t * 3.1 + cs.cphase) * c.s * 0.5;
+      cdir = Math.cos(a) >= 0 ? c.dir : -c.dir;
+    } else {
+      cx = cs.x + Math.sin(t * 1.5 + cs.cphase) * 18;
+      cy = cs.y - 4 + Math.sin(t * 2.1 + cs.cphase) * 10;
+      cdir = Math.cos(t * 1.5 + cs.cphase) >= 0 ? 1 : -1;
+    }
+    drawCleanerFish(cx, cy, cdir, t, cs.cphase);
+  }
+
+  // ── Coral spawning (rare) ────────────────────────────────────────────────
+  function updateCoralSpawn(t, dt) {
+    const sp = SPAWN;
+    if (sp.nextAt == null) sp.nextAt = t + 40 + Math.random() * 50;   // first event after a while
+    if (!sp.active && t >= sp.nextAt) { sp.active = true; sp.t0 = t; }
+    if (sp.active) {
+      if (t - sp.t0 > 5.5) { sp.active = false; sp.nextAt = t + 150 + Math.random() * 150; }
+      else if (sp.parts.length < 150) {                 // release bundles from the coral heads
+        for (let i = 0; i < 3; i++) {
+          const pt = sp.points[(Math.random() * sp.points.length) | 0];
+          sp.parts.push({
+            x: pt.x + (Math.random() - 0.5) * W * 0.05, y: pt.y - Math.random() * 6,
+            vx: (Math.random() - 0.5) * 6, vy: -(34 + Math.random() * 20),
+            r: 1 + Math.random() * 1.8, ph: Math.random() * TAU, born: t, life: 7 + Math.random() * 4,
+          });
+        }
+      }
+    }
+    const cur = curX(t);
+    for (let i = sp.parts.length - 1; i >= 0; i--) {
+      const p = sp.parts[i];
+      if (t - p.born > p.life || p.y < H * 0.04) { sp.parts.splice(i, 1); continue; }
+      p.x += (p.vx + cur * 9) * dt;
+      p.y += p.vy * dt;
+    }
+  }
+  function drawCoralSpawn(t) {
+    for (const p of SPAWN.parts) {
+      const age = t - p.born;
+      const fadeIn = Math.min(1, age / 0.6);
+      const fadeOut = Math.min(1, (p.y - H * 0.04) / (H * 0.2));   // dims as it nears the surface
+      const a = 0.6 * fadeIn * Math.max(0, fadeOut);
+      const x = p.x + Math.sin(t * 1.5 + p.ph) * 3;
+      ctx.fillStyle = `rgba(255, 224, 234, ${a.toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(x, p.y, p.r, 0, TAU); ctx.fill();
+    }
+  }
+  // a single coral head releases a burst of egg bundles when tapped
+  function spawnCoralBurst(pt, t) {
+    const sp = SPAWN;
+    if (sp.parts.length > 220) return;
+    const base = pt.y;
+    for (let i = 0; i < 30; i++)
+      sp.parts.push({ x: pt.x + (Math.random() - 0.5) * W * 0.05, y: base - Math.random() * H * 0.04,
+                      vx: (Math.random() - 0.5) * 8, vy: -(34 + Math.random() * 22),
+                      r: 1 + Math.random() * 1.8, ph: Math.random() * TAU, born: t, life: 7 + Math.random() * 4 });
+    burstBubbles(pt.x, base - 6, 4);
+  }
+
+  // ── Rain (occasional, seen from below) ───────────────────────────────────
+  function updateRain(t, dt) {
+    const r = RAIN;
+    if (r.nextAt == null) r.nextAt = t + 50 + Math.random() * 70;     // first shower after a while
+    if (!r.active && t >= r.nextAt) { r.active = true; r.t0 = t; r.dur = 12 + Math.random() * 10; }
+    if (r.active) {
+      const age = t - r.t0;
+      if (age > r.dur) { r.active = false; r.nextAt = t + 90 + Math.random() * 120; r.intensity = 0; }
+      else {
+        r.intensity = Math.max(0, Math.min(Math.min(1, age / 2), Math.min(1, (r.dur - age) / 2)));  // ramp in/out
+        if (r.dimples.length < 70 && Math.random() < 0.7) {           // pock the surface
+          for (let i = 0; i < 2; i++)
+            r.dimples.push({ x: Math.random() * W, y: H * (0.016 + Math.random() * 0.022),
+                             born: t, life: 0.9 + Math.random() * 0.6 });
+        }
+      }
+    }
+    for (let i = r.dimples.length - 1; i >= 0; i--)
+      if (t - r.dimples[i].born > r.dimples[i].life) r.dimples.splice(i, 1);
+  }
+  function drawRain(t) {
+    const r = RAIN;
+    if (r.intensity <= 0 && !r.dimples.length) return;
+    if (r.intensity > 0) {                                           // soft overcast dimming
+      ctx.fillStyle = `rgba(18, 40, 66, ${(0.16 * r.intensity).toFixed(3)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const d of r.dimples) {                                     // expanding ring ripples
+      const q = (t - d.born) / d.life;
+      const rx = 2 + q * 16;
+      const a = 0.5 * (1 - q);
+      ctx.strokeStyle = `rgba(225, 248, 255, ${a.toFixed(3)})`;
+      ctx.lineWidth = 1.2 * (1 - q) + 0.3;
+      ctx.beginPath(); ctx.ellipse(d.x, d.y, rx, rx * 0.32, 0, 0, TAU); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // ── Anemone & clownfish ────────────────────────────────────────────────────
@@ -828,11 +1706,13 @@ window.BACKGROUNDS.reef = {
       ctx.fill();
     }
     ctx.lineCap = 'round';
+    const cur = curX(t);
     for (const tn of a.tents) {
       if (tn.front !== front) continue;
       const rootX = a.x + tn.dx * a.s * 0.55;
       const rootY = a.y - a.s * 0.18;
-      const sway = Math.sin(t * 1.5 + tn.phase) * a.s * 0.15;
+      // the crown drifts with the current, each tentacle keeping its own ripple
+      const sway = (cur * 0.85 + Math.sin(t * 1.5 + tn.phase) * 0.5) * a.s * 0.16;
       const breathe = 1 + 0.06 * Math.sin(t * 1.0 + tn.phase * 0.7);
       const tipX = rootX + tn.dx * a.s * 0.55 + sway;
       const tipY = a.y - tn.len * breathe - a.s * 0.18;
@@ -1128,15 +2008,6 @@ window.BACKGROUNDS.reef = {
     for (const sh of SHARKS)
       list.push({ f: sh, kind: 'shark', x: sh.x, y: sh.y + Math.sin(t * 0.7 + sh.phase) * 6,
                   rx: sh.s * 1.9, ry: sh.s * 0.95 });
-    for (const d of DORIES) {
-      const y = d.baseY + Math.sin(t * 0.8 + d.phase) * 26;
-      const dir = d.vx > 0 ? 1 : -1;
-      list.push({ f: d, kind: 'dory', x: d.x, y, rx: d.s * 1.5, ry: d.s * 1.0 });
-      const b = d.buddy;
-      list.push({ f: b, kind: 'buddy', x: d.x - dir * d.s * 2.4,
-                  y: y + Math.sin(t * 1.4 + b.phase) * 10 + d.s * 0.5,
-                  rx: b.s * 1.7, ry: b.s * 1.1 });
-    }
     list.push({ f: PUFFER, kind: 'puffer', x: PUFFER.x,
                 y: PUFFER.y + Math.sin(t * 0.9 + PUFFER.phase) * 8,
                 rx: PUFFER.s * 1.9, ry: PUFFER.s * 1.5 });
@@ -1172,8 +2043,13 @@ window.BACKGROUNDS.reef = {
         const pick = Math.random();
         if (pick < 0.34 && f.rollT == null) f.rollT = t;
         else if (pick < 0.67) f.dashT = t;
-        else FXRINGS.push({ x: h.x + (f.vx > 0 ? 1 : -1) * f.s * 1.4,
-                            y: h.y - f.s * 0.2, t0: t });   // blows a bubble ring
+        else {                                          // blows a bubble ring + a fish swims through it
+          const rdir = f.vx > 0 ? 1 : -1;
+          const cols = ['#FFC247', '#FF8A4C', '#5AB6E8', '#F46A9B', '#8DD17A'];
+          FXRINGS.push({ x: h.x + rdir * f.s * 1.4, y: h.y - f.s * 0.2, t0: t,
+                         dir: rdir, col: cols[(Math.random() * cols.length) | 0],
+                         ph: Math.random() * TAU });
+        }
         break;
       }
       case 'puffer':  if (PUFFER.puffStart === null && Math.random() < 0.6) {
@@ -1190,6 +2066,9 @@ window.BACKGROUNDS.reef = {
                       } else if (f.hideT == null && f.outT == null) f.hideT = t;
                       break;
       case 'buddy':   burstBubbles(h.x, h.y, 6); break;
+      case 'school':  // the swarm opens a hole around the tap and flows back together
+                      SCHOOL.avoid = { x: cx != null ? cx : h.x, y: cy != null ? cy : h.y, t0: t, strength: 1.7 };
+                      break;
     }
   }
 
@@ -1334,6 +2213,7 @@ window.BACKGROUNDS.reef = {
     ctx.fillStyle = '#10161c';
     ctx.beginPath(); ctx.arc(s * 1.345, -s * 0.13, s * 0.032, 0, TAU); ctx.fill();
 
+    bodySpots(sh);                                    // parasite spots (cleaning client only)
     ctx.restore();
 
     // even sharks have to go sometimes
@@ -1342,10 +2222,32 @@ window.BACKGROUNDS.reef = {
     updatePoop(sh, sh.x - shDir * s * 1.15, shY + s * 0.16, t, Math.max(2, s * 0.055));
   }
 
+  // ── Dolphin pod — adults + a baby swim together; positions set by updatePod ──
+  function spawnPod() {
+    const adults = 1 + (Math.random() * 3 | 0);          // 1–3 adults
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const aS = Math.min(W, H) * 0.052;
+    POD = { dir, vx: dir * (1.0 + Math.random() * 0.4),
+            x: dir > 0 ? -W * 0.25 : W * 1.25, baseY: H * (0.12 + Math.random() * 0.16) };
+    const slots = [[0, 0], [W * 0.16, H * 0.05], [W * 0.13, -H * 0.06]];   // echelon behind the lead
+    DOLPHS = [];
+    for (let i = 0; i < adults; i++)
+      DOLPHS.push({ behind: slots[i][0], oy: slots[i][1], s: aS * (0.9 + Math.random() * 0.18),
+                    phase: Math.random() * TAU, baby: false, x: 0, baseY: 0, vx: POD.vx });
+    DOLPHS.push({ behind: W * 0.06, oy: H * 0.055, s: aS * 0.5,             // the calf, tucked beside the lead
+                  phase: Math.random() * TAU, baby: true, x: 0, baseY: 0, vx: POD.vx });
+  }
+  function updatePod() {
+    POD.x += POD.vx;
+    const reach = Math.min(W, H) * 0.45;
+    if ((POD.dir > 0 && POD.x > W + reach) || (POD.dir < 0 && POD.x < -reach)) spawnPod();
+    for (const d of DOLPHS) {
+      d.vx = POD.vx;
+      d.x = POD.x - POD.dir * d.behind;
+      d.baseY = POD.baseY + d.oy;
+    }
+  }
   function drawDolphin(d, t) {
-    d.x += d.vx * dashBoost(d, t);
-    if (d.vx > 0 && d.x > W + d.s * 5) { d.x = -d.s * 5; d.baseY = H * (0.08 + Math.random() * 0.27); }
-    if (d.vx < 0 && d.x < -d.s * 5)    { d.x = W + d.s * 5; d.baseY = H * (0.08 + Math.random() * 0.27); }
     const s = d.s;
     const dir = d.vx > 0 ? 1 : -1;
     let y = d.baseY + Math.sin(t * 1.2 + d.phase) * 30;
@@ -1448,128 +2350,131 @@ window.BACKGROUNDS.reef = {
     ctx.fillStyle = 'rgba(30, 42, 52, 0.7)';
     ctx.beginPath(); ctx.ellipse(s * 0.62, -s * 0.36, s * 0.05, s * 0.025, -0.2, 0, TAU); ctx.fill();
 
+    bodySpots(d);                                     // parasite spots (cleaning client only)
     ctx.restore();
 
     // dolphins answer nature's call too
     updatePoop(d, d.x - dir * s * 1.3, y + s * 0.18, t, Math.max(1.5, s * 0.06));
   }
 
+  // a tang body drawn at (x,y) with no movement/wrap — used by shoals AND by
+  // drawDory (free-swimmer) and the recoloured cleaning client (via d.pal)
+  function drawTangBody(x, y, dir, t, phase, roll, s, pal, spotsObj) {
+    const P = pal || { body: ['#2750cc', '#1c3cb0', '#142a84'], tail: '#f4c812',
+                       ink: '#0e1626', window: '#1d49c8', pec: 'rgba(244, 200, 18, 0.9)' };
+    const INK = P.ink, wag = Math.sin(t * 5.5 + phase) * 0.3;
+    ctx.save();
+    ctx.translate(x, y);
+    if (roll) ctx.rotate(dir > 0 ? -roll : roll);
+    ctx.scale(dir, 1);
+    // caudal fin
+    ctx.save();
+    ctx.translate(-s * 0.92, 0); ctx.rotate(wag * 0.3);
+    ctx.fillStyle = P.tail;
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 0.18); ctx.lineTo(-s * 0.52, -s * 0.42); ctx.lineTo(-s * 0.36, 0);
+    ctx.lineTo(-s * 0.52, s * 0.42); ctx.lineTo(0, s * 0.18); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = s * 0.055;
+    ctx.beginPath(); ctx.moveTo(0, -s * 0.18); ctx.lineTo(-s * 0.5, -s * 0.40); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, s * 0.18);  ctx.lineTo(-s * 0.5, s * 0.40);  ctx.stroke();
+    ctx.restore();
+    // disc body
+    ctx.fillStyle = lg(ctx, 0, -s * 0.62, 0, s * 0.62, [[0, P.body[0]], [0.55, P.body[1]], [1, P.body[2]]]);
+    ctx.beginPath(); ctx.ellipse(0, 0, s * 1.05, s * 0.64, 0, 0, TAU); ctx.fill();
+    // dorsal + anal fins
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.moveTo(s * 0.55, -s * 0.42); ctx.quadraticCurveTo(0, -s * 0.88, -s * 0.62, -s * 0.52); ctx.quadraticCurveTo(-s * 0.2, -s * 0.56, s * 0.55, -s * 0.42); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(s * 0.3, s * 0.46); ctx.quadraticCurveTo(-s * 0.15, s * 0.82, -s * 0.62, s * 0.5); ctx.quadraticCurveTo(-s * 0.2, s * 0.55, s * 0.3, s * 0.46); ctx.closePath(); ctx.fill();
+    // palette loop + window
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.moveTo(s * 0.72, -s * 0.16); ctx.quadraticCurveTo(s * 0.2, -s * 0.62, -s * 0.55, -s * 0.48); ctx.quadraticCurveTo(-s * 0.98, -s * 0.26, -s * 0.88, -s * 0.02); ctx.quadraticCurveTo(-s * 0.55, s * 0.14, -s * 0.08, s * 0.06); ctx.quadraticCurveTo(s * 0.42, 0, s * 0.72, -s * 0.16); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = P.window;
+    ctx.beginPath(); ctx.ellipse(-s * 0.20, -s * 0.25, s * 0.40, s * 0.15, -0.18, 0, TAU); ctx.fill();
+    // pectoral fin
+    ctx.save(); ctx.translate(s * 0.22, s * 0.10); ctx.rotate(0.35 + wag * 0.45); ctx.fillStyle = P.pec;
+    ctx.beginPath(); ctx.ellipse(0, s * 0.16, s * 0.12, s * 0.26, 0, 0, TAU); ctx.fill(); ctx.restore();
+    // eye + smile
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(s * 0.58, -s * 0.16, s * 0.17, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#13203a'; ctx.beginPath(); ctx.arc(s * 0.63, -s * 0.15, s * 0.095, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(s * 0.66, -s * 0.20, s * 0.035, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#101c36'; ctx.lineWidth = s * 0.045; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(s * 0.98, s * 0.08); ctx.quadraticCurveTo(s * 0.84, s * 0.20, s * 0.68, s * 0.18); ctx.stroke();
+    if (spotsObj) bodySpots(spotsObj);
+    ctx.restore();
+  }
+  // free-swimming tang (also the cleaning-client tang, via d.pal) — advances & wraps
   function drawDory(d, t) {
     d.x += d.vx * dashBoost(d, t);
     if (d.vx > 0 && d.x > W + d.s * 4) { d.x = -d.s * 4; d.baseY = H * (0.22 + Math.random() * 0.35); }
     if (d.vx < 0 && d.x < -d.s * 4)    { d.x = W + d.s * 4; d.baseY = H * (0.22 + Math.random() * 0.35); }
-    const s = d.s;
+    const s = d.s, dir = d.vx > 0 ? 1 : -1;
     const y = d.baseY + Math.sin(t * 0.8 + d.phase) * 26;
-    const wag = Math.sin(t * 5.5 + d.phase) * 0.3;
-    const INK = '#0e1626';
-    ctx.save();
-    ctx.translate(d.x, y);
-    const roll = rollAng(d, t);
-    if (roll) ctx.rotate(d.vx > 0 ? -roll : roll);   // forward somersault
-    ctx.scale(d.vx > 0 ? 1 : -1, 1);
-
-    // Yellow caudal fin with dark upper/lower margins
-    ctx.save();
-    ctx.translate(-s * 0.92, 0);
-    ctx.rotate(wag * 0.3);
-    ctx.fillStyle = '#f4c812';
-    ctx.beginPath();
-    ctx.moveTo(0, -s * 0.18);
-    ctx.lineTo(-s * 0.52, -s * 0.42);
-    ctx.lineTo(-s * 0.36, 0);
-    ctx.lineTo(-s * 0.52, s * 0.42);
-    ctx.lineTo(0, s * 0.18);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = s * 0.055;
-    ctx.beginPath(); ctx.moveTo(0, -s * 0.18); ctx.lineTo(-s * 0.5, -s * 0.40); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, s * 0.18);  ctx.lineTo(-s * 0.5, s * 0.40);  ctx.stroke();
-    ctx.restore();
-
-    // Deep royal-blue disc body
-    ctx.fillStyle = lg(ctx, 0, -s * 0.62, 0, s * 0.62, [
-      [0, '#2750cc'],
-      [0.55, '#1c3cb0'],
-      [1, '#142a84'],
-    ]);
-    ctx.beginPath();
-    ctx.ellipse(0, 0, s * 1.05, s * 0.64, 0, 0, TAU);
-    ctx.fill();
-
-    // Long low dorsal and anal fins, dark
-    ctx.fillStyle = INK;
-    ctx.beginPath();
-    ctx.moveTo(s * 0.55, -s * 0.42);
-    ctx.quadraticCurveTo(0, -s * 0.88, -s * 0.62, -s * 0.52);
-    ctx.quadraticCurveTo(-s * 0.2, -s * 0.56, s * 0.55, -s * 0.42);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(s * 0.3, s * 0.46);
-    ctx.quadraticCurveTo(-s * 0.15, s * 0.82, -s * 0.62, s * 0.5);
-    ctx.quadraticCurveTo(-s * 0.2, s * 0.55, s * 0.3, s * 0.46);
-    ctx.closePath();
-    ctx.fill();
-
-    // The black "palette" loop with the blue window inside it
-    ctx.fillStyle = INK;
-    ctx.beginPath();
-    ctx.moveTo(s * 0.72, -s * 0.16);
-    ctx.quadraticCurveTo(s * 0.2, -s * 0.62, -s * 0.55, -s * 0.48);
-    ctx.quadraticCurveTo(-s * 0.98, -s * 0.26, -s * 0.88, -s * 0.02);
-    ctx.quadraticCurveTo(-s * 0.55, s * 0.14, -s * 0.08, s * 0.06);
-    ctx.quadraticCurveTo(s * 0.42, 0, s * 0.72, -s * 0.16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#1d49c8';
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.20, -s * 0.25, s * 0.40, s * 0.15, -0.18, 0, TAU);
-    ctx.fill();
-
-    // Yellow pectoral fin
-    ctx.save();
-    ctx.translate(s * 0.22, s * 0.10);
-    ctx.rotate(0.35 + wag * 0.45);
-    ctx.fillStyle = 'rgba(244, 200, 18, 0.9)';
-    ctx.beginPath();
-    ctx.ellipse(0, s * 0.16, s * 0.12, s * 0.26, 0, 0, TAU);
-    ctx.fill();
-    ctx.restore();
-
-    // Big cheerful eye
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(s * 0.58, -s * 0.16, s * 0.17, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#13203a';
-    ctx.beginPath(); ctx.arc(s * 0.63, -s * 0.15, s * 0.095, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(s * 0.66, -s * 0.20, s * 0.035, 0, TAU); ctx.fill();
-    // Little smile
-    ctx.strokeStyle = '#101c36';
-    ctx.lineWidth = s * 0.045;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(s * 0.98, s * 0.08);
-    ctx.quadraticCurveTo(s * 0.84, s * 0.20, s * 0.68, s * 0.18);
-    ctx.stroke();
-
-    ctx.restore();
-
-    // A little clownfish pal swimming alongside
+    drawTangBody(d.x, y, dir, t, d.phase, rollAng(d, t), s, d.pal, d);
     const b = d.buddy;
-    const dir = d.vx > 0 ? 1 : -1;
-    const bx = d.x - dir * s * 2.4;
-    const by = y + Math.sin(t * 1.4 + b.phase) * 10 + s * 0.5;
-    drawClown(bx, by, dir, Math.sin(t * 1.4 + b.phase) * 0.08, b.s, t, b.phase);
-
-    // occasional business, both for the tang and its little friend
+    if (b) {
+      const bx = d.x - dir * s * 2.4, by = y + Math.sin(t * 1.4 + b.phase) * 10 + s * 0.5;
+      drawClown(bx, by, dir, Math.sin(t * 1.4 + b.phase) * 0.08, b.s, t, b.phase);
+      updatePoop(b, bx - dir * b.s * 0.8, by + b.s * 0.28, t, Math.max(1.2, b.s * 0.07));
+    }
     updatePoop(d, d.x - dir * s * 0.75, y + s * 0.30, t, Math.max(1.5, s * 0.07));
-    updatePoop(b, bx - dir * b.s * 0.8, by + b.s * 0.28, t, Math.max(1.2, b.s * 0.07));
+  }
+
+  // ── Fish shoals — small same-species groups + the occasional mixed pair ───
+  function spawnShoal(onScreen) {
+    const m = Math.min(W, H), r = Math.random();
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const vx = dir * (0.5 + Math.random() * 0.4);
+    const baseY = H * (0.24 + Math.random() * 0.42);
+    const x = onScreen ? W * (0.15 + Math.random() * 0.7) : (dir > 0 ? -W * 0.15 : W * 1.15);
+    let members;
+    if (r < 0.16) {                                    // occasional Nemo + Dory pair together
+      members = [{ kind: 'clown', ox: 0, oy: -m * 0.018, s: m * 0.02, phase: Math.random() * TAU },
+                 { kind: 'tang',  ox: m * 0.07, oy: m * 0.02, s: m * 0.026, phase: Math.random() * TAU }];
+    } else {
+      const kind = r < 0.58 ? 'clown' : 'tang';        // a small group of one species, 3–4
+      const n = 3 + (Math.random() * 2 | 0);
+      const bs = kind === 'clown' ? m * 0.02 : m * 0.026;
+      members = Array.from({ length: n }, (_, i) => ({
+        kind, ox: i * bs * 2.0 + (Math.random() - 0.5) * bs, oy: (Math.random() - 0.5) * bs * 3,
+        s: bs * (0.85 + Math.random() * 0.3), phase: Math.random() * TAU,
+      }));
+    }
+    return { x, baseY, vx, dir, members };
+  }
+  function giantNear() { return WHALE.active || ORCA.active; }   // a giant on screen → fish flee
+  function updateShoals() {
+    const pred = giantNear(), reach = W * 0.22;
+    if (!pred && SHOALS.fled) {                         // danger passed → the shoals swim back in
+      for (let i = 0; i < SHOALS.length; i++) SHOALS[i] = spawnShoal(false);
+      SHOALS.fled = false;
+    }
+    for (let i = 0; i < SHOALS.length; i++) {
+      const g = SHOALS[i];
+      g.x += g.vx * (pred ? 4.5 : 1);                   // dart away when a giant is near
+      if ((g.vx > 0 && g.x > W + reach) || (g.vx < 0 && g.x < -reach)) {
+        if (pred) SHOALS.fled = true;                   // stay off-screen until it leaves
+        else SHOALS[i] = spawnShoal(false);
+      }
+    }
+  }
+  function drawShoals(t) {
+    for (const g of SHOALS) for (const fm of g.members) {
+      const mx = g.x - g.dir * fm.ox;
+      if (mx < -fm.s * 3 || mx > W + fm.s * 3) continue;
+      const my = g.baseY + fm.oy + Math.sin(t * 0.9 + fm.phase) * fm.s * 0.45;
+      if (fm.kind === 'clown') drawClown(mx, my, g.dir, Math.sin(t * 1.3 + fm.phase) * 0.06, fm.s, t, fm.phase);
+      else drawTangBody(mx, my, g.dir, t, fm.phase, 0, fm.s, null, null);
+    }
   }
 
   function drawSchool(t) {
-    SCHOOL.leader.x += SCHOOL.leader.vx;
-    if (SCHOOL.leader.x > W + 150) { SCHOOL.leader.x = -150; SCHOOL.leader.y = H * (0.16 + Math.random() * 0.42); }
+    const fleeing = giantNear();                        // a giant on screen → the school bolts away & scatters
+    SCHOOL.leader.x += SCHOOL.leader.vx * (fleeing ? 5 : 1);
+    if (SCHOOL.leader.x > W + 150) {
+      if (fleeing) SCHOOL.leader.x = W + 300;            // stay off-screen until the danger passes
+      else { SCHOOL.leader.x = -150; SCHOOL.leader.y = H * (0.16 + Math.random() * 0.42); }
+    }
+    if (fleeing && (SCHOOL.scatterT == null || t - SCHOOL.scatterT > 1.8)) SCHOOL.scatterT = t;
     const lx = SCHOOL.leader.x, ly = SCHOOL.leader.y + Math.sin(t * 0.7) * 16;
     // a startled school bursts apart, then drifts back into formation
     let scF = 0;
@@ -1577,10 +2482,42 @@ window.BACKGROUNDS.reef = {
       scF = actEnv(SCHOOL.scatterT, t, 2.2);
       if (t - SCHOOL.scatterT >= 2.2) SCHOOL.scatterT = null;
     }
+    // boids-style parting: members near the cursor/click point flow around it
+    // and re-merge as it fades (hover = brief & soft, click = firmer & longer)
+    const av = SCHOOL.avoid;
+    const avLife = av.strength > 1 ? 1.6 : 0.45;
+    const avK = Math.max(0, 1 - (t - av.t0) / avLife) * av.strength;
+    const avR = Math.min(W, H) * 0.34;
+    // bait ball: a cruising shark nearby makes the school tighten into a
+    // rotating defensive ball; it disperses again once the shark moves off
+    // (a charging shark instead triggers the panic scatter — see drawShark)
+    let predatorNear = false;
+    for (const sh of SHARKS) {
+      const sy = sh.y + Math.sin(t * 0.7 + sh.phase) * 6;
+      if (Math.hypot(sh.x - lx, sy - ly) < Math.min(W, H) * 0.55) predatorNear = true;
+    }
+    const ballTarget = (predatorNear && SCHOOL.scatterT == null) ? 1 : 0;
+    SCHOOL.ballF += (ballTarget - SCHOOL.ballF) * 0.05;     // smooth form / disperse
+    const bf = SCHOOL.ballF;
     for (const m of SCHOOL) {
       const wob = Math.sin(t * 3 + m.phase) * 5;
-      const px = lx + m.ox + wob + (scF ? m.kix * scF : 0);
-      const py = ly + m.oy + Math.cos(t * 2 + m.phase) * 4 + (scF ? m.kiy * scF : 0);
+      let px = lx + m.ox + wob + (scF ? m.kix * scF : 0);
+      let py = ly + m.oy + Math.cos(t * 2 + m.phase) * 4 + (scF ? m.kiy * scF : 0);
+      if (avK > 0) {                                   // push radially away from the avoid point
+        const dx = px - av.x, dy = py - av.y, d = Math.hypot(dx, dy) || 1;
+        if (d < avR) {
+          const push = avK * (1 - d / avR) * 64;
+          px += dx / d * push; py += dy / d * push;
+        }
+      }
+      if (bf > 0.01) {                                 // blend toward a tight, swirling bait ball
+        const ang = Math.atan2(m.oy, m.ox) + t * 1.9;  // each member orbits the centre
+        const rad = 14 + Math.hypot(m.ox, m.oy) * 0.32;
+        const bx = lx + Math.cos(ang) * rad;
+        const by = ly + Math.sin(ang) * rad * 0.82;
+        px = px * (1 - bf) + bx * bf;
+        py = py * (1 - bf) + by * bf;
+      }
       const glint = 0.5 + 0.5 * Math.sin(t * 4 + m.phase * 2);
       ctx.fillStyle = `rgba(${185 + glint * 55 | 0}, ${205 + glint * 40 | 0}, ${220 + glint * 25 | 0}, 0.9)`;
       ctx.beginPath();
@@ -1599,52 +2536,61 @@ window.BACKGROUNDS.reef = {
     }
   }
 
-  function drawCrab(t) {
-    const c = CRAB;
-    c.x += c.dir * 0.3;
-    if (c.x > W * 0.50) c.dir = -1;
-    if (c.x < W * 0.30) c.dir = 1;
+  function drawCrab(c, t) {
+    // click reaction: a quick startled scuttle — hops, scrabbles fast, claws up
+    let act = 0, hop = 0;
+    if (c.actT != null) {
+      const p = (t - c.actT) / 1.0;
+      if (p >= 1) c.actT = null;
+      else { act = Math.sin(p * Math.PI); hop = act * c.s * 0.55; }
+    }
+    c.x += c.dir * (0.3 + act * 2.0);                   // scuttles faster when startled
+    if (c.x > c.hi) c.dir = -1;
+    if (c.x < c.lo) c.dir = 1;
     const s = c.s;
-    const y = sandTopAt(c.x) + s * 0.5;
+    const y = sandTopAt(c.x) + s * 0.5 - hop;
     ctx.save();
     ctx.translate(c.x, y);
 
-    ctx.strokeStyle = '#8e4524';
+    const pal = c.pal;
+    const legRate = 7 + act * 16, legAmp = 0.10 + act * 0.12;
+    ctx.strokeStyle = pal.limb;
     ctx.lineWidth = s * 0.11;
     ctx.lineCap = 'round';
     for (let side = -1; side <= 1; side += 2) {
       for (let i = 0; i < 3; i++) {
-        const lift = Math.sin(t * 7 + c.phase + i * 2 + (side > 0 ? Math.PI : 0)) * s * 0.10;
+        const lift = Math.sin(t * legRate + c.phase + i * 2 + (side > 0 ? Math.PI : 0)) * s * legAmp;
         ctx.beginPath();
         ctx.moveTo(side * s * 0.48, s * 0.05);
         ctx.quadraticCurveTo(side * s * (0.82 + i * 0.12), s * 0.15, side * s * (0.95 + i * 0.17), s * 0.40 + lift);
         ctx.stroke();
       }
     }
-    // Claws held low, twitching as it feeds
+    // Claws — held low while feeding, raised and waving when startled
     for (let side = -1; side <= 1; side += 2) {
-      const wave = Math.sin(t * 2.2 + c.phase + side) * s * 0.06;
-      ctx.strokeStyle = '#8e4524';
+      const wave = Math.sin(t * (2.2 + act * 12) + c.phase + side) * s * (0.06 + act * 0.10);
+      const raise = act * s * 0.55;
+      ctx.strokeStyle = pal.limb;
       ctx.lineWidth = s * 0.13;
       ctx.beginPath();
       ctx.moveTo(side * s * 0.42, -s * 0.05);
-      ctx.quadraticCurveTo(side * s * 0.75, -s * 0.12, side * s * 0.85, -s * 0.26 + wave);
+      ctx.quadraticCurveTo(side * s * 0.75, -s * 0.12 - raise * 0.6, side * s * 0.85, -s * 0.26 + wave - raise);
       ctx.stroke();
-      ctx.fillStyle = '#a85530';
+      ctx.fillStyle = pal.claw;
       ctx.beginPath();
-      ctx.arc(side * s * 0.88, -s * 0.32 + wave, s * 0.16, 0, TAU);
+      ctx.arc(side * s * 0.88, -s * 0.32 + wave - raise, s * 0.16, 0, TAU);
       ctx.fill();
     }
     // Carapace
     ctx.fillStyle = lg(ctx, 0, -s * 0.4, 0, s * 0.3, [
-      [0, '#b05a30'],
-      [1, '#7e3a1c'],
+      [0, pal.cara[0]],
+      [1, pal.cara[1]],
     ]);
     ctx.beginPath();
     ctx.ellipse(0, 0, s * 0.6, s * 0.42, 0, 0, TAU);
     ctx.fill();
     // mottling
-    ctx.fillStyle = 'rgba(60, 25, 12, 0.35)';
+    ctx.fillStyle = rgba(pal.dark, 0.4);
     [[-0.2, -0.1], [0.15, -0.18], [0.25, 0.05], [-0.05, 0.12]].forEach(([fx, fy]) => {
       ctx.beginPath();
       ctx.arc(s * fx, s * fy, s * 0.06, 0, TAU);
@@ -1652,7 +2598,7 @@ window.BACKGROUNDS.reef = {
     });
     // Short eye stalks
     for (let side = -1; side <= 1; side += 2) {
-      ctx.strokeStyle = '#7e3a1c';
+      ctx.strokeStyle = pal.dark;
       ctx.lineWidth = s * 0.06;
       ctx.beginPath();
       ctx.moveTo(side * s * 0.16, -s * 0.3);
@@ -1662,6 +2608,48 @@ window.BACKGROUNDS.reef = {
       ctx.beginPath(); ctx.arc(side * s * 0.20, -s * 0.52, s * 0.07, 0, TAU); ctx.fill();
     }
     ctx.restore();
+  }
+
+  // Sea stars on the open sand — sit still until tapped, then wiggle their arms
+  function drawStars(t) {
+    for (const st of STARS) {
+      let act = 0, spin = 0, pulse = 1;
+      if (st.actT != null) {
+        const p = (t - st.actT) / 1.4;
+        if (p >= 1) st.actT = null;
+        else { act = Math.sin(p * Math.PI); spin = Math.sin(p * TAU) * 0.18; pulse = 1 + 0.12 * Math.sin(p * Math.PI); }
+      }
+      const size = st.s;
+      ctx.save();
+      ctx.translate(st.x, st.y);
+      ctx.rotate(st.rot + spin);
+      ctx.scale(pulse, pulse);
+      ctx.fillStyle = 'rgba(110, 75, 40, 0.28)';
+      ctx.beginPath(); ctx.ellipse(0, size * 0.25, size * 1.1, size * 0.4, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = lg(ctx, 0, -size, 0, size, [[0, shade(st.col, 1.18)], [1, shade(st.col, 0.72)]]);
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        let a = (i / 10) * TAU - Math.PI / 2;
+        let r = i % 2 === 0 ? size : size * 0.48;
+        if (i % 2 === 0) {                              // arm tip flexes with a travelling wave
+          const w = Math.sin(t * 7 - (i >> 1) * 1.3);
+          r *= 1 + act * 0.18 * w; a += act * 0.13 * w;
+        }
+        const px = Math.cos(a) * r, py = Math.sin(a) * r;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255, 235, 210, 0.45)';      // ossicle bumps down each arm
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * TAU - Math.PI / 2;
+        for (let d = 0.3; d <= 0.8; d += 0.25) {
+          ctx.beginPath();
+          ctx.arc(Math.cos(a) * size * d, Math.sin(a) * size * d, size * 0.05, 0, TAU);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
   }
 
   // A pufferfish that balloons up once every two minutes
@@ -1682,7 +2670,7 @@ window.BACKGROUNDS.reef = {
       p = p * p * (3 - 2 * p);
     }
 
-    P.x += P.vx * (1 - 0.85 * p) * dashBoost(P, t);  // a balloon can barely swim
+    P.x += P.vx * (1 - 0.85 * p) * dashBoost(P, t) * (giantNear() ? 3.5 : 1);  // flees a giant
     if (P.vx > 0 && P.x > W + P.s * 5) { P.x = -P.s * 5; P.y = H * (0.4 + Math.random() * 0.3); }
     if (P.vx < 0 && P.x < -P.s * 5)    { P.x = W + P.s * 5; P.y = H * (0.4 + Math.random() * 0.3); }
     const s = P.s;
@@ -1897,7 +2885,7 @@ window.BACKGROUNDS.reef = {
   // The sweethearts — two butterflyfish in formation, heart between them
   function drawButters(t) {
     const B = BUTTERS;
-    B.x += B.vx;
+    B.x += B.vx * (giantNear() ? 3.5 : 1);            // the pair flees a passing giant
     if (B.vx > 0 && B.x > W + B.s * 6) { B.x = -B.s * 6; B.baseY = H * (0.24 + Math.random() * 0.32); }
     if (B.vx < 0 && B.x < -B.s * 6)    { B.x = W + B.s * 6; B.baseY = H * (0.24 + Math.random() * 0.32); }
     const dir = B.vx > 0 ? 1 : -1;
@@ -2082,7 +3070,30 @@ window.BACKGROUNDS.reef = {
       ctx.fill();
     }
   }
-  // a dolphin's party trick: a bubble ring that rises, grows and wobbles
+  // a small reef fish — body + tail, used to swim through the bubble ring
+  function drawMiniFish(x, y, s, dir, col, t, ph) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(dir, 1);
+    const wig = Math.sin(t * 12 + ph) * 0.25;            // tail wiggle
+    ctx.fillStyle = col;
+    ctx.beginPath();                                     // body
+    ctx.ellipse(0, 0, s, s * 0.6, 0, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();                                     // tail
+    ctx.moveTo(-s * 0.8, 0);
+    ctx.lineTo(-s * 1.5, -s * 0.5 + wig * s);
+    ctx.lineTo(-s * 1.5, s * 0.5 + wig * s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';            // eye
+    ctx.beginPath(); ctx.arc(s * 0.45, -s * 0.12, s * 0.16, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#13202b';
+    ctx.beginPath(); ctx.arc(s * 0.5, -s * 0.12, s * 0.08, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  // a dolphin's party trick: a bubble ring that rises, grows and wobbles —
+  // and a curious little fish swims right through the middle of it
   function drawFxRings(t) {
     for (let i = FXRINGS.length - 1; i >= 0; i--) {
       const r = FXRINGS[i];
@@ -2090,26 +3101,33 @@ window.BACKGROUNDS.reef = {
       if (age > 2.8) { FXRINGS.splice(i, 1); continue; }
       const q = age / 2.8;
       const wob = Math.sin(t * 5 + i) * 3 * q;
+      const cx = r.x + wob, cy = r.y - age * 34;
       const rx = 8 + q * 30, ry = 4 + q * 16;
       const a = 1 - q;
+      // the swimmer crosses the ring centre around mid-life (age 0.5–2.3 s)
+      const sp = (age - 0.5) / 1.8;
+      if (r.dir && sp > 0 && sp < 1) {
+        drawMiniFish(cx + (sp - 0.5) * 150 * r.dir, cy, 5.5, r.dir, r.col, t, r.ph);
+      }
       ctx.strokeStyle = `rgba(225, 248, 255, ${(0.7 * a).toFixed(3)})`;
       ctx.lineWidth = 2.4 - q * 1.4;
       ctx.beginPath();
-      ctx.ellipse(r.x + wob, r.y - age * 34, rx, ry, 0, 0, TAU);
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, TAU);
       ctx.stroke();
       ctx.strokeStyle = `rgba(255, 255, 255, ${(0.35 * a).toFixed(3)})`;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.ellipse(r.x + wob, r.y - age * 34 - ry * 0.3, rx * 0.8, ry * 0.5, 0, 0, TAU);
+      ctx.ellipse(cx, cy - ry * 0.3, rx * 0.8, ry * 0.5, 0, 0, TAU);
       ctx.stroke();
     }
   }
 
   // ── Passing giants — shared scheduler: idle → cross the screen → reschedule ─
-  function updateGiant(G, firstMin, firstMax, gapMin, gapMax, sizeF, yMin, yMax, speed, t, dt) {
+  function updateGiant(G, firstMin, firstMax, gapMin, gapMax, sizeF, yMin, yMax, speed, t, dt, blockedBy) {
     if (!G.active) {
       if (G.nextAt == null) G.nextAt = t + firstMin + Math.random() * (firstMax - firstMin);
       if (t < G.nextAt) return false;
+      if (blockedBy && blockedBy()) { G.nextAt = t + 25 + Math.random() * 25; return false; }  // never share the surface with another giant
       G.active = true;
       G.s = Math.min(W, H) * sizeF;
       G.dir = Math.random() < 0.5 ? 1 : -1;
@@ -2136,9 +3154,9 @@ window.BACKGROUNDS.reef = {
     ctx.scale(G.dir, 1);
     ctx.globalAlpha = 0.92;
 
-    // flukes — slow, mighty beats
+    // flukes — slow, mighty beats (overlap the body so they read as connected)
     ctx.save();
-    ctx.translate(-s * 1.98, 0);
+    ctx.translate(-s * 1.88, 0);
     ctx.rotate(wag * 0.6);
     ctx.fillStyle = '#33506a';
     ctx.beginPath();
@@ -2178,21 +3196,41 @@ window.BACKGROUNDS.reef = {
       ctx.ellipse(mx, my, s * 0.05, s * 0.025, i, 0, TAU);
       ctx.fill();
     }
-    // throat grooves
-    ctx.strokeStyle = 'rgba(20, 40, 58, 0.25)';
-    ctx.lineWidth = s * 0.012;
-    for (let g = 0; g < 4; g++) {
+    // lighter ventral belly + grooves, clipped to the body. The belly is a SOFT
+    // vertical gradient (transparent up top → light gray at the belly) so it
+    // feathers in with no hard edge — i.e. no rectangular gray patch — and the
+    // clipped grooves can't poke into the water (gaps are solid body, not see-through).
+    ctx.save();
+    ctx.clip(body);
+    ctx.fillStyle = lg(ctx, 0, -s * 0.05, 0, s * 0.28, [
+      [0, 'rgba(198, 214, 226, 0)'],
+      [1, 'rgba(208, 224, 234, 0.92)'],
+    ]);
+    ctx.fillRect(-s * 2.1, -s * 0.32, s * 4.3, s * 0.64);
+    ctx.strokeStyle = 'rgba(70, 100, 122, 0.45)';
+    ctx.lineWidth = s * 0.013;
+    for (let g = 0; g < 6; g++) {                          // grooves run the belly, fading into the peduncle
+      const yf = 0.045 + g * 0.04;
       ctx.beginPath();
-      ctx.moveTo(s * (1.9 - g * 0.04), s * (0.05 + g * 0.025));
-      ctx.quadraticCurveTo(s * 0.9, s * (0.22 + g * 0.03), s * 0.1, s * (0.20 + g * 0.028));
+      ctx.moveTo(s * 1.9, s * (yf * 0.5));
+      ctx.quadraticCurveTo(s * 0.2, s * (0.15 + yf), -s * 1.35, s * (yf * 0.4));
       ctx.stroke();
     }
-    // tiny falcate dorsal fin, far back
+    ctx.restore();
+    // tail stock — a smooth peduncle (pointed at both ends, no hard edge) that
+    // blends the narrowing body into the tail tip and the flukes
+    ctx.fillStyle = '#3a5872';
+    ctx.beginPath();
+    ctx.moveTo(-s * 1.3, 0);
+    ctx.quadraticCurveTo(-s * 1.7, -s * 0.07, -s * 2.0, 0);
+    ctx.quadraticCurveTo(-s * 1.7, s * 0.07, -s * 1.3, 0);
+    ctx.closePath(); ctx.fill();
+    // tiny falcate dorsal fin, far back — base tucked into the body so it connects
     ctx.fillStyle = '#33506a';
     ctx.beginPath();
-    ctx.moveTo(-s * 1.18, -s * 0.155);
-    ctx.quadraticCurveTo(-s * 1.26, -s * 0.30, -s * 1.38, -s * 0.27);
-    ctx.quadraticCurveTo(-s * 1.34, -s * 0.16, -s * 1.42, -s * 0.13);
+    ctx.moveTo(-s * 1.12, -s * 0.135);
+    ctx.quadraticCurveTo(-s * 1.26, -s * 0.32, -s * 1.40, -s * 0.27);
+    ctx.quadraticCurveTo(-s * 1.30, -s * 0.16, -s * 1.46, -s * 0.10);
     ctx.closePath();
     ctx.fill();
     // long pectoral flipper
@@ -2260,16 +3298,17 @@ window.BACKGROUNDS.reef = {
     ctx.fillStyle = lg(ctx, 0, -s * 0.45, 0, s * 0.45, [[0, '#181f28'], [0.6, INKB], [1, '#060a10']]);
     ctx.fill(body);
 
-    // white chin + belly with the flank lobe, clipped to the body
+    // bright-white chin + belly with a WAVY black/white flank boundary, clipped to body
     ctx.save();
     ctx.clip(body);
-    ctx.fillStyle = '#eef4f8';
+    ctx.fillStyle = '#fbfdff';
     ctx.beginPath();
-    ctx.moveTo(s * 1.6, s * 0.06);
-    ctx.quadraticCurveTo(s * 1.1, s * 0.34, s * 0.3, s * 0.40);
-    ctx.quadraticCurveTo(-s * 0.2, s * 0.44, -s * 0.55, s * 0.30);
-    ctx.quadraticCurveTo(-s * 0.2, s * 0.16, s * 0.5, s * 0.13);
-    ctx.quadraticCurveTo(s * 1.2, s * 0.10, s * 1.6, s * 0.06);
+    ctx.moveTo(s * 1.62, 0);
+    ctx.quadraticCurveTo(s * 1.30, s * 0.22, s * 1.00, s * 0.14);    // wave
+    ctx.quadraticCurveTo(s * 0.74, s * 0.06, s * 0.50, s * 0.22);    // wave
+    ctx.quadraticCurveTo(s * 0.24, s * 0.36, -s * 0.02, s * 0.22);   // flank lobe rises
+    ctx.quadraticCurveTo(-s * 0.30, s * 0.10, -s * 0.62, s * 0.30);  // dips back toward the tail
+    ctx.lineTo(-s * 0.75, s * 0.5); ctx.lineTo(s * 1.72, s * 0.5);
     ctx.closePath();
     ctx.fill();
     // gray saddle patch behind the dorsal
@@ -2279,10 +3318,10 @@ window.BACKGROUNDS.reef = {
     ctx.fill();
     ctx.restore();
 
-    // the white eye patch
-    ctx.fillStyle = '#f2f7fa';
+    // the white eye patch — elliptical, lowered off the edge, tilt reversed
+    ctx.fillStyle = '#f5f9fc';
     ctx.beginPath();
-    ctx.ellipse(s * 0.98, -s * 0.16, s * 0.21, s * 0.075, -0.28, 0, TAU);
+    ctx.ellipse(s * 0.92, -s * 0.10, s * 0.21, s * 0.082, 0.30, 0, TAU);
     ctx.fill();
     // towering dorsal fin
     ctx.fillStyle = INKB;
@@ -2301,9 +3340,147 @@ window.BACKGROUNDS.reef = {
     ctx.ellipse(0, s * 0.2, s * 0.13, s * 0.30, 0, 0, TAU);
     ctx.fill();
     ctx.restore();
-    // eye, tucked at the front of the patch
-    ctx.fillStyle = '#06090d';
-    ctx.beginPath(); ctx.arc(s * 0.88, -s * 0.10, s * 0.035, 0, TAU); ctx.fill();
+    // the real eye — set BELOW the white patch; small, round and cute (a glossy
+    // black bead with a big catch-light + a tiny sparkle)
+    const ex = s * 0.96, ey = -s * 0.005;
+    ctx.fillStyle = 'rgba(20,30,42,0.35)';                // faint soft socket
+    ctx.beginPath(); ctx.arc(ex, ey, s * 0.045, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#0a0e14';                            // round eyeball (smaller)
+    ctx.beginPath(); ctx.arc(ex, ey, s * 0.03, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';             // big cute catch-light
+    ctx.beginPath(); ctx.arc(ex - s * 0.011, ey - s * 0.013, s * 0.015, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';              // tiny sparkle
+    ctx.beginPath(); ctx.arc(ex + s * 0.013, ey + s * 0.009, s * 0.006, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Passing cloud shadow ─────────────────────────────────────────────────
+  // Every ~40–110 s a soft shadow drifts across, ramping its dim in/out so the
+  // whole reef gently darkens and brightens as the cloud passes the sun.
+  function updateCloudShade(t, dt) {
+    const cs = CLOUDSHADE;
+    if (cs.next === null) cs.next = t + 14 + Math.random() * 22;   // first one fairly soon
+    if (!cs.active && t >= cs.next) {
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      cs.active = true;
+      cs.dir = dir;
+      cs.w = W * (0.7 + Math.random() * 0.5);                      // cloud half-reach
+      cs.x = dir > 0 ? -cs.w : W + cs.w;                           // enters off one side
+      cs.spd = (W + cs.w * 2) / (16 + Math.random() * 12);         // crosses in ~16–28 s
+      cs.peak = 0.30 + Math.random() * 0.16;                       // max dim
+    }
+    if (cs.active) {
+      cs.x += cs.dir * cs.spd * dt;
+      if ((cs.dir > 0 && cs.x > W + cs.w) || (cs.dir < 0 && cs.x < -cs.w)) {
+        cs.active = false;
+        cs.next = t + 40 + Math.random() * 70;
+      }
+    }
+  }
+  function drawCloudShade() {
+    const cs = CLOUDSHADE;
+    if (!cs.active) return;
+    // soft 2D falloff centred in the upper water column: darkest under the cloud,
+    // fading outward and toward the sand (depth softens the shadow)
+    const g = rg(ctx, cs.x, H * 0.14, 0, cs.w, [
+      [0,    `rgba(4, 20, 42, ${cs.peak.toFixed(3)})`],
+      [0.55, `rgba(4, 20, 42, ${(cs.peak * 0.5).toFixed(3)})`],
+      [1,    'rgba(4, 20, 42, 0)'],
+    ]);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ── A wooden boat hull gliding across the surface (seen from below) ──────
+  function updateBoat(t, dt) {
+    const b = BOAT;
+    if (!b.active) {
+      if (b.nextAt == null) b.nextAt = t + 20 + Math.random() * 30;
+      if (t < b.nextAt) return false;
+      if (WHALE.active) { b.nextAt = t + 25 + Math.random() * 25; return false; }  // never while the whale is on screen — keep their timings far apart
+      b.active = true; b.dir = Math.random() < 0.5 ? 1 : -1;
+      b.s = Math.min(W, H) * (0.15 + Math.random() * 0.06);
+      b.x = b.dir > 0 ? -b.s * 2.8 : W + b.s * 2.8;
+      b.nextAt = null;
+    }
+    b.x += b.dir * Math.min(W, H) * 0.08 * dt;            // a slow glide
+    if ((b.dir > 0 && b.x > W + b.s * 2.9) || (b.dir < 0 && b.x < -b.s * 2.9)) {
+      b.active = false; b.nextAt = t + 70 + Math.random() * 90; return false;
+    }
+    return true;
+  }
+  function drawBoat(b, t) {
+    const s = b.s, L = s * 2.2, D = s * 0.55;
+    const surfaceY = H * 0.03 + Math.sin(t * 0.6) * 3;    // rides the swell
+    ctx.save();
+    ctx.translate(b.x, surfaceY);
+    ctx.rotate(Math.sin(t * 0.5) * 0.015 * b.dir);
+    ctx.scale(b.dir, 1);
+    // soft shadow the hull casts down into the water
+    ctx.fillStyle = 'rgba(8, 40, 70, 0.18)';
+    ctx.beginPath(); ctx.ellipse(0, D * 1.5, L * 0.9, D * 0.7, 0, 0, TAU); ctx.fill();
+    // hull — flat top (above the waterline, clipped by the canvas edge) down to a curved keel.
+    // Filled with SOLID alternating plank bands so there are no see-through gaps.
+    const top = -H * 0.06;
+    const hull = new Path2D();
+    hull.moveTo(-L, top); hull.lineTo(L, top); hull.lineTo(L * 0.98, 0);
+    hull.quadraticCurveTo(0, D, -L * 0.98, 0); hull.closePath();
+    ctx.fillStyle = '#7c5026'; ctx.fill(hull);
+    ctx.save();
+    ctx.clip(hull);
+    const planks = ['#8a5e2e', '#6f481f', '#7c5026', '#67401b'];
+    const nb = 6;
+    for (let i = 0; i < nb; i++) {
+      const ya = top + (i / nb) * (D - top);
+      ctx.fillStyle = planks[i % planks.length];
+      ctx.fillRect(-L, ya, L * 2, (D - top) / nb + 0.6);    // overlap avoids hairline gaps
+    }
+    ctx.strokeStyle = 'rgba(50, 32, 14, 0.5)'; ctx.lineWidth = Math.max(1, s * 0.01);
+    for (let i = 1; i < nb; i++) {
+      const ya = top + (i / nb) * (D - top);
+      ctx.beginPath(); ctx.moveTo(-L, ya); ctx.lineTo(L, ya); ctx.stroke();
+    }
+    ctx.restore();
+    ctx.strokeStyle = '#4a2f16'; ctx.lineWidth = Math.max(1.5, s * 0.02); ctx.lineJoin = 'round';
+    ctx.stroke(hull);
+    // keel strip down the centre-bottom
+    ctx.strokeStyle = '#43290f'; ctx.lineWidth = Math.max(2, s * 0.03); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-L * 0.5, D * 0.86); ctx.quadraticCurveTo(0, D * 1.04, L * 0.5, D * 0.86); ctx.stroke();
+    // bright waterline glint where the hull meets the surface
+    ctx.strokeStyle = 'rgba(240, 252, 255, 0.5)'; ctx.lineWidth = Math.max(1, s * 0.014);
+    ctx.beginPath(); ctx.moveTo(-L * 0.98, 0); ctx.lineTo(L * 0.98, 0); ctx.stroke();
+
+    // a life ring (red & white) mounted on the hull side
+    {
+      const lr = D * 0.5, lx = -L * 0.45, ly = top * 0.5;
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.fillStyle = '#e8392c';
+      ctx.beginPath(); ctx.arc(0, 0, lr, 0, TAU); ctx.fill();          // red ring
+      ctx.fillStyle = '#f5f5ef';                                       // two white bands
+      for (const a0 of [-0.2, Math.PI - 0.2]) {
+        ctx.beginPath();
+        ctx.arc(0, 0, lr, a0, a0 + 1.4);
+        ctx.arc(0, 0, lr * 0.55, a0 + 1.4, a0, true);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.fillStyle = '#6f481f';                                       // hole shows the hull (not water)
+      ctx.beginPath(); ctx.arc(0, 0, lr * 0.55, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(40,25,12,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(0, 0, lr, 0, TAU); ctx.stroke();
+      ctx.restore();
+    }
+    // an anchor hung off the bow, dangling into the water
+    {
+      const ax = L * 0.8, aLen = D * 1.25, aBot = aLen;
+      ctx.strokeStyle = '#3a3f44'; ctx.lineWidth = Math.max(1.6, s * 0.022);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.arc(ax, -s * 0.04, s * 0.06, 0, TAU); ctx.stroke();   // top ring
+      ctx.beginPath(); ctx.moveTo(ax, s * 0.02); ctx.lineTo(ax, aBot); ctx.stroke();  // shank
+      ctx.beginPath(); ctx.moveTo(ax - s * 0.13, aLen * 0.32); ctx.lineTo(ax + s * 0.13, aLen * 0.32); ctx.stroke();  // stock
+      ctx.beginPath(); ctx.moveTo(ax, aBot); ctx.quadraticCurveTo(ax - s * 0.24, aBot + s * 0.02, ax - s * 0.17, aBot - s * 0.14); ctx.stroke();  // fluke
+      ctx.beginPath(); ctx.moveTo(ax, aBot); ctx.quadraticCurveTo(ax + s * 0.24, aBot + s * 0.02, ax + s * 0.17, aBot - s * 0.14); ctx.stroke();  // fluke
+    }
     ctx.restore();
   }
 
@@ -2323,22 +3500,37 @@ window.BACKGROUNDS.reef = {
       // sometimes nature calls too — pooping is random/scheduled, never clicked
       if (h.kind !== 'school' && Math.random() < 0.25 && !h.f.poop) h.f.poopAt = t;
     }
+    updateCloudShade(t, dt);
+    updateFlatfish(t);
+    updateCleanStation(t, dt);
+    updateCoralSpawn(t, dt);
+    updateRain(t, dt);
+    updateSeahorse(SEAHORSE, t);
+    updateSeahorse(SEAHORSE2, t);
     ctx.drawImage(staticLayer.cv, 0, 0, W, H);
     drawSurface(t);
     drawMotes(t);
     drawRays(t);
     drawCaustics(t);
+    drawFlatfish(t);                                  // a bottom dweller on the sand
     // passing giants glide far behind the reef life:
     // blue whale ~20× the dolphin (every few minutes), orca ~5× (now and then)
-    if (updateGiant(WHALE, 35, 70, 150, 240, 0.78, 0.10, 0.22, 0.115, t, dt)) drawWhale(WHALE, t);
+    if (updateGiant(WHALE, 60, 110, 220, 340, 0.78, 0.10, 0.22, 0.115, t, dt, () => BOAT.active)) drawWhale(WHALE, t);
     if (updateGiant(ORCA,  15, 40,  80, 150, 0.29, 0.10, 0.30, 0.16,  t, dt)) drawOrca(ORCA, t);
+    if (updateBoat(t, dt)) drawBoat(BOAT, t);         // a wooden hull glides past the surface
     drawSchool(t);
+    updatePod();
     for (const dp of DOLPHS) drawDolphin(dp, t);
     for (const sh of SHARKS) drawShark(sh, t);
-    for (const d of DORIES) drawDory(d, t);
+    updateShoals();
+    drawShoals(t);
     drawButters(t);
     drawPuffer(t);
+    drawJellies(t);                                  // a drifting group of pulsing jellyfish
+    drawCleanStation(t);                             // cleaner wrasse + any visiting client
+    drawSeahorse(SEAHORSE2, t);                      // the bottom-roamer (behind the grass)
     drawGrass(t);
+    drawSeahorse(SEAHORSE, t);                       // the clinging one (among the grass)
     drawKelp(t);
     drawChest(t);
     for (const a of ANEMONES) {
@@ -2346,12 +3538,19 @@ window.BACKGROUNDS.reef = {
       for (const n of NEMOS) if (n.home === a) drawNemo(n, t);
       drawAnemone(a, t, true);                        // front tentacles overlap the fish
     }
-    drawCrab(t);
+    for (const c of CRABS) drawCrab(c, t);
+    drawStars(t);
     drawBubbles(t);
     drawFxBubbles(t, dt);
     drawFxHearts(t, dt);
     drawFxPuffs(t);
     drawFxRings(t);
+    drawFxSand(t);                                    // disturbed-sand clouds from the flatfish
+    drawFxSpark(t);                                   // twinkle sparkles (freshly-cleaned fish, etc.)
+    if (CLEANSTATION.signF > 0.02) drawCleanSign(t, CLEANSTATION.signF);   // "תחנת ניקוי" sign
+    drawCoralSpawn(t);                                // rare drifting-up egg bundles
+    drawCloudShade();                                 // cloud shadow dims everything beneath the surface
+    drawRain(t);                                      // occasional surface dimples + overcast dimming
     ctx.drawImage(vigLayer.cv, 0, 0, W, H);
   }
 
@@ -2387,10 +3586,69 @@ window.BACKGROUNDS.reef = {
       if (Math.abs(mx - CHEST.x) < s * 1.15 && my > by - s * 1.7 && my < by + s * 0.35) {
         openChest(t);
         burstBubbles(CHEST.x, by - s, 6);
+        return;
       }
+    }
+    // tap a jellyfish → it flashes/blinks
+    for (const j of JELLIES) {
+      const jy = j.drawY != null ? j.drawY : j.y;
+      if (Math.hypot(mx - j.x, my - jy) < j.s * 1.6) { j.flashT = t; return; }
+    }
+    // a crab — a startled sideways scuttle (away from the tap)
+    for (const c of CRABS) {
+      const cy = sandTopAt(c.x) + c.s * 0.5;
+      if (Math.hypot(mx - c.x, my - cy) < c.s * 1.7) {
+        c.actT = t; c.dir = mx > c.x ? -1 : 1;
+        burstBubbles(c.x, cy - c.s * 0.3, 4);
+        return;
+      }
+    }
+    // a sea star — a little arm wiggle
+    for (const st of STARS) {
+      if (Math.hypot(mx - st.x, my - st.y) < st.s * 1.6) { st.actT = t; return; }
+    }
+    // either roaming seahorse — tap it to startle it (a quick darting hop + turn)
+    for (const sh of [SEAHORSE, SEAHORSE2]) {
+      if (Math.hypot(mx - sh.x, my - sh.y) < Math.max(20, sh.s * 2.6)) { sh.reactT0 = t; sh.dir *= -1; return; }
+    }
+    // tap the cleaner wrasse → summon a client to the station (if none is there)
+    {
+      const cs = CLEANSTATION;
+      if (!cs.client && Math.hypot(mx - cs.x, my - (cs.y - 4)) < Math.max(24, Math.min(W, H) * 0.06)) {
+        spawnCleanClient(t); return;
+      }
+    }
+    // tap a coral head → it releases its eggs (a burst of drifting bundles).
+    // The band reaches well above each mount point so tall corals raised on the
+    // bommies (staghorn, fingers, tube sponges) are clickable, not just the
+    // garden corals sitting on the sand.
+    for (const pt of SPAWN.points) {
+      if (Math.abs(mx - pt.x) < W * 0.055 && my > pt.y - H * 0.16 && my < pt.y + H * 0.03) {
+        spawnCoralBurst(pt, t); return;
+      }
+    }
+    // clicked the open sand → a hidden flatfish bolts out in a sand puff and
+    // re-buries elsewhere (a little discovery for poking around the seabed)
+    if (my > sandTopAt(mx) - 6) {
+      spawnSandPuff(mx, my, 0.7);
+      startFlatfishDart(t);
     }
   };
   document.addEventListener('click', reefClick);
+
+  // cursor parting: as the pointer passes near the school it opens around it
+  // (soft & brief — a click parts it more firmly via doFishAct's 'school' case)
+  const reefMove = e => {
+    if (stopped || !SCHOOL || !SCHOOL.leader) return;
+    if (e.target.closest('.wrap,button,input,#particles,.special-uni,#games-menu,#theme-menu,#sad-ov,#report-ov')) return;
+    const lx = SCHOOL.leader.x, ly = SCHOOL.leader.y;
+    if (Math.abs(e.clientX - lx) > 220 || Math.abs(e.clientY - ly) > 130) return;
+    const cur = SCHOOL.avoid;
+    const curActive = (lastT - cur.t0) < (cur.strength > 1 ? 1.6 : 0.45);
+    if (curActive && cur.strength > 1) return;          // don't override an active click parting
+    SCHOOL.avoid = { x: e.clientX, y: e.clientY, t0: lastT, strength: 0.85 };
+  };
+  document.addEventListener('mousemove', reefMove);
 
   window.addEventListener('resize', resize);
   resize();
@@ -2401,6 +3659,7 @@ window.BACKGROUNDS.reef = {
     if (rafId) cancelAnimationFrame(rafId);
     window.removeEventListener('resize', resize);
     document.removeEventListener('click', reefClick);
+    document.removeEventListener('mousemove', reefMove);
     stage.innerHTML = '';
   };
   },

@@ -73,11 +73,13 @@ body{
 .mode-ind .mi-lbl{opacity:.7;font-size:.76rem}
 .mode-ind .mi-cur{color:#FFD740}
 /* ── Settings modal — difficulty + game selection ── */
-#settings-ov{
+#settings-ov,#parent-ov{
   display:none;position:fixed;inset:0;z-index:985;
   background:rgba(4,0,14,.8);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
   align-items:center;justify-content:center;padding:20px;
 }
+/* the parent-gate sits above the settings modal it guards */
+#parent-ov{z-index:990;}
 .settings-box{
   background:linear-gradient(170deg,#160030 0%,#240050 55%,#10001f 100%);
   border:2px solid rgba(190,90,255,.4);

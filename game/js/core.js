@@ -108,6 +108,38 @@ function closeSettings(){
   if(o)o.style.display='none';
 }
 
+/* ── Parent gate — a single-digit × single-digit challenge that guards the
+   settings modal; settings open only after a correct answer ── */
+let _parentAns=0;
+function openParentGate(e){
+  if(e)e.stopPropagation();
+  const a=2+Math.floor(Math.random()*8), b=2+Math.floor(Math.random()*8);  // 2..9
+  _parentAns=a*b;
+  const q=document.getElementById('parent-q');
+  if(q)q.textContent=a+' × '+b+' = ?';
+  const inp=document.getElementById('parent-ans'); if(inp)inp.value='';
+  const err=document.getElementById('parent-err'); if(err)err.textContent='';
+  const o=document.getElementById('parent-ov');
+  if(o)o.style.display='flex';
+  if(inp)setTimeout(()=>inp.focus(),30);
+}
+function closeParentGate(){
+  const o=document.getElementById('parent-ov');
+  if(o)o.style.display='none';
+}
+function checkParentGate(){
+  const inp=document.getElementById('parent-ans');
+  const err=document.getElementById('parent-err');
+  if(!inp)return;
+  if(parseInt(inp.value,10)===_parentAns){
+    closeParentGate();
+    openSettings();
+  }else{
+    if(err)err.textContent='לֹא נָכוֹן, נַסּוּ שׁוּב';
+    inp.value=''; inp.focus();
+  }
+}
+
 /* ── Problem ── */
 function loadProblem(){
   if(idx>=problems.length){endGame();return}
@@ -503,10 +535,21 @@ function _aidRevealPolicy(){
 function _lockAids(){
   tryFirst=0;
   if(_aidRevealPolicy()==='always'){
-    // this type shows its aids from the start — no lock, no hiding. Still record
-    // the CURRENT (visible) displays: a wrong answer later calls _unlockAids,
-    // and without this it would restore a stale 'none' and HIDE the always-on
-    // number line (e.g. the column exercise's line vanished on a mistake).
+    // this type shows its aids from the start — leave them fully UNLOCKED.
+    // Crucially we must actively clear any lock state left over from the
+    // PREVIOUS problem/mode: a lingering `tf-locked-nl` on <body> hides the
+    // number-line numbers (CSS) and `tf-locked` greys the ±buttons, so the
+    // line looked blank until a refresh (which boots with a clean body).
+    const gb=document.getElementById('games-drop-btn');
+    if(gb){gb.disabled=false;gb.classList.remove('tf-locked');
+      gb.innerHTML=typeof AID_ICON_NL!=='undefined'
+        ?(aidMode==='nl'?AID_ICON_BOX:AID_ICON_NL):'🦘';}
+    ['pgm-btn-plus','pgm-btn-minus','nl-btn-plus','nl-btn-minus'].forEach(id=>{
+      const el=document.getElementById(id);if(el){el.disabled=false;el.classList.remove('tf-locked');}});
+    document.querySelectorAll('.pgm-rst').forEach(el=>{el.disabled=false;el.classList.remove('tf-locked');});
+    document.body.classList.remove('tf-locked-nl');
+    // record the CURRENT (visible) displays so a later wrong answer's
+    // _unlockAids restores the always-on line instead of a stale 'none'.
     const nlp=document.getElementById('nl-panel');
     const ct=document.getElementById('chain-tools');
     _aidHidden={nl:nlp?nlp.style.display:'none',ct:ct?ct.style.display:'none'};

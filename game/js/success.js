@@ -48,8 +48,14 @@ function _skinPalette(){
   // colors supplied by the active background's skin (game/skins/*.skin.css)
   const cs=getComputedStyle(document.documentElement);
   const v=(n,f)=>(cs.getPropertyValue(n)||'').trim()||f;
+  // success/gift/intro screens draw over a NEAR-BLACK backdrop, so the praise
+  // text needs a light color. Most skins' --skin-text is already light, but a
+  // light-scene skin (e.g. unicorns) uses dark ink for the in-game text — it
+  // can set --skin-ov-text to a light on-brand color JUST for these overlays
+  // without disturbing its in-game text. Falls back to --skin-text.
   return{primary:v('--skin-primary','#C77DFF'),accent:v('--skin-accent','#FFD27D'),
-         glow:v('--skin-glow','#7DC4FF'),text:v('--skin-text','#FFFFFF')};
+         glow:v('--skin-glow','#7DC4FF'),
+         text:v('--skin-ov-text','')||v('--skin-text','#FFFFFF')};
 }
 
 /* ── Random scene-matched backdrop ─────────────────────────────────────────

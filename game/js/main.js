@@ -6,6 +6,9 @@ applyTheme();
 spawnParticles();
 updateGiftIndicator();
 bootIntroSplash();   // the opening celebration (toggle lives in settings)
+// while the intro splash plays, warm EVERY background, aid, exercise type and
+// skin so later theme/level switches are seamless (no first-visit loading hitch)
+if(typeof preloadAll==='function') setTimeout(preloadAll, 60);
 // the mode's exercise-type files load dynamically (one file per type).
 // GUARD: if a mode is picked before the boot load finishes, setMode's own
 // callback owns the pool — this late one must not overwrite it.

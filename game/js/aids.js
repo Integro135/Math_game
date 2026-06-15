@@ -177,7 +177,7 @@ const NL=(()=>{
     const frac=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
     return BASE+Math.round(frac*_span()/STEP)*STEP;
   }
-  function startDrag(clientX){if(tryFirst===0)return;cancelFlight();isDragging=true;dragStartCv=cv;cv=getBarNum(clientX);updateDot();}
+  function startDrag(clientX){if(!isVisible())return;cancelFlight();isDragging=true;dragStartCv=cv;cv=getBarNum(clientX);updateDot();}
   function duringDrag(clientX){if(!isDragging)return;cv=getBarNum(clientX);updateDot();}
   function endDrag(){
     if(!isDragging)return;isDragging=false;
@@ -208,10 +208,16 @@ const NL=(()=>{
     document.addEventListener('touchmove',e=>{if(isDragging){e.preventDefault();duringDrag(e.touches[0].clientX);}},{passive:false});
     document.addEventListener('touchend',endDrag);
     document.addEventListener('keydown',e=>{
+      // arrows drive the rider whenever the line is VISIBLE — the ±buttons are
+      // not gated on tryFirst either, and an always-on line (e.g. the column
+      // exercise) is interactive from the start. When the line is hidden
+      // (normal types before the first mistake) isVisible() already blocks.
       if(!isVisible())return;
-      if(tryFirst===0)return;
+      // ignore arrows only while typing in a FREE-TEXT field (e.g. the name
+      // input); the answer boxes (.ans-inp, incl. the column boxes which are
+      // type="text") should pass arrows through to the number line.
       const ae=document.activeElement;
-      if(ae&&ae.tagName==='INPUT'&&ae.type!=='number')return;
+      if(ae&&ae.tagName==='INPUT'&&ae.type!=='number'&&!ae.classList.contains('ans-inp'))return;
       if(e.key==='ArrowRight'){e.preventDefault();step(1);}
       else if(e.key==='ArrowLeft'){e.preventDefault();step(-1);}
     });

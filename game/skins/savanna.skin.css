@@ -1,26 +1,242 @@
-/* ── Savanna skin — the game's look over the Pride Rock sunset ──────────────
-   Warm amber glass on the blazing sky; the game column sits center-right so
-   Pride Rock and the lions on the left stay visible. */
+/* ── Savanna skin — "Pride Rock at Sunset" ──────────────────────────────────
+   The game's look over the savanna background (backgrounds/savanna.bg.js).
+   Design goal: warm amber dusk glass that lets the blazing sky, Pride Rock and
+   the roaming herds glow through. The game column sits centre-right so the
+   pride on the rock (left) stays in full view; panels are translucent with a
+   gentle blur so as much of the scene as possible reads behind the exercise.
 
-/* 1. palette */
+   A skin owns four families: 1. palette (CSS vars, also fed to success
+   screens)  2. fonts/type  3. glass transparency  4. position on screen.
+   Add direction = golden sun; subtract direction = savanna grass-green.
+   The number-line rider (🐆) and the fruit jar come from aids/savanna.aids.js
+   — art and layout stay strictly separated. ───────────────────────────────── */
+
 :root{
-  --skin-primary:#E07028;
-  --skin-accent:#FFC568;
-  --skin-glow:#FF9A4D;
-  --skin-text:#FFF3E0;
+  --skin-primary:#E07028;   /* sunset orange */
+  --skin-accent: #FFC568;   /* golden hour   */
+  --skin-glow:   #FF9A4D;   /* warm amber    */
+  --skin-text:   #FFF3E0;   /* warm cream    */
 }
 
-/* 2. glass — warm smoked amber */
-.glass{
-  background:rgba(58,22,10,.38);
-  border-color:rgba(255,180,100,.28);
-  box-shadow:0 12px 40px rgba(20,5,4,.5),inset 0 1px 0 rgba(255,210,150,.22);
+/* ── 4. POSITION — board pushed to the lower-RIGHT so Pride Rock and the
+       lions on it (left third) are never covered ── */
+body.theme-savanna .wrap{
+  max-width:640px;
+  /* hug the right edge (5cm in) so Pride Rock & the lions on the left stay
+     clear; NO extra top margin — the board already fills the height, so any
+     downward shift would force a page scrollbar. */
+  margin:0 calc(16px + 5cm) 0 auto;
+}
+@media(max-width:900px){body.theme-savanna .wrap{margin:8px auto 0}}
+
+/* ── 3. GLASS — warm smoked-amber, a soft blur so the savanna glows through ── */
+body.theme-savanna .glass{
+  background:rgba(54,22,10,.40);
+  backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+  border:1px solid rgba(255,185,105,.30);
+  box-shadow:0 14px 44px rgba(20,5,4,.5),inset 0 1px 0 rgba(255,215,160,.20);
 }
 
-/* 3. position — keep the rock and the pride visible on the left */
-.wrap{max-width:760px;margin-left:auto;margin-right:max(12px,calc(50vw - 560px))}
-@media(max-width:900px){.wrap{margin:0 auto}}
+/* ════ HEADER — a slim sun-bleached nameplate ════ */
+body.theme-savanna .header{
+  background:linear-gradient(180deg,rgba(54,22,10,.42),rgba(54,22,10,.12));
+  border:none;box-shadow:none;border-radius:16px;padding:10px 18px;margin-bottom:10px;position:relative;
+}
+body.theme-savanna .header::after{
+  content:'';position:absolute;left:6%;right:6%;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,180,90,.65) 30%,rgba(255,215,130,.8) 50%,rgba(255,180,90,.65) 70%,transparent);
+  box-shadow:0 0 8px rgba(255,170,70,.45);
+}
+body.theme-savanna .uni{display:none}
 
-/* 4. accents */
-.title{background:linear-gradient(90deg,#fff 0%,#ffe2b0 30%,#ffb060 55%,#ffe2b0 80%,#fff 100%);-webkit-background-clip:text;background-clip:text}
-.prog-bar{background:linear-gradient(90deg,#ffd700,#ff8c42)}
+/* title — molten gold against the sky */
+body.theme-savanna .title{
+  font-family:'Fredoka One',cursive;font-size:1.5rem;letter-spacing:.06em;animation:none;
+  background:linear-gradient(180deg,#FFF3D6 0%,#FFD27D 40%,#E07028 74%,#FFE2B0 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 1px 1px rgba(30,10,0,.6)) drop-shadow(0 0 14px rgba(255,160,70,.35));
+}
+body.theme-savanna .hdr-stats{margin-top:4px;gap:24px;font-size:.86rem;font-weight:800;color:#F3D9B8;letter-spacing:.04em}
+body.theme-savanna .hdr-stats strong{color:#FFD27D;text-shadow:0 0 9px rgba(255,170,70,.5)}
+body.theme-savanna .prog-wrap{height:4px;max-width:330px;margin-top:8px;border-radius:2px;background:rgba(255,210,130,.14)}
+body.theme-savanna .prog-bar{background:linear-gradient(90deg,#FFD700,#FF8C42);box-shadow:0 0 10px rgba(255,160,70,.8)}
+
+/* ════ CURRENT-GAME INDICATOR + SETTINGS MODAL ════ */
+body.theme-savanna .mode-ind{color:#E9CDA6;text-shadow:0 1px 4px rgba(30,8,2,.7)}
+body.theme-savanna .mode-ind .mi-cur{color:#FFD27D;text-shadow:0 0 8px rgba(255,170,70,.5)}
+body.theme-savanna #settings-ov,body.theme-savanna #parent-ov{background:rgba(20,6,2,.74)}
+body.theme-savanna .settings-box{
+  background:linear-gradient(168deg,rgba(58,26,12,.97),rgba(34,14,6,.98));
+  border:1px solid rgba(255,185,105,.45);
+  box-shadow:0 0 46px rgba(255,150,60,.16),0 22px 60px rgba(0,0,0,.8);
+}
+body.theme-savanna .settings-title{
+  background:linear-gradient(180deg,#FFF3D6,#FFD27D 45%,#E07028);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-savanna .set-sec-lbl{color:#E9CDA6}
+body.theme-savanna .tier-tab{background:transparent;border:1px solid rgba(255,185,105,.26);color:#D8BC97}
+body.theme-savanna .tier-tab:hover{background:rgba(255,185,105,.09)}
+body.theme-savanna .tier-tab.active{
+  background:rgba(255,160,70,.14);border-color:rgba(255,170,70,.7);color:#FFF3E0;
+  box-shadow:0 0 12px rgba(255,150,60,.28),inset 0 0 12px rgba(255,170,70,.08);
+}
+body.theme-savanna .lvl-btn{background:transparent;border:1px solid rgba(228,200,160,.28);color:#E4D2B6;box-shadow:none}
+body.theme-savanna .lvl-btn:hover{background:rgba(255,210,130,.09);border-color:rgba(255,210,130,.45);box-shadow:0 0 14px rgba(255,160,70,.22)}
+body.theme-savanna .lvl-btn.active{
+  background:rgba(255,210,130,.13);border:1px solid rgba(255,210,130,.9);color:#FFD27D;font-weight:900;
+  box-shadow:0 0 14px rgba(255,170,70,.35),inset 0 0 12px rgba(255,200,100,.1);
+  text-shadow:0 0 8px rgba(255,210,130,.5);transform:scale(1.05);
+}
+
+/* ════ THE CARD — a pane of dusk glass; the savanna glows softly behind ════ */
+body.theme-savanna .card{
+  background:linear-gradient(180deg,rgba(54,22,10,.44),rgba(54,22,10,.22));
+  backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+  border:1px solid rgba(255,185,105,.28);border-radius:18px;
+  box-shadow:0 18px 50px rgba(18,5,3,.5);padding:18px 18px 14px;
+}
+body.theme-savanna .card::before{
+  content:'';position:absolute;left:24px;right:24px;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,225,165,.8),transparent);pointer-events:none;
+}
+
+/* ════ EQUATION — warm light, strong shadow so it reads over the bright sky ══ */
+body.theme-savanna .eq-n,body.theme-savanna .eq-res{
+  color:#FFF6E6;
+  text-shadow:0 0 16px rgba(255,160,70,.45),0 0 4px rgba(255,235,200,.7),0 2px 10px rgba(20,6,2,.8);
+}
+body.theme-savanna .eq-op{text-shadow:0 0 12px rgba(255,160,70,.5),0 2px 8px rgba(20,6,2,.75)}
+body.theme-savanna .op-m,body.theme-savanna .op-p,body.theme-savanna .op-e{color:#FFC568}
+body.theme-savanna .eq-res{color:#FFD27D;text-shadow:0 0 20px rgba(255,160,70,.65),0 2px 10px rgba(20,6,2,.7)}
+
+body.theme-savanna .ans-inp,body.theme-savanna .tx-sub-inp{
+  background:rgba(34,14,6,.5);border:1px solid rgba(255,185,105,.55);color:#FFF6E6;
+  box-shadow:0 0 10px rgba(255,150,60,.14),inset 0 0 14px rgba(20,6,2,.4);
+}
+body.theme-savanna .ans-inp:focus,body.theme-savanna .tx-sub-inp:focus{
+  border-color:#FFB54D;background:rgba(40,16,7,.55);
+  box-shadow:0 0 22px rgba(255,160,70,.5),0 0 4px rgba(255,225,165,.8),inset 0 0 14px rgba(60,30,8,.3);
+}
+
+/* the check button — a glowing amber signet */
+body.theme-savanna .chk-btn{
+  background:rgba(40,16,7,.5);border:1px solid rgba(255,210,130,.7);color:#FFD27D;
+  box-shadow:0 0 14px rgba(255,160,70,.32),inset 0 0 10px rgba(255,170,70,.1);
+}
+body.theme-savanna .chk-btn::after{background:none}
+body.theme-savanna .chk-btn:hover{
+  border-color:#FFE9A8;color:#FFF3D6;background:rgba(255,170,70,.16);
+  box-shadow:0 0 24px rgba(255,175,80,.55),inset 0 0 12px rgba(255,190,90,.16);
+}
+body.theme-savanna .hint{color:#E9CDA6;text-shadow:0 0 8px rgba(255,150,60,.22)}
+body.theme-savanna .div{background:linear-gradient(90deg,transparent,rgba(255,185,105,.4),transparent)}
+body.theme-savanna .fb-ok{color:#BDED8E;text-shadow:0 0 16px rgba(150,230,110,.5)}
+body.theme-savanna .fb-err{color:#FF9D8A;text-shadow:0 0 16px rgba(255,130,100,.45)}
+
+/* ════ ACTION BUTTONS — warm outlines that fill softly on press ════ */
+body.theme-savanna .btn{
+  background:rgba(40,16,7,.42);text-shadow:none;border:1px solid rgba(255,185,105,.45);color:#FFF3E0;
+  box-shadow:0 0 10px rgba(255,150,60,.12);font-weight:800;
+}
+body.theme-savanna .btn::after{background:none}
+body.theme-savanna .b-chk{border-color:rgba(255,170,70,.6);color:#FFD8A0;box-shadow:0 0 12px rgba(255,160,70,.22)}
+body.theme-savanna .b-chk:hover,body.theme-savanna .b-chk:active{background:rgba(255,170,70,.15);box-shadow:0 0 22px rgba(255,175,80,.45)}
+body.theme-savanna .b-try{border-color:rgba(143,212,106,.55);color:#D6F0BE;box-shadow:0 0 12px rgba(110,190,70,.2)}
+body.theme-savanna .b-try:hover,body.theme-savanna .b-try:active{background:rgba(143,212,106,.14);box-shadow:0 0 22px rgba(130,210,90,.45)}
+body.theme-savanna .b-nxt{border-color:rgba(255,210,130,.6);color:#FFE3B0;box-shadow:0 0 12px rgba(255,170,70,.22)}
+body.theme-savanna .b-nxt:hover,body.theme-savanna .b-nxt:active{background:rgba(255,210,130,.14);box-shadow:0 0 22px rgba(255,200,100,.45)}
+body.theme-savanna .b-rpl{
+  background:rgba(255,210,130,.1);border-color:rgba(255,210,130,.85);color:#FFD27D;
+  text-shadow:0 0 9px rgba(255,170,70,.4);box-shadow:0 0 16px rgba(255,170,70,.32);
+}
+body.theme-savanna .b-rpl:hover,body.theme-savanna .b-rpl:active{background:rgba(255,210,130,.18);box-shadow:0 0 28px rgba(255,200,100,.5)}
+
+/* utility discs */
+body.theme-savanna .games-drop-btn,body.theme-savanna .theme-toggle-btn{
+  background:rgba(40,16,7,.42);border:1px solid rgba(255,185,105,.32);box-shadow:0 0 9px rgba(255,150,60,.15);
+}
+body.theme-savanna .tt-hint-icon{background:rgba(40,16,7,.42);border-color:rgba(255,210,130,.5);color:#FFD27D;box-shadow:0 0 9px rgba(255,170,70,.22)}
+body.theme-savanna .gift-indicator{background:transparent;border:1px solid rgba(255,210,130,.38);box-shadow:0 0 10px rgba(255,170,70,.16)}
+body.theme-savanna #score-star{filter:drop-shadow(0 0 7px rgba(255,200,80,.85))}
+
+/* coin stage (TC) */
+body.theme-savanna .coins-stage{background:rgba(40,16,7,.3);border:1px solid rgba(255,185,105,.18)}
+body.theme-savanna .coin-lbl{color:#E9CDA6}
+body.theme-savanna .tc-eq-lbl,body.theme-savanna .tc-hint-top{color:#E4D2B6}
+
+/* ════ THE SAVANNA NUMBER LINE — a dusty game trail with golden markers ════
+   Track = sun-baked earth glowing amber at the heart; ticks = warm seed-pods,
+   every 5th a golden marker. The cheetah (🐆) rider comes from the aid file. */
+body.theme-savanna #nl-panel{background:transparent;border:none;box-shadow:none}
+body.theme-savanna #nl-panel .nl-bar-track{
+  height:5px;border:none;border-radius:3px;
+  background:linear-gradient(90deg,rgba(120,70,30,.4),rgba(255,170,70,.6) 22%,rgba(255,210,130,.7) 50%,rgba(255,170,70,.6) 78%,rgba(120,70,30,.4));
+  box-shadow:0 0 12px rgba(255,170,70,.45),0 0 4px rgba(255,210,130,.5);
+}
+body.theme-savanna #nl-panel .tick{
+  width:4px;height:4px;border-radius:50%;top:calc(100% + 5px);
+  background:rgba(255,225,170,.6);box-shadow:0 0 5px rgba(255,200,130,.55);
+}
+body.theme-savanna #nl-panel .tick.major{
+  width:8px;height:8px;top:calc(100% + 3px);background:#FFD27D;box-shadow:0 0 11px rgba(255,170,70,.9),0 0 4px rgba(255,225,165,.8);
+}
+body.theme-savanna #nl-panel .nl-num{color:#E9CDA6}
+body.theme-savanna #nl-panel .nl-num.major{color:#FFD27D;text-shadow:0 0 9px rgba(255,170,70,.55)}
+body.theme-savanna #nl-panel .nl-dot::after{background:rgba(255,210,130,.85);box-shadow:0 0 6px rgba(255,170,70,.9)}
+body.theme-savanna #nl-panel .kang{filter:drop-shadow(0 2px 5px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,170,70,.5))}
+body.theme-savanna #nl-panel .arc-add{stroke:rgba(255,210,130,.9)}
+body.theme-savanna #nl-panel .arc-sub{stroke:rgba(143,212,106,.9)}
+
+body.theme-savanna #nl-panel .side-btn{background:rgba(40,16,7,.5);border-radius:50%}
+body.theme-savanna #nl-panel .btn-plus{background:rgba(40,16,7,.5);color:#FFC97E;border:1px solid rgba(255,170,70,.65);box-shadow:0 0 12px rgba(255,160,70,.35),inset 0 0 10px rgba(255,150,60,.1)}
+body.theme-savanna #nl-panel .btn-minus{background:rgba(40,16,7,.5);color:#CDEBAE;border:1px solid rgba(143,212,106,.6);box-shadow:0 0 12px rgba(110,190,70,.32),inset 0 0 10px rgba(90,160,50,.1)}
+body.theme-savanna #nl-panel .ctrl-btn{border-radius:50px}
+body.theme-savanna #nl-panel .btn-reset{background:rgba(255,210,130,.1);border:1px solid rgba(255,210,130,.7);color:#FFD27D;box-shadow:0 0 10px rgba(255,170,70,.28)}
+body.theme-savanna #nl-panel .btn-reset:hover{background:rgba(255,210,130,.18)}
+body.theme-savanna #nl-panel .btn-undo{background:transparent;border:1px solid rgba(228,200,160,.4);color:#E9CDA6}
+body.theme-savanna #nl-panel .btn-undo:hover{background:rgba(228,200,160,.12)}
+
+/* ════ CHAIN MODE (mini trail + the fruit jar) ════ */
+body.theme-savanna #tf-nl-note{color:#FFD27D;text-shadow:0 0 8px rgba(255,170,70,.4)}
+body.theme-savanna .pgm-bar{
+  height:5px;border:none;border-radius:3px;
+  background:linear-gradient(90deg,rgba(120,70,30,.4),rgba(255,170,70,.55) 22%,rgba(255,210,130,.6) 50%,rgba(255,170,70,.55) 78%,rgba(120,70,30,.4));
+  box-shadow:0 0 10px rgba(255,170,70,.4);
+}
+body.theme-savanna .pgm-dot{background:radial-gradient(circle at 38% 36%,#FFF3D6,#FFB54D 70%);border-color:rgba(255,235,170,.85);box-shadow:0 0 12px rgba(255,180,80,.95)}
+body.theme-savanna .pgm-nl-num{color:#E9CDA6}
+body.theme-savanna .pgm-nl-num5{color:#FFD27D;text-shadow:0 0 8px rgba(255,170,70,.5)}
+body.theme-savanna .pgm-arc-add{stroke:rgba(255,210,130,.9)}
+body.theme-savanna .pgm-arc-sub{stroke:rgba(143,212,106,.9)}
+body.theme-savanna .pgm-side{border-radius:50%;font-size:2.1rem}
+body.theme-savanna .pgm-side::after{background:none}
+body.theme-savanna .pgm-plus{background:rgba(40,16,7,.5);color:#FFC97E;border:1px solid rgba(255,170,70,.65);box-shadow:0 0 12px rgba(255,160,70,.35),inset 0 0 10px rgba(255,150,60,.1)}
+body.theme-savanna .pgm-minus{background:rgba(40,16,7,.5);color:#CDEBAE;border:1px solid rgba(143,212,106,.6);box-shadow:0 0 12px rgba(110,190,70,.32),inset 0 0 10px rgba(90,160,50,.1)}
+body.theme-savanna .pgm-jar-btm{background:rgba(40,16,7,.55);border-color:rgba(255,185,105,.5)}
+/* round marula fruit (24×26 viewBox) wants a near-square box, not a wide cookie */
+body.theme-savanna .ck-cookie{width:24px;height:26px}
+body.theme-savanna .ck-cookie:hover{filter:brightness(1.2) drop-shadow(0 0 8px rgba(255,190,90,.8))}
+
+/* number-hover tooltip */
+body.theme-savanna #num-tt{
+  background:rgba(40,16,7,.97);border:1px solid rgba(255,185,105,.5);
+  box-shadow:0 6px 24px rgba(18,5,3,.7),0 0 16px rgba(255,160,70,.2);
+}
+body.theme-savanna #num-tt .ntt-lbl{color:#FFD27D;text-shadow:0 0 10px rgba(255,200,100,.4)}
+
+/* ════ END SCREEN ════ */
+body.theme-savanna .end-ttl{
+  background:linear-gradient(180deg,#FFF3D6,#FFD27D 45%,#E07028);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-savanna .end-sc{color:#E4D2B6}
+body.theme-savanna .end-grade-num{
+  background:linear-gradient(180deg,#FFF3D6,#FFB54D 55%,#E07028);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(255,160,70,.45));
+}
+body.theme-savanna .end-grade-max{color:rgba(228,210,182,.75)}
+body.theme-savanna .end-grade-msg{color:#E4D2B6}
+
+@media(max-width:480px){body.theme-savanna .title{font-size:1.15rem}}

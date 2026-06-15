@@ -135,6 +135,10 @@ This is the largest file and owns nearly all gameplay state and logic.
   re-attaches aid listeners + `applyAidsVariant`).
 - **Picker/UI**: `renderModePicker()`, `pickTier()`, `openSettings()`,
   `closeSettings()`, `updateGiftIndicator()`.
+- **Parent gate**: the ⚙️ button calls `openParentGate()` (not `openSettings`
+  directly) — a "prove you're a parent" modal (`#parent-ov`) posing a random
+  single-digit × single-digit product; `checkParentGate()` opens the settings
+  only on a correct answer, `closeParentGate()` dismisses it.
 - **Problem flow**: `loadProblem()`, `renderEq()`, `checkAns()`, `nextP()`,
   `resetCur()`, `endGame()`, `calcGrade()`, `gradeMsg()`.
 - **Self-contained exercise host**: `_colxMount()` / `_colxCleanup`.
@@ -329,6 +333,10 @@ This is the largest file and owns nearly all gameplay state and logic.
 - **`loadExercise(name,onReady)` / `loadExercisesFor(mode,onReady)`** — inject
   one / all exercise type files for a mode.
 - **`loadBackground(name)` / `unloadBackground()`** — scene module lifecycle.
+- **`preloadAll()`** — warms EVERY background (+ its aid art & skin) and EVERY
+  exercise type up front so later theme/level switches are seamless (no
+  first-visit load hitch). Called once from `main.js` during the intro splash;
+  idempotent (`_injectScript` de-dupes the active theme/mode already loading).
 - **Boot block**: `loadAids('classic')` + inject every `SUCCESS_FILES` /
   `SUCCESS_SPECIAL` screen.
 
@@ -403,8 +411,9 @@ This is the largest file and owns nearly all gameplay state and logic.
 **Key functionality you must know**
 - **Boot order**: `NL.attachDocumentEvents()` → `NL.attachBarEvents()` →
   `renderModePicker()` → `applyTheme()` → `spawnParticles()` →
-  `updateGiftIndicator()` → `bootIntroSplash()`, then load the persisted mode's
-  exercise files and build the first pool.
+  `updateGiftIndicator()` → `bootIntroSplash()` → `preloadAll()` (deferred,
+  warms every background/skin/aid/exercise during the splash), then load the
+  persisted mode's exercise files and build the first pool.
 - **Boot-race guard**: the boot pool build captures `_bootMode=mode` and, inside
   the `loadExercisesFor` callback, bails if `mode!==_bootMode` — so if the user
   picks a game before the boot load finishes, `setMode`'s own callback owns the
