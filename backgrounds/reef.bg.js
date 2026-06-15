@@ -152,7 +152,7 @@ window.BACKGROUNDS.reef = {
       size: 3.4 + Math.random() * 2.4,
       phase: Math.random() * TAU,
     }));
-    SCHOOL.leader = { x: W * 0.3, y: H * 0.32, vx: 0.6 };
+    SCHOOL.leader = { x: W * 0.3, y: H * 0.32, vx: 0.6, sp: 1.5 + Math.random() * 1.5 };   // fixed 1.5×–3× cruise
     SCHOOL.avoid = { x: 0, y: 0, t0: -99, strength: 0 };   // boids parting around cursor/click
     SCHOOL.ballF = 0;                                       // bait-ball intensity (shark near → 1)
 
@@ -314,7 +314,7 @@ window.BACKGROUNDS.reef = {
 
     // A pufferfish that balloons up on schedule
     PUFFER = {
-      x: W * 0.7, y: H * 0.55, vx: 0.3,
+      x: W * 0.7, y: H * 0.55, vx: 0.3, sp: 1.5 + Math.random() * 1.5,   // fixed 1.5×–3× cruise
       s: Math.min(W, H) * 0.034,
       phase: Math.random() * TAU,
       puffStart: null, nextPuffAt: null,
@@ -322,7 +322,7 @@ window.BACKGROUNDS.reef = {
 
     // An inseparable pair of butterflyfish, heart and all
     BUTTERS = {
-      x: W * 0.35, baseY: H * 0.44, vx: 0.4,
+      x: W * 0.35, baseY: H * 0.44, vx: 0.4, sp: 1.5 + Math.random() * 1.5,   // fixed 1.5×–3× cruise
       s: Math.min(W, H) * 0.023,
       phase: Math.random() * TAU,
       fa: {}, fb: {},                  // per-fish poop state
@@ -2439,7 +2439,7 @@ window.BACKGROUNDS.reef = {
         s: bs * (0.85 + Math.random() * 0.3), phase: Math.random() * TAU,
       }));
     }
-    return { x, baseY, vx, dir, members };
+    return { x, baseY, vx, dir, members, sp: 1.5 + Math.random() * 1.5 };   // a fixed 1.5×–3× cruise for this pass
   }
   function giantNear() { return WHALE.active || ORCA.active; }   // a giant on screen → fish flee
   function updateShoals() {
@@ -2450,7 +2450,7 @@ window.BACKGROUNDS.reef = {
     }
     for (let i = 0; i < SHOALS.length; i++) {
       const g = SHOALS[i];
-      g.x += g.vx * (pred ? 4.5 : 1);                   // dart away when a giant is near
+      g.x += g.vx * g.sp * (pred ? 4.5 : 1);            // fixed 1.5×–3× cruise; dart faster from a giant
       if ((g.vx > 0 && g.x > W + reach) || (g.vx < 0 && g.x < -reach)) {
         if (pred) SHOALS.fled = true;                   // stay off-screen until it leaves
         else SHOALS[i] = spawnShoal(false);
@@ -2469,10 +2469,10 @@ window.BACKGROUNDS.reef = {
 
   function drawSchool(t) {
     const fleeing = giantNear();                        // a giant on screen → the school bolts away & scatters
-    SCHOOL.leader.x += SCHOOL.leader.vx * (fleeing ? 5 : 1);
+    SCHOOL.leader.x += SCHOOL.leader.vx * SCHOOL.leader.sp * (fleeing ? 5 : 1);
     if (SCHOOL.leader.x > W + 150) {
       if (fleeing) SCHOOL.leader.x = W + 300;            // stay off-screen until the danger passes
-      else { SCHOOL.leader.x = -150; SCHOOL.leader.y = H * (0.16 + Math.random() * 0.42); }
+      else { SCHOOL.leader.x = -150; SCHOOL.leader.y = H * (0.16 + Math.random() * 0.42); SCHOOL.leader.sp = 1.5 + Math.random() * 1.5; }
     }
     if (fleeing && (SCHOOL.scatterT == null || t - SCHOOL.scatterT > 1.8)) SCHOOL.scatterT = t;
     const lx = SCHOOL.leader.x, ly = SCHOOL.leader.y + Math.sin(t * 0.7) * 16;
@@ -2670,9 +2670,9 @@ window.BACKGROUNDS.reef = {
       p = p * p * (3 - 2 * p);
     }
 
-    P.x += P.vx * (1 - 0.85 * p) * dashBoost(P, t) * (giantNear() ? 3.5 : 1);  // flees a giant
-    if (P.vx > 0 && P.x > W + P.s * 5) { P.x = -P.s * 5; P.y = H * (0.4 + Math.random() * 0.3); }
-    if (P.vx < 0 && P.x < -P.s * 5)    { P.x = W + P.s * 5; P.y = H * (0.4 + Math.random() * 0.3); }
+    P.x += P.vx * P.sp * (1 - 0.85 * p) * dashBoost(P, t) * (giantNear() ? 3.5 : 1);  // fixed 1.5×–3× cruise; flees a giant
+    if (P.vx > 0 && P.x > W + P.s * 5) { P.x = -P.s * 5; P.y = H * (0.4 + Math.random() * 0.3); P.sp = 1.5 + Math.random() * 1.5; }
+    if (P.vx < 0 && P.x < -P.s * 5)    { P.x = W + P.s * 5; P.y = H * (0.4 + Math.random() * 0.3); P.sp = 1.5 + Math.random() * 1.5; }
     const s = P.s;
     const y = P.y + Math.sin(t * 0.9 + P.phase) * 8 - p * s * 0.4;
     const dir = P.vx > 0 ? 1 : -1;
@@ -2885,9 +2885,9 @@ window.BACKGROUNDS.reef = {
   // The sweethearts — two butterflyfish in formation, heart between them
   function drawButters(t) {
     const B = BUTTERS;
-    B.x += B.vx * (giantNear() ? 3.5 : 1);            // the pair flees a passing giant
-    if (B.vx > 0 && B.x > W + B.s * 6) { B.x = -B.s * 6; B.baseY = H * (0.24 + Math.random() * 0.32); }
-    if (B.vx < 0 && B.x < -B.s * 6)    { B.x = W + B.s * 6; B.baseY = H * (0.24 + Math.random() * 0.32); }
+    B.x += B.vx * B.sp * (giantNear() ? 3.5 : 1);     // fixed 1.5×–3× cruise; the pair flees a passing giant
+    if (B.vx > 0 && B.x > W + B.s * 6) { B.x = -B.s * 6; B.baseY = H * (0.24 + Math.random() * 0.32); B.sp = 1.5 + Math.random() * 1.5; }
+    if (B.vx < 0 && B.x < -B.s * 6)    { B.x = W + B.s * 6; B.baseY = H * (0.24 + Math.random() * 0.32); B.sp = 1.5 + Math.random() * 1.5; }
     const dir = B.vx > 0 ? 1 : -1;
     const y = B.baseY + Math.sin(t * 0.7 + B.phase) * 18;
     const ax = B.x + dir * B.s * 1.6, ay = y - B.s * 0.75 + Math.sin(t * 1.3 + B.phase) * 5;

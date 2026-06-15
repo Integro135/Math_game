@@ -310,6 +310,13 @@ the sand.
 fusilier `SCHOOL` is a single tight shoal (leader + 8 followers), `SHOALS` spawns
 2 small groups and `JELLIES` 2–4 bells.
 
+**Fish cruise faster, at varied speeds:** each free-swimmer carries a random
+**1.5×–3× speed multiplier** (`sp = 1.5 + Math.random()*1.5`) on its per-frame
+travel — the shoals, fusilier school, puffer and butterflyfish pair. The `sp` is
+**fixed for the whole pass across the screen** and only re-rolled when the fish
+re-enters, so a fish keeps one steady speed entry-to-exit; the giant-flee burst
+multiplies on top (the only time it speeds up mid-pass).
+
 **Creatures & systems:** sun `RAYS`, sediment `MOTES`, seep `BUBBLES`, fusilier
 `SCHOOL` (leader + 8 followers), `KELP`, `GRASS`, **two seahorses** (`SEAHORSE`
 gold + `SEAHORSE2` pink) that **slowly roam the WHOLE screen, not just the
