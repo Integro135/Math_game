@@ -32,7 +32,7 @@
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v7.62">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v7.66">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -83,26 +83,46 @@
   </div>
 </div>
 
-<!-- ── Settings modal — difficulty + game selection (rendered from
-     DIFFICULTY_GROUPS by renderModePicker into #level-row) ── -->
+<!-- ── Settings modal — three sub-tabs: general (game picker + options),
+     game prizes, and run history. Tabs switch via pickSetTab(). ── -->
 <div id="settings-ov" style="display:none" onclick="if(event.target===this)closeSettings()">
   <div class="settings-box">
     <div class="settings-hdr">
       <span class="settings-title">⚙️ הַגְדָּרוֹת מִשְׂחָק</span>
       <button class="ko-close" onclick="closeSettings()">✕</button>
     </div>
-    <div class="set-sec-lbl">בַּחֲרִי רָמָה וּמִשְׂחָק:</div>
-    <div class="level-row" id="level-row"></div>
-    <div class="set-sec-lbl set-cfg-lbl">עוֹד הַגְדָּרוֹת:</div>
-    <label class="set-toggle">
-      <input type="checkbox" id="intro-toggle" checked onchange="setIntroEnabled(this.checked)">
-      <span>מָסַךְ פְּתִיחָה בִּטְעִינַת הַמִּשְׂחָק</span>
-    </label>
-    <label class="set-name">
-      <span>הַשֵּׁם שֶׁלִּי:</span>
-      <input type="text" id="name-input" maxlength="12" placeholder="לְמָשָׁל: נֹעָה"
-             oninput="setPlayerName(this.value)">
-    </label>
+    <div class="set-tabs">
+      <button class="set-tab active" data-stab="general" onclick="pickSetTab('general')">⚙️ כְּלָלִי</button>
+      <button class="set-tab" data-stab="prizes" onclick="pickSetTab('prizes')">🎁 פְּרָסִים</button>
+      <button class="set-tab" data-stab="history" onclick="pickSetTab('history')">📜 הִיסְטוֹרְיָה</button>
+    </div>
+
+    <!-- General settings (game picker + options) -->
+    <div class="set-panel set-panel-active" data-stab="general">
+      <div class="set-sec-lbl">בַּחֲרִי רָמָה וּמִשְׂחָק:</div>
+      <div class="level-row" id="level-row"></div>
+      <div class="set-sec-lbl set-cfg-lbl">עוֹד הַגְדָּרוֹת:</div>
+      <label class="set-toggle">
+        <input type="checkbox" id="intro-toggle" checked onchange="setIntroEnabled(this.checked)">
+        <span>מָסַךְ פְּתִיחָה בִּטְעִינַת הַמִּשְׂחָק</span>
+      </label>
+      <label class="set-name">
+        <span>הַשֵּׁם שֶׁלִּי:</span>
+        <input type="text" id="name-input" maxlength="12" placeholder="לְמָשָׁל: נֹעָה"
+               oninput="setPlayerName(this.value)">
+      </label>
+    </div>
+
+    <!-- Game prizes -->
+    <div class="set-panel" data-stab="prizes">
+      <div class="set-sec-lbl">גֹּבַהּ הַפְּרָס לְכָל מִשְׂחָק (0 = אֵין פְּרָס):</div>
+      <div class="prize-row" id="prize-row"></div>
+    </div>
+
+    <!-- Run history (name + game + grade per completed set, kept across runs) -->
+    <div class="set-panel" data-stab="history">
+      <div id="history-body"></div>
+    </div>
   </div>
 </div>
 

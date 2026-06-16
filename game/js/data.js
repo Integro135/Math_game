@@ -45,11 +45,14 @@ const DIFFICULTY_GROUPS=[
     {id:20,  label:'עַד 20'},
   ]},
   {id:'medium',label:'בֵּינוֹנִי',modes:[
-    {id:'br',label:'גָּשֵׁר 10 🌈 🎁'},
-    {id:'mx',label:'מַלְכָּה 👸 🎁'},
-    {id:'sup',label:'סוּפֶּרְמֶן 🦸 🎁'},
+    {id:'br',label:'גָּשֵׁר 10 🌈'},
+    {id:'mx',label:'מַלְכָּה 👸'},
+    {id:'sup',label:'סוּפֶּרְמֶן 🦸'},
   ]},
 ];
+/* NOTE: the 🎁 prize badge is NOT part of the label — it is appended at render
+   time (renderModePicker) only for games that currently have a prize set, and
+   the level is editable per game in settings (GIFT_GOALS / setGiftGoal). */
 /* NOTE: the standalone "עַד 100 💯" game (mode 'big', TBG big-number ±1/2) was
    removed from the picker; those exercises now live INSIDE Queen (mx) and
    Superman (sup) — see big_step.ex.js make('mx'/'sup') and problems.js. The

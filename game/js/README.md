@@ -126,6 +126,25 @@ This is the largest file and owns nearly all gameplay state and logic.
   (`'kang'`|`'nl'`), the current-problem fields `ptype,num1..num4`, `tcCoins`,
   `ttOp`, `bgOp`, `aidUsed`, `report[]`, `tryFirst`, plus gift config
   `GIFT_GOALS`/`GIFT_MODE_LABELS` and `GL` (=12).
+- **Per-game prize levels** (settings): `GIFT_GOALS` is a live object built by
+  `_rebuildGiftGoals()` from `DEFAULT_GIFT_GOALS` (`br:800, mx:900, sup:650`)
+  merged with per-game overrides persisted in `localStorage.giftGoals`. A game
+  with **level 0 / empty has no prize** (absent from `GIFT_GOALS`, no 🎁 badge,
+  no gift screen). `setGiftGoal(mode, val)` saves an override (0 clears it) and
+  refreshes the picker + indicator; `renderPrizeConfig()` renders one editable
+  input per game in the settings modal (`#prize-row`). The 🎁 badge is appended
+  to a picker button by `renderModePicker` only when `GIFT_GOALS[id] > 0` (the
+  labels in `DIFFICULTY_GROUPS` no longer hard-code 🎁).
+- **Score history**: every completed set is logged by `recordHistory(grade)`
+  (called from `endGame`) into `localStorage.scoreHistory` — `{name, mode, game,
+  grade, ts}`, newest-first, capped 60. `renderHistory()` lists name + game +
+  grade + date into `#history-body`; `clearHistory()` wipes it.
+- **Settings sub-tabs**: the settings modal is split into three tabs —
+  **general** (game picker + intro toggle + name), **prizes** (`renderPrizeConfig`)
+  and **history** (`renderHistory`). `pickSetTab(tab)` toggles the active
+  `.set-tab`/`.set-panel`; `openSettings()` resets to the general tab and renders
+  all three panels (`_setTab`/`_applySetTab`). The prizes/history views live
+  inside the modal — there is no separate history overlay.
 - **Persisted mode**: `_savedMode()` reads `localStorage.gameMode` and resolves
   the string back through `DIFFICULTY_GROUPS` to recover the original id *type*
   (number vs string), falling back to `'mx'`; `_persistMode()` writes it.
@@ -190,9 +209,10 @@ This is the largest file and owns nearly all gameplay state and logic.
 - **digit hint** (`showDigitHint`) costs 30 points, shown only for TT/TBG and
   two-digit TS/TM, disabled until `score>=30`.
 - **`report` & `endGame`**: `calcGrade()` scores out of 1000 (100 per
-  clean-first-try problem, floored at 101). `endGame()` renders the end screen;
-  if the grade clears `GIFT_GOALS[mode]` (`br:750`, `mx:950`) it schedules
-  `showGiftScreen()`.
+  clean-first-try problem, floored at 101). `endGame()` renders the end screen,
+  logs the set via `recordHistory()`, and if the grade clears the game's prize
+  level (`GIFT_GOALS[mode] > 0`, parent-configurable — defaults `br:800, mx:900,
+  sup:650`) shows the 🎁 badge + schedules `showGiftScreen()`.
 - **number-hover tooltip** (`#num-tt`): hovering any `.eq-n`/`.eq-res` renders
   that number as **objects borrowed from the active aid variant's jar art**
   (`AIDS.current.jar.itemSVG`), grouped in fives, positioned below (flips above
@@ -229,6 +249,9 @@ This is the largest file and owns nearly all gameplay state and logic.
     using the **plain** (non-split) display. `_nttRender(num, split, anchorEl, side)`
     is the shared renderer behind hover (`_nttShow`), this input preview, and the
     Superman column preview; `side='right'` positions it beside the anchor.
+  - **Closes on celebration/prize:** `showFw` and `showGiftScreen` (success.js)
+    call `_nttHide()` so a tooltip left open at solve-time never floats over the
+    success or gift screen.
   - **Superman column preview (`TCA`):** `column_add.ex.js` binds the column
     digits — hovering one previews its objects in `#num-tt` to the **RIGHT** of the
     digit (below would cover a row; `side='right'`, compacter via the `ntt-rt`
@@ -379,8 +402,10 @@ This is the largest file and owns nearly all gameplay state and logic.
 - **`loadBackground(name)` / `unloadBackground()`** — scene module lifecycle.
 - **`preloadAll()`** — warms EVERY background (+ its aid art & skin) and EVERY
   exercise type up front so later theme/level switches are seamless (no
-  first-visit load hitch). Called once from `main.js` during the intro splash;
-  idempotent (`_injectScript` de-dupes the active theme/mode already loading).
+  first-visit load hitch). Called once from `main.js`, but **only when the intro
+  splash is enabled** (`introEnabled()`): the splash hides the warm-up; with no
+  splash each mode loads its own types lazily via `loadExercisesFor`. Idempotent
+  (`_injectScript` de-dupes the active theme/mode already loading).
 - **Boot block**: `loadAids('classic')` + inject every `SUCCESS_FILES` /
   `SUCCESS_SPECIAL` screen.
 

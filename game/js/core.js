@@ -1,11 +1,37 @@
-/* ── Gift reward thresholds (grade out of 1000) ── */
-const GIFT_GOALS={br:800,mx:900,sup:650};
+/* ── Gift reward thresholds (grade out of 1000) ─────────────────────────────
+   Per-game prize levels. The defaults below ship enabled for the reward games;
+   a parent can set ANY game's level from settings (renderPrizeConfig →
+   setGiftGoal), persisted in localStorage 'giftGoals'. A level of 0 / empty
+   means NO prize for that game — no 🎁 badge on its picker button, no gift
+   screen on completion. GIFT_GOALS holds ONLY the games that currently have a
+   prize (a game with no prize is absent), so `GIFT_GOALS[mode]` is falsy then. */
+const DEFAULT_GIFT_GOALS={br:800,mx:900,sup:650};
+const GIFT_GOALS={};
+function _savedGiftGoals(){try{return JSON.parse(localStorage.getItem('giftGoals')||'{}')||{};}catch(e){return {};}}
+function _rebuildGiftGoals(){
+  for(const k in GIFT_GOALS)delete GIFT_GOALS[k];
+  Object.assign(GIFT_GOALS,DEFAULT_GIFT_GOALS);
+  const ov=_savedGiftGoals();
+  for(const k in ov){const v=parseInt(ov[k],10);
+    if(v>0)GIFT_GOALS[k]=Math.min(1000,v); else delete GIFT_GOALS[k];}   // override: 0/empty removes the prize
+}
+_rebuildGiftGoals();
+/* set (or clear, with 0/empty) a game's prize level; persists + refreshes UI */
+function setGiftGoal(m,val){
+  const ov=_savedGiftGoals();
+  let v=parseInt(val,10); if(isNaN(v)||v<0)v=0; if(v>1000)v=1000;
+  ov[m]=v;                                   // store 0 explicitly = "no prize"
+  try{localStorage.setItem('giftGoals',JSON.stringify(ov));}catch(e){}
+  _rebuildGiftGoals();
+  if(typeof renderModePicker==='function')renderModePicker();   // refresh the 🎁 badges
+  if(typeof updateGiftIndicator==='function')updateGiftIndicator();
+}
 const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
   const goal=GIFT_GOALS[mode];
-  if(goal==null){ind.style.display='none';return;}
+  if(!goal){ind.style.display='none';return;}
   ind.style.display='flex';
   const nxt=document.getElementById('gift-next');
   if(nxt)nxt.textContent=`🎁 המתנה הבאה: ${goal}`;
@@ -82,18 +108,55 @@ function renderModePicker(){
     h+=`<div class="tier-modes${g.id===tier?' tier-active':''}" data-tier="${g.id}">`;
     for(const md of g.modes){
       const idArg=typeof md.id==='string'?`'${md.id}'`:md.id;
-      h+=`<button class="lvl-btn${md.id===mode?' active':''}" id="lb${md.id}" onclick="setMode(${idArg})">${md.label}</button>`;
+      // a 🎁 badge appears only when this game currently has a prize set
+      const lbl=md.label+(GIFT_GOALS[md.id]>0?' 🎁':'');
+      h+=`<button class="lvl-btn${md.id===mode?' active':''}" id="lb${md.id}" onclick="setMode(${idArg})">${lbl}</button>`;
     }
     h+='</div>';
   }
   row.innerHTML=h;
 }
 function pickTier(t){_pickerTier=t;renderModePicker();}
+/* settings sub-tabs: 'general' | 'prizes' | 'history' */
+let _setTab='general';
+function _applySetTab(){
+  const box=document.querySelector('#settings-ov .settings-box');
+  if(!box)return;
+  box.querySelectorAll('.set-tab').forEach(b=>b.classList.toggle('active',b.dataset.stab===_setTab));
+  box.querySelectorAll('.set-panel').forEach(p=>p.classList.toggle('set-panel-active',p.dataset.stab===_setTab));
+}
+function pickSetTab(t){
+  _setTab=t;
+  if(t==='history')renderHistory();          // refresh on view
+  else if(t==='prizes')renderPrizeConfig();
+  _applySetTab();
+}
+/* prize-level editor (settings): one row per game with a 0–1000 input;
+   0 / empty clears that game's prize (see setGiftGoal). */
+function renderPrizeConfig(){
+  const row=document.getElementById('prize-row');
+  if(!row)return;
+  let h='';
+  for(const g of DIFFICULTY_GROUPS){
+    for(const md of g.modes){
+      const idArg=typeof md.id==='string'?`'${md.id}'`:md.id;
+      const v=GIFT_GOALS[md.id]>0?GIFT_GOALS[md.id]:'';
+      h+=`<label class="prize-item"><span class="prize-lbl">${md.label}</span>`+
+         `<input type="text" inputmode="numeric" class="prize-inp" id="pz${md.id}" value="${v}" placeholder="0"`+
+         ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4);setGiftGoal(${idArg},this.value)"></label>`;
+    }
+  }
+  row.innerHTML=h;
+}
 /* ── Settings modal ── */
 function openSettings(e){
   if(e)e.stopPropagation();
   _pickerTier=null;            // open on the current mode's tier
+  _setTab='general';           // always open on the general tab
   renderModePicker();
+  renderPrizeConfig();         // per-game prize-level inputs (prizes tab)
+  renderHistory();             // run-history list (history tab)
+  _applySetTab();
   // sync the intro-splash toggle with its saved state
   const cb=document.getElementById('intro-toggle');
   if(cb&&typeof introEnabled==='function')cb.checked=introEnabled();
@@ -648,23 +711,26 @@ function gradeMsg(g){
 function endGame(){
   document.getElementById('prog-bar').style.width='100%';
   document.getElementById('prog-txt').textContent='🎊 סִיַּמְתְּ!';
+  const g=calcGrade();const giftGoal=GIFT_GOALS[mode];const wonGift=giftGoal>0&&g>=giftGoal;
+  recordHistory(g);              // log this completed set (name + game + grade)
   if(mode===0){
     document.getElementById('card').innerHTML=`
       <div class="end-scr">
         <div class="end-uni">🌟</div>
         <div class="end-ttl">🌟 מְעֻלֶּה! 🌟</div>
-        <div class="end-grade-num">${calcGrade()}</div>
+        <div class="end-grade-num">${g}</div>
         <div class="end-grade-max">מִתּוֹךְ 1000</div>
-        <div class="end-grade-msg">${gradeMsg(calcGrade())}</div>
+        <div class="end-grade-msg">${gradeMsg(g)}</div>
+        ${wonGift?'<span class="end-gift">🎁</span>':''}
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
           <button class="btn b-rpl" onclick="setMode('br')">הַמְשִׁיכִי לְגָּשֵׁר 10 🚀</button>
           <button class="btn b-rep" onclick="reportOpen()">📊 סִיכּוּם</button>
         </div>
       </div>`;
+    if(wonGift&&typeof showGiftScreen==='function')setTimeout(showGiftScreen,450);
     return;
   }
-  {const g=calcGrade();const giftGoal=GIFT_GOALS[mode];const wonGift=giftGoal!=null&&g>=giftGoal;
-  document.getElementById('card').innerHTML=`
+  {document.getElementById('card').innerHTML=`
     <div class="end-scr">
       <div class="end-uni">🦄</div>
       <div class="end-ttl">🎊 סִיַּמְתְּ! 🎊</div>
@@ -758,6 +824,37 @@ function reportOpen(){
   document.getElementById('report-ov').style.display='flex';
 }
 function reportClose(){document.getElementById('report-ov').style.display='none';}
+
+/* ── Score history — every completed set is logged (name + game + grade) and
+   kept across runs in localStorage 'scoreHistory' (newest first, capped 60).
+   Shown in the settings modal's 📜 history tab (renderHistory → #history-body). ── */
+function _escHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function _gameLabel(m){const md=DIFFICULTY_GROUPS.flatMap(g=>g.modes).find(x=>x.id===m);return md?md.label:String(m);}
+function _loadHistory(){try{return JSON.parse(localStorage.getItem('scoreHistory')||'[]')||[];}catch(e){return [];}}
+function recordHistory(grade){
+  try{
+    const h=_loadHistory();
+    h.unshift({name:(typeof playerName==='function'?playerName():''),mode:String(mode),
+               game:_gameLabel(mode),grade:grade,ts:Date.now()});
+    localStorage.setItem('scoreHistory',JSON.stringify(h.slice(0,60)));
+  }catch(e){}
+}
+function clearHistory(){try{localStorage.removeItem('scoreHistory');}catch(e){}renderHistory();}
+function renderHistory(){
+  const body=document.getElementById('history-body');if(!body)return;
+  const h=_loadHistory();
+  if(!h.length){body.innerHTML='<div class="hist-empty">עֲדַיִן אֵין צִיּוּנִים שְׁמוּרִים 🙂</div>';return;}
+  const rows=h.map(e=>{
+    const d=new Date(e.ts||0);
+    const dt=(e.ts&&!isNaN(d))?`${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:'';
+    const nm=e.name?`<span class="hist-name">${_escHtml(e.name)}</span>`:'';
+    return `<div class="hist-row"><span class="hist-grade">${e.grade}</span>`+
+           `<span class="hist-game">${_escHtml(e.game||e.mode||'')}</span>${nm}`+
+           `<span class="hist-date">${dt}</span></div>`;
+  }).join('');
+  body.innerHTML=`<div class="hist-list">${rows}</div>`+
+    `<button class="hist-clear" onclick="clearHistory()">🗑️ נַקֵּה הִיסְטוֹרְיָה</button>`;
+}
 
 /* ── Number-hover visualization tooltip ──
    Hovering on any .eq-n or .eq-res shows that number rendered as OBJECTS.

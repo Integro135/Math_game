@@ -160,6 +160,41 @@ _CLASS_LABELS = {
         "14-7: split parts are positive and sum to the whole (7)",
     "test_two_addends_first_input_previews_objects_no_split":
         "?+?=15: typing in the first box previews that many objects (no split)",
+    "test_tooltip_closes_when_success_screen_shows":
+        "Objects tooltip closes when the celebration/prize screen opens",
+    "TestPrizeConfig":           "Per-game prize-level config — editable, persisted, dynamic 🎁",
+    "test_prize_inputs_render_one_per_game":
+        "Settings shows one prize-level input per game",
+    "test_default_thresholds_only_reward_games":
+        "Out of the box only br/mx/sup have a prize; basic games have none",
+    "test_badge_shows_only_when_prize_set":
+        "The 🎁 badge on a game button tracks whether it has a prize",
+    "test_zero_clears_prize_from_goals":
+        "Setting level 0 removes the game's prize",
+    "test_prize_level_persists_across_reload":
+        "Changed prize levels survive a page reload (localStorage)",
+    "test_cleared_prize_gives_no_gift_screen":
+        "A cleared prize → perfect run awards no gift screen",
+    "test_newly_set_prize_awards_gift":
+        "Giving a basic game a prize → a clearing run awards the gift",
+    "TestScoreHistory":          "Score history — name + game + grade per set, persisted",
+    "test_completed_game_is_recorded":
+        "Finishing a set logs grade + name + game",
+    "test_history_is_newest_first":
+        "History lists the newest completed set first",
+    "test_history_persists_across_reload":
+        "Score history survives a page reload (localStorage)",
+    "test_history_tab_shows_recorded_rows":
+        "Settings 📜 history tab lists recorded runs",
+    "TestSettingsTabs":          "Settings sub-tabs — general / prizes / history",
+    "test_opens_on_general_tab":
+        "Settings opens on the general tab (game picker visible)",
+    "test_prizes_tab_shows_prize_inputs":
+        "The prizes tab reveals the per-game prize inputs",
+    "test_history_tab_shows_history_body":
+        "The history tab reveals the run-history list",
+    "test_clear_history_empties_it":
+        "Clear-history wipes the saved log",
     "TestSupermanDigitPreview":  "Superman column digit object-preview (right, per column)",
     "test_units_first_number_is_plain":
         "Superman 18+15: first number's units (8) previews plain, no split",
@@ -322,6 +357,21 @@ def get_state(page) -> dict:
         idx, score, done, mode, ttOp, bgOp,
         TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TBG
     })""")
+
+
+def open_settings_via_gate(page):
+    """Click the gear and clear the parent gate (an a×b challenge) so the settings
+    modal opens. The gate stores the expected product in the global `_parentAns`,
+    so the test answers it deterministically (no need to read the rendered sum)."""
+    page.click("#settings-btn")
+    page.wait_for_function(
+        "getComputedStyle(document.getElementById('parent-ov')).display === 'flex'",
+        timeout=TIMEOUT)
+    page.evaluate(
+        "document.getElementById('parent-ans').value = String(_parentAns); checkParentGate()")
+    page.wait_for_function(
+        "getComputedStyle(document.getElementById('settings-ov')).display === 'flex'",
+        timeout=TIMEOUT)
 
 
 def correct_answer(state: dict) -> tuple:
@@ -945,12 +995,21 @@ class TestGameFlow:
 
     def test_progress_bar_advances_each_problem(self, page):
         """The progress bar width must grow after each solved problem."""
-        widths = []
-        for _ in range(3):
+        def width():
             style = page.locator("#prog-bar").get_attribute("style") or ""
-            w = float(style.split("width:")[1].split("%")[0].strip()) if "width:" in style else 0
-            widths.append(w)
+            return float(style.split("width:")[1].split("%")[0].strip()) if "width:" in style else 0.0
+        widths = [width()]
+        for _ in range(2):
+            prev = widths[-1]
             solve_one(page)
+            # wait until the bar's (inline) width reflects the advance — robust
+            # under full-suite load, where reading it immediately can race the
+            # post-solve loadProblem() that sets the new width.
+            page.wait_for_function(
+                "p => { const s = document.getElementById('prog-bar').style.width;"
+                " return (s ? parseFloat(s) : 0) > p + 0.5; }",
+                arg=prev, timeout=TIMEOUT)
+            widths.append(width())
 
         assert widths[0] < widths[1] < widths[2], \
             f"Progress bar should grow: {widths}"
@@ -1917,6 +1976,24 @@ class TestNumberHoverTooltip:
         assert gap >= 10, \
             f"Expected ≥10px gap between groups of 5, got {gap}px"
 
+    def test_tooltip_closes_when_success_screen_shows(self, page):
+        """A lingering objects tooltip must CLOSE when the celebration / prize
+        screen opens (otherwise it floats over the success screen)."""
+        page.evaluate("setMode(10)")
+        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+        page.evaluate("problems[0]={t:TS,a:18,b:11}; idx=0; loadProblem()")
+        page.wait_for_timeout(120)
+        page.evaluate(
+            "[...document.querySelectorAll('#eq .eq-n')]"
+            ".find(e=>e.getAttribute('data-num')==='18')"
+            ".dispatchEvent(new MouseEvent('mouseover',{bubbles:true}))")
+        page.wait_for_function(
+            "document.getElementById('num-tt')?.style.display === 'block'", timeout=TIMEOUT)
+        page.evaluate("showFw()")
+        assert page.evaluate("document.getElementById('num-tt').style.display") == "none", \
+            "tooltip must be hidden once the celebration/prize screen shows"
+
 
 # ─────────────────────────────────────────────────────────
 # Crossing-ten number-bond split in the hover tooltip
@@ -2516,9 +2593,12 @@ class TestSupermanColumnAdd:
         page.wait_for_timeout(100)
         before = page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)||0")
         page.keyboard.press(" ")
-        page.wait_for_timeout(350)           # let the dot transition settle
+        # poll until the rider has advanced — robust to a slow CSS transition under
+        # full-suite load (a fixed wait here was flaky). one forward step == +5%.
+        page.wait_for_function(
+            f"((parseFloat(document.getElementById('nl-dot').style.left)||0) - ({before})) > 3",
+            timeout=TIMEOUT)
         after = page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)||0")
-        # one forward step on a 0..20 line == +5%
         assert after - before > 3, \
             f"space must move the rider forward (add), got {before}% → {after}%"
         assert page.evaluate("document.getElementById('colx-iU').value") == "", \
@@ -2779,8 +2859,7 @@ class TestSettingsModalFlow:
             "getComputedStyle(document.getElementById('settings-ov')).display")
 
     def test_gear_opens_and_pick_switches_and_closes(self, page):
-        page.click("#settings-btn")
-        page.wait_for_timeout(250)
+        open_settings_via_gate(page)   # gear → parent gate → settings
         assert self._display(page) == "flex"
         page.click(".tier-tab[data-tier='easy']")
         page.wait_for_timeout(150)
@@ -2802,6 +2881,36 @@ class TestSettingsModalFlow:
         page.wait_for_function("mode === 20 && problems.length > 0", timeout=TIMEOUT)
         ind = page.inner_text("#mode-ind")
         assert "20" in ind, f"indicator must show the current game, got {ind!r}"
+
+
+# ─────────────────────────────────────────────────────────
+# Settings sub-tabs — general / prizes / history (pickSetTab)
+# ─────────────────────────────────────────────────────────
+
+class TestSettingsTabs:
+    """The settings modal is split into three sub-tabs; one panel shows at a
+    time and it always opens on the general tab."""
+
+    def test_opens_on_general_tab(self, page):
+        open_settings_via_gate(page)
+        assert page.locator("#level-row").is_visible(), \
+            "settings opens on the general tab (game picker visible)"
+        assert not page.locator("#prize-row").is_visible(), "prizes panel hidden initially"
+        assert not page.locator("#history-body").is_visible(), "history panel hidden initially"
+
+    def test_prizes_tab_shows_prize_inputs(self, page):
+        open_settings_via_gate(page)
+        page.click(".set-tab[data-stab='prizes']")
+        page.wait_for_selector("#prize-row .prize-inp", state="visible", timeout=TIMEOUT)
+        assert page.locator("#prize-row").is_visible()
+        assert not page.locator("#level-row").is_visible(), "general panel hidden on prizes tab"
+
+    def test_history_tab_shows_history_body(self, page):
+        open_settings_via_gate(page)
+        page.click(".set-tab[data-stab='history']")
+        page.wait_for_selector("#history-body", state="visible", timeout=TIMEOUT)
+        assert page.locator("#history-body").is_visible()
+        assert not page.locator("#level-row").is_visible(), "general panel hidden on history tab"
 
 
 # ─────────────────────────────────────────────────────────
@@ -2965,6 +3074,139 @@ class TestGiftReward:
 
 
 # ─────────────────────────────────────────────────────────
+# Per-game prize-level config (settings) — editable, persisted, dynamic 🎁
+# ─────────────────────────────────────────────────────────
+
+class TestPrizeConfig:
+    def test_prize_inputs_render_one_per_game(self, page):
+        """Settings shows a prize-level input for every game."""
+        open_settings_via_gate(page)
+        games = page.evaluate("DIFFICULTY_GROUPS.flatMap(g => g.modes).length")
+        inputs = page.evaluate("document.querySelectorAll('#prize-row .prize-inp').length")
+        assert inputs == games and inputs >= 5, f"expected {games} prize inputs, got {inputs}"
+
+    def test_default_thresholds_only_reward_games(self, page):
+        """Out of the box only br/mx/sup carry a prize; basic games have none."""
+        goals = page.evaluate("GIFT_GOALS")
+        assert goals.get("br") and goals.get("mx") and goals.get("sup")
+        for m in ("0", "5", "10", "20"):
+            assert m not in goals, f"basic game {m} must start with no prize"
+
+    def test_badge_shows_only_when_prize_set(self, page):
+        """The 🎁 badge on a game button tracks whether it has a prize."""
+        # mx has a default prize → badge present; mode 20 has none → no badge
+        assert page.evaluate("document.getElementById('lbmx').textContent").find("🎁") >= 0
+        assert "🎁" not in page.evaluate("document.getElementById('lb20').textContent")
+        page.evaluate("setGiftGoal(20, 500)")
+        page.evaluate("setGiftGoal('mx', 0)")
+        assert "🎁" in page.evaluate("document.getElementById('lb20').textContent"), \
+            "setting a prize must add the 🎁 badge"
+        assert "🎁" not in page.evaluate("document.getElementById('lbmx').textContent"), \
+            "clearing a prize (0) must remove the 🎁 badge"
+
+    def test_zero_clears_prize_from_goals(self, page):
+        """A 0/empty level removes the game from GIFT_GOALS (no prize)."""
+        page.evaluate("setGiftGoal('mx', 0)")
+        assert page.evaluate("GIFT_GOALS['mx'] == null"), "0 must clear the prize"
+        page.evaluate("setGiftGoal('mx', 850)")
+        assert page.evaluate("GIFT_GOALS['mx']") == 850
+
+    def test_prize_level_persists_across_reload(self, page):
+        """A changed prize level survives a page reload (localStorage)."""
+        page.evaluate("setGiftGoal('mx', 0); setGiftGoal(20, 600)")
+        page.reload()
+        page.wait_for_function("typeof GIFT_GOALS !== 'undefined'", timeout=TIMEOUT)
+        assert page.evaluate("GIFT_GOALS['mx'] == null"), "cleared prize must persist"
+        assert page.evaluate("GIFT_GOALS[20]") == 600, "set prize must persist"
+
+    def test_cleared_prize_gives_no_gift_screen(self, page):
+        """With mx's prize cleared, a perfect mx run awards NO gift."""
+        page.wait_for_function(
+            "window.SUCCESS && SUCCESS.special && SUCCESS.special.gift", timeout=TIMEOUT)
+        page.evaluate("setGiftGoal('mx', 0)")
+        page.evaluate("""
+            mode = 'mx';
+            report = Array.from({length: 12}, () => ({ptype:'x', correct:0, wrongs:[], gotCorrect:true}));
+            idx = 12; done = false; endGame();
+        """)
+        assert page.evaluate("calcGrade() === 1000")
+        assert not page.evaluate("!!document.querySelector('.end-gift')"), \
+            "no 🎁 on the end screen when the prize is cleared"
+        page.wait_for_timeout(800)
+        assert page.evaluate("typeof _giftOn === 'undefined' || _giftOn === false")
+
+    def test_newly_set_prize_awards_gift(self, page):
+        """Giving mode 20 a prize makes a clearing run award the gift."""
+        page.wait_for_function(
+            "window.SUCCESS && SUCCESS.special && SUCCESS.special.gift", timeout=TIMEOUT)
+        page.evaluate("setGiftGoal(20, 500)")
+        page.evaluate("""
+            mode = 20;
+            report = Array.from({length: 12}, () => ({ptype:'x', correct:0, wrongs:[], gotCorrect:true}));
+            idx = 12; done = false; endGame();
+        """)
+        assert page.evaluate("!!document.querySelector('.end-gift')"), \
+            "a game with a configured prize shows 🎁 when cleared"
+
+
+# ─────────────────────────────────────────────────────────
+# Score history (📜) — name + game + grade per completed set, persisted
+# ─────────────────────────────────────────────────────────
+
+class TestScoreHistory:
+    def _record(self, page, mode, correct, total, name=""):
+        page.evaluate(f"""
+            setPlayerName({name!r});
+            mode = {mode!r};
+            report = Array.from({{length:{total}}}, (_, i) => (i < {correct}
+                ? {{ptype:'x', correct:0, wrongs:[],  gotCorrect:true}}
+                : {{ptype:'x', correct:0, wrongs:[9], gotCorrect:false}}));
+            idx = {total}; done = false; endGame();
+        """)
+
+    def test_completed_game_is_recorded(self, page):
+        """Finishing a set logs grade + name + game."""
+        self._record(page, 20, 12, 12, "נֹעָה")
+        h = page.evaluate("_loadHistory()")
+        assert len(h) >= 1, "a completed set must be logged"
+        e = h[0]
+        assert e["grade"] == 1000 and e["name"] == "נֹעָה" and str(e["mode"]) == "20"
+        assert "20" in e["game"], f"game label must identify the game, got {e['game']!r}"
+
+    def test_history_is_newest_first(self, page):
+        self._record(page, 20, 12, 12)
+        self._record(page, "mx", 6, 12)
+        h = page.evaluate("_loadHistory()")
+        assert str(h[0]["mode"]) == "mx" and str(h[1]["mode"]) == "20", \
+            "newest entry must be first"
+
+    def test_history_persists_across_reload(self, page):
+        """The log survives a page reload (localStorage)."""
+        self._record(page, 10, 12, 12, "דָּנָה")
+        page.reload()
+        page.wait_for_function("typeof _loadHistory === 'function'", timeout=TIMEOUT)
+        h = page.evaluate("_loadHistory()")
+        assert any(e["name"] == "דָּנָה" and e["grade"] == 1000 for e in h), \
+            "history must survive a reload"
+
+    def test_history_tab_shows_recorded_rows(self, page):
+        """The settings 📜 history tab lists recorded runs."""
+        self._record(page, 20, 12, 12, "נֹעָה")
+        open_settings_via_gate(page)
+        page.click(".set-tab[data-stab='history']")
+        page.wait_for_function(
+            "document.querySelector('.set-panel[data-stab=\"history\"]')"
+            ".classList.contains('set-panel-active')", timeout=TIMEOUT)
+        assert page.locator("#history-body .hist-row").count() >= 1, \
+            "the history tab must list recorded rows"
+
+    def test_clear_history_empties_it(self, page):
+        self._record(page, 20, 12, 12)
+        page.evaluate("clearHistory()")
+        assert page.evaluate("_loadHistory().length") == 0, "clear must wipe the log"
+
+
+# ─────────────────────────────────────────────────────────
 # Success-screen praise — varied headlines + optional player name
 # ─────────────────────────────────────────────────────────
 
@@ -2978,8 +3220,7 @@ class TestPraiseText:
 
     def test_name_field_persists(self, page):
         """The settings modal has a name field; typing a name saves it."""
-        page.click("#settings-btn")
-        page.wait_for_timeout(150)
+        open_settings_via_gate(page)   # gear → parent gate → settings
         assert page.locator("#name-input").count() == 1
         page.fill("#name-input", "נֹעָה")
         page.wait_for_timeout(100)

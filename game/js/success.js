@@ -113,6 +113,7 @@ function _showExternal(styleDef,isSuper,DUR){
 
 function showFw(){
   if(_fwOn)return;_fwOn=true;
+  if(typeof _nttHide==='function')_nttHide();   // a lingering number-objects tooltip must not sit over the celebration
   fwCount++;
   const isSuper=(fwCount%5===0);
   const DUR=isSuper?4500:2700;   // +1s over the original 3500/1700 — linger longer
@@ -166,6 +167,7 @@ function showGiftScreen(){
   const gift=window.SUCCESS&&SUCCESS.special&&SUCCESS.special.gift;
   if(!gift||_giftOn)return;
   _giftOn=true;
+  if(typeof _nttHide==='function')_nttHide();   // close the number-objects tooltip so it never lingers over the prize screen
   const DUR=3500;
   _giftRoot=document.createElement('div');
   // above the end screen / report; the backdrop captures clicks so a tap skips
