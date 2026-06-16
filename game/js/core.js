@@ -104,6 +104,7 @@ function renderModePicker(){
   for(const g of DIFFICULTY_GROUPS)
     h+=`<button class="tier-tab${g.id===tier?' active':''}" data-tier="${g.id}" onclick="pickTier('${g.id}')">${g.label}</button>`;
   h+='</div>';
+  h+='<div class="tier-sep"></div>';   // divider: category tabs ↑  /  that category's games ↓
   for(const g of DIFFICULTY_GROUPS){
     h+=`<div class="tier-modes${g.id===tier?' tier-active':''}" data-tier="${g.id}">`;
     for(const md of g.modes){
