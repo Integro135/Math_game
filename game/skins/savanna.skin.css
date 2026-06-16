@@ -220,7 +220,7 @@ body.theme-savanna .ck-cookie:hover{filter:brightness(1.2) drop-shadow(0 0 8px r
 
 /* number-hover tooltip */
 body.theme-savanna #num-tt{
-  background:rgba(40,16,7,.97);border:1px solid rgba(255,185,105,.5);
+  --ntt-accent:#FFD27D;background:rgba(40,16,7,.97);border:1px solid rgba(255,185,105,.5);
   box-shadow:0 6px 24px rgba(18,5,3,.7),0 0 16px rgba(255,160,70,.2);
 }
 body.theme-savanna #num-tt .ntt-lbl{color:#FFD27D;text-shadow:0 0 10px rgba(255,200,100,.4)}

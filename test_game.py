@@ -141,6 +141,38 @@ _CLASS_LABELS = {
     "TestGiftReward":            "Gift Reward — eligibility + end-of-set gift screen",
     "TestPraiseText":            "Success-screen praise — variety + player name",
     "TestSuccessDuration":       "Success-screen display duration (+1s linger)",
+    "TestBridgeSplitTooltip":    "Crossing-ten number bond — split hover tooltip",
+    "test_subtraction_second_operand_splits":
+        "18-11: hovering 11 splits the tooltip into 8 | 3 (parts above their clusters)",
+    "test_addition_second_operand_splits":
+        "8+7: hovering 7 splits into 2 (complete to ten) | 5",
+    "test_first_operand_never_splits":
+        "Hovering the first number (18) stays a plain, non-split tooltip",
+    "test_non_crossing_does_not_split":
+        "18-3 doesn't cross ten -> the 3 carries no data-split",
+    "test_chain_third_term_splits_on_running_result":
+        "Chain 18-10+5: the +5 splits on the running result 8 -> 2 | 3",
+    "test_missing_result_splits_ten_and_ones":
+        "Missing 15-?=13: the shown result 13 splits ten+ones -> 10 | 3",
+    "test_bond_shows_whole_number_and_two_branches":
+        "Split tooltip shows the whole number + two branch lines",
+    "test_split_parts_are_positive_and_sum_to_whole":
+        "14-7: split parts are positive and sum to the whole (7)",
+    "test_two_addends_first_input_previews_objects_no_split":
+        "?+?=15: typing in the first box previews that many objects (no split)",
+    "TestSupermanDigitPreview":  "Superman column digit object-preview (right, per column)",
+    "test_units_first_number_is_plain":
+        "Superman 18+15: first number's units (8) previews plain, no split",
+    "test_units_carry_second_number_splits":
+        "Superman 18+15: a units carry splits the second units (5) into 2 | 3",
+    "test_units_no_carry_second_number_plain":
+        "Superman 16+11: no carry -> second units (1) plain, no split",
+    "test_modal_sits_to_the_right_of_the_digit":
+        "Superman preview opens beside the digit (right), not below",
+    "test_tens_digit_preview_after_units_solved":
+        "Superman: after units solved, a tens digit previews the tens",
+    "test_units_digit_inert_during_tens_phase":
+        "Superman: units digits are inert while solving the tens column",
 }
 
 
@@ -1887,6 +1919,109 @@ class TestNumberHoverTooltip:
 
 
 # ─────────────────────────────────────────────────────────
+# Crossing-ten number-bond split in the hover tooltip
+# ─────────────────────────────────────────────────────────
+class TestBridgeSplitTooltip:
+    """When a step crosses ten, the hover tooltip becomes a number bond: the
+    whole number branches into two parts, and each PART number sits directly
+    above its own cluster of objects (complete-to-ten LEFT | remainder RIGHT)."""
+
+    def _hover(self, page, problem, data_num, cls="eq-n"):
+        page.evaluate(f"problems[0] = {problem}; idx = 0; loadProblem();")
+        page.wait_for_timeout(120)
+        page.evaluate(
+            f"document.querySelector('#eq .{cls}[data-num=\"{data_num}\"]')"
+            ".dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))"
+        )
+        page.wait_for_function(
+            "document.getElementById('num-tt')?.style.display === 'block'", timeout=TIMEOUT)
+
+    def _split_attr(self, page, data_num, cls="eq-n"):
+        return page.evaluate(
+            f"document.querySelector('#eq .{cls}[data-num=\"{data_num}\"]')"
+            ".getAttribute('data-split')")
+
+    def test_subtraction_second_operand_splits(self, page):
+        """18 − 11: hovering 11 → 8 (down-to-ten) | 3 (remainder)."""
+        self._hover(page, "{t: TS, a: 18, b: 11}", 11)
+        assert self._split_attr(page, 11) == "8,3"
+        parts = page.evaluate(
+            "[...document.querySelectorAll('#num-tt .ntt-part')].map(p => p.textContent)")
+        assert parts == ["8", "3"], f"expected part labels ['8','3'], got {parts}"
+        # each part sits above its OWN cluster of that many objects
+        counts = page.evaluate(
+            "[...document.querySelectorAll('#num-tt .ntt-side')]"
+            ".map(s => s.querySelectorAll('.ntt-objs span').length)")
+        assert counts == [8, 3], f"expected clusters [8,3], got {counts}"
+
+    def test_addition_second_operand_splits(self, page):
+        """8 + 7: hovering 7 → 2 (complete to ten) | 5."""
+        self._hover(page, "{t: TA, a: 8, b: 7}", 7)
+        assert self._split_attr(page, 7) == "2,5"
+
+    def test_first_operand_never_splits(self, page):
+        """Hovering the FIRST number (18 in 18−11) stays a plain tooltip."""
+        self._hover(page, "{t: TS, a: 18, b: 11}", 18)
+        is_split = page.evaluate(
+            "document.querySelector('#num-tt .ntt-grid').classList.contains('ntt-split')")
+        assert is_split is False, "first operand must render a plain (non-split) tooltip"
+
+    def test_non_crossing_does_not_split(self, page):
+        """18 − 3 does not cross ten → the 3 carries no split."""
+        self._hover(page, "{t: TS, a: 18, b: 3}", 3)
+        assert self._split_attr(page, 3) is None
+
+    def test_chain_third_term_splits_on_running_result(self, page):
+        """Chain 18 − 10 + 5: the +5 splits on the running result 8 → 2 | 3."""
+        self._hover(page, "{t: TX, a: 18, b: 10, c: 5}", 5)
+        assert self._split_attr(page, 5) == "2,3"
+
+    def test_missing_result_splits_ten_and_ones(self, page):
+        """Missing subtrahend 15 − ? = 13: the shown result 13 → 10 | 3."""
+        self._hover(page, "{t: TM, a: 15, b: 13}", 13, cls="eq-res")
+        assert self._split_attr(page, 13, cls="eq-res") == "10,3"
+        parts = page.evaluate(
+            "[...document.querySelectorAll('#num-tt .ntt-part')].map(p => p.textContent)")
+        assert parts == ["10", "3"], f"expected ['10','3'], got {parts}"
+
+    def test_bond_shows_whole_number_and_two_branches(self, page):
+        """The split tooltip shows the whole number on top + two branch lines."""
+        self._hover(page, "{t: TS, a: 18, b: 11}", 11)
+        whole = page.evaluate("document.querySelector('#num-tt .ntt-whole')?.textContent")
+        assert whole == "11", f"whole number should be 11, got {whole}"
+        lines = page.evaluate(
+            "document.querySelectorAll('#num-tt .ntt-bond-ov line').length")
+        assert lines == 2, f"expected 2 branch lines, got {lines}"
+
+    def test_split_parts_are_positive_and_sum_to_whole(self, page):
+        """14 − 7: the split parts are positive and add up to 7."""
+        self._hover(page, "{t: TS, a: 14, b: 7}", 7)
+        ok = page.evaluate(
+            "(() => { const [l,r] = document.querySelector('#eq .eq-n[data-num=\"7\"]')"
+            ".getAttribute('data-split').split(',').map(Number);"
+            "return l > 0 && r > 0 && l + r === 7; })()")
+        assert ok, "14−7 split parts must be positive and sum to 7"
+
+    def test_two_addends_first_input_previews_objects_no_split(self, page):
+        """? + ? = 15: typing in the FIRST box shows a plain (non-split) emoji
+        tooltip for that value."""
+        page.evaluate("problems[0] = {t: TDA, r: 15}; idx = 0; loadProblem();")
+        page.wait_for_timeout(120)
+        page.evaluate(
+            "const i = document.getElementById('ans1'); i.value = '6';"
+            "i.dispatchEvent(new Event('input', {bubbles: true}))")
+        page.wait_for_function(
+            "document.getElementById('num-tt')?.style.display === 'block'", timeout=TIMEOUT)
+        info = page.evaluate("({"
+            "lbl: document.querySelector('#num-tt .ntt-lbl').textContent.trim(),"
+            "split: document.querySelector('#num-tt .ntt-grid').classList.contains('ntt-split'),"
+            "count: document.querySelectorAll('#num-tt .ntt-group span').length})")
+        assert info["lbl"] == "6", f"label should be 6, got {info['lbl']}"
+        assert info["split"] is False, "first-addend preview must NOT split"
+        assert info["count"] == 6, f"expected 6 objects, got {info['count']}"
+
+
+# ─────────────────────────────────────────────────────────
 # Bridging-10 mode (br): focused practice on crossing 10
 # ─────────────────────────────────────────────────────────
 class TestBridgingMode:
@@ -2444,6 +2579,95 @@ class TestSupermanColumnAdd:
         assert page.locator("#colx-root").count() == 0
         assert page.evaluate(
             "getComputedStyle(document.getElementById('chk-btn')).display") != "none"
+
+
+# ─────────────────────────────────────────────────────────
+# Superman column digit object-preview (#num-tt, to the RIGHT, per column)
+# ─────────────────────────────────────────────────────────
+
+class TestSupermanDigitPreview:
+    """Hovering a column digit previews its objects in #num-tt, to the RIGHT of
+    the digit, scoped to the current column. On a units carry the SECOND number's
+    units digit splits complete-to-ten | remainder."""
+
+    def _enter(self, page, a, b):
+        page.evaluate("setMode('sup')")
+        page.wait_for_function("problems.length === 14", timeout=TIMEOUT)
+        page.evaluate(f"problems[0]={{t:TCA,a:{a},b:{b}}}; idx=0; loadProblem()")
+        page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
+        page.wait_for_timeout(200)
+
+    def _hover(self, page, digit_id):
+        page.evaluate(
+            f"document.getElementById('{digit_id}').dispatchEvent(new MouseEvent('mouseenter'))")
+        page.wait_for_function(
+            "document.getElementById('num-tt')?.style.display === 'block'", timeout=TIMEOUT)
+
+    def _solve_units(self, page, units_sum):
+        page.evaluate(
+            f"(()=>{{const u=document.getElementById('colx-iU');u.value='{units_sum}';"
+            "u.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));})()")
+        page.wait_for_function(
+            "document.getElementById('colx-iT') && !document.getElementById('colx-iT').disabled",
+            timeout=TIMEOUT)
+
+    def test_units_first_number_is_plain(self, page):
+        """18+15 units phase: hovering the first number's units (8) → plain 8."""
+        self._enter(page, 18, 15)
+        self._hover(page, "colx-aU")
+        info = page.evaluate("({"
+            "lbl: document.querySelector('#num-tt .ntt-lbl').textContent.trim(),"
+            "split: document.querySelector('#num-tt .ntt-grid').classList.contains('ntt-split'),"
+            "count: document.querySelectorAll('#num-tt .ntt-group span').length})")
+        assert info["lbl"] == "8" and info["split"] is False and info["count"] == 8, info
+
+    def test_units_carry_second_number_splits(self, page):
+        """18+15: 8+5 crosses ten → hovering the second units (5) splits 2 | 3
+        (complete-to-ten | remainder)."""
+        self._enter(page, 18, 15)
+        self._hover(page, "colx-bU")
+        parts = page.evaluate(
+            "[...document.querySelectorAll('#num-tt .ntt-part')].map(p => p.textContent)")
+        assert parts == ["2", "3"], f"5 should split 2 | 3, got {parts}"
+
+    def test_units_no_carry_second_number_plain(self, page):
+        """16+11: 6+1 doesn't cross → second units (1) shows plain, no split."""
+        self._enter(page, 16, 11)
+        self._hover(page, "colx-bU")
+        info = page.evaluate("({"
+            "split: document.querySelector('#num-tt .ntt-grid').classList.contains('ntt-split'),"
+            "count: document.querySelectorAll('#num-tt .ntt-group span').length})")
+        assert info["split"] is False and info["count"] == 1, info
+
+    def test_modal_sits_to_the_right_of_the_digit(self, page):
+        """The preview opens beside the digit (right), not below it."""
+        self._enter(page, 18, 15)
+        self._hover(page, "colx-bU")
+        ok = page.evaluate("(() => {"
+            "const d = document.getElementById('colx-bU').getBoundingClientRect();"
+            "const t = document.getElementById('num-tt').getBoundingClientRect();"
+            "return t.top < d.bottom && t.bottom > d.top && t.left >= d.left;})()")
+        assert ok, "preview should sit beside (right of) the digit, vertically overlapping it"
+
+    def test_tens_digit_preview_after_units_solved(self, page):
+        """After the units are solved, hovering a tens digit previews the tens."""
+        self._enter(page, 16, 11)          # no carry → fast transition to tens
+        self._solve_units(page, 7)
+        self._hover(page, "colx-aT")
+        info = page.evaluate("({"
+            "lbl: document.querySelector('#num-tt .ntt-lbl').textContent.trim(),"
+            "count: document.querySelectorAll('#num-tt .ntt-group span').length})")
+        assert info["lbl"] == "1" and info["count"] == 1, info
+
+    def test_units_digit_inert_during_tens_phase(self, page):
+        """While solving the tens, hovering a UNITS digit shows nothing."""
+        self._enter(page, 16, 11)
+        self._solve_units(page, 7)
+        page.evaluate(
+            "document.getElementById('colx-bU').dispatchEvent(new MouseEvent('mouseenter'))")
+        page.wait_for_timeout(150)
+        assert page.evaluate("document.getElementById('num-tt').style.display") != "block", \
+            "units digit must be inert during the tens phase"
 
 
 # ─────────────────────────────────────────────────────────

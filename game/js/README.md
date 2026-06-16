@@ -197,6 +197,50 @@ This is the largest file and owns nearly all gameplay state and logic.
   that number as **objects borrowed from the active aid variant's jar art**
   (`AIDS.current.jar.itemSVG`), grouped in fives, positioned below (flips above
   if off-screen). Falls back to `⭐`.
+  - **Bridge-through-ten split:** a non-first operand whose step crosses a ten is
+    tagged at render (`renderEq` → `nB(t,base,op)` → `_bridgeSplit`) with
+    `data-split="left,right"`. The tooltip then shows the **complete-to-ten part
+    flushed LEFT and the remainder flushed RIGHT**, divided by a dashed line
+    (`.ntt-split`, forced `direction:ltr` so L/R hold under the page's RTL).
+    `base` is the running result of everything left of the operand: for `a−b`/`a+b`
+    it's `a`; in chains (`TZ/TX/TW`) the third term uses `a∘b`. Covers `TS`, basic
+    `add`, `TBG`, and chain operands; column-add (`TCA`) is excluded. Examples:
+    15−6 → 5 | 1, 14−7 → 4 | 3, 8+7 → 2 | 5. Non-crossing steps render normally.
+  - **Number-bond layout:** in the split case the whole number sits in `.ntt-lbl`
+    and the split grid is **two columns** (`.ntt-side`, flex-column) — each its
+    **part number (`.ntt-part`) stacked directly ABOVE its own cluster** of objects
+    (`.ntt-objs`), with the dashed `.ntt-div` between. Branch lines from the whole
+    number down to each part are an absolutely-positioned SVG overlay
+    (`.ntt-bond-ov`, drawn by `_nttBond`) whose endpoints are **measured at show
+    time** (`getBoundingClientRect`) so they point exactly at each part regardless
+    of cluster sizes. `.ntt-lbl-split` carries a generous bottom margin so the
+    parts drop well below the whole number — that vertical gap is what gives the
+    branches a sharp (non-flat) angle. Each line stops ~9px (`GAP` in `_nttBond`)
+    above its part number so it never touches the digit. Whole/parts/branches/divider all take the skin's label colour
+    via the `--ntt-accent` custom property (defaulted on `#num-tt` in base.css,
+    overridden per skin) so it suits every theme and stays legible on light (girls)
+    and dark tooltip backgrounds alike.
+  - **Missing-subtrahend result (`TM`, a − ? = b):** the shown teen result `b` is
+    rendered via `resB(t)` with a **ten + ones** split (`data-split="10,b−10"`,
+    e.g. 13 → 10 | 3) — a different rule from the operand bridge above, but it
+    reuses the exact same bond rendering.
+  - **Two-addends preview (`TDA`/`TDS`, ? + ? = n):** the FIRST input previews its
+    value as objects while typing (`oninput` → `_nttInput`, hidden `onblur`),
+    using the **plain** (non-split) display. `_nttRender(num, split, anchorEl, side)`
+    is the shared renderer behind hover (`_nttShow`), this input preview, and the
+    Superman column preview; `side='right'` positions it beside the anchor.
+  - **Superman column preview (`TCA`):** `column_add.ex.js` binds the column
+    digits — hovering one previews its objects in `#num-tt` to the **RIGHT** of the
+    digit (below would cover a row; `side='right'`, compacter via the `ntt-rt`
+    class). It is **scoped to the current column**: only the UNITS digits respond
+    while adding units, only the TENS digits (+ the carried 1) while adding tens.
+    On a units **carry**, the SECOND number's units digit splits complete-to-ten |
+    remainder via the same global `_bridgeSplit` (e.g. 18+15 → the 5 shows 2 | 3).
+  - **Tests:** `test_game.py::TestBridgeSplitTooltip` covers the subtraction/
+    addition operand splits, the first-operand-never-splits and non-crossing
+    cases, the chain third-term running-result split, the missing-type ten+ones
+    result split, the bond (whole + 2 branch lines), and the two-addends input
+    preview.
 - **column-add host** (`_colxMount`): loads `exercises/column_add.ex.js`, mounts
   it into `#colx-root`, and passes an `api` with `wrong(v)` (penalty + sad modal),
   `nl(v)` (park the skinned number-line rider) and `solved()` (score + success

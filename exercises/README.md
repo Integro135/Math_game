@@ -174,6 +174,16 @@ add (plus the carried `1` in the tens phase when present), updates the Hebrew
 hint text, calls `api.nl(anchor)` to park the number-line rider, and calls
 `api.wrong(val)`. After ~1s the input is cleared and re-armed for another try.
 
+**Digit object-preview** (`bindHover`/`digitInfo`). Hovering a column digit
+previews its objects in the shared `#num-tt` modal, positioned to the **RIGHT**
+of the digit (`core.js` `_nttRender(..., 'right')`; below would cover a row).
+It is **scoped to the current `phase`**: only the units digits (`colx-aU`/`bU`)
+respond while adding units, only the tens digits (`colx-aT`/`bT`) + the carried
+`1` (`colx-carry`) while adding tens. On a units **carry**, the SECOND number's
+units digit (`bU`) splits into complete-to-ten | remainder via the global
+`_bridgeSplit(P.aU,'add',P.bU)` — the same number-bond as the equation hover.
+Covered by `test_game.py::TestSupermanDigitPreview`.
+
 **The `api` callbacks** (provided by `core.js` `_colxMount`):
 - `api.wrong(val)` — records the wrong value into the per-problem report,
   applies the try-first unlock (which **reveals the host's skinned number

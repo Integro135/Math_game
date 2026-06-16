@@ -3443,9 +3443,35 @@ window.BACKGROUNDS.reef = {
     ctx.restore();
     ctx.strokeStyle = '#4a2f16'; ctx.lineWidth = Math.max(1.5, s * 0.02); ctx.lineJoin = 'round';
     ctx.stroke(hull);
-    // keel strip down the centre-bottom
-    ctx.strokeStyle = '#43290f'; ctx.lineWidth = Math.max(2, s * 0.03); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-L * 0.5, D * 0.86); ctx.quadraticCurveTo(0, D * 1.04, L * 0.5, D * 0.86); ctx.stroke();
+    // ── spinning propeller churning at the stern (connected to the hull by a shaft) ──
+    {
+      const px = -L * 0.6, py = D * 1.0, pr = s * 0.16;
+      // prop wash: bubbles streaming aft and fading
+      for (let k = 0; k < 6; k++) {
+        const ph = (t * 0.8 + k * 0.17) % 1;
+        const wx = px - s * 0.12 - ph * s * 0.8;
+        const wy = py + Math.sin(k * 1.7 + t * 3) * s * 0.05 * (0.5 + ph);
+        ctx.fillStyle = 'rgba(225,245,255,' + (0.22 * (1 - ph)).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(wx, wy, s * 0.022 * (0.6 + ph), 0, TAU); ctx.fill();
+      }
+      // shaft from the hull down to the hub
+      ctx.strokeStyle = '#3a3f44'; ctx.lineWidth = Math.max(1.4, s * 0.02); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-L * 0.42, D * 0.5); ctx.lineTo(px, py); ctx.stroke();
+      ctx.save();
+      ctx.translate(px, py);
+      // spin-blur disc behind the blades
+      ctx.fillStyle = 'rgba(200,218,232,0.14)';
+      ctx.beginPath(); ctx.ellipse(0, 0, pr * 0.4, pr, 0, 0, TAU); ctx.fill();
+      // three blades rotating about a ~horizontal axis (foreshortened in x)
+      const spin = t * 11 * b.dir;
+      ctx.strokeStyle = '#cfd6dc'; ctx.lineWidth = Math.max(1.6, s * 0.024); ctx.lineCap = 'round';
+      for (let k = 0; k < 3; k++) {
+        const a = spin + k * TAU / 3;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * pr * 0.4, Math.sin(a) * pr); ctx.stroke();
+      }
+      ctx.fillStyle = '#4a4f55'; ctx.beginPath(); ctx.arc(0, 0, pr * 0.22, 0, TAU); ctx.fill();   // hub
+      ctx.restore();
+    }
     // bright waterline glint where the hull meets the surface
     ctx.strokeStyle = 'rgba(240, 252, 255, 0.5)'; ctx.lineWidth = Math.max(1, s * 0.014);
     ctx.beginPath(); ctx.moveTo(-L * 0.98, 0); ctx.lineTo(L * 0.98, 0); ctx.stroke();

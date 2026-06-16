@@ -158,7 +158,11 @@ Canvas painting in a fixed **1600×900 design space** (`DW×DH`, waterline
 `HZ=780`), cover-fitted and bottom-anchored to the window (`scale/ox/oy`); all
 hit-tests map screen→design through those. Static scene (sky, skyline, Burj,
 water + flipped-image reflection, vignette) prerenders into `off` once per
-resize; the per-frame layer draws only lights and effects.
+resize; the per-frame layer draws only lights and effects. Per-building windows
+(`genBoxWindows`) start a clear gap below the roof — `pad = CROWN_PAD[crown] +
+max(18, h·0.09)` (the crown clearance plus a height-proportional gap) — and are
+additionally **clipped to the body silhouette** in the prerender, so lit windows
+sit well under the crown and never poke past the roofline.
 
 **Scheduled shows** (constants at the top of the script):
 
@@ -179,15 +183,16 @@ drones that simply fly across the sky and out, then respawn after a gap — at m
 **Drone light show** (`SHOW` squadron + `drawShowDrones`): 18 drones, parked
 off-screen and undrawn, that fly IN from the top, form **two** different simple
 shapes, then fly OUT. They are the same pretty drone instances (`drawDroneAt`)
-and add only a **subtle** shape-tracing glow — a soft halo (`radius 17`) plus a
-small bright core, gently pulsing (no rainbow dots). A smoothstep `fp`
+and add a bright **additive** (`'lighter'`) shape-tracing glow — a halo
+(`radius 19`) plus a hot bright core. The two shapes are a **random distinct
+pair** drawn from a 6-shape set (`DSHAPES`: ring / heart / star / square /
+Burj-like thin spire / diamond). A smoothstep `fp`
 flies the squadron in (3 s) from its off-screen park points (`parkShow`) and back
-out (3 s); between the two hold slots the shape morphs (eased by `mp`). Each show
-picks a **fresh pair** from ring/heart/star (`dShapeStart` advances, so
-consecutive shows differ); targets recompute only on a shape change. Scheduled
-every 2.5 min and launched by **clicking open upper sky** (`mDroneStart/End`,
-merged via `Math.max`). Centered at `DCX,DCY ≈ 295,350` — left side, just below
-the moon, so the centered math-game card never covers it.
+out (3 s); between the two hold slots the shape morphs (eased by `mp`); targets
+recompute only on a shape change. Scheduled every 2.5 min and launched by
+**clicking open upper sky** (`mDroneStart/End`, merged via `Math.max`). Centered
+at `DCX,DCY ≈ 295,350` — left side, just below the moon, so the centered
+math-game card never covers it.
 
 **Always-on systems:** per-building accent lighting — each tower has its own
 `anim` scheme (`edges/crown/scan/pulse/sail/twist/museum/frame/bridge`) with its
@@ -196,20 +201,25 @@ own hue & speed; slowly switching windows (`b.dyn`); ~84 **twinkling stars**
 brightest — not the Burj's soft blink) over ~320 prerendered dust stars;
 occasional **shooting stars** (`SHOOT`/`drawShooting`, a streak every 6–16 s);
 aviation beacons (`BEACONS`); 3 helicopters (`HELIS`, one with a sweeping
-searchlight); ≤5 drones crossing the sky (`CROSS`); leaping
-dolphin pods (`DOLPHINS`); water glints
+searchlight); ≤5 drones crossing the sky (`CROSS`); **birds** gliding across with
+flapping wings (`BIRDS`/`drawBirds`, drawn live — not baked into the prerender);
+leaping dolphin pods (`DOLPHINS`); water glints
 (`SPARKS`); a crossing aircraft; the **Ain Dubai observation wheel**
 (`drawFerris`, center `AW_X,AW_Y ≈ 410,618`, left of the Burj over the water) — a
 metallic build (dark body + light edge + highlight): splayed tubular legs with a
 cross-brace, a thick double-rim truss (outer+inner rings + lattice ticks),
 steel-cable spokes, a shaded hub and capsule gondolas, plus an LED rim that
 twinkles warm (rainbow chase on a click) and a water-pool reflection; its angle
-is integrated each frame (`awAngle`) so a click spin-up never jumps. A
-traditional **dhow** (`BOAT`/`drawDhow`) sails the bay — bellied lateen sail, lit
-cabin, and subtle soft-gradient nav lights (green bow / red stern / white
-masthead) with a small crisp core, a capped foam **wake** (`BOATW`, ≤140) and a
-gentle warm reflection; it crosses, waits offscreen, then re-enters from a random
-side. "Dubai under construction":
+is integrated each frame (`awAngle`) so a click spin-up never jumps. A small
+**fleet** (`BOATS`, ≤3 at once; `drawBoats`) sails the bay — each slot spawns a
+random `type` (`dhow` with a breathing lateen sail + fluttering pennant /
+modern **yacht** with lit windows + radar mast / **abra** water-taxi with canopy
+& passengers / **speedboat** with a big spray wake). All **bob and rock** on the
+swell, cast a **soft shadow on the water** (a dark gradient ellipse that stays at
+the waterline as the hull bobs), trail a shared capped foam **wake** (`BOATW`,
+≤160), carry green-bow / red-stern (and, where fitted, white-masthead) nav lights
+of constant radius, then cross, wait offscreen, and a fresh random type
+re-enters. "Dubai under construction":
 a **tower crane** (`CRANE`/`drawCrane`) on a mid tower — lattice mast, a jib
 whose apparent reach slowly slews via `sin` (side-on view), a running
 trolley/hook, counterweight and blinking red apex/jib-tip warning lights; and a
@@ -246,18 +256,23 @@ copy on the water. Each strike triggers a fast full-frame `drawStormFlash`
 - **The crescent moon** (`MOON_X/Y/R` ≈ 300,140) → a simple ~2.6 s animation
   (`moonBoostT`/`drawMoonFx`): a soft glow pulse, a gentle crescent-phase wobble,
   and a ring of orbiting twinkles, then it eases back.
+- **The round Museum of the Future** (oval at `MUSEUM` ≈ 600,732) → each tap emits
+  an expanding light **ring in a fresh colour** (`MFX`/`drawMuseumFx`, hue advances
+  +67° per click; rings expand ~1.5 s then fade, list capped at 8).
 - **A drone** (crosser or show drone, hit-tested first via its tracked `_x,_y`)
   → it **explodes** (`popDrone`: a flash/shockwave ring `POPS` + a 22-spark `FW`
   burst); a crosser respawns in 3–6 s, a show drone returns after ~4 s.
 - **A helicopter** (`HELIS`, tracked `_x,_y`) → same explosion; it stays down
   4–7 s (`deadUntil`), then its `off` is recomputed so it **re-enters from the
   edge** (prog≈0) instead of popping back mid-air.
+- **The incoming missile** (`MIS.inc`, during the missile-defense show) → blows
+  up early with the same `popDrone` burst and clears the show.
+- **A boat** (`BOATS`, tracked `_x,_y,_half`) → its lights blink fast for ~2 s
+  (`blinkUntil`).
 - **Open upper sky** (no building/landmark/drone hit, `my < HZ-140`) → launches a
   drone light show (`mDroneStart/End`).
 - **Ain Dubai wheel** (within `AW_R+16` of its center) → a ~4 s spin-up
   (`awBoostStart`) with the rim LEDs chasing rainbow colour, then it eases back.
-- **The dhow** (its moving bounding box) → a ~1.3 s light flash (`BOAT.flashT`):
-  cabin windows, nav lights and masthead all flare with a glow bloom.
 
 **Missile-defense show** (`MIS`/`drawMissiles`, once every 6 min + on Burj Al
 Arab click): an emoji 🚀 streaks in from the right with a gray smoke trail;
@@ -439,9 +454,11 @@ on each fish object (`poopAt`, `poop`).
   reef life.
 - Passing **boat** (`BOAT`, `updateBoat`/`drawBoat`): a brown **wooden hull**
   glides across the surface every ~70–160 s, seen from below — **solid
-  alternating plank bands** (no see-through gaps), keel strip, waterline glint, a
-  soft shadow, a red-&-white **life ring** on the hull and an **anchor** dangling
-  off the bow; drawn behind the fish. The **whale and boat are mutually exclusive
+  alternating plank bands** (no see-through gaps), waterline glint, a soft shadow,
+  a red-&-white **life ring** on the hull, an **anchor** dangling off the bow, and
+  a **spinning propeller** at the stern (three blades rotating about a foreshortened
+  axis + a blur disc, fed by a shaft, with bubbly prop-wash streaming aft); drawn
+  behind the fish. The **whale and boat are mutually exclusive
   and on deliberately far-apart cadences** so they never share the surface: the
   boat won't start while the whale is up, and the whale's scheduler is gated on
   `BOAT.active` too (`updateGiant`'s `blockedBy`); whichever is blocked reschedules

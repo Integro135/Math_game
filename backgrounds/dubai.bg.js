@@ -71,8 +71,10 @@ window.BACKGROUNDS.dubai={
   for (i = 0; i < 26; i++)
     FAR.push({ x: i*62 + rnd(-22,22), w: rnd(26,82), h: rnd(26,115) });
 
-  for (i = 0; i < 5; i++)
-    BIRDS.push({ x: rnd(180,650), y: rnd(250,430), s: rnd(.8,1.5) });
+  for (i = 0; i < 7; i++)
+    BIRDS.push({ x: rnd(0,DW), y: rnd(230,440), s: rnd(.8,1.5),
+                 vx: (Math.random()<.5?-1:1)*(10+Math.random()*16),
+                 bob: rnd(0,6.28), flap: rnd(0,6.28), flapSp: 6+Math.random()*4 });
 
   for (i = 0; i < 340; i++){
     var ry = rnd(HZ+3, DH-2);
@@ -124,10 +126,15 @@ window.BACKGROUNDS.dubai={
   ];
 
   /* windows: part static (prerendered), part slowly switching on/off per building */
+  /* how far the top of a crown sits below the body top (so windows never poke
+     into / above the crown) — keyed by crown style */
+  var CROWN_PAD = { emir1:46, emir2:46, sail:58, dome:8, slantL:18, slantR:18, spire:8, flat:8 };
   function genBoxWindows(b, x0, w, h){
     var win = [], dyn = [];
-    var left = x0+3, top = HZ-h+8;
-    var cols = Math.max(2, ((w-6)/5.5)|0), rows = ((h-16)/8.5)|0;
+    var pad = (CROWN_PAD[b.crown] || 8) + Math.max(18, h*0.09);   /* clear the crown + a clear gap below the roof */
+    var left = x0+3, top = HZ - h + pad;
+    var cols = Math.max(2, ((w-6)/5.5)|0);
+    var rows = Math.max(0, (((HZ - 8) - top)/8.5)|0); /* stop ~8 px above the base */
     for (var r = 0; r < rows; r++){
       var floorLit = Math.random() < .06;
       for (var c = 0; c < cols; c++){
@@ -248,14 +255,21 @@ window.BACKGROUNDS.dubai={
                 t0x: 0, t0y: 0, t1x: 0, t1y: 0 });
   var DCX = 295, DCY = 350;                  /* formation center: left, below the moon (~300,140) */
   var dShowStart = -99, dShowLen = DRONE_LEN, dPrevEnv = 0, dCurSlot = -1, dShapeHue = 190, dMorphStart = -99;
-  var dShapeStart = 0, dShowShapes = [0, 1];
+  var dShowShapes = [0, 1];
   var mDroneStart = -99, mDroneEnd = -99;
   /* the simple shapes to pick from (generators are hoisted function decls) */
-  var DSHAPES = [ { gen: ringPts, hue: 190 }, { gen: heartPts, hue: 332 }, { gen: starPts, hue: 45 } ];
+  var DSHAPES = [ { gen: ringPts,    hue: 190 }, { gen: heartPts,  hue: 332 },
+                  { gen: starPts,    hue: 45  }, { gen: squarePts, hue: 265 },
+                  { gen: spirePts,   hue: 30  }, { gen: diamondPts, hue: 150 } ];
   var POPS = [];                              /* drone explosion flashes/rings (sparks reuse FW) */
 
   /* shooting stars streaking across the upper sky every few seconds */
   var SHOOT = [], nextShootAt = 0;
+
+  /* the round Museum of the Future (the oval building at x≈600) — each click
+     emits an expanding light ring in a fresh colour */
+  var MUSEUM = { cx: 600, cy: HZ - 48, rx: 38, ry: 46 };
+  var MFX = [], mfxHue = 200;
 
   /* ── Ain Dubai: a giant observation wheel over the water, left of the Burj.
      Rotates slowly forever; a click spins it up and sets the rim LEDs chasing
@@ -266,8 +280,21 @@ window.BACKGROUNDS.dubai={
   /* ── a traditional dhow crossing the bay: lateen sail, warm cabin glow,
      red/green nav + white masthead lights, and a foamy wake. It sails across,
      waits offscreen, then re-enters from a random side. Click → light flash. */
-  var BOAT = { x: -200, y: 808, dir: 1, sp: 28, on: true, wait: 0, flashT: -99 };
-  var BOATW = [];                                             /* wake foam particles (capped) */
+  /* a small fleet: up to 3 boats on the water at once, each a random type
+     (dhow / yacht / abra / speedboat). They cross, exit, then a new one of a
+     random type re-enters. Click a boat → its lights blink fast. */
+  var BOATW = [];                                             /* shared wake foam (capped) */
+  var BOAT_TYPES = ['dhow', 'yacht', 'abra', 'speedboat'];
+  var BOAT_CFG = {
+    dhow:      { spMin: 22, spVar: 14, half: 58, sternX: -46, lights: [[50,-6,'120,235,150'],[-44,-8,'255,90,80'],[4,-55,'255,250,235']] },
+    yacht:     { spMin: 38, spVar: 16, half: 64, sternX: -52, lights: [[58,-9,'120,235,150'],[-54,-9,'255,90,80'],[6,-34,'255,250,235']] },
+    abra:      { spMin: 20, spVar: 10, half: 44, sternX: -36, lights: [[36,-7,'120,235,150'],[-34,-7,'255,90,80']] },
+    speedboat: { spMin: 62, spVar: 26, half: 40, sternX: -30, lights: [[36,-8,'120,235,150'],[-28,-7,'255,90,80']] }
+  };
+  var BOATS = [];
+  for (i = 0; i < 3; i++)
+    BOATS.push({ on: false, wait: i*5 + rnd(0, 7), x: 0, y: 0, dir: 1, sp: 0,
+                 ph: 0, type: 'dhow', blinkUntil: -99, _on: false, _x: 0, _y: 0, _half: 50 });
 
   /* ── "Dubai under construction": a tower crane slewing on a mid building,
      plus a window-cleaning gondola riding a taller tower's facade. ── */
@@ -355,16 +382,8 @@ window.BACKGROUNDS.dubai={
       og.ellipse(c.x, c.y + c.h*.42, c.w*.44, 1.4, 0, 0, 6.2832); og.fill();
     }
 
-    og.strokeStyle = 'rgba(18,22,38,.8)'; og.lineWidth = 1.2; og.lineCap = 'round';
-    for (k = 0; k < BIRDS.length; k++){
-      var bd = BIRDS[k];
-      og.save(); og.translate(bd.x, bd.y); og.scale(bd.s, bd.s);
-      og.beginPath();
-      og.moveTo(-4.5, 0); og.quadraticCurveTo(-2.2, -3, 0, -.4);
-      og.quadraticCurveTo(2.2, -3, 4.5, 0);
-      og.stroke(); og.restore();
-    }
   }
+  /* birds are drawn live (drawBirds) so they fly — not baked into the prerender */
 
   function drawFar(){
     for (var k = 0; k < FAR.length; k++){
@@ -546,7 +565,9 @@ window.BACKGROUNDS.dubai={
     og.closePath(); og.fill();
     og.strokeStyle = 'rgba(205,222,255,.10)'; og.lineWidth = 1.4;
     cayanCurves(og, b);
-    drawWindows(og, b.win);
+    og.save();                                        /* clip to the tapered tower outline */
+    og.beginPath(); og.moveTo(x, HZ); og.lineTo(x+4, y0); og.lineTo(x+w-4, y0); og.lineTo(x+w, HZ); og.closePath(); og.clip();
+    drawWindows(og, b.win); og.restore();
     og.fillStyle = 'rgba(255,170,100,.2)'; og.fillRect(x+4, y0, w-8, 1.5);
   }
 
@@ -556,7 +577,10 @@ window.BACKGROUNDS.dubai={
     var bx = b.x + b.w - 2, bw = b.gap + 4, by = HZ - b.h + 10;
     og.fillStyle = rgb(lerpC(b.c, [255,150,80], .2));
     og.fillRect(bx, by, bw, 9);
-    drawWindows(og, b.win); drawWindows(og, b.win2);
+    og.save(); og.beginPath(); og.rect(b.x, HZ - b.h, b.w, b.h); og.clip();
+    drawWindows(og, b.win); og.restore();
+    og.save(); og.beginPath(); og.rect(b.x + b.w + b.gap, HZ - (b.h - 14), b.w, b.h - 14); og.clip();
+    drawWindows(og, b.win2); og.restore();
   }
 
   function drawMuseum(b){
@@ -600,7 +624,12 @@ window.BACKGROUNDS.dubai={
       case 'frame':      drawFrame(b); break;
       default:
         drawBoxBody(b, b.x, b.w, b.h);
+        og.save();                                   /* clip windows to the body so none spill past the roofline */
+        var inset = ['emir1','emir2','dome','sail'].indexOf(b.crown) >= 0 ?
+                    (b.crown === 'sail' ? 58 : (b.crown === 'dome' ? 0 : 46)) : 0;
+        og.beginPath(); og.rect(b.x, HZ - b.h + inset, b.w, b.h - inset); og.clip();
         drawWindows(og, b.win);
+        og.restore();
     }
   }
 
@@ -779,6 +808,12 @@ window.BACKGROUNDS.dubai={
         return;
       }
     }
+    /* tap the incoming missile → blow it up early with the same burst */
+    if (MIS.inc && Math.abs(mx - MIS.inc.x) < 24 && Math.abs(my - MIS.inc.y) < 24){
+      popDrone(MIS.inc.x, MIS.inc.y, 18);
+      MIS.inc = null; MIS.def = null; MIS.boom = null; MIS.nextAt = t + 360;
+      return;
+    }
 
     /* the crescent moon: a gentle glow + wobble when tapped */
     if ((mx - MOON_X)*(mx - MOON_X) + (my - MOON_Y)*(my - MOON_Y) < 34*34){
@@ -812,9 +847,21 @@ window.BACKGROUNDS.dubai={
       return;
     }
 
-    /* the dhow: tapping it flashes all its lights */
-    if (BOAT.on && mx > BOAT.x - 58 && mx < BOAT.x + 58 && my > BOAT.y - 60 && my < BOAT.y + 16){
-      BOAT.flashT = t;
+    /* a boat: tapping it sets its lights blinking rapidly for ~2 s */
+    for (di = 0; di < BOATS.length; di++){
+      var bt = BOATS[di];
+      if (bt._on && mx > bt._x - bt._half && mx < bt._x + bt._half && my > bt._y - 64 && my < bt._y + 16){
+        bt.blinkUntil = t + 2.0;
+        return;
+      }
+    }
+
+    /* the round Museum of the Future → an expanding light ring, a new hue each tap */
+    var dxm = (mx - MUSEUM.cx)/MUSEUM.rx, dym = (my - MUSEUM.cy)/MUSEUM.ry;
+    if (dxm*dxm + dym*dym <= 1.2){
+      mfxHue = (mfxHue + 67) % 360;
+      MFX.push({ t0: t, hue: mfxHue });
+      if (MFX.length > 8) MFX.shift();
       return;
     }
 
@@ -1345,13 +1392,16 @@ window.BACKGROUNDS.dubai={
      shape-tracing light used during a show (color = current shape hue) */
   function drawDroneAt(dr, t, x, y, tilt, glow){
     if (glow > 0.02){
-      var g = ctx.createRadialGradient(x, y, 0, x, y, 17);
-      g.addColorStop(0,   'hsla(' + dShapeHue + ',90%,74%,' + (glow*0.62).toFixed(3) + ')');
-      g.addColorStop(0.5, 'hsla(' + dShapeHue + ',90%,70%,' + (glow*0.22).toFixed(3) + ')');
-      g.addColorStop(1,   'hsla(' + dShapeHue + ',90%,70%,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 17, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = 'hsla(' + dShapeHue + ',95%,84%,' + (glow*0.5).toFixed(3) + ')';
-      ctx.beginPath(); ctx.arc(x, y, 2.2, 0, 6.2832); ctx.fill();
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';                /* additive → brighter, glowier */
+      var g = ctx.createRadialGradient(x, y, 0, x, y, 19);
+      g.addColorStop(0,    'hsla(' + dShapeHue + ',92%,78%,' + (glow*0.85).toFixed(3) + ')');
+      g.addColorStop(0.45, 'hsla(' + dShapeHue + ',92%,70%,' + (glow*0.34).toFixed(3) + ')');
+      g.addColorStop(1,    'hsla(' + dShapeHue + ',92%,70%,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 19, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = 'hsla(' + dShapeHue + ',100%,92%,' + Math.min(1, glow*0.95).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(x, y, 2.6, 0, 6.2832); ctx.fill();   /* hot bright core */
+      ctx.restore();
     }
     var s = dr.s || 1.9;
     ctx.save(); ctx.translate(x, y); ctx.rotate(tilt); ctx.scale(s, s);
@@ -1437,6 +1487,15 @@ window.BACKGROUNDS.dubai={
     }
     return distribute(verts, n);
   }
+  function squarePts(n){
+    return distribute([ {x:-78,y:-78},{x:78,y:-78},{x:78,y:78},{x:-78,y:78} ], n);
+  }
+  function diamondPts(n){
+    return distribute([ {x:0,y:-94},{x:66,y:0},{x:0,y:94},{x:-66,y:0} ], n);
+  }
+  function spirePts(n){   /* tall isosceles spike: long legs, thin base (Burj-like, ~5:1) */
+    return distribute([ {x:0,y:-92},{x:18,y:92},{x:-18,y:92} ], n);
+  }
   /* point each show drone at a shape; morph from its current target so a shape
      change eases instead of snapping. firstTime = the fly-in (no morph). */
   function assignShape(idx, t, firstTime){
@@ -1469,8 +1528,9 @@ window.BACKGROUNDS.dubai={
     if (dPrevEnv <= 0 && env > 0){                 /* a show just began → pick a fresh pair of shapes */
       if (sched <= 0 && manualActive){ dShowStart = mDroneStart; dShowLen = MDRONE_LEN; }
       else                           { dShowStart = t - dsp; dShowLen = DRONE_LEN; }
-      dShapeStart = (dShapeStart + 1) % DSHAPES.length;
-      dShowShapes = [ dShapeStart, (dShapeStart + 1) % DSHAPES.length ];
+      var a = (Math.random()*DSHAPES.length)|0;                      /* two distinct shapes, */
+      var b = (a + 1 + (Math.random()*(DSHAPES.length-1)|0)) % DSHAPES.length;  /* random pair each show */
+      dShowShapes = [a, b];
       parkShow();
       dCurSlot = 0; assignShape(dShowShapes[0], t, true);
     }
@@ -1548,6 +1608,45 @@ window.BACKGROUNDS.dubai={
       ctx.beginPath(); ctx.arc(s.x, s.y, 1.6, 0, 6.2832); ctx.fill();
     }
     ctx.globalCompositeOperation = 'source-over'; ctx.lineCap = 'butt';
+  }
+
+  /* ── Museum of the Future: expanding coloured light rings on click ── */
+  function drawMuseumFx(t){
+    for (var i = MFX.length-1; i >= 0; i--){
+      var fx = MFX[i], age = t - fx.t0, life = 1.5;
+      if (age > life){ MFX.splice(i, 1); continue; }
+      var q = age/life, f = 1 - q, r = 8 + q*118;
+      if (q < 0.5){                                   /* soft colour wash early on */
+        var g = ctx.createRadialGradient(MUSEUM.cx, MUSEUM.cy, 0, MUSEUM.cx, MUSEUM.cy, r);
+        g.addColorStop(0, 'hsla(' + fx.hue + ',95%,66%,' + (f*0.18).toFixed(3) + ')');
+        g.addColorStop(1, 'hsla(' + fx.hue + ',95%,66%,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.ellipse(MUSEUM.cx, MUSEUM.cy, r, r*0.92, 0, 0, 6.2832); ctx.fill();
+      }
+      ctx.strokeStyle = 'hsla(' + fx.hue + ',95%,62%,' + (f*0.85).toFixed(3) + ')';
+      ctx.lineWidth = 3*f + 0.6;
+      ctx.beginPath(); ctx.ellipse(MUSEUM.cx, MUSEUM.cy, r, r*0.92, 0, 0, 6.2832); ctx.stroke();
+    }
+  }
+
+  /* ── birds drifting across the sky, wings flapping (wrap around the edges) ── */
+  function drawBirds(t, dt){
+    ctx.strokeStyle = 'rgba(18,22,38,.8)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+    for (var k = 0; k < BIRDS.length; k++){
+      var bd = BIRDS[k];
+      bd.x += bd.vx*dt;
+      if (bd.x < -20){ bd.x = DW + 20; bd.y = rnd(230, 440); }
+      else if (bd.x > DW + 20){ bd.x = -20; bd.y = rnd(230, 440); }
+      var y = bd.y + Math.sin(t*0.8 + bd.bob)*6;             /* gentle vertical glide */
+      var wy = -3 - Math.sin(t*bd.flapSp + bd.flap)*1.8;     /* wing-beat */
+      var dir = bd.vx >= 0 ? 1 : -1;
+      ctx.save(); ctx.translate(bd.x, y); ctx.scale(bd.s*dir, bd.s);
+      ctx.beginPath();
+      ctx.moveTo(-4.5, 0); ctx.quadraticCurveTo(-2.2, wy, 0, -.4);
+      ctx.quadraticCurveTo(2.2, wy, 4.5, 0);
+      ctx.stroke(); ctx.restore();
+    }
+    ctx.lineCap = 'butt';
   }
 
   /* ── Ain Dubai observation wheel ── */
@@ -1775,32 +1874,131 @@ window.BACKGROUNDS.dubai={
     ctx.fillStyle = wg; ctx.fillRect(0, HZ, DW, 120);
   }
 
-  /* ── traditional dhow sailing across the bay ── */
-  function resetBoat(){
-    BOAT.dir = Math.random() < .5 ? 1 : -1;
-    BOAT.x   = BOAT.dir > 0 ? -180 : DW + 180;
-    BOAT.y   = 798 + Math.random()*18;
-    BOAT.sp  = 22 + Math.random()*16;
-    BOAT.on  = true;
+  /* ── the fleet: several boat types crossing the bay ── */
+  function spawnBoat(b){
+    b.type = BOAT_TYPES[(Math.random()*BOAT_TYPES.length)|0];
+    var cfg = BOAT_CFG[b.type];
+    b.dir  = Math.random() < .5 ? 1 : -1;
+    b.x    = b.dir > 0 ? -(cfg.half + 160) : DW + cfg.half + 160;
+    b.y    = 798 + Math.random()*18;
+    b.sp   = cfg.spMin + Math.random()*cfg.spVar;
+    b.ph   = Math.random()*6.28;
+    b.on   = true;
   }
-  function drawDhow(t, dt){
-    /* update position / re-entry */
-    if (BOAT.on){
-      BOAT.x += BOAT.dir*BOAT.sp*dt;
-      if ((Math.sin(t*22) > .3)){                 /* spawn wake foam at the stern */
-        var sx = BOAT.x - 46*BOAT.dir, sy = BOAT.y - 1;
-        BOATW.push({ x: sx, y: sy, vx: -BOAT.dir*(4+Math.random()*6), vy: (Math.random()-.5)*4,
-                     side: Math.random()<.5?-1:1, age: 0 });
-      }
-      if ((BOAT.dir > 0 && BOAT.x > DW + 180) || (BOAT.dir < 0 && BOAT.x < -180)){
-        BOAT.on = false; BOAT.wait = 8 + Math.random()*12;
-      }
-    } else {
-      BOAT.wait -= dt;
-      if (BOAT.wait <= 0) resetBoat();
-    }
+  /* a soft point light at local (px,py) — constant radius (a click only changes
+     brightness, never a growing circle) */
+  function navLight(px, py, col, intensity){
+    var ia = Math.min(1, intensity), R = 4;
+    var g = ctx.createRadialGradient(px, py, 0, px, py, R);
+    g.addColorStop(0,   'rgba(' + col + ',' + (0.42*ia).toFixed(3) + ')');
+    g.addColorStop(0.5, 'rgba(' + col + ',' + (0.12*ia).toFixed(3) + ')');
+    g.addColorStop(1,   'rgba(' + col + ',0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, R, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = 'rgba(' + col + ',' + (0.45 + 0.5*ia).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(px, py, 1.2, 0, 6.2832); ctx.fill();
+  }
+  function litCol(blinking, blinkOn, steady){ return blinking ? (blinkOn ? 1 : 0.08) : steady; }
 
-    /* wake foam (drawn behind the hull) */
+  /* hull drawers — all in local coords, bow toward +x, waterline at y≈0 */
+  function drawDhowHull(t, b, blinking, blinkOn){
+    var hg = ctx.createLinearGradient(0, -10, 0, 8);
+    hg.addColorStop(0, '#6b4424'); hg.addColorStop(1, '#2c1b0f');
+    ctx.fillStyle = hg;
+    ctx.beginPath();
+    ctx.moveTo(-48, -4);
+    ctx.quadraticCurveTo(0, 14, 52, -4);
+    ctx.quadraticCurveTo(60, -8, 50, -9);
+    ctx.quadraticCurveTo(0, 3, -42, -9);
+    ctx.quadraticCurveTo(-55, -10, -48, -4);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(220,180,120,.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-42, -7); ctx.quadraticCurveTo(0, 1, 50, -7); ctx.stroke();
+    /* mast + bellied lateen sail */
+    ctx.strokeStyle = '#3a2614'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(4, -8); ctx.lineTo(4, -54); ctx.stroke();
+    var belly = 34 + Math.sin(t*1.6 + b.ph)*4;
+    var sg = ctx.createLinearGradient(0, -54, 0, -8);
+    sg.addColorStop(0, 'rgba(255,244,224,.96)'); sg.addColorStop(1, 'rgba(236,214,182,.92)');
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.moveTo(4, -52); ctx.quadraticCurveTo(belly, -40, 44, -8);
+    ctx.quadraticCurveTo(20, -12, 4, -10); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,90,60,.5)'; ctx.lineWidth = .8;
+    ctx.beginPath(); ctx.moveTo(4, -52); ctx.lineTo(44, -8); ctx.stroke();
+    /* fluttering pennant */
+    var fl = Math.sin(t*6 + b.ph)*2.2;
+    ctx.fillStyle = 'rgba(216,64,64,.92)';
+    ctx.beginPath(); ctx.moveTo(4, -54); ctx.lineTo(17, -52 + fl); ctx.lineTo(4, -49.5); ctx.closePath(); ctx.fill();
+    /* cabin windows */
+    ctx.fillStyle = '#3a2614'; ctx.fillRect(-34, -12, 16, 7);
+    ctx.fillStyle = 'rgba(255,206,110,' + Math.min(1, litCol(blinking, blinkOn, 0.55 + 0.35*Math.sin(t*4))).toFixed(3) + ')';
+    ctx.fillRect(-32, -10, 3, 3); ctx.fillRect(-27, -10, 3, 3); ctx.fillRect(-22, -10, 3, 3);
+  }
+  function drawYachtHull(t, b, blinking, blinkOn){
+    /* sleek white motor yacht: long low hull, two-tier superstructure, radar mast */
+    var hg = ctx.createLinearGradient(0, -8, 0, 6);
+    hg.addColorStop(0, '#eef3f8'); hg.addColorStop(.6, '#d3dde7'); hg.addColorStop(1, '#9fb0c0');
+    ctx.fillStyle = hg;
+    ctx.beginPath();
+    ctx.moveTo(-54, -2);
+    ctx.lineTo(44, -2);
+    ctx.quadraticCurveTo(62, -2, 60, 6);          /* raked bow */
+    ctx.lineTo(-50, 6);
+    ctx.quadraticCurveTo(-56, 4, -54, -2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(40,70,110,.55)';        /* blue waterline stripe */
+    ctx.fillRect(-52, 2.4, 110, 1.6);
+    /* superstructure */
+    ctx.fillStyle = '#f4f8fc';
+    ctx.beginPath(); ctx.moveTo(-30, -2); ctx.lineTo(22, -2); ctx.lineTo(16, -14); ctx.lineTo(-26, -14); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e3ecf4';
+    ctx.beginPath(); ctx.moveTo(-22, -14); ctx.lineTo(8, -14); ctx.lineTo(4, -22); ctx.lineTo(-18, -22); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#cdd9e4'; ctx.lineWidth = 1.4;                  /* radar mast */
+    ctx.beginPath(); ctx.moveTo(-7, -22); ctx.lineTo(-7, -34); ctx.stroke();
+    /* tinted windows that light up */
+    var wlit = litCol(blinking, blinkOn, 0.5 + 0.3*Math.sin(t*3));
+    ctx.fillStyle = 'rgba(120,200,255,' + Math.min(1, 0.35 + 0.55*wlit).toFixed(3) + ')';
+    for (var wx = -26; wx <= 16; wx += 7) ctx.fillRect(wx, -11, 4, 3);
+    ctx.fillRect(-16, -20, 18, 3);
+  }
+  function drawAbraHull(t, b, blinking, blinkOn){
+    /* small wooden water-taxi: low open hull, canopy on posts, bench of riders */
+    ctx.fillStyle = '#5a3c20';
+    ctx.beginPath();
+    ctx.moveTo(-34, -2); ctx.quadraticCurveTo(0, 9, 36, -2);
+    ctx.quadraticCurveTo(40, -5, 34, -6); ctx.quadraticCurveTo(0, 2, -32, -6);
+    ctx.quadraticCurveTo(-38, -5, -34, -2); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(210,170,110,.5)'; ctx.lineWidth = .9;
+    ctx.beginPath(); ctx.moveTo(-30, -5); ctx.quadraticCurveTo(0, 0, 32, -5); ctx.stroke();
+    /* canopy */
+    ctx.strokeStyle = '#3a2614'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-22, -6); ctx.lineTo(-22, -15); ctx.moveTo(20, -6); ctx.lineTo(20, -15); ctx.stroke();
+    ctx.fillStyle = '#7a8a3a';
+    ctx.fillRect(-25, -17, 48, 3);
+    /* a couple of passenger silhouettes */
+    ctx.fillStyle = 'rgba(20,24,34,.85)';
+    for (var px = -16; px <= 12; px += 9){ ctx.beginPath(); ctx.arc(px, -8, 2, 0, 6.2832); ctx.fill(); ctx.fillRect(px-1.6, -8, 3.2, 5); }
+    /* a small lamp */
+    ctx.fillStyle = 'rgba(255,206,110,' + Math.min(1, litCol(blinking, blinkOn, 0.5 + 0.3*Math.sin(t*4))).toFixed(3) + ')';
+    ctx.fillRect(-1.5, -16, 3, 2);
+  }
+  function drawSpeedboatHull(t, b, blinking, blinkOn){
+    /* small fast runabout planing on the water, slight nose-up */
+    ctx.fillStyle = '#d8dde2';
+    ctx.beginPath();
+    ctx.moveTo(-30, -2); ctx.lineTo(24, -3); ctx.quadraticCurveTo(40, -4, 36, 2);
+    ctx.lineTo(-26, 4); ctx.quadraticCurveTo(-32, 2, -30, -2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#b02c2c'; ctx.fillRect(-28, -0.5, 64, 2);        /* red stripe */
+    ctx.fillStyle = 'rgba(60,80,100,.85)';                            /* windshield */
+    ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(10, -3); ctx.lineTo(6, -9); ctx.lineTo(-2, -9); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(20,24,34,.8)';                              /* driver */
+    ctx.beginPath(); ctx.arc(-6, -5, 2, 0, 6.2832); ctx.fill(); ctx.fillRect(-7.6, -5, 3.2, 5);
+    if (blinking){ ctx.fillStyle = 'rgba(255,230,180,' + (blinkOn?0.9:0.05).toFixed(3) + ')'; ctx.fillRect(-1, -10, 2, 2); }
+  }
+  var BOAT_HULL = { dhow: drawDhowHull, yacht: drawYachtHull, abra: drawAbraHull, speedboat: drawSpeedboatHull };
+
+  function drawBoats(t, dt){
+    /* shared wake foam (drawn behind the hulls) */
     for (var i = BOATW.length-1; i >= 0; i--){
       var p = BOATW[i]; p.age += dt;
       if (p.age > 2.6){ BOATW.splice(i, 1); continue; }
@@ -1809,79 +2007,47 @@ window.BACKGROUNDS.dubai={
       ctx.fillStyle = 'rgba(225,240,255,' + (f*0.4).toFixed(3) + ')';
       ctx.beginPath(); ctx.ellipse(p.x, p.y, 3.5*(1.4-f), 1.4*(1.4-f), 0, 0, 6.2832); ctx.fill();
     }
-    if (BOATW.length > 140) BOATW.splice(0, BOATW.length - 140);
+    if (BOATW.length > 160) BOATW.splice(0, BOATW.length - 160);
 
-    if (!BOAT.on) return;
+    for (var bi = 0; bi < BOATS.length; bi++){
+      var b = BOATS[bi], cfg = BOAT_CFG[b.type];
+      if (!b.on){ b._on = false; b.wait -= dt; if (b.wait <= 0) spawnBoat(b); continue; }
+      b.x += b.dir*b.sp*dt;
+      cfg = BOAT_CFG[b.type];
+      if (Math.sin(t*22 + bi*1.7) > .3){                 /* wake foam at the stern */
+        BOATW.push({ x: b.x + cfg.sternX*b.dir, y: b.y - 1,
+                     vx: -b.dir*(4 + Math.random()*6 + (b.type==='speedboat'?16:0)),
+                     vy: (Math.random()-.5)*4, side: Math.random()<.5?-1:1, age: 0 });
+      }
+      if ((b.dir > 0 && b.x > DW + cfg.half + 160) || (b.dir < 0 && b.x < -cfg.half - 160)){
+        b.on = false; b._on = false; b.wait = 6 + Math.random()*12; continue;
+      }
 
-    var flash = (t > BOAT.flashT && t < BOAT.flashT + 1.3)
-              ? Math.min(1, (t - BOAT.flashT)/.12, (BOAT.flashT + 1.3 - t)/.9) : 0;
+      var blinking = t < b.blinkUntil, blinkOn = blinking && (Math.sin(t*24) > 0);
+      var fast = b.type === 'speedboat';
+      var bob  = Math.sin(t*1.3 + b.ph)*(fast ? 1.5 : 2.6);
+      var rock = Math.sin(t*0.95 + b.ph*1.3)*(fast ? 0.02 : 0.045);
 
-    ctx.save();
-    ctx.translate(BOAT.x, BOAT.y);
-    ctx.scale(BOAT.dir, 1);                        /* bow points the way it sails */
+      /* soft shadow cast on the water — stays at the waterline as the hull bobs */
+      var shg = ctx.createRadialGradient(b.x, b.y + 6, 0, b.x, b.y + 6, cfg.half);
+      shg.addColorStop(0, 'rgba(6,12,22,.34)'); shg.addColorStop(1, 'rgba(6,12,22,0)');
+      ctx.fillStyle = shg;
+      ctx.beginPath(); ctx.ellipse(b.x, b.y + 6, cfg.half*0.95, 5.5, 0, 0, 6.2832); ctx.fill();
 
-    /* hull — warm dark wood with upturned stern & bow */
-    var hg = ctx.createLinearGradient(0, -10, 0, 8);
-    hg.addColorStop(0, '#6b4424'); hg.addColorStop(1, '#2c1b0f');
-    ctx.fillStyle = hg;
-    ctx.beginPath();
-    ctx.moveTo(-48, -4);
-    ctx.quadraticCurveTo(0, 14, 52, -4);          /* keel sweep */
-    ctx.quadraticCurveTo(60, -8, 50, -9);         /* bow tip */
-    ctx.quadraticCurveTo(0, 3, -42, -9);          /* deck line */
-    ctx.quadraticCurveTo(-55, -10, -48, -4);      /* stern tip */
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(220,180,120,.5)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(-42, -7); ctx.quadraticCurveTo(0, 1, 50, -7); ctx.stroke();
+      ctx.save();
+      ctx.translate(b.x, b.y + bob); ctx.rotate(rock); ctx.scale(b.dir, 1);
+      BOAT_HULL[b.type](t, b, blinking, blinkOn);
+      var navI = blinking ? (blinkOn ? 1 : 0.1) : 0.55;
+      var strobe = Math.pow(Math.max(0, Math.sin(t*5)), 14);
+      for (var li = 0; li < cfg.lights.length; li++){
+        var L = cfg.lights[li];
+        var inten = (li === 2) ? (blinking ? (blinkOn ? 1 : 0.1) : (0.25 + 0.7*strobe)) : navI;
+        navLight(L[0], L[1], L[2], inten);
+      }
+      ctx.restore();
 
-    /* mast + lateen sail (gently bellied) */
-    ctx.strokeStyle = '#3a2614'; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(4, -8); ctx.lineTo(4, -54); ctx.stroke();
-    var sg = ctx.createLinearGradient(0, -54, 0, -8);
-    sg.addColorStop(0, 'rgba(255,244,224,.96)'); sg.addColorStop(1, 'rgba(236,214,182,.92)');
-    ctx.fillStyle = sg;
-    ctx.beginPath();
-    ctx.moveTo(4, -52);
-    ctx.quadraticCurveTo(34, -40, 44, -8);        /* leech (bellied) */
-    ctx.quadraticCurveTo(20, -12, 4, -10);        /* foot back to mast */
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(120,90,60,.5)'; ctx.lineWidth = .8;
-    ctx.beginPath(); ctx.moveTo(4, -52); ctx.lineTo(44, -8); ctx.stroke();   /* yard/spar */
-
-    /* little cabin with warm lit windows near the stern */
-    ctx.fillStyle = '#3a2614'; ctx.fillRect(-34, -12, 16, 7);
-    var lit = 0.6 + 0.4*Math.sin(t*4) + flash;
-    ctx.fillStyle = 'rgba(255,206,110,' + Math.min(1, lit).toFixed(3) + ')';
-    ctx.fillRect(-32, -10, 3, 3); ctx.fillRect(-27, -10, 3, 3); ctx.fillRect(-22, -10, 3, 3);
-
-    ctx.restore();
-
-    /* nav + masthead lights in world space (so glows aren't mirror-flipped) */
-    var bow = { x: BOAT.x + 50*BOAT.dir, y: BOAT.y - 6 };
-    var stern = { x: BOAT.x - 44*BOAT.dir, y: BOAT.y - 8 };
-    var mast = { x: BOAT.x + 4*BOAT.dir, y: BOAT.y - 55 };
-    /* soft point lights: a gradient halo that fades out (no hard disc) + a tiny
-       crisp core — kept subtle, swelling only a little on the click flash */
-    function navLight(px, py, col, intensity, baseR){
-      var gr = baseR + 4*flash, ia = Math.min(1, intensity);
-      var g = ctx.createRadialGradient(px, py, 0, px, py, gr);
-      g.addColorStop(0,   'rgba(' + col + ',' + (0.40*ia).toFixed(3) + ')');
-      g.addColorStop(0.45,'rgba(' + col + ',' + (0.12*ia).toFixed(3) + ')');
-      g.addColorStop(1,   'rgba(' + col + ',0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, gr, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = 'rgba(' + col + ',' + (0.5 + 0.45*ia).toFixed(3) + ')';
-      ctx.beginPath(); ctx.arc(px, py, 1.2, 0, 6.2832); ctx.fill();
+      b._x = b.x; b._y = b.y + bob; b._half = cfg.half; b._on = true;
     }
-    navLight(bow.x, bow.y, '120,235,150', 0.55 + 0.5*flash, 4);    /* green starboard at bow */
-    navLight(stern.x, stern.y, '255,90,80', 0.55 + 0.5*flash, 4);  /* red at stern */
-    var strobe = Math.pow(Math.max(0, Math.sin(t*5)), 14);
-    navLight(mast.x, mast.y, '255,250,235', 0.25 + 0.7*strobe + 0.5*flash, 3.5);  /* white masthead */
-
-    /* soft warm reflection smeared down onto the water (subtle) */
-    var rw = ctx.createRadialGradient(BOAT.x, BOAT.y+16, 0, BOAT.x, BOAT.y+16, 40);
-    rw.addColorStop(0, 'rgba(255,205,135,' + (0.07 + 0.16*flash).toFixed(3) + ')');
-    rw.addColorStop(1, 'rgba(255,205,135,0)');
-    ctx.fillStyle = rw; ctx.beginPath(); ctx.ellipse(BOAT.x, BOAT.y+16, 30, 13, 0, 0, 6.2832); ctx.fill();
   }
 
   /* ── dolphins leaping from the water now and then ── */
@@ -2081,6 +2247,9 @@ window.BACKGROUNDS.dubai={
     updateStorm(t, dt);
     drawStormClouds(t);
 
+    /* birds gliding across the sky */
+    drawBirds(t, dt);
+
     /* LED-show envelope: scheduled every 3 minutes, or triggered by a click */
     var sp = (t + SHOW_OFFSET) % SHOW_PERIOD;
     var env = sp < SHOW_LEN ? Math.min(1, sp/1.5, (SHOW_LEN - sp)/1.5) : 0;
@@ -2160,6 +2329,7 @@ window.BACKGROUNDS.dubai={
     if (fwEnv > 0) spawnFireworks(dt, fwEnv, showHue);
     if (FW.length) drawFireworks(dt);
     drawPops(t);                       /* drone explosion flashes/rings */
+    drawMuseumFx(t);                   /* museum click rings */
 
     /* red aviation beacons */
     for (k = 0; k < BEACONS.length; k++){
@@ -2194,8 +2364,8 @@ window.BACKGROUNDS.dubai={
     /* missile-defense show over the bay */
     drawMissiles(t, dt);
 
-    /* a dhow sailing across the bay */
-    drawDhow(t, dt);
+    /* the fleet sailing across the bay */
+    drawBoats(t, dt);
 
     /* dolphins leaping from the water */
     drawDolphins(t, dt);

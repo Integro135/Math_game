@@ -179,11 +179,22 @@ body{
 .eq-n[data-num],.eq-res[data-num]{cursor:help;transition:filter .15s,transform .15s}
 .eq-n[data-num]:hover,.eq-res[data-num]:hover{filter:brightness(1.25) drop-shadow(0 0 6px rgba(255,255,255,.6));transform:scale(1.08)}
 #num-tt{position:fixed;z-index:2000;display:none;pointer-events:none;
+  --ntt-accent:#2a4070;          /* bond/divider colour; each skin overrides to its label colour */
   background:rgba(255,255,255,.97);border:2.5px solid rgba(80,130,210,.5);
   border-radius:12px;padding:8px 10px 9px;
   box-shadow:0 6px 24px rgba(0,0,0,.4),0 0 0 4px rgba(255,255,255,.15);
   font-family:'Nunito',sans-serif;}
 #num-tt .ntt-lbl{text-align:center;font-weight:900;font-size:18px;color:#2a4070;margin-bottom:5px;letter-spacing:.04em}
+/* crossing-ten number-bond: the whole number (in .ntt-lbl) branches down to its
+   two parts, and each PART sits directly above its own cluster of objects (see
+   the column layout in .ntt-split below). The branch lines are an absolutely
+   positioned SVG overlay (.ntt-bond-ov) whose endpoints are measured at show
+   time so they point exactly at each part. */
+#num-tt .ntt-lbl-split{margin-bottom:40px}   /* drop the parts well below the whole number → steeper lines, narrower apex angle */
+#num-tt .ntt-whole{font-weight:900;font-size:18px;line-height:1;letter-spacing:.04em}
+#num-tt .ntt-bond-ov{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+#num-tt .ntt-bond-ov line{stroke:var(--ntt-accent);stroke-width:2;stroke-linecap:round;opacity:.85}
+#num-tt .ntt-part{font-weight:800;font-size:14px;line-height:1;min-width:13px;text-align:center;color:var(--ntt-accent)}
 /* Groups of 5: two groups per row, with visual gap between them; each group is a
    fixed 5-column grid so columns align vertically between rows. */
 #num-tt .ntt-grid{display:flex;flex-wrap:wrap;max-width:310px;justify-content:flex-start;gap:6px 14px}
@@ -191,6 +202,17 @@ body{
 #num-tt .ntt-group > span{font-size:18px;line-height:1.1;text-align:center;display:flex;align-items:center;justify-content:center;min-height:14px}
 /* objects come from the active aid variant's item art (SVG) */
 #num-tt .ntt-group > span svg{display:block;width:24px;height:auto}
+/* crossing-ten split: two columns — complete-to-ten part (LEFT) | remainder
+   (RIGHT) — each column being its part number stacked ABOVE its objects, with a
+   dashed divider between. direction:ltr pins left/right regardless of the page's
+   RTL so the complement always sits on the left and the remainder on the right. */
+#num-tt .ntt-grid.ntt-split{direction:ltr;flex-wrap:nowrap;justify-content:space-between;align-items:flex-start;gap:0;min-width:230px;max-width:360px}
+#num-tt .ntt-split .ntt-side{display:flex;flex-direction:column;align-items:center;gap:3px}
+#num-tt .ntt-split .ntt-objs{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;align-content:center}
+#num-tt .ntt-split .ntt-div{align-self:stretch;border-left:2px dashed var(--ntt-accent);opacity:.55;margin:0 14px}
+/* shown beside a digit (Superman column) → tighter so it fits next to the column */
+#num-tt.ntt-rt .ntt-grid.ntt-split{min-width:150px}
+#num-tt.ntt-rt .ntt-split .ntt-div{margin:0 9px}
 .eq-op {text-shadow:0 2px 8px rgba(0,0,0,.4)}
 .op-m  {color:#ff80ab}
 .op-p  {color:#80ffdb}

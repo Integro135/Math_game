@@ -281,6 +281,45 @@ window.EXERCISES.types.column_add=(()=>{
     iT.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
     iU.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();checkUnits(true);}});
     iT.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();checkTens(true);}});
+
+    /* ── digit object-preview ────────────────────────────────────────────────
+       Hovering a column digit shows its objects in the shared #num-tt modal, to
+       the RIGHT of the digit (below would cover the next row). It is scoped to
+       the CURRENT column: only the UNITS digits respond while adding units, only
+       the TENS digits (+ the carried 1) while adding tens. On a units carry the
+       SECOND number's units digit splits into complete-to-ten | remainder — the
+       same number-bond as the equation hover (via the global _bridgeSplit). */
+    function digitInfo(kind){
+      if(phase==='units'){
+        if(kind==='aU')return{n:P.aU,split:null};
+        if(kind==='bU'){
+          const s=(typeof _bridgeSplit==='function')?_bridgeSplit(P.aU,'add',P.bU):null;
+          return{n:P.bU,split:s?[s.left,s.right]:null};
+        }
+        return null;                       // tens digits inert while adding units
+      }
+      if(phase==='tens'){
+        if(kind==='aT')return{n:P.aT,split:null};
+        if(kind==='bT')return{n:P.bT,split:null};
+        if(kind==='carry'&&P.carry&&$('colx-carry').classList.contains('show'))return{n:1,split:null};
+        return null;                       // units digits inert while adding tens
+      }
+      return null;                         // done → no preview
+    }
+    function bindHover(el,kind){
+      if(!el)return;
+      el.style.cursor='help';
+      el.addEventListener('mouseenter',()=>{
+        const info=digitInfo(kind);
+        if(info&&info.n>0&&typeof _nttRender==='function')_nttRender(info.n,info.split,el,'right');
+        else if(typeof _nttHide==='function')_nttHide();
+      });
+      el.addEventListener('mouseleave',()=>{if(typeof _nttHide==='function')_nttHide();});
+    }
+    bindHover($('colx-aU'),'aU');bindHover($('colx-bU'),'bU');
+    bindHover($('colx-aT'),'aT');bindHover($('colx-bT'),'bT');
+    bindHover($('colx-carry'),'carry');
+
     const onResize=()=>{positionPlus();drawLines();};
     window.addEventListener('resize',onResize);
 

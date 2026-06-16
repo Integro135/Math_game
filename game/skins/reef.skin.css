@@ -304,6 +304,7 @@ body.theme-reef .pgm-jar-btm{
 /* number-hover tooltip — a deep-water pane (objects come from the reef aid
    variant: pearls) */
 body.theme-reef #num-tt{
+  --ntt-accent:#FFD166;
   background:rgba(4,38,56,.97);
   border:1px solid rgba(102,224,255,.45);
   box-shadow:0 6px 24px rgba(0,8,16,.7),0 0 18px rgba(80,200,240,.25);

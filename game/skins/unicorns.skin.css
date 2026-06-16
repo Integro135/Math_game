@@ -323,6 +323,7 @@ body.theme-girls .pgm-rst:hover{background:rgba(255,111,181,.15);color:#5A2A52}
 /* number-hover tooltip — a candy card (objects come from the unicorn aid
    variant: pastel cupcakes) */
 body.theme-girls #num-tt{
+  --ntt-accent:#8E3C7E;
   background:rgba(255,250,253,.98);
   border:1px solid rgba(214,112,171,.55);
   box-shadow:0 6px 22px rgba(120,40,90,.25),0 0 14px rgba(230,120,180,.2);

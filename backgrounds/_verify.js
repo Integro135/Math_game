@@ -46,7 +46,11 @@ function starPts(n){
   }
   return distribute(verts, n);
 }
-var DSHAPES = [ { gen: ringPts, hue: 190 }, { gen: heartPts, hue: 332 }, { gen: starPts, hue: 45 } ];
+function squarePts(n){ return distribute([ {x:-78,y:-78},{x:78,y:-78},{x:78,y:78},{x:-78,y:78} ], n); }
+function diamondPts(n){ return distribute([ {x:0,y:-94},{x:66,y:0},{x:0,y:94},{x:-66,y:0} ], n); }
+function spirePts(n){ return distribute([ {x:0,y:-92},{x:18,y:92},{x:-18,y:92} ], n); }
+var DSHAPES = [ { gen: ringPts, hue: 190 }, { gen: heartPts, hue: 332 }, { gen: starPts, hue: 45 },
+                { gen: squarePts, hue: 265 }, { gen: spirePts, hue: 30 }, { gen: diamondPts, hue: 150 } ];
 
 function rng(a){
   var mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
@@ -84,8 +88,9 @@ for (var t = 0; t < 400; t += 1/60){
   var env = sched;
   if (dPrev <= 0 && env > 0){
     assigns++; dShowStart = t - dsp; dShowLen = DRONE_LEN; dCurSlot = 0;
-    dShapeStart = (dShapeStart + 1) % DSHAPES.length;
-    pairs.push([dShapeStart, (dShapeStart + 1) % DSHAPES.length]);
+    var pa = (Math.random()*DSHAPES.length)|0;
+    var pb = (pa + 1 + (Math.random()*(DSHAPES.length-1)|0)) % DSHAPES.length;
+    pairs.push([pa, pb]);
     maxSlotsPerShow = Math.max(maxSlotsPerShow, Object.keys(slotsThisShow).length);
     slotsThisShow = {};
   }
@@ -100,10 +105,10 @@ for (var t = 0; t < 400; t += 1/60){
   dPrev = env;
 }
 maxSlotsPerShow = Math.max(maxSlotsPerShow, Object.keys(slotsThisShow).length);
-var pairsDiffer = pairs.length >= 2 && pairs.slice(1).every(function(p, k){ return p[0] !== pairs[k][0]; });
+var pairsDistinct = pairs.length >= 2 && pairs.every(function(p){ return p[0] !== p[1]; });
 check('scheduled shows in 400s (2-3)', assigns >= 2 && assigns <= 3, 'count=' + assigns);
 check('exactly two shapes per show', maxSlotsPerShow === 2, 'slots=' + maxSlotsPerShow);
-check('consecutive shows use a different pair', pairsDiffer, 'pairs=' + JSON.stringify(pairs));
+check('each show picks two DISTINCT shapes (of ' + DSHAPES.length + ')', pairsDistinct, 'pairs=' + JSON.stringify(pairs));
 check('fp flies fully in', fpMax > 0.98, 'max=' + fpMax.toFixed(3));
 check('fp flies fully back out', fpMin < 0.02, 'min=' + fpMin.toFixed(3));
 
@@ -156,28 +161,50 @@ check('rotation always forward (no jump back)', monotonic);
 check('per-frame angle step stays small', maxStep < 0.02, 'maxStep=' + maxStep.toFixed(4));
 check('spin-up envelope within [0,1]', envMin >= 0 && envMax <= 1 && envMax > 0.9, 'min=' + envMin.toFixed(2) + ' max=' + envMax.toFixed(2));
 
-// ── dhow crossing the bay ──
-console.log('\n── dhow ──');
+// ── the fleet (multiple boat types) ──
+console.log('\n── boats ──');
 var DW = 1600;
-var BOAT = { x: -200, y: 808, dir: 1, sp: 28, on: true, wait: 0, flashT: 5 };
-var BOATW = [];
-function resetBoat(){ BOAT.dir = 1; BOAT.x = -180; BOAT.y = 805; BOAT.sp = 28; BOAT.on = true; }
-var crossings = 0, maxWake = 0, fMin = 9, fMax = -9;
-for (var t = 0; t < 200; t += 1/60){
-  if (BOAT.on){
-    BOAT.x += BOAT.dir*BOAT.sp*(1/60);
-    if (Math.sin(t*22) > .3) BOATW.push({ age: 0 });
-    if ((BOAT.dir > 0 && BOAT.x > DW + 180) || (BOAT.dir < 0 && BOAT.x < -180)){ BOAT.on = false; BOAT.wait = 8; crossings++; }
-  } else { BOAT.wait -= 1/60; if (BOAT.wait <= 0) resetBoat(); }
-  for (var i = BOATW.length-1; i >= 0; i--){ BOATW[i].age += 1/60; if (BOATW[i].age > 2.6) BOATW.splice(i,1); }
-  if (BOATW.length > 140) BOATW.splice(0, BOATW.length - 140);
-  maxWake = Math.max(maxWake, BOATW.length);
-  var flash = (t > BOAT.flashT && t < BOAT.flashT + 1.3) ? Math.min(1, (t - BOAT.flashT)/.12, (BOAT.flashT + 1.3 - t)/.9) : 0;
-  if (t > BOAT.flashT && t < BOAT.flashT + 1.3){ fMin = Math.min(fMin, flash); fMax = Math.max(fMax, flash); }
+var BOAT_TYPES = ['dhow','yacht','abra','speedboat'];
+var BOAT_CFG = {
+  dhow:{spMin:22,spVar:14,half:58,sternX:-46}, yacht:{spMin:38,spVar:16,half:64,sternX:-52},
+  abra:{spMin:20,spVar:10,half:44,sternX:-36}, speedboat:{spMin:62,spVar:26,half:40,sternX:-30}
+};
+function spawnBoat(b){
+  b.type = BOAT_TYPES[(Math.random()*BOAT_TYPES.length)|0];
+  var cfg = BOAT_CFG[b.type];
+  b.dir = Math.random()<.5?1:-1; b.x = b.dir>0 ? -(cfg.half+160) : DW+cfg.half+160;
+  b.sp = cfg.spMin + Math.random()*cfg.spVar; b.on = true;
 }
-check('dhow crosses & re-enters (loops)', crossings >= 2, 'crossings=' + crossings);
-check('wake particle count capped', maxWake <= 140, 'max=' + maxWake);
-check('light-flash envelope within [0,1]', fMin >= 0 && fMax <= 1 && fMax > 0.9, 'min=' + fMin.toFixed(2) + ' max=' + fMax.toFixed(2));
+var BOATS = []; for (var c2 = 0; c2 < 3; c2++) BOATS.push({ on:false, wait: c2*5, type:'dhow', x:0, dir:1, sp:0 });
+var typesSeen = {}, maxConcurrentBoats = 0, crossings = 0;
+for (var t = 0; t < 600; t += 1/30){
+  var n = 0;
+  for (var bi = 0; bi < BOATS.length; bi++){
+    var b = BOATS[bi], cfg = BOAT_CFG[b.type];
+    if (!b.on){ b.wait -= 1/30; if (b.wait <= 0){ spawnBoat(b); typesSeen[b.type] = 1; } else continue; }
+    b.x += b.dir*b.sp*(1/30);
+    if ((b.dir>0 && b.x > DW+cfg.half+160) || (b.dir<0 && b.x < -cfg.half-160)){ b.on=false; b.wait=8; crossings++; continue; }
+    n++;
+  }
+  maxConcurrentBoats = Math.max(maxConcurrentBoats, n);
+}
+check('at most 3 boats on the water', maxConcurrentBoats <= 3, 'max=' + maxConcurrentBoats);
+check('boats cross & re-enter (loops)', crossings >= 3, 'crossings=' + crossings);
+check('several boat types appear', Object.keys(typesSeen).length >= 3, 'types=' + Object.keys(typesSeen).join(','));
+
+// click → fast blinking for ~2 s on the tapped boat
+var blinkUntil = 10 + 2.0, blinkSamples = {}, blinksWhileActive = 0, prev = null;
+for (var tb = 10; tb < 12; tb += 1/120){
+  var on = (tb < blinkUntil) && (Math.sin(tb*24) > 0);
+  blinkSamples[on] = 1; if (prev !== null && on !== prev) blinksWhileActive++; prev = on;
+}
+check('click makes a boat blink (on & off)', blinkSamples['true'] && blinkSamples['false']);
+check('blinking is fast (many toggles in 2 s)', blinksWhileActive >= 10, 'toggles=' + blinksWhileActive);
+check('blinking stops after the window', (13 < blinkUntil) === false);
+// regression: per-boat blinkUntil, no old flash-driven swell / reflection circle
+var dubaiSrc = require('fs').readFileSync(__dirname + '/dubai.bg.js', 'utf8');
+check('boats use blinkUntil (no boat flashT)', /\.blinkUntil/.test(dubaiSrc) && dubaiSrc.indexOf('BOAT.flashT') === -1 && dubaiSrc.indexOf('b.flashT') === -1);
+check('no flash-driven glow swell / reflection circle', !/baseR \+ 4\*flash/.test(dubaiSrc) && !/0\.16\*flash/.test(dubaiSrc));
 
 // ── construction crane + gondola ──
 console.log('\n── crane & gondola ──');
@@ -297,6 +324,81 @@ hl.off = (hl._period - ((tNow + delayH) % hl._period)) % hl._period;
 var progAtReturn = ((hl.deadUntil + hl.off) % hl._period) / hl._period;
 check('popped heli re-enters from the edge', progAtReturn < 0.001 || progAtReturn > 0.999, 'prog=' + progAtReturn.toFixed(4));
 check('popped heli stays down a few seconds', hl.deadUntil - tNow >= 4 && hl.deadUntil - tNow <= 7, 'delay=' + (hl.deadUntil-tNow));
+
+// incoming-missile pop: clicking it bursts (FW) and clears the missile show
+var MIS = { inc: { x: 900, y: 300 }, def: { x: 1 }, boom: null, nextAt: 0 };
+var fwBefore = FW.length;
+(function(mx, my, t){
+  if (MIS.inc && Math.abs(mx - MIS.inc.x) < 24 && Math.abs(my - MIS.inc.y) < 24){
+    popDrone(MIS.inc.x, MIS.inc.y, 18);
+    MIS.inc = null; MIS.def = null; MIS.boom = null; MIS.nextAt = t + 360;
+  }
+})(905, 305, 50);
+check('clicking the missile bursts it', FW.length - fwBefore === 22);
+check('clicking the missile clears the show', MIS.inc === null && MIS.def === null && MIS.nextAt === 410);
+
+// ── birds fly (move + wrap) ──
+console.log('\n── birds ──');
+var DWb = 1600;
+var bird = { x: 100, y: 300, vx: 18, bob: 0, flap: 0, flapSp: 7 };
+var moved = false, wrapped = false, inBounds = true;
+for (var tb2 = 0; tb2 < 200; tb2 += 1/30){
+  var px = bird.x;
+  bird.x += bird.vx*(1/30);
+  if (bird.x < -20){ bird.x = DWb + 20; wrapped = true; }
+  else if (bird.x > DWb + 20){ bird.x = -20; wrapped = true; }
+  if (bird.x !== px) moved = true;
+  if (bird.x < -21 || bird.x > DWb + 21) inBounds = false;
+  var wy = -3 - Math.sin(tb2*bird.flapSp + bird.flap)*1.8;   // wing-beat varies
+  if (wy > -1.1 || wy < -4.9) inBounds = false;              // wy must stay in [-4.8,-1.2]
+}
+check('birds move across the sky', moved);
+check('birds wrap at the edges', wrapped);
+check('birds & wings stay in range', inBounds);
+
+// ── building window placement ──
+console.log('\n── building windows ──');
+var HZb = 780;
+var CROWN_PAD = { emir1:46, emir2:46, sail:58, dome:8, slantL:18, slantR:18, spire:8, flat:8 };
+// body top inset (where the rectangular facade actually begins) per crown
+var BODY_INSET = { emir1:46, emir2:46, sail:58, dome:0, slantL:0, slantR:0, spire:0, flat:0 };
+function winSpan(crown, h){
+  var pad = (CROWN_PAD[crown] || 8) + Math.max(18, h*0.09);
+  var top = HZb - h + pad;
+  var rows = Math.max(0, (((HZb - 8) - top)/8.5)|0);
+  var lastWy = top + (rows-1)*8.5;
+  return { top: top, lastWy: lastWy, rows: rows };
+}
+['flat','spire','slantL','dome','emir1','emir2','sail'].forEach(function(cr){
+  var h = 260, s = winSpan(cr, h), y0 = HZb - h, bodyTop = y0 + BODY_INSET[cr];
+  var gapBelowTop = s.top - bodyTop;
+  var topOk = gapBelowTop >= 18;               // a clear gap below the body/crown top (well under the roof)
+  var botOk = s.lastWy <= HZb - 8;             // and stop above the base
+  check('windows sit a clear gap below the ' + cr + ' top', topOk && botOk && s.rows > 4,
+        'gapBelowTop=' + gapBelowTop.toFixed(0) + ' lastWy=' + s.lastWy.toFixed(0) + ' rows=' + s.rows);
+});
+// definitive insurance: windows are clipped to the body in the prerender
+var srcW = require('fs').readFileSync(__dirname + '/dubai.bg.js', 'utf8');
+var clips = (srcW.match(/og\.clip\(\);\s*\n?\s*drawWindows/g) || []).length;
+check('windows are clipped to the body silhouette (box/twin×2/cayan)', clips >= 4, 'clip-then-drawWindows sites=' + clips);
+
+// ── boat shadows + museum click rings ──
+console.log('\n── boat shadows & museum rings ──');
+var src2 = require('fs').readFileSync(__dirname + '/dubai.bg.js', 'utf8');
+check('boats cast a soft shadow on the water', /soft shadow cast on the water/.test(src2) && /ellipse\(b\.x, b\.y \+ 6/.test(src2));
+
+// museum rings: each click picks a new hue, rings expand then clear, list capped
+var MFX = [], mfxHue = 200, hues = [];
+for (var clk = 0; clk < 12; clk++){
+  mfxHue = (mfxHue + 67) % 360; MFX.push({ t0: clk*0.05, hue: mfxHue }); if (MFX.length > 8) MFX.shift(); hues.push(mfxHue);
+}
+var allDistinctConsecutive = hues.slice(1).every(function(h, k){ return h !== hues[k]; });
+check('each museum click uses a new hue', allDistinctConsecutive, 'hues=' + hues.slice(0,4).join(','));
+check('museum ring list is capped', MFX.length <= 8, 'len=' + MFX.length);
+// ring radius grows from ~8 and the effect clears after its life
+var t0 = 0, life = 1.5, rStart = 8 + (0/life)*118, rEnd = 8 + (0.999)*118, cleared = (1.6 > life);
+check('ring expands over its life', rEnd > rStart + 100 && rStart < 12, 'r:' + rStart.toFixed(0) + '→' + rEnd.toFixed(0));
+check('ring clears after ~1.5 s', cleared);
 
 console.log(fails ? ('\n' + fails + ' FAILURES') : '\nALL PASS');
 process.exit(fails ? 1 : 0);

@@ -1,5 +1,5 @@
 /* ── Gift reward thresholds (grade out of 1000) ── */
-const GIFT_GOALS={br:800,mx:900,sup:500};
+const GIFT_GOALS={br:800,mx:900,sup:650};
 const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
@@ -250,14 +250,23 @@ function renderEq(){
   // restore hint visibility (TC hides it and embeds it inline)
   if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
   const n=t=>`<span class="eq-n" data-num="${t}">${t}</span>`;
+  // Like n(), but for a NON-first operand `t` that is combined onto a running
+  // `base` via `o` ('add'/'sub'): if the step bridges a ten, tag the span with
+  // data-split="left,right" so the hover tooltip shows the complete-to-ten part
+  // (left) and the remainder (right). See _bridgeSplit + _nttShow.
+  const nB=(t,base,o)=>{const s=_bridgeSplit(base,o,t);
+    return `<span class="eq-n" data-num="${t}"${s?` data-split="${s.left},${s.right}"`:''}>${t}</span>`;};
   const op=(t,c)=>`<span class="eq-op ${c}">${t}</span>`;
   const inp=`<input id="ans" class="ans-inp" type="number" min="0" max="20"
     oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)"
     onkeydown="if(event.key==='Enter')checkAns()">`;
   const res=t=>`<span class="eq-res" data-num="${t}">${t}</span>`;
+  // like res(), but a teen result is tagged to split into ten + ones (e.g.
+  // 13 → 10 | 3) so the hover tooltip shows a ten-and-ones number bond.
+  const resB=t=>`<span class="eq-res" data-num="${t}"${t>10?` data-split="10,${t-10}"`:''}>${t}</span>`;
   let h='';
-  if(ptype===TM)     h=n(num1)+op('-','op-m')+inp+op('=','op-e')+res(num2);
-  else if(ptype===TS)h=n(num1)+op('-','op-m')+n(num2)+op('=','op-e')+inp;
+  if(ptype===TM)     h=n(num1)+op('-','op-m')+inp+op('=','op-e')+resB(num2);
+  else if(ptype===TS)h=n(num1)+op('-','op-m')+nB(num2,num1,'sub')+op('=','op-e')+inp;
   else if(ptype===TX||ptype===TZ||ptype===TW){
     const op1=(ptype===TX||ptype===TW)?op('-','op-m'):op('+','op-p');
     const mkSub=(id,next,gid)=>`<input id="${id}" class="tx-sub-inp" type="number" min="0" max="30"`+
@@ -271,18 +280,19 @@ function renderEq(){
     const vLine=`<svg class="tz-vsv" viewBox="0 0 10 18" width="10" height="16">`+
       `<line x1="5" y1="0" x2="5" y2="18" stroke="rgba(255,215,0,.45)" stroke-width="1.5" stroke-linecap="round"/></svg>`;
     let parts=`<div class="tz-grp" id="tz-g1">`+
-        `<div class="tz-grp-top"><span class="eq-n" data-num="${num1}">${num1}</span>${op1}${n(num2)}</div>`+
+        `<div class="tz-grp-top"><span class="eq-n" data-num="${num1}">${num1}</span>${op1}${nB(num2,num1,(ptype===TX||ptype===TW)?'sub':'add')}</div>`+
         `${vPair}${subRow('tx-sub1',num4>0?'tx-sub2':'ans','tz-g1')}`+
       `</div>`;
+    const base12=(ptype===TX||ptype===TW)?num1-num2:num1+num2;   // running result of the first two terms
     if(num4>0){
       parts+=`<div class="tz-grp" id="tz-g2">`+
-          `<div class="tz-grp-top">${op('+','op-p')}${n(num3)}</div>`+
+          `<div class="tz-grp-top">${op('+','op-p')}${nB(num3,base12,'add')}</div>`+
           `${vLine}${subRow('tx-sub2','ans','tz-g2')}`+
         `</div>`;
-      parts+=`${op('+','op-p')}${n(num4)}`;
+      parts+=`${op('+','op-p')}${nB(num4,base12+num3,'add')}`;
     }else{
       const op3=ptype===TW?op('-','op-m'):op('+','op-p');
-      parts+=`${op3}${n(num3)}`;
+      parts+=`${op3}${nB(num3,base12,ptype===TW?'sub':'add')}`;
     }
     parts+=`${op('=','op-e')}${inp}`;
     h=`<div class="tz-inline">${parts}</div>`;
@@ -306,14 +316,17 @@ function renderEq(){
       `</div>`;
   }
   else if(ptype===TDA||ptype===TDS){
+    // the FIRST addend input previews its value as objects while typing
+    // (`_nttInput`); plain count, no make-ten split. Hidden on blur.
     const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="30"`+
-      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)"`+
+      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this)':''}"`+
+      (id==='ans1'?` onblur="_nttHide()"`:'')+
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
   }
   else if(ptype===TCA)h='<div id="colx-root" class="colx-root"></div>';
-  else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+n(num2)+op('=','op-e')+inp;
-  else               h=n(num1)+op('+','op-p')+n(num2)+op('=','op-e')+inp;
+  else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
+  else               h=n(num1)+op('+','op-p')+nB(num2,num1,'add')+op('=','op-e')+inp;
   document.getElementById('eq').innerHTML=h;
   if(ptype===TCA)_colxMount();
 }
@@ -757,32 +770,118 @@ function _nttItemHTML(i){
   const f=v.jar&&v.jar.itemSVG;
   return f?f(i%5):'⭐';
 }
+/* Bridge-through-ten split for a NON-first operand: combining `x` onto a running
+   `base` via op ('add'/'sub'). Returns {left,right} when the step crosses a ten
+   — left = the part that completes `base` to the ten (the complement on add, the
+   units on sub), right = the leftover — or null when it doesn't bridge. */
+function _bridgeSplit(base,op,x){
+  if(!(base>0)||!(x>0))return null;
+  let left;
+  if(op==='add')left=(10-base%10)%10;       // up to the next ten
+  else if(op==='sub')left=base%10;          // down to this ten
+  else return null;
+  if(left<=0||x<=left)return null;          // stays on one side of the ten → no split
+  return {left,right:x-left};
+}
+// objects in groups of up to 5; art indexed continuously from `start`
+function _nttGroups(start,count){
+  let out='';
+  for(let i=0;i<count;i+=5){
+    const c=Math.min(5,count-i);
+    let g='';for(let j=0;j<c;j++)g+=`<span>${_nttItemHTML(start+i+j)}</span>`;
+    out+=`<div class="ntt-group" style="grid-template-columns:repeat(${c},26px)">${g}</div>`;
+  }
+  return out;
+}
+// Render the tooltip for `num` objects, optionally split into [left,right]
+// (a number-bond), anchored to `anchorEl`. `side` is 'below' (default) or
+// 'right' (used by Superman's column digits where below would cover a row).
+// Shared by hover (.eq-n/.eq-res via _nttShow), the two-addends input preview
+// (_nttInput) and the column-addition digit preview.
+function _nttRender(num,split,anchorEl,side){
+  const tt=document.getElementById('num-tt');if(!tt)return;
+  const grid=tt.querySelector('.ntt-grid');
+  const lbl=tt.querySelector('.ntt-lbl');
+  if(split){
+    grid.classList.add('ntt-split');
+    // two columns: each PART number stacked directly ABOVE its own cluster of
+    // objects (left = complete-to-ten, right = remainder), divider between.
+    grid.innerHTML=
+      `<div class="ntt-side ntt-left"><span class="ntt-part">${split[0]}</span><div class="ntt-objs">${_nttGroups(0,split[0])}</div></div>`+
+      `<div class="ntt-div"></div>`+
+      `<div class="ntt-side ntt-right"><span class="ntt-part">${split[1]}</span><div class="ntt-objs">${_nttGroups(split[0],split[1])}</div></div>`;
+    // the whole number sits above; branch lines (drawn by _nttBond after layout)
+    // connect it down to each part.
+    lbl.classList.add('ntt-lbl-split');
+    lbl.innerHTML=`<div class="ntt-whole">${num}</div>`;
+  }else{
+    grid.classList.remove('ntt-split');
+    grid.innerHTML=_nttGroups(0,num);
+    lbl.classList.remove('ntt-lbl-split');
+    lbl.textContent=num;
+  }
+  tt.classList.toggle('ntt-rt',side==='right');         // compacter split when shown beside a digit
+  tt.style.display='block';
+  const r=anchorEl.getBoundingClientRect();
+  const tw=tt.offsetWidth,th=tt.offsetHeight;
+  let left,top;
+  if(side==='right'){
+    // beside the anchor, vertically centred; flip to the left if it would overflow
+    left=r.right+12;
+    if(left+tw>innerWidth-8)left=Math.max(8,r.left-tw-12);
+    top=Math.max(8,Math.min(r.top+r.height/2-th/2,innerHeight-th-8));
+  }else{
+    // below the anchor; flip above if off-screen
+    left=Math.max(8,Math.min(r.left+r.width/2-tw/2,innerWidth-tw-8));
+    top=r.bottom+10;
+    if(top+th>innerHeight-8)top=r.top-th-10;
+  }
+  tt.style.left=left+'px';
+  tt.style.top=top+'px';
+  _nttBond(tt,grid,split);                              // draw the bond branches once laid out
+}
 function _nttShow(el){
   const num=parseInt(el.getAttribute('data-num'),10);
   if(isNaN(num)||num<=0||num>100)return;
-  const tt=document.getElementById('num-tt');if(!tt)return;
-  // Build groups of up to 5 objects. Each group is a fixed-column grid sized
-  // to its actual count so a partial last group doesn't reserve unused space —
-  // yet column 1 of every group still aligns with column 1 above (since groups
-  // are left-flushed in the flex container).
-  const groups=[];
-  for(let i=0;i<num;i+=5){
-    const count=Math.min(5,num-i);
-    let g='';for(let j=0;j<count;j++)g+=`<span>${_nttItemHTML(i+j)}</span>`;
-    groups.push(`<div class="ntt-group" style="grid-template-columns:repeat(${count},26px)">${g}</div>`);
+  // crossing-ten operands carry data-split="left,right": show the complete-to-ten
+  // part flushed left and the remainder flushed right, separated by a divider.
+  let split=null;const sa=el.getAttribute('data-split');
+  if(sa){const m=sa.split(',').map(s=>parseInt(s,10));
+    if(m.length===2&&m[0]>0&&m[1]>0&&m[0]+m[1]===num)split=m;}
+  _nttRender(num,split,el);
+}
+// Two-addends preview: while typing in the first input of a ? + ? = n exercise,
+// show that number's objects (plain — no make-ten split).
+function _nttInput(inp){
+  const v=parseInt(inp.value,10);
+  if(isNaN(v)||v<=0||v>100){_nttHide();return;}
+  _nttRender(v,null,inp);
+}
+// Draw (or hide) the number-bond branch lines: an SVG overlay on #num-tt whose
+// endpoints are MEASURED so each line points exactly from the whole number down
+// to its part. Re-measured every show because object counts vary the geometry.
+function _nttBond(tt,grid,split){
+  let bond=tt.querySelector('.ntt-bond-ov');
+  if(!split){if(bond)bond.style.display='none';return;}
+  if(!bond){
+    bond=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    bond.setAttribute('class','ntt-bond-ov');
+    tt.insertBefore(bond,tt.firstChild);              // behind the text
   }
-  tt.querySelector('.ntt-lbl').textContent=num;
-  tt.querySelector('.ntt-grid').innerHTML=groups.join('');
-  tt.style.display='block';
-  // Position: prefer below; flip above if off-screen
-  const r=el.getBoundingClientRect();
-  const tw=tt.offsetWidth,th=tt.offsetHeight;
-  let left=r.left+r.width/2-tw/2;
-  let top=r.bottom+10;
-  left=Math.max(8,Math.min(left,innerWidth-tw-8));
-  if(top+th>innerHeight-8)top=r.top-th-10;
-  tt.style.left=left+'px';
-  tt.style.top=top+'px';
+  const whole=tt.querySelector('.ntt-whole'),ps=grid.querySelectorAll('.ntt-part');
+  if(!whole||ps.length<2){bond.style.display='none';return;}
+  bond.style.display='block';
+  const tr=tt.getBoundingClientRect();
+  bond.setAttribute('width',tr.width);bond.setAttribute('height',tr.height);
+  bond.setAttribute('viewBox',`0 0 ${tr.width} ${tr.height}`);
+  const cx=r=>r.left-tr.left+r.width/2;
+  const w=whole.getBoundingClientRect(),a=ps[0].getBoundingClientRect(),b=ps[1].getBoundingClientRect();
+  const GAP=9;                                          // ~0.25cm clear space so a line never touches its part number
+  const sx=cx(w),sy=w.bottom-tr.top-1;
+  const ay=a.top-tr.top-GAP,by=b.top-tr.top-GAP;
+  bond.innerHTML=
+    `<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${cx(a).toFixed(1)}" y2="${ay.toFixed(1)}"/>`+
+    `<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${cx(b).toFixed(1)}" y2="${by.toFixed(1)}"/>`;
 }
 function _nttHide(){const tt=document.getElementById('num-tt');if(tt)tt.style.display='none';}
 document.addEventListener('mouseover',e=>{
