@@ -896,8 +896,16 @@ function _nttGroups(start,count){
 // 'right' (used by Superman's column digits where below would cover a row).
 // Shared by hover (.eq-n/.eq-res via _nttShow), the two-addends input preview
 // (_nttInput) and the column-addition digit preview.
+// a full-screen celebration is up (success / gift / intro splash) → the number
+// tooltip must never sit over it, even while a hover is still active.
+function _celebrationUp(){
+  return (typeof _fwOn!=='undefined'&&_fwOn)
+      || (typeof _giftOn!=='undefined'&&_giftOn)
+      || (typeof _introOn!=='undefined'&&_introOn);
+}
 function _nttRender(num,split,anchorEl,side){
   const tt=document.getElementById('num-tt');if(!tt)return;
+  if(_celebrationUp()){tt.style.display='none';return;}   // hide + bail while a celebration screen shows
   const grid=tt.querySelector('.ntt-grid');
   const lbl=tt.querySelector('.ntt-lbl');
   if(split){

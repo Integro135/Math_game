@@ -250,8 +250,9 @@ This is the largest file and owns nearly all gameplay state and logic.
     is the shared renderer behind hover (`_nttShow`), this input preview, and the
     Superman column preview; `side='right'` positions it beside the anchor.
   - **Closes on celebration/prize:** `showFw` and `showGiftScreen` (success.js)
-    call `_nttHide()` so a tooltip left open at solve-time never floats over the
-    success or gift screen.
+    call `_nttHide()`, AND `_nttRender` bails via `_celebrationUp()` (true while a
+    success / gift / intro screen is up) — so a tooltip never floats over the
+    screen even if a hover is still active and re-fires `mouseover`.
   - **Superman column preview (`TCA`):** `column_add.ex.js` binds the column
     digits — hovering one previews its objects in `#num-tt` to the **RIGHT** of the
     digit (below would cover a row; `side='right'`, compacter via the `ntt-rt`

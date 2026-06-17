@@ -1993,6 +1993,15 @@ class TestNumberHoverTooltip:
         page.evaluate("showFw()")
         assert page.evaluate("document.getElementById('num-tt').style.display") == "none", \
             "tooltip must be hidden once the celebration/prize screen shows"
+        # and a STILL-ACTIVE hover (re-fired mouseover) must NOT re-open it while
+        # the success screen is up
+        page.evaluate(
+            "[...document.querySelectorAll('#eq .eq-n')]"
+            ".find(e=>e.getAttribute('data-num')==='18')"
+            ".dispatchEvent(new MouseEvent('mouseover',{bubbles:true}))")
+        page.wait_for_timeout(120)
+        assert page.evaluate("document.getElementById('num-tt').style.display") == "none", \
+            "a lingering hover must not re-open the tooltip during the celebration"
 
 
 # ─────────────────────────────────────────────────────────
