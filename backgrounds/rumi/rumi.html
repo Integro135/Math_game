@@ -136,6 +136,15 @@
   @keyframes armB{0%,100%{transform:rotate(-12deg)} 50%{transform:rotate(12deg)}}
   @keyframes legA{0%,100%{transform:rotate(-7deg)}  50%{transform:rotate(7deg)}}
   @keyframes legB{0%,100%{transform:rotate(7deg)}   50%{transform:rotate(-7deg)}}
+
+  /* blink: the eyes group squashes shut briefly every few seconds */
+  .chibi-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:chibiBlink 4.2s ease-in-out infinite;}
+  @keyframes chibiBlink{0%,93%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.08)}}
+  /* floating hearts emote: each heart rises + fades, staggered */
+  .chibi-hearts path{transform-box:fill-box;opacity:0;animation:chibiHeart 2.8s ease-in infinite;}
+  .chibi-hearts path:nth-child(2){animation-delay:.95s}
+  .chibi-hearts path:nth-child(3){animation-delay:1.9s}
+  @keyframes chibiHeart{0%{opacity:0;transform:translateY(8px) scale(.4)}20%{opacity:.95;transform:translateY(0) scale(1)}70%{opacity:.8}100%{opacity:0;transform:translateY(-42px) scale(1.1)}}
 </style>
 </head>
 <body>
@@ -260,8 +269,8 @@
     <path d="M224 335 C236,325 256,325 270,331" stroke-width="3.4"/>
     <path d="M330 331 C344,325 364,325 376,335" stroke-width="3.4"/>
 
-    <!-- ===================== EYES ===================== -->
-    <g>
+    <!-- ===================== EYES (animated: blink) ===================== -->
+    <g class="chibi-eyes">
       <ellipse cx="252" cy="378" rx="29" ry="30" fill="#1a1a1a" stroke-width="2.5"/>
       <ellipse cx="348" cy="378" rx="29" ry="30" fill="#1a1a1a" stroke-width="2.5"/>
       <circle cx="245" cy="367" r="11" fill="#ffffff" stroke="none"/>
@@ -414,6 +423,13 @@
         <circle cx="296" cy="898" r="2.3"/><circle cx="332" cy="898" r="2.3"/>
         <circle cx="296" cy="916" r="2.3"/><circle cx="332" cy="916" r="2.3"/>
       </g>
+    </g>
+
+    <!-- ===================== HEARTS emote (animated: float up + fade) ===================== -->
+    <g class="chibi-hearts" fill="#e6394e" stroke="none">
+      <path d="M198,246.5 C185.5,237 192.5,228 198,234.5 C203.5,228 210.5,237 198,246.5 Z"/>
+      <path d="M300,200.5 C287.5,191 294.5,182 300,188.5 C305.5,182 312.5,191 300,200.5 Z"/>
+      <path d="M402,246.5 C389.5,237 396.5,228 402,234.5 C407.5,228 414.5,237 402,246.5 Z"/>
     </g>
 
   </g>

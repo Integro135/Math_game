@@ -1430,7 +1430,7 @@ window.BACKGROUNDS.unicorns={
   ensureChibiWalker(function(){
     if (stopped) return;                          // background already switched away
     chibiPatrol = ChibiWalker.patrol(chibiLayer, {
-      height: '30vh', bottom: '6vh', duration: 16000,
+      height: '18vh', bottom: '6vh', duration: 16000,   // 40% smaller than the savanna size
       gapMin: 120000, gapMax: 240000,             // reappears every 2–4 minutes
       startDelay: 6000
     });

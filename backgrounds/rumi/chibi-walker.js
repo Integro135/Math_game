@@ -95,8 +95,8 @@
   '<path d="M224 335 C236,325 256,325 270,331" stroke-width="3.4"/>' +
   '<path d="M330 331 C344,325 364,325 376,335" stroke-width="3.4"/>' +
 
-  /* EYES + highlights + lashes */
-  '<g>' +
+  /* EYES + highlights + lashes (animated: blink) */
+  '<g class="chibi-eyes">' +
     '<ellipse cx="252" cy="378" rx="29" ry="30" fill="#1a1a1a" stroke-width="2.5"/>' +
     '<ellipse cx="348" cy="378" rx="29" ry="30" fill="#1a1a1a" stroke-width="2.5"/>' +
     '<circle cx="245" cy="367" r="11" fill="#ffffff" stroke="none"/>' +
@@ -183,6 +183,13 @@
     '</g>' +
   '</g>' +
 
+  /* HEARTS emote (animated: float up + fade, staggered) — sits above the head */
+  '<g class="chibi-hearts" fill="#e6394e" stroke="none">' +
+    '<path d="M198,246.5 C185.5,237 192.5,228 198,234.5 C203.5,228 210.5,237 198,246.5 Z"/>' +
+    '<path d="M300,200.5 C287.5,191 294.5,182 300,188.5 C305.5,182 312.5,191 300,200.5 Z"/>' +
+    '<path d="M402,246.5 C389.5,237 396.5,228 402,234.5 C407.5,228 414.5,237 402,246.5 Z"/>' +
+  '</g>' +
+
 '</g></svg>';
 
   /* ---- animation + base CSS, injected once (keyframes namespaced) ---- */
@@ -198,7 +205,15 @@
     '@keyframes chibiArmA{0%,100%{transform:rotate(12deg)}50%{transform:rotate(-12deg)}}' +
     '@keyframes chibiArmB{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}' +
     '@keyframes chibiLegA{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}' +
-    '@keyframes chibiLegB{0%,100%{transform:rotate(7deg)}50%{transform:rotate(-7deg)}}';
+    '@keyframes chibiLegB{0%,100%{transform:rotate(7deg)}50%{transform:rotate(-7deg)}}' +
+    /* blink: the whole eyes group squashes shut briefly every few seconds */
+    '.chibi-svg .chibi-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:chibiBlink 4.2s ease-in-out infinite;}' +
+    '@keyframes chibiBlink{0%,93%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.08)}}' +
+    /* floating hearts emote: each heart rises + fades, staggered for a gentle stream */
+    '.chibi-svg .chibi-hearts path{transform-box:fill-box;opacity:0;animation:chibiHeart 2.8s ease-in infinite;}' +
+    '.chibi-svg .chibi-hearts path:nth-child(2){animation-delay:.95s}' +
+    '.chibi-svg .chibi-hearts path:nth-child(3){animation-delay:1.9s}' +
+    '@keyframes chibiHeart{0%{opacity:0;transform:translateY(8px) scale(.4)}20%{opacity:.95;transform:translateY(0) scale(1)}70%{opacity:.8}100%{opacity:0;transform:translateY(-42px) scale(1.1)}}';
 
   var cssInjected = false;
   function ensureCSS() {
@@ -210,8 +225,78 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
+  /* one document-level click handler (capture phase) detects a click anywhere on
+     a rumi instance via its LIVE bounding box — robust even while she animates
+     (composited transforms break element hit-testing) — fires her zap and keeps
+     the click from reaching the scene behind her. Works in any background. */
+  var clickBound = false;
+  function ensureClickHandler() {
+    if (clickBound || typeof document === 'undefined') return;
+    clickBound = true;
+    document.addEventListener('click', function (e) {
+      var list = document.querySelectorAll('.chibi-walker');
+      for (var i = 0; i < list.length; i++) {
+        var r = list[i].getBoundingClientRect();
+        if (r.width && e.clientX >= r.left && e.clientX <= r.right &&
+            e.clientY >= r.top && e.clientY <= r.bottom) {
+          fireZap(list[i]);
+          e.stopPropagation();
+          return;
+        }
+      }
+    }, true);
+  }
+
+  /* one bolt stroke (blue glow + white core share the same jagged path) */
+  function boltPath(NS, d, color, w, op) {
+    var p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', d); p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', color); p.setAttribute('stroke-width', w);
+    p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
+    p.setAttribute('opacity', op);
+    return p;
+  }
+
+  /* lightning zap — fired when rumi is clicked. Pure SVG drawn IN FRONT of her,
+     so it works in ANY background that uses the character (no per-scene code). */
+  function fireZap(host) {
+    if (typeof document === 'undefined') return;
+    var NS = 'http://www.w3.org/2000/svg';
+    var SZ = 240, cx = SZ / 2, cy = SZ * 0.6;             // origin ~ her upper body
+    var zap = document.createElementNS(NS, 'svg');
+    zap.setAttribute('class', 'chibi-zap');
+    zap.setAttribute('width', SZ); zap.setAttribute('height', SZ);
+    zap.style.cssText = 'position:absolute;left:50%;top:34%;width:' + SZ + 'px;height:' + SZ +
+      'px;transform:translate(-50%,-50%);overflow:visible;pointer-events:none;';
+    var dirs = [[-0.5,-0.87],[0,-1],[0.5,-0.87],[-0.9,-0.34],[0.9,-0.34]];   // up + diagonal + sides
+    for (var k = 0; k < dirs.length; k++) {
+      var ax = dirs[k][0], ay = dirs[k][1], px = -ay, py = ax, segs = 6, len = 72 + Math.random() * 52, pts = [];
+      for (var i = 0; i <= segs; i++) {
+        var f = i / segs, jit = (i === 0 || i === segs) ? 0 : (Math.random() - 0.5) * 22;
+        pts.push((cx + ax * len * f + px * jit).toFixed(1) + ',' + (cy + ay * len * f + py * jit).toFixed(1));
+      }
+      var dStr = 'M' + pts.join(' L');
+      zap.appendChild(boltPath(NS, dStr, '#96c8ff', 6, 0.5));   // soft blue glow
+      zap.appendChild(boltPath(NS, dStr, '#f7fbff', 2.3, 1));   // bright white core
+    }
+    var flash = document.createElementNS(NS, 'circle');
+    flash.setAttribute('cx', cx); flash.setAttribute('cy', cy); flash.setAttribute('r', 11);
+    flash.setAttribute('fill', '#dcefff');
+    zap.appendChild(flash);
+    host.appendChild(zap);
+    if (zap.animate) {
+      zap.animate(
+        [{ opacity:0.3, offset:0 }, { opacity:1, offset:0.08 }, { opacity:0.5, offset:0.2 },
+         { opacity:1, offset:0.34 }, { opacity:0.85, offset:0.55 }, { opacity:0, offset:1 }],
+        { duration: 520, easing: 'ease-out' }).onfinish = function () { if (zap.parentNode) zap.remove(); };
+    } else {
+      setTimeout(function () { if (zap.parentNode) zap.remove(); }, 540);
+    }
+  }
+
   function buildElement(opts) {
     ensureCSS();
+    ensureClickHandler();
     var wrap = document.createElement('div');
     wrap.className = 'chibi-walker' + (opts.flip ? ' chibi-flip' : '');
     wrap.style.height = opts.height;

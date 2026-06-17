@@ -2409,7 +2409,7 @@ window.BACKGROUNDS.savanna = {
   ensureChibiWalker(function(){
     if (stopped) return;                          // background already switched away
     chibiPatrol = ChibiWalker.patrol(chibiLayer, {
-      height: '30vh', bottom: '6vh', duration: 16000,
+      height: '18.4vh', bottom: '6vh', duration: 16000,   // ~big-lioness height (16vh +15%)
       gapMin: 120000, gapMax: 240000,             // reappears every 2–4 minutes
       startDelay: 6000
     });
