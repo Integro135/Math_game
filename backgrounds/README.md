@@ -41,6 +41,11 @@ listener + UI filter): jumps, rear-ups, dust ROLLS (zebra/lioness), the
 cheetah’s tail-chasing SPIN, the elephant’s TRUMPET (sound rings) and dust
 SHOWER, the ostrich’s head-BURY, and rarer green toots (~⅓ as frequent). The
 grounding shadow is drawn in world space so it stays flat during jumps/rears.
+**Every animal blinks** — the eye scales shut briefly on its own `pow(sin(t·k +
+ph), 240)` spike (lion, lioness/cub, cheetah, ostrich, zebra, giraffe, elephant).
+The sine frequency `k` sets the *interval* between blinks; the high exponent
+keeps each individual blink fast/snappy (~0.36 s closed) without changing that
+interval.
 
 Sky & scenery: layered snow-capped mountains, a low SUN that — when clicked —
 spins (sunspots + corona rays) AND sends a flying unicorn across the sky;
@@ -499,7 +504,10 @@ poses `'stand'` (idle sway), `'walk'` (diagonal-gait leg swing from `opts.wt`)
 and `'fly'` (gallop legs, full wingspread). `opts` carries the colour palette
 (`body/out/bodyFar/outFar/mane`, defaulting to white+rainbow) and the walk
 clock. Each unicorn wears a heart/star **cutie-mark** emoji on its haunch
-(per-`ph`, counter-flipped so it stays upright facing left).
+(per-`ph`, counter-flipped so it stays upright facing left). The big sparkly eye
+**blinks** on a per-unicorn cadence (~3.6 s, staggered by `ph`) — the eye squishes
+shut and shows a soft content lid curve, then reopens. The belly/neck shading is
+clipped to the body silhouette so it never spills past the outline.
 
 **Actions** (click + per-unicorn random schedule, same code path):
 - **jump** (0.9 s parabola), **rear up** (1.25 s, pivot on hind hooves),

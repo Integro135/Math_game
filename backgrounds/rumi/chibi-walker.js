@@ -183,13 +183,6 @@
     '</g>' +
   '</g>' +
 
-  /* HEARTS emote (animated: float up + fade, staggered) — sits above the head */
-  '<g class="chibi-hearts" fill="#e6394e" stroke="none">' +
-    '<path d="M198,246.5 C185.5,237 192.5,228 198,234.5 C203.5,228 210.5,237 198,246.5 Z"/>' +
-    '<path d="M300,200.5 C287.5,191 294.5,182 300,188.5 C305.5,182 312.5,191 300,200.5 Z"/>' +
-    '<path d="M402,246.5 C389.5,237 396.5,228 402,234.5 C407.5,228 414.5,237 402,246.5 Z"/>' +
-  '</g>' +
-
 '</g></svg>';
 
   /* ---- animation + base CSS, injected once (keyframes namespaced) ---- */
@@ -209,11 +202,13 @@
     /* blink: the whole eyes group squashes shut briefly every few seconds */
     '.chibi-svg .chibi-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:chibiBlink 4.2s ease-in-out infinite;}' +
     '@keyframes chibiBlink{0%,93%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.08)}}' +
-    /* floating hearts emote: each heart rises + fades, staggered for a gentle stream */
-    '.chibi-svg .chibi-hearts path{transform-box:fill-box;opacity:0;animation:chibiHeart 2.8s ease-in infinite;}' +
-    '.chibi-svg .chibi-hearts path:nth-child(2){animation-delay:.95s}' +
-    '.chibi-svg .chibi-hearts path:nth-child(3){animation-delay:1.9s}' +
-    '@keyframes chibiHeart{0%{opacity:0;transform:translateY(8px) scale(.4)}20%{opacity:.95;transform:translateY(0) scale(1)}70%{opacity:.8}100%{opacity:0;transform:translateY(-42px) scale(1.1)}}';
+    /* ground shadow under the feet — sits on the wrapper, so it stays grounded
+       while the figure (action layer) jumps / flies */
+    '.chibi-shadow{position:absolute;left:50%;bottom:-2%;width:108%;height:11%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.30),rgba(0,0,0,0) 72%);pointer-events:none;}' +
+    /* action layer: wraps the figure; triggered jump/fly transforms live here */
+    '.chibi-act{display:inline-block;height:100%;vertical-align:top;}' +
+    /* raised-arm pose used by the fly-out action — pivots at the shoulder so the arm stays attached */
+    '.chibi-act.chibi-arm-up .chibi-svg .arm-r{animation:none;transform-origin:12% 4%;transform:rotate(-128deg);transition:transform .22s ease-out;}';
 
   var cssInjected = false;
   function ensureCSS() {
@@ -239,7 +234,7 @@
         var r = list[i].getBoundingClientRect();
         if (r.width && e.clientX >= r.left && e.clientX <= r.right &&
             e.clientY >= r.top && e.clientY <= r.bottom) {
-          fireZap(list[i]);
+          triggerAction(list[i]);
           e.stopPropagation();
           return;
         }
@@ -294,6 +289,80 @@
     }
   }
 
+  /* a heart shape (centered, size s) in the figure's viewBox coordinate space */
+  function heartD(cx, cy, s) {
+    return 'M' + cx + ',' + (cy + 0.85 * s) +
+      ' C' + (cx - 1.25 * s) + ',' + (cy - 0.1 * s) + ' ' + (cx - 0.55 * s) + ',' + (cy - s) + ' ' + cx + ',' + (cy - 0.35 * s) +
+      ' C' + (cx + 0.55 * s) + ',' + (cy - s) + ' ' + (cx + 1.25 * s) + ',' + (cy - 0.1 * s) + ' ' + cx + ',' + (cy + 0.85 * s) + ' Z';
+  }
+  /* big floating hearts that rise above the head and fade — fired on a random
+     timer AND on click. Drawn in the figure's SVG so they scale with rumi. */
+  function fireHearts(host) {
+    if (typeof document === 'undefined') return;
+    var svg = host.querySelector ? host.querySelector('.chibi-svg') : null;
+    if (!svg) return;
+    var NS = 'http://www.w3.org/2000/svg';
+    var n = 3 + (Math.random() * 2 | 0);                  // 3-4 hearts
+    for (var i = 0; i < n; i++) {
+      var cx = 300 + (Math.random() - 0.5) * 120;
+      var cy = 178 + (Math.random() - 0.5) * 38;
+      var s = 22 + Math.random() * 9;                     // BIG hearts
+      var p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', heartD(cx, cy, s));
+      p.setAttribute('fill', '#e6394e');
+      p.setAttribute('stroke', 'none');
+      svg.appendChild(p);
+      (function (path, idx) {
+        if (path.animate) {
+          var rise = 95 + Math.random() * 60;
+          path.animate(
+            [{ opacity: 0, transform: 'translateY(14px)' },
+             { opacity: 1, transform: 'translateY(0)', offset: 0.2 },
+             { opacity: 0.92, offset: 0.62 },
+             { opacity: 0, transform: 'translateY(-' + rise + 'px)' }],
+            { duration: 1450, delay: idx * 130, easing: 'ease-out', fill: 'forwards' })
+            .onfinish = function () { if (path.parentNode) path.remove(); };
+        } else {
+          setTimeout(function () { if (path.parentNode) path.remove(); }, 1700);
+        }
+      })(p, i);
+    }
+  }
+
+  /* on click: a heart pop + a RANDOM action (zap / light jump / fly out) */
+  function triggerAction(wrap) {
+    if (wrap._busy) return;                 // already mid jump/fly — ignore
+    fireHearts(wrap);                       // hearts on every click
+    var r = Math.random();
+    if (r < 0.35) fireZap(wrap);            // 35% lightning
+    else if (r < 0.70) doJump(wrap);        // 35% light jump
+    else doFlyOut(wrap);                    // 30% raise a hand + fly off-screen
+  }
+  /* a light hop (figure rises and lands; the shadow stays grounded) */
+  function doJump(wrap) {
+    var act = wrap._act;
+    if (!act || !act.animate) { fireZap(wrap); return; }
+    wrap._busy = true;
+    act.animate(
+      [{ transform: 'translateY(0)', easing: 'ease-out' },
+       { transform: 'translateY(-30px)', offset: 0.45, easing: 'ease-in' },
+       { transform: 'translateY(0)' }],
+      { duration: 560 }).onfinish = function () { wrap._busy = false; };
+  }
+  /* raise one hand, then fly up and out of the top of the screen; ends the crossing */
+  function doFlyOut(wrap) {
+    var act = wrap._act;
+    if (!act || !act.animate) { fireZap(wrap); return; }
+    wrap._busy = true;
+    if (wrap._walk && wrap._walk.pause) { try { wrap._walk.pause(); } catch (e) {} }  // rise straight up
+    act.classList.add('chibi-arm-up');                          // raise one hand
+    var dist = (typeof window !== 'undefined' ? window.innerHeight : 800) + 280;
+    act.animate(
+      [{ transform: 'translateY(0) rotate(0deg)', easing: 'cubic-bezier(.45,0,.85,.35)' },
+       { transform: 'translateY(-' + dist + 'px) rotate(10deg)' }],
+      { duration: 1100, fill: 'forwards' }).onfinish = function () { if (wrap._end) wrap._end(); };
+  }
+
   function buildElement(opts) {
     ensureCSS();
     ensureClickHandler();
@@ -303,7 +372,14 @@
     wrap.style.bottom = opts.bottom;
     if (opts.zIndex != null) wrap.style.zIndex = opts.zIndex;
     wrap.style.transform = 'translateX(-99999px)';   // hidden off-screen until measured
-    wrap.innerHTML = SVG_MARKUP;
+    var shadow = document.createElement('div');       // grounded shadow (stays put on jump/fly)
+    shadow.className = 'chibi-shadow';
+    var act = document.createElement('div');          // action layer (jump/fly transforms here)
+    act.className = 'chibi-act';
+    act.innerHTML = SVG_MARKUP;
+    wrap.appendChild(shadow);
+    wrap.appendChild(act);
+    wrap._act = act;
     return wrap;
   }
 
@@ -352,9 +428,19 @@
 
     if (wrap.animate) {
       var anim = wrap.animate(frames, { duration: opts.duration, easing: 'linear', iterations: opts.loop ? Infinity : 1 });
-      anim.onfinish = function () { if (!opts.loop) { wrap.remove(); if (opts.onDone) opts.onDone(); } };
+      var ended = false;
+      var endCrossing = function () {
+        if (ended) return; ended = true;
+        if (wrap._stopHearts) wrap._stopHearts();
+        try { anim.cancel(); } catch (e) {}
+        if (wrap.parentNode) wrap.remove();
+        if (opts.onDone) opts.onDone();
+      };
+      anim.onfinish = function () { if (!opts.loop) endCrossing(); };
       handle.animation = anim;
-      handle.stop = function () { try { anim.cancel(); } catch (e) {} if (wrap.parentNode) wrap.remove(); };
+      handle.stop = function () { ended = true; if (wrap._stopHearts) wrap._stopHearts(); try { anim.cancel(); } catch (e) {} if (wrap.parentNode) wrap.remove(); };
+      wrap._walk = anim;             // the fly-out action pauses this…
+      wrap._end = endCrossing;       // …then calls this to end the crossing (patrol continues)
     } else {
       // very old fallback: CSS transition
       wrap.style.transform = 'translate(' + startX + 'px,0)';
@@ -362,8 +448,15 @@
       requestAnimationFrame(function () { wrap.style.transform = 'translate(' + endX + 'px,0)'; });
       var done = function () { wrap.removeEventListener('transitionend', done); if (!opts.loop) { wrap.remove(); if (opts.onDone) opts.onDone(); } };
       wrap.addEventListener('transitionend', done);
-      handle.stop = function () { if (wrap.parentNode) wrap.remove(); };
+      handle.stop = function () { if (wrap._stopHearts) wrap._stopHearts(); if (wrap.parentNode) wrap.remove(); };
     }
+    // ambient hearts on a random timer (5–14s); also fired on click
+    var heartTO = setTimeout(function tick() {
+      if (!wrap.parentNode) return;
+      fireHearts(wrap);
+      heartTO = setTimeout(tick, 5000 + Math.random() * 9000);
+    }, 2000 + Math.random() * 3500);
+    wrap._stopHearts = function () { clearTimeout(heartTO); };
     return handle;
   }
 
@@ -392,5 +485,22 @@
     return { stop: function () { stopped = true; clearTimeout(timer); if (current) current.stop(); } };
   }
 
-  global.ChibiWalker = { walk: walk, patrol: patrol, svgMarkup: SVG_MARKUP };
+  /* fire a specific action on the live rumi instance(s) — handy for testing.
+     name: 'zap' | 'jump' | 'flyout' | 'random' (default). Returns how many fired. */
+  function trigger(name) {
+    if (typeof document === 'undefined') return 0;
+    var list = document.querySelectorAll('.chibi-walker'), n = 0;
+    for (var i = 0; i < list.length; i++) {
+      var w = list[i];
+      if (name === 'zap') fireZap(w);
+      else if (name === 'jump') doJump(w);
+      else if (name === 'flyout') doFlyOut(w);
+      else if (name === 'hearts') fireHearts(w);
+      else triggerAction(w);
+      n++;
+    }
+    return n;
+  }
+
+  global.ChibiWalker = { walk: walk, patrol: patrol, trigger: trigger, svgMarkup: SVG_MARKUP };
 })(typeof window !== 'undefined' ? window : this);

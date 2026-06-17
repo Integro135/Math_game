@@ -154,6 +154,9 @@
   <!-- whole figure: scaled + centered so the big head fills the frame -->
   <g transform="translate(300,540) scale(1.10) translate(-300,-540) translate(0,18)" stroke="#000000" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round" fill="none">
 
+    <!-- ===================== GROUND SHADOW (drawn first → behind everything, under the feet) ===================== -->
+    <ellipse cx="300" cy="996" rx="120" ry="20" fill="#000000" opacity="0.18" stroke="none"/>
+
     <!-- ===================== HAIR (behind face) — side frame locks sweeping up ===================== -->
     <path fill="#a83fce" d="M222 300
       C198,316 186,352 192,398
@@ -427,9 +430,9 @@
 
     <!-- ===================== HEARTS emote (animated: float up + fade) ===================== -->
     <g class="chibi-hearts" fill="#e6394e" stroke="none">
-      <path d="M198,246.5 C185.5,237 192.5,228 198,234.5 C203.5,228 210.5,237 198,246.5 Z"/>
-      <path d="M300,200.5 C287.5,191 294.5,182 300,188.5 C305.5,182 312.5,191 300,200.5 Z"/>
-      <path d="M402,246.5 C389.5,237 396.5,228 402,234.5 C407.5,228 414.5,237 402,246.5 Z"/>
+      <path d="M210,253.7 C182.5,232.8 197.9,213 210,227.3 C222.1,213 237.5,232.8 210,253.7 Z"/>
+      <path d="M300,208.4 C270,185.6 286.8,164 300,179.6 C313.2,164 330,185.6 300,208.4 Z"/>
+      <path d="M390,253.7 C362.5,232.8 377.9,213 390,227.3 C402.1,213 417.5,232.8 390,253.7 Z"/>
     </g>
 
   </g>

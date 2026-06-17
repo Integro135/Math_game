@@ -5,7 +5,9 @@
    falling petals, rising hearts, 3 butterflies, 3 winged flyers with sparkle
    ribbon trails, 3 standing unicorns incl. the foal, click bursts).
    Unicorn rig: drawUnicorn(...,pose) with 'stand'/'fly' poses — actions reuse
-   'fly' instead of new rigs.
+   'fly' instead of new rigs. The big sparkly eye BLINKS (~3.6 s, staggered per
+   ph: squishes shut + a soft lid curve, then reopens); the belly/neck shading is
+   clipped to the body silhouette so it never spills past the outline.
    Click reactions (click + per-unicorn random schedule share one code path):
    standing unicorn → jump (0.9 s parabola) or rear-up (1.25 s, pivots on the
    hind hooves); flyer → eased 360° somersault; castle → golden halo + window
@@ -560,30 +562,33 @@ window.BACKGROUNDS.unicorns={
     }
 
     // ── body, arched neck and a long horse face — one continuous silhouette ──
+    const bodyPath = new Path2D();
+    bodyPath.moveTo(-44, -20);                          // tail set, low on the croup
+    bodyPath.bezierCurveTo(-53, -12, -53, 2, -44, 12);  // rounded buttock
+    bodyPath.quadraticCurveTo(-20, 23, 8, 20);          // belly underline
+    bodyPath.bezierCurveTo(24, 18, 34, 12, 36, 2);      // girth up to the chest
+    bodyPath.quadraticCurveTo(39, -6, 42, -14);         // chest front
+    bodyPath.bezierCurveTo(48, -26, 54, -38, 58, -50);  // throat rising
+    bodyPath.quadraticCurveTo(63, -56, 66, -61);        // jaw and round cheek
+    bodyPath.bezierCurveTo(73, -63, 79, -66, 82, -69);  // under the chin
+    bodyPath.lineTo(83, -74);                           // lips
+    bodyPath.bezierCurveTo(76, -79, 68, -81, 61, -82);  // long straight face bridge
+    bodyPath.bezierCurveTo(54, -79, 49, -70, 42, -56);  // poll down the arched crest
+    bodyPath.quadraticCurveTo(33, -42, 24, -33);        // crest into the withers
+    bodyPath.quadraticCurveTo(-4, -30, -26, -31);       // back with a soft dip
+    bodyPath.quadraticCurveTo(-40, -32, -44, -20);      // rise of the croup
+    bodyPath.closePath();
     ctx.fillStyle = BODY;
     ctx.strokeStyle = OUT;
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-44, -20);                               // tail set, low on the croup
-    ctx.bezierCurveTo(-53, -12, -53, 2, -44, 12);       // rounded buttock
-    ctx.quadraticCurveTo(-20, 23, 8, 20);               // belly underline
-    ctx.bezierCurveTo(24, 18, 34, 12, 36, 2);           // girth up to the chest
-    ctx.quadraticCurveTo(39, -6, 42, -14);              // chest front
-    ctx.bezierCurveTo(48, -26, 54, -38, 58, -50);       // throat rising
-    ctx.quadraticCurveTo(63, -56, 66, -61);             // jaw and round cheek
-    ctx.bezierCurveTo(73, -63, 79, -66, 82, -69);       // under the chin
-    ctx.lineTo(83, -74);                                // lips
-    ctx.bezierCurveTo(76, -79, 68, -81, 61, -82);       // long straight face bridge
-    ctx.bezierCurveTo(54, -79, 49, -70, 42, -56);       // poll down the arched crest
-    ctx.quadraticCurveTo(33, -42, 24, -33);             // crest into the withers
-    ctx.quadraticCurveTo(-4, -30, -26, -31);            // back with a soft dip
-    ctx.quadraticCurveTo(-40, -32, -44, -20);           // rise of the croup
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    // belly + neck shading
+    ctx.fill(bodyPath); ctx.stroke(bodyPath);
+    // belly + neck shading — clipped to the body so it never spills past the silhouette
+    ctx.save();
+    ctx.clip(bodyPath);
     ctx.fillStyle = 'rgba(244, 188, 220, 0.30)';
-    ctx.beginPath(); ctx.ellipse(-8, 8, 28, 10, 0, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(48, -38, 7, 15, -0.65, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-6, 12, 30, 11, 0.06, 0, TAU); ctx.fill();   // belly, hugging the underline
+    ctx.beginPath(); ctx.ellipse(48, -38, 7, 15, -0.65, 0, TAU); ctx.fill();  // neck
+    ctx.restore();
 
     // ── cutie mark on the haunch: a little heart / star, like real unicorns ──
     {
@@ -668,11 +673,21 @@ window.BACKGROUNDS.unicorns={
     }
 
     // ── big sparkly eye with lashes, high on the face + blush on the cheek ──
-    ctx.fillStyle = '#5A3A55';
-    ctx.beginPath(); ctx.ellipse(59, -72.5, 2.6, 3.3, -0.15, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#FFF';
-    ctx.beginPath(); ctx.arc(59.9, -73.7, 1.1, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(58.3, -71.3, 0.5, 0, TAU); ctx.fill();
+    // blink: each unicorn closes its eye briefly on its own cadence (staggered by ph)
+    const blinkP = (t + ph * 2.7) % 3.6;
+    const eo = blinkP < 0.13 ? 1 - Math.sin((blinkP / 0.13) * Math.PI) : 1;   // eye openness 1→0→1
+    if (eo > 0.12) {
+      ctx.fillStyle = '#5A3A55';
+      ctx.beginPath(); ctx.ellipse(59, -72.5, 2.6, 3.3 * eo, -0.15, 0, TAU); ctx.fill();
+      if (eo > 0.5) {
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath(); ctx.arc(59.9, -73.7, 1.1, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(58.3, -71.3, 0.5, 0, TAU); ctx.fill();
+      }
+    } else {                                                  // closed — a soft content lid curve
+      ctx.strokeStyle = '#5A3A55'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(56.6, -73.4); ctx.quadraticCurveTo(59, -71.6, 61.4, -73.4); ctx.stroke();
+    }
     ctx.strokeStyle = '#5A3A55';
     ctx.lineWidth = 1.1;
     ctx.lineCap = 'round';
@@ -1432,7 +1447,7 @@ window.BACKGROUNDS.unicorns={
     chibiPatrol = ChibiWalker.patrol(chibiLayer, {
       height: '18vh', bottom: '6vh', duration: 16000,   // 40% smaller than the savanna size
       gapMin: 120000, gapMax: 240000,             // reappears every 2–4 minutes
-      startDelay: 6000
+      startDelay: 60000 + Math.random() * 120000  // first appears only after 1–3 min of play
     });
   });
 

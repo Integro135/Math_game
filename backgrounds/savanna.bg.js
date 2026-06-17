@@ -8,7 +8,8 @@
    Passing animals on the plain: a ZEBRA built on the unicorn rig (same
    silhouette + two-segment walking legs, striped & brush-maned) and a
    GIRAFFE, both patrolling with walk cycles, turn-arounds and grazing
-   pauses. Ambient: drifting clouds, bird flocks, golden dust motes, and
+   pauses. EVERY animal blinks — a fast eye-squish (pow(sin(t·k+ph),~240)) on its
+   own interval. Ambient: drifting clouds, bird flocks, golden dust motes, and
    swaying foreground grass. Docs: backgrounds/README.md.
    Loaded on demand by game/js/bg-loader.js. Registers itself into the
    BACKGROUNDS registry; init() mounts the scene into the given stage layer
@@ -770,7 +771,7 @@ window.BACKGROUNDS.savanna = {
     ctx.quadraticCurveTo(13.2, 10.2, 9.6, 9);
     ctx.stroke();
     // amber eye with blink + heavy brow line
-    const bl = Math.pow(Math.max(0, Math.sin(t * 0.42 + ph * 2.3)), 60);
+    const bl = Math.pow(Math.max(0, Math.sin(t * 0.42 + ph * 2.3)), 240);   // same interval, snappier blink
     const eyeH = Math.max(0.08, 1 - bl);
     ctx.save();
     ctx.translate(5.6, -4.4); ctx.scale(1, eyeH);
@@ -887,7 +888,7 @@ window.BACKGROUNDS.savanna = {
     ctx.quadraticCurveTo(2.2, 1.8, 4.2, 4.4);
     ctx.stroke();
     // amber eye, blink
-    const bl = Math.pow(Math.max(0, Math.sin(t * 0.5 + ph * 1.9)), 60);
+    const bl = Math.pow(Math.max(0, Math.sin(t * 0.5 + ph * 1.9)), 240);   // same interval, snappier blink
     ctx.save();
     ctx.translate(3.2, -2.6); ctx.scale(1, Math.max(0.08, 1 - bl));
     ctx.fillStyle = '#1E1206';
@@ -1273,11 +1274,15 @@ window.BACKGROUNDS.savanna = {
     ctx.beginPath();
     ctx.moveTo(-4.6, -8.4); ctx.lineTo(-2.8, -16); ctx.lineTo(-1.2, -8);
     ctx.closePath(); ctx.fill();
-    // eye high on the skull
+    // eye high on the skull — with a blink
+    const zbl = Math.pow(Math.max(0, Math.sin(t * 0.55 + ph * 1.7)), 240);   // same interval, snappier blink
+    ctx.save();
+    ctx.translate(2.4, -2.6); ctx.scale(1, Math.max(0.08, 1 - zbl));
     ctx.fillStyle = '#241A12';
-    ctx.beginPath(); ctx.ellipse(2.4, -2.6, 2.5, 3, -0.12, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 0, 2.5, 3, -0.12, 0, TAU); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.85)';
-    ctx.beginPath(); ctx.arc(3.2, -3.8, 0.95, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(0.8, -1.2, 0.95, 0, TAU); ctx.fill();
+    ctx.restore();
     ctx.restore();
     // upright brush mane — black/white ticks sampled along the crest bezier
     const crest = p => {
@@ -1401,11 +1406,15 @@ window.BACKGROUNDS.savanna = {
     ctx.beginPath(); ctx.arc(2.9, -15, 1.8, 0, TAU); ctx.fill();
     ctx.fillStyle = '#E2B670';
     ctx.beginPath(); ctx.ellipse(-7.5, -6, 4, 2.2, 0.5, 0, TAU); ctx.fill();
-    // eye + nostril + mouth
+    // eye (with a blink) + nostril + mouth
+    const gbl = Math.pow(Math.max(0, Math.sin(t * 0.5 + ph * 2.1)), 240);   // same interval, snappier blink
+    ctx.save();
+    ctx.translate(1.5, -3.5); ctx.scale(1, Math.max(0.08, 1 - gbl));
     ctx.fillStyle = '#2A1C0E';
-    ctx.beginPath(); ctx.ellipse(1.5, -3.5, 1.7, 2, -0.2, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 0, 1.7, 2, -0.2, 0, TAU); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.75)';
-    ctx.beginPath(); ctx.arc(2.1, -4.3, 0.6, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(0.6, -0.8, 0.6, 0, TAU); ctx.fill();
+    ctx.restore();
     ctx.fillStyle = '#5C4020';
     ctx.beginPath(); ctx.arc(12.4, 0.4, 0.9, 0, TAU); ctx.fill();
     ctx.strokeStyle = '#7A5424'; ctx.lineWidth = 0.9;
@@ -1560,11 +1569,15 @@ window.BACKGROUNDS.savanna = {
     ctx.quadraticCurveTo(-17, 12, -5, 10); ctx.quadraticCurveTo(1, 4, -2, -8);
     ctx.closePath(); ctx.fill();
     ctx.restore();
-    // eye + brow wrinkle
+    // eye (with a blink) + brow wrinkle
+    const ebl = Math.pow(Math.max(0, Math.sin(t * 0.47 + ph * 2.5)), 240);   // same interval, snappier blink
+    ctx.save();
+    ctx.translate(6, -6); ctx.scale(1, Math.max(0.08, 1 - ebl));
     ctx.fillStyle = '#26262E';
-    ctx.beginPath(); ctx.arc(6, -6, 1.8, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, TAU); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.7)';
-    ctx.beginPath(); ctx.arc(6.5, -6.6, 0.6, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(0.5, -0.6, 0.6, 0, TAU); ctx.fill();
+    ctx.restore();
     ctx.strokeStyle = 'rgba(60,60,70,.5)'; ctx.lineWidth = 0.8;
     ctx.beginPath(); ctx.moveTo(3, -9.5); ctx.quadraticCurveTo(6, -10.5, 9, -9); ctx.stroke();
     ctx.restore();   // head
@@ -1651,7 +1664,7 @@ window.BACKGROUNDS.savanna = {
       ctx.beginPath();
       ctx.moveTo(4, -1.6); ctx.lineTo(11, 0.4); ctx.lineTo(4, 2.4);
       ctx.closePath(); ctx.fill();
-      const bl = Math.pow(Math.max(0, Math.sin(t * 0.6 + ph * 2)), 50);
+      const bl = Math.pow(Math.max(0, Math.sin(t * 0.6 + ph * 2)), 200);   // same interval, snappier blink
       ctx.save();
       ctx.translate(1.2, -1.4); ctx.scale(1, Math.max(0.1, 1 - bl));
       ctx.fillStyle = '#FFF';
@@ -2411,7 +2424,7 @@ window.BACKGROUNDS.savanna = {
     chibiPatrol = ChibiWalker.patrol(chibiLayer, {
       height: '18.4vh', bottom: '6vh', duration: 16000,   // ~big-lioness height (16vh +15%)
       gapMin: 120000, gapMax: 240000,             // reappears every 2–4 minutes
-      startDelay: 6000
+      startDelay: 60000 + Math.random() * 120000  // first appears only after 1–3 min of play
     });
   });
 

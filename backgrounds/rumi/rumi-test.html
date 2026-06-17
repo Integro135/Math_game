@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>rumi — capability test bench</title>
+<!--
+  A sandbox background for testing everything the rumi character can do.
+  It loads ONLY chibi-walker.js (the shipped module) — exactly what a real
+  background would — and drives it through the public API:
+     ChibiWalker.walk(container, opts)
+     ChibiWalker.patrol(container, opts)   -> { stop() }
+     ChibiWalker.trigger('zap'|'jump'|'flyout'|'random')
+  Clicking rumi herself fires a RANDOM action (zap / jump / fly-out), and
+  blink + the floating hearts run on their own.
+-->
+<style>
+  html,body{margin:0;height:100%;font-family:system-ui,"Segoe UI",Arial;}
+  #scene{position:relative;width:100%;height:100vh;overflow:hidden;
+    background:linear-gradient(180deg,#8fd0ff 0%,#cfeeff 56%,#bfe6a2 56%,#a6dd84 100%);}
+  .ground{position:absolute;left:0;right:0;bottom:0;height:16%;
+    background:#9bd86b;border-top:5px solid #6fae45;}
+  .panel{position:absolute;left:50%;top:12px;transform:translateX(-50%);
+    display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;
+    background:#ffffffd9;padding:10px 14px;border-radius:14px;box-shadow:0 5px 16px #0003;
+    max-width:95vw;z-index:50;}
+  .panel .tag{font:700 13px system-ui;color:#3a2a6a;margin-right:4px;}
+  .panel button{font:600 14px system-ui;padding:8px 12px;border:0;border-radius:10px;cursor:pointer;
+    background:#7c4dff;color:#fff;}
+  .panel button.alt{background:#ff5fa8;}
+  .panel button.ghost{background:#ece9f7;color:#3a2a6a;}
+  .panel button:active{transform:translateY(1px);}
+  .hint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+    font:600 13px system-ui;color:#234;background:#ffffffb3;padding:5px 11px;border-radius:8px;}
+</style>
+</head>
+<body>
+  <div id="scene">
+    <div class="ground"></div>
+    <div class="panel">
+      <span class="tag">rumi test bench</span>
+      <button id="walkR">Walk →</button>
+      <button id="walkL">← Walk</button>
+      <button id="patrol" class="ghost">Patrol: off</button>
+      <button id="zap" class="alt">⚡ Zap</button>
+      <button id="jump" class="alt">⤴ Jump</button>
+      <button id="fly" class="alt">🚀 Fly out</button>
+      <button id="hearts" class="alt">💗 Hearts</button>
+    </div>
+    <div class="hint">Click rumi herself → random action · blink + hearts run automatically</div>
+  </div>
+
+  <script src="chibi-walker.js"></script>
+  <script>
+    var scene = document.getElementById('scene');
+    var patrol = null;
+    var WALK = { height: '40vh', bottom: '16%', duration: 9000 };
+
+    function spawnIfNeeded(cb) {
+      if (document.querySelector('.chibi-walker')) { cb(); return; }
+      ChibiWalker.walk(scene, Object.assign({ direction: 'ltr' }, WALK));
+      setTimeout(cb, 500);                       // let her enter the frame first
+    }
+    function startPatrol() {
+      patrol = ChibiWalker.patrol(scene, Object.assign({}, WALK, { gapMin: 1500, gapMax: 4000 }));
+      document.getElementById('patrol').textContent = 'Patrol: on';
+    }
+
+    document.getElementById('walkR').onclick = function () { ChibiWalker.walk(scene, Object.assign({ direction: 'ltr' }, WALK)); };
+    document.getElementById('walkL').onclick = function () { ChibiWalker.walk(scene, Object.assign({ direction: 'rtl' }, WALK)); };
+    document.getElementById('patrol').onclick = function () {
+      if (patrol) { patrol.stop(); patrol = null; this.textContent = 'Patrol: off'; }
+      else startPatrol();
+    };
+    document.getElementById('zap').onclick  = function () { spawnIfNeeded(function () { ChibiWalker.trigger('zap'); }); };
+    document.getElementById('jump').onclick = function () { spawnIfNeeded(function () { ChibiWalker.trigger('jump'); }); };
+    document.getElementById('fly').onclick  = function () { spawnIfNeeded(function () { ChibiWalker.trigger('flyout'); }); };
+    document.getElementById('hearts').onclick = function () { spawnIfNeeded(function () { ChibiWalker.trigger('hearts'); }); };
+
+    startPatrol();                               // she's around from the start
+  </script>
+</body>
+</html>
