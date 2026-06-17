@@ -15,7 +15,7 @@ from playwright.sync_api import sync_playwright
 THEME    = "reef"
 DSF      = 3                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = True                    # hide the .wrap game card to see the scene
-STANDALONE = ""                    # '' = load the game; else load this page raw (skip theme)
+STANDALONE = r""   # '' = load the game; else load this page raw (skip theme)
 VIEW     = {"width": 342, "height": 455}   # viewport
 EVAL      = ""                     # JS run after load ('' = skip)
 POST_EVAL = ""                     # JS run AFTER the wait, result printed ('' = skip)
@@ -37,12 +37,16 @@ with sync_playwright() as pw:
     page.on("pageerror", lambda e: errors.append(str(e)))
     if STANDALONE:
         page.goto(Path(STANDALONE).as_uri())
+        eval_result = page.evaluate(EVAL) if EVAL else None
         page.wait_for_timeout(WAIT_MS)
+        post_result = page.evaluate(POST_EVAL) if POST_EVAL else None
         for s in SHOTS:
             page.screenshot(path=s["path"], clip=s["clip"])
         _ignore = ("fonts.g", "ERR_FAILED", "ERR_SSL", "Failed to load resource")
         non_font = [e for e in errors if not any(s in e for s in _ignore)]
         print("non-font errors:", non_font if non_font else "NONE")
+        if EVAL: print("eval result:", eval_result)
+        if POST_EVAL: print("post-eval result:", post_result)
         print("shots:", [s["path"] for s in SHOTS])
         browser.close()
         raise SystemExit

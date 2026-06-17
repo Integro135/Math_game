@@ -2391,9 +2391,34 @@ window.BACKGROUNDS.savanna = {
   resize();
   rafId = requestAnimationFrame(draw);
 
+  // ── roaming chibi "rumi": strolls across the savanna every few minutes ──
+  const chibiLayer = document.createElement('div');
+  chibiLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden';
+  stage.appendChild(chibiLayer);
+  let chibiPatrol = null;
+  function ensureChibiWalker(cb){
+    if (window.ChibiWalker){ cb(); return; }
+    const ex = document.querySelector('script[data-chibi-walker]');
+    if (ex){ ex.addEventListener('load', cb); return; }
+    const s = document.createElement('script');
+    s.src = 'backgrounds/rumi/chibi-walker.js';
+    s.setAttribute('data-chibi-walker', '1');
+    s.onload = cb;
+    document.head.appendChild(s);
+  }
+  ensureChibiWalker(function(){
+    if (stopped) return;                          // background already switched away
+    chibiPatrol = ChibiWalker.patrol(chibiLayer, {
+      height: '30vh', bottom: '6vh', duration: 16000,
+      gapMin: 120000, gapMax: 240000,             // reappears every 2–4 minutes
+      startDelay: 6000
+    });
+  });
+
   return function cleanup(){
     stopped = true;
     if (rafId) cancelAnimationFrame(rafId);
+    if (chibiPatrol) chibiPatrol.stop();
     window.removeEventListener('resize', resize);
     document.removeEventListener('click', savClick);
     stage.innerHTML = '';

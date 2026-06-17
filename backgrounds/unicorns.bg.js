@@ -1410,10 +1410,37 @@ window.BACKGROUNDS.unicorns={
   window.addEventListener('resize', resize);
   resize();
   rafId = requestAnimationFrame(draw);
+
+  // ── roaming chibi "rumi": strolls across the valley every few minutes ──
+  // Overlay layer (transparent, full-screen, click-through) above the canvas.
+  const chibiLayer = document.createElement('div');
+  chibiLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden';
+  layer.appendChild(chibiLayer);
+  let chibiPatrol = null;
+  function ensureChibiWalker(cb){
+    if (window.ChibiWalker){ cb(); return; }
+    const ex = document.querySelector('script[data-chibi-walker]');
+    if (ex){ ex.addEventListener('load', cb); return; }
+    const s = document.createElement('script');
+    s.src = 'backgrounds/rumi/chibi-walker.js';
+    s.setAttribute('data-chibi-walker', '1');
+    s.onload = cb;
+    document.head.appendChild(s);
+  }
+  ensureChibiWalker(function(){
+    if (stopped) return;                          // background already switched away
+    chibiPatrol = ChibiWalker.patrol(chibiLayer, {
+      height: '30vh', bottom: '6vh', duration: 16000,
+      gapMin: 120000, gapMax: 240000,             // reappears every 2–4 minutes
+      startDelay: 6000
+    });
+  });
+
   // the loader calls this when the background is switched away
   return function cleanup(){
     stopped = true;
     if (rafId) cancelAnimationFrame(rafId);
+    if (chibiPatrol) chibiPatrol.stop();
     window.removeEventListener('resize', resize);
     document.removeEventListener('click', valleyClick);
     stage.innerHTML = '';
