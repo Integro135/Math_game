@@ -591,9 +591,43 @@ class TestReport:
             "Expected red summary banner (1 error)"
 
     def test_skipped_problem_shows_daleg_badge(self, page):
-        """Skip button was removed when seamless retry was introduced.
-        The 'דולג' badge can no longer be produced via user interaction."""
-        pytest.skip("Skip button removed — seamless retry replaced manual skip/try-again buttons")
+        """The manual skip button was removed when seamless retry was introduced,
+        so a 'דולג' (skipped) badge can no longer be produced by the player.
+        Current reality: there is NO skip control in the UI, and a wrong-then-
+        correct answer is reported as a corrected row (✓correct), never as 'דולג'.
+        Uses mode 10 for a predictable 12-problem session."""
+        page.evaluate("setMode(10)")
+        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+
+        # No skip / try-again control is reachable anywhere in the live DOM.
+        assert page.evaluate(
+            "document.querySelectorAll("
+            "'.b-skip, #skip-btn, button[onclick*=\"skip\"], button[onclick*=\"nextP\"]'"
+            ").length"
+        ) == 0, "Skip button must not exist — seamless retry replaced it"
+
+        # Wrong then correct on problem 1 → the row is reported as a CORRECTED
+        # answer (✓correct), proving the 'דולג' path is unreachable by the player.
+        state = get_state(page)
+        if state["ptype"] in (state["TDA"], state["TDS"]):
+            page.fill("#ans1", "99"); page.fill("#ans2", "99")
+        else:
+            page.fill("#ans", "99")
+        page.click("#chk-btn")
+        page.wait_for_timeout(1700)              # sad modal auto-hides
+        page.wait_for_function("done === false", timeout=TIMEOUT)
+        solve_one(page)                          # seamless retry, no skip button
+
+        play_n_correctly(page, 11)               # finish the set (12 total)
+        page.wait_for_selector(".end-scr", timeout=TIMEOUT)
+        open_report(page)
+
+        first_row = page.locator(".rep-row").first
+        assert first_row.locator(".rep-correct").count() == 1, \
+            "Wrong-then-correct row must show ✓correct (the corrected answer)"
+        assert page.locator(".rep-skipped").count() == 0, \
+            "No row may carry a 'דולג' (skipped) badge — manual skip was removed"
 
     def test_td_report_shows_actual_pair_entered(self, page):
         """
@@ -750,11 +784,21 @@ class TestDoubleUnknown:
 
     def test_tda_accepts_any_valid_pair(self, page):
         """For TDA (___+___=R), entering v1,v2 where v1+v2=R must succeed."""
-        problems = page.evaluate("[...problems].map((p,i) => ({i, t: p.t, r: p.r}))")
+        # Mode 10 guarantees 3 TD slots (sampleWithTD: Math.floor(12/4)=3 at
+        # slots 4,8,12), drawn from 12 TDA + 12 TDS candidates. Restart reshuffles
+        # that draw, so loop until a TDA actually lands (P(absent)~0.11/session).
+        page.evaluate("setMode(10)")
+        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
         consts   = page.evaluate("({TDA})")
-        tda_slots = [x for x in problems if x["t"] == consts["TDA"]]
-        if not tda_slots:
-            pytest.skip("No TDA problem in this session")
+        tda_slots = []
+        for _ in range(40):
+            problems = page.evaluate("[...problems].map((p,i) => ({i, t: p.t, r: p.r}))")
+            tda_slots = [x for x in problems if x["t"] == consts["TDA"]]
+            if tda_slots:
+                break
+            page.evaluate("restart()")
+            page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        assert tda_slots, "Mode 10 must yield a TDA problem within 40 sessions"
 
         slot = tda_slots[0]
         page.evaluate(f"idx={slot['i']}; loadProblem()")
@@ -771,11 +815,20 @@ class TestDoubleUnknown:
 
     def test_tds_accepts_any_valid_pair(self, page):
         """For TDS (___-___=R), entering v1,v2 where v1-v2=R must succeed."""
-        problems = page.evaluate("[...problems].map((p,i) => ({i, t: p.t, r: p.r}))")
+        # Mode 10 guarantees 3 TD slots; restart reshuffles which subtype lands,
+        # so loop until a TDS actually appears (P(absent)~0.11/session).
+        page.evaluate("setMode(10)")
+        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
         consts   = page.evaluate("({TDS})")
-        tds_slots = [x for x in problems if x["t"] == consts["TDS"]]
-        if not tds_slots:
-            pytest.skip("No TDS problem in this session")
+        tds_slots = []
+        for _ in range(40):
+            problems = page.evaluate("[...problems].map((p,i) => ({i, t: p.t, r: p.r}))")
+            tds_slots = [x for x in problems if x["t"] == consts["TDS"]]
+            if tds_slots:
+                break
+            page.evaluate("restart()")
+            page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        assert tds_slots, "Mode 10 must yield a TDS problem within 40 sessions"
 
         slot = tds_slots[0]
         page.evaluate(f"idx={slot['i']}; loadProblem()")
@@ -910,8 +963,15 @@ class TestScoreAndMode:
         assert page.evaluate("score") == 10
 
     def test_correct_answer_in_mode5_adds_5_points(self, page):
-        """Mode 5 (עד 5) was removed in v5.89."""
-        pytest.skip("Mode 5 was removed — bridging mode replaces it")
+        """Mode 'up to 5' (עַד 5) still exists and awards +5 per correct answer
+        (modePts() returns the numeric mode for 5/10/20 — see problems.js)."""
+        page.evaluate("setMode(5)")
+        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(200)
+        assert page.evaluate("mode") == 5
+        assert page.evaluate("modePts()") == 5, "Mode 5 must award 5 points per correct"
+        solve_one(page)
+        assert page.evaluate("score") == 5
 
     def test_mode_switch_resets_score_and_idx(self, page):
         """After solving one problem, switching mode resets score→0 and idx→0."""
@@ -1070,8 +1130,16 @@ class TestCoinProblems:
         return sum(1 for t in ptypes if t == consts["TC"])
 
     def test_coins_appear_in_mode5_every_session(self, page):
-        """Mode 5 (עד 5) was removed in v5.89."""
-        pytest.skip("Mode 5 was removed")
+        """Mode 5 (עַד 5) still exists and injectCoins() guarantees ≥1 coin
+        problem in every session (coins.ex.js lists mode 5 + inject())."""
+        page.evaluate("setMode(5)")
+        page.wait_for_timeout(120)
+        for session in range(5):
+            count = self._tc_count_in_session(page)
+            assert count >= 1, \
+                f"Mode 5 session {session + 1}: expected ≥1 coin problem, got {count}"
+            page.evaluate("restart()")
+            page.wait_for_timeout(100)
 
     def test_coins_appear_in_mode10_every_session(self, page):
         """Mode 10 must include ≥1 coin problem in every game session."""
@@ -1229,21 +1297,79 @@ class TestChainAndCoinAids:
     # ── Chain phase 1 answers ≤ 10 ────────────────────────
 
     def test_chain_first_4_answers_at_most_10(self, page):
-        """Phase structure removed — makeMxPool now shuffles all 15 problems
-        randomly without ordered phases."""
-        pytest.skip("makeMxPool phase structure removed in mx mode redesign")
+        """The old ordered phase structure was removed. makeMxPool() now builds
+        the Queen pool as ONE flat shuffle of every contributing type's mx quota
+        (problems.js: shuffle([...chain, ...missing, ...sub, ...add, ...double,
+        ...tens, ...coins, ...big_step])). New contract: exactly 17 problems and
+        NO position-based answer cap (the first 5 slots are not constrained to a
+        ≤10 answer). Verify the size contract and the absence of the old cap
+        across several fresh shuffles."""
+        page.evaluate("setMode('mx')")
+        any_early_above_10 = False
+        for _ in range(8):
+            page.evaluate("restart()")
+            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            problems = page.evaluate(
+                "[...problems].map(p => ({t:p.t, a:p.a, b:p.b, c:p.c, r:p.r}))")
+            assert len(problems) == 17, \
+                f"makeMxPool must yield 17 problems (flat shuffle), got {len(problems)}"
+            consts = page.evaluate("({TA,TS,TM,TX,TZ,TW})")
+            for p in problems[:5]:               # the former "phase 1" slots
+                ans = None
+                if p["t"] == consts["TA"]:   ans = p["a"] + p["b"]
+                elif p["t"] == consts["TS"]: ans = p["a"] - p["b"]
+                elif p["t"] == consts["TZ"]: ans = p["a"] + p["b"] + p["c"]
+                elif p["t"] == consts["TX"]: ans = p["a"] - p["b"] + p["c"]
+                elif p["t"] == consts["TW"]: ans = p["a"] - p["b"] - p["c"]
+                elif p["t"] == consts["TM"]: ans = p["b"]
+                if ans is not None and ans > 10:
+                    any_early_above_10 = True
+        assert any_early_above_10, \
+            "Phase structure is gone: early slots must NOT be capped at ≤10 — " \
+            "across 8 shuffles at least one of the first 5 answers should exceed 10"
 
     def test_chain_problem_5_answer_at_most_20(self, page):
-        """Phase structure removed — makeMxPool now shuffles all 15 problems
-        randomly without ordered phases."""
-        pytest.skip("makeMxPool phase structure removed in mx mode redesign")
+        """Phase structure removed — makeMxPool() is a single flat shuffle, so
+        problem 5 (index 4) is no longer pinned to any phase boundary. New
+        contract: every contributing exercise TYPE is present in the shuffled
+        Queen pool (chain TX/TZ/TW, TM, TS, TA, TDA/TDS, TT, TC, TBG)."""
+        consts = page.evaluate("({TM,TS,TA,TX,TZ,TW,TDA,TDS,TC,TT,TBG})")
+        page.evaluate("setMode('mx'); restart()")
+        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+        types = page.evaluate("[...problems].map(p => p.t)")
+        assert len(types) == 17
+        # chain family (TX/TZ/TW) must appear; each other type must appear ≥1
+        chain = {consts["TX"], consts["TZ"], consts["TW"]}
+        assert any(t in chain for t in types), "Chain problems must be present in mx"
+        for name in ("TM", "TS", "TA", "TT", "TC", "TBG"):
+            assert consts[name] in types, \
+                f"makeMxPool must include type {name}; got {types}"
+        # the double-unknown family contributes one add + one sub
+        assert consts["TDA"] in types and consts["TDS"] in types, \
+            "makeMxPool must include both TDA and TDS"
 
     # ── Chain last 4 have first operand > 10 ─────────────
 
     def test_chain_last_4_first_number_above_10(self, page):
-        """Phase structure removed — makeMxPool now shuffles all 15 problems
-        randomly without ordered phases or position-based constraints."""
-        pytest.skip("makeMxPool phase structure removed in mx mode redesign")
+        """Phase structure removed — makeMxPool() shuffles every type together,
+        so the LAST 4 slots carry no 'first operand > 10' guarantee anymore.
+        Verify the constraint is gone: across several fresh shuffles, at least
+        one of the last 4 problems has a first operand ≤ 10 (impossible under
+        the old position-based rule)."""
+        page.evaluate("setMode('mx')")
+        seen_small_first = False
+        for _ in range(8):
+            page.evaluate("restart()")
+            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            problems = page.evaluate(
+                "[...problems].map(p => ({t:p.t, a:p.a, r:p.r}))")
+            for p in problems[-4:]:
+                first = p["a"] if p["a"] is not None else p["r"]
+                if first is not None and first <= 10:
+                    seen_small_first = True
+        assert seen_small_first, \
+            "Position-based 'last 4 have first operand > 10' rule must be gone — " \
+            "a flat shuffle should put a ≤10 first operand in the last 4 slots sometimes"
 
 
 # ─────────────────────────────────────────────────────────
@@ -1383,8 +1509,30 @@ class TestTensProblems:
         return next((i for i, t in enumerate(ptypes) if t == consts["TT"]), None)
 
     def test_tt_appears_5_times_in_melech(self, page):
-        """Mode 20 (מלך) was merged into 'mx' (מלכה) and removed."""
-        pytest.skip("Mode 20 (מלך) removed — merged into 'mx' (מלכה)")
+        """Round-tens (TT) were merged into the Queen game ('mx'): the tens
+        exercise type is mx-only (data.js EXERCISE_INDEX: tens → modes:['mx']).
+        Mode 'up to 20' (עַד 20) survives as a plain standard mode and therefore
+        carries NO TT problems. Assert that current split: mode 20 has zero TT,
+        while mode 'mx' supplies them."""
+        # Mode 20 is a standard mode with no round-tens at all.
+        page.evaluate("setMode(20)")
+        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(200)
+        consts = page.evaluate("({TT})")
+        for session in range(5):
+            ptypes = page.evaluate("[...problems].map(p => p.t)")
+            tt = sum(1 for t in ptypes if t == consts["TT"])
+            assert tt == 0, \
+                f"Mode 20 session {session+1} must contain NO TT (tens are mx-only), got {tt}"
+            page.evaluate("restart()")
+            page.wait_for_timeout(100)
+
+        # TT now lives in 'mx' (מלכה) instead.
+        page.evaluate("setMode('mx'); restart()")
+        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+        ptypes = page.evaluate("[...problems].map(p => p.t)")
+        assert sum(1 for t in ptypes if t == consts["TT"]) >= 1, \
+            "Round-tens (TT) must now appear in the Queen (mx) game"
 
     def test_tt_appears_in_malka(self, page):
         """Mode mx (מלכה): every session must have ≥2 TT (round-tens) problems."""
@@ -1400,9 +1548,12 @@ class TestTensProblems:
     def test_tt_nl_panel_at_num1(self, page):
         """TT problem: NL hidden while fresh; after the first mistake it
         appears with the kangaroo at num1 (0-100 scale)."""
+        # TT is wired only into 'mx' (data.js EXERCISE_INDEX), where tens.ex.js
+        # make('mx') always emits exactly 2 TT problems -> _find_tt always hits.
+        page.evaluate("setMode('mx')")
+        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
-        if tt_idx is None:
-            pytest.skip("No TT problem in current session")
+        assert tt_idx is not None, "Mode mx must contain a TT problem"
 
         page.evaluate(f"idx = {tt_idx}; loadProblem()")
         page.wait_for_timeout(200)
@@ -1422,9 +1573,11 @@ class TestTensProblems:
 
     def test_tt_correct_answer_accepted(self, page):
         """TT problem: submitting the correct tens answer marks the problem done."""
+        # TT lives only in 'mx'; tens.ex.js make('mx') always emits 2 TT problems.
+        page.evaluate("setMode('mx')")
+        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
-        if tt_idx is None:
-            pytest.skip("No TT problem in current session")
+        assert tt_idx is not None, "Mode mx must contain a TT problem"
 
         page.evaluate(f"idx = {tt_idx}; loadProblem()")
         page.wait_for_timeout(200)
@@ -1462,16 +1615,15 @@ class TestTryFirstScoring:
 
     def test_first_wrong_then_correct_awards_67_percent(self, page):
         """One wrong → tryFirst=1 → correct awards round(20 * 0.67) = 13 pts (33% penalty)."""
+        # Force a deterministic single-answer (TS) problem at idx 0 so the
+        # clean "wrong = correct+1" single-input flow always applies. 8-3=5
+        # keeps _wrong_value in the correct<20 branch (wrong=6).
+        page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
+        page.wait_for_selector("#ans:not([disabled])", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
         state = get_state(page)
         ans = correct_answer(state)
-        # Only the single-answer flow has a clean "wrong = correct+1" path
-        if ans[0] != "single":
-            page.evaluate("idx = 0; loadProblem()")
-            page.wait_for_timeout(150)
-            state = get_state(page)
-            ans = correct_answer(state)
-            if ans[0] != "single":
-                pytest.skip("Test requires a single-answer problem at idx 0")
+        assert ans[0] == "single", "forced TS problem must be single-answer"
 
         correct = ans[1]
         wrong = self._wrong_value(state, correct)
@@ -1495,15 +1647,15 @@ class TestTryFirstScoring:
 
     def test_two_wrongs_then_correct_awards_zero(self, page):
         """Two wrongs → tryFirst>=2 → correct awards 0 points."""
+        # Force a deterministic single-answer (TS) problem at idx 0 so the
+        # single-input two-wrongs flow always applies. 8-3=5 keeps the wrong
+        # values (6, then 7) distinct from the correct answer.
+        page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
+        page.wait_for_selector("#ans:not([disabled])", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
         state = get_state(page)
         ans = correct_answer(state)
-        if ans[0] != "single":
-            page.evaluate("idx = 0; loadProblem()")
-            page.wait_for_timeout(150)
-            state = get_state(page)
-            ans = correct_answer(state)
-            if ans[0] != "single":
-                pytest.skip("Test requires a single-answer problem at idx 0")
+        assert ans[0] == "single", "forced TS problem must be single-answer"
 
         correct = ans[1]
         wrong = self._wrong_value(state, correct)
@@ -1552,11 +1704,14 @@ class TestTryFirstScoring:
 
     def test_tryfirst_resets_on_new_problem(self, page):
         """A new loaded problem must reset tryFirst back to 0."""
-        # Make tryFirst non-zero on current problem
+        # Make tryFirst non-zero on current problem. Force a deterministic
+        # single-answer (TS) problem at idx 0 so the single-input flow applies.
+        page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
+        page.wait_for_selector("#ans:not([disabled])", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
         state = get_state(page)
         ans = correct_answer(state)
-        if ans[0] != "single":
-            pytest.skip("Test requires a single-answer problem at idx 0")
+        assert ans[0] == "single", "forced TS problem must be single-answer"
         correct = ans[1]
         page.fill("#ans", str(self._wrong_value(state, correct)))
         page.click("#chk-btn")
@@ -1624,10 +1779,14 @@ class TestTryFirstScoring:
 
     def test_aids_unlock_after_first_wrong(self, page):
         """First wrong answer unlocks the aids (tf-locked class removed)."""
+        # Force a deterministic single-answer (TS) problem at idx 0 so the
+        # single-input wrong-then-unlock flow always applies.
+        page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
+        page.wait_for_selector("#ans:not([disabled])", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
         state = get_state(page)
         ans = correct_answer(state)
-        if ans[0] != "single":
-            pytest.skip("Test requires a single-answer problem at idx 0")
+        assert ans[0] == "single", "forced TS problem must be single-answer"
         correct = ans[1]
         page.fill("#ans", str(self._wrong_value(state, correct)))
         page.click("#chk-btn")
@@ -2239,16 +2398,15 @@ class TestBridgingMode:
     def test_br_wrong_answer_penalizes_score_67_percent(self, page):
         """br mode: one wrong → next correct awards round(15 * 0.67) = 10."""
         self._switch_br(page)
-        # Find a single-answer problem to test
+        # br pools (_bridgeSet1/2) are pure TA/TS, but force a deterministic
+        # single-answer (TS) problem at idx 0 so the single-input flow always
+        # applies regardless of which set is served. modePts() in br is 15.
+        page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
+        page.wait_for_selector("#ans:not([disabled])", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
         state = get_state(page)
         ans = correct_answer(state)
-        if ans[0] != "single":
-            page.evaluate("idx = 0; loadProblem()")
-            page.wait_for_timeout(120)
-            state = get_state(page)
-            ans = correct_answer(state)
-            if ans[0] != "single":
-                pytest.skip("Test requires single-answer problem at idx 0")
+        assert ans[0] == "single", "forced TS problem must be single-answer"
 
         correct = ans[1]
         wrong = correct + 1 if correct < 20 else correct - 1

@@ -3679,10 +3679,37 @@ window.BACKGROUNDS.reef = {
   window.addEventListener('resize', resize);
   resize();
   rafId = requestAnimationFrame(draw);
+
+  // ── roaming chibi "rumi": swims past in FLY mode (rotated 90°, fast) every few minutes ──
+  const chibiLayer = document.createElement('div');
+  chibiLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden';
+  layer.appendChild(chibiLayer);
+  let chibiPatrol = null;
+  function ensureChibiWalker(cb){
+    if (window.ChibiWalker){ cb(); return; }
+    const ex = document.querySelector('script[data-chibi-walker]');
+    if (ex){ ex.addEventListener('load', cb); return; }
+    const s = document.createElement('script');
+    s.src = 'backgrounds/rumi/chibi-walker.js';
+    s.setAttribute('data-chibi-walker', '1');
+    s.onload = cb;
+    document.head.appendChild(s);
+  }
+  ensureChibiWalker(function(){
+    if (stopped) return;                          // background already switched away
+    chibiPatrol = ChibiWalker.patrol(chibiLayer, {
+      mode: 'fly', direction: 'ltr', alternate: false,   // swims rightward (fits the water)
+      height: '30vh', bottom: '40%', duration: 3250,     // 25% slower than the original 2600
+      gapMin: 120000, gapMax: 240000,             // reappears every 2–4 minutes
+      startDelay: 60000 + Math.random() * 120000  // first appears only after 1–3 min of play
+    });
+  });
+
   // the loader calls this when the background is switched away
   return function cleanup() {
     stopped = true;
     if (rafId) cancelAnimationFrame(rafId);
+    if (chibiPatrol) chibiPatrol.stop();
     window.removeEventListener('resize', resize);
     document.removeEventListener('click', reefClick);
     document.removeEventListener('mousemove', reefMove);

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>rumi — reef fly-across test bench</title>
+<!--
+  Sandbox for the REEF behaviour: rumi swims past in FLY mode — rotated 90°,
+  one arm raised, gliding fast edge-to-edge (rightward). Loads only the shipped
+  module (chibi-walker.js) and drives it with:
+     ChibiWalker.walk(scene, { mode:'fly', direction:'ltr', duration:2600, ... })
+     ChibiWalker.patrol(scene, { mode:'fly', alternate:false, ... })
+-->
+<style>
+  html,body{margin:0;height:100%;font-family:system-ui,"Segoe UI",Arial;}
+  #scene{position:relative;width:100%;height:100vh;overflow:hidden;
+    background:linear-gradient(180deg,#0a4d8c 0%,#1273b8 38%,#2aa6d6 72%,#8fd9ea 100%);}
+  .sand{position:absolute;left:0;right:0;bottom:0;height:12%;background:#e8d39a;border-top:5px solid #cbb074;}
+  .panel{position:absolute;left:50%;top:12px;transform:translateX(-50%);
+    display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;
+    background:#ffffffe0;padding:10px 14px;border-radius:14px;box-shadow:0 5px 16px #0004;max-width:95vw;z-index:50;}
+  .panel .tag{font:700 13px system-ui;color:#0a4d8c;margin-right:4px;}
+  .panel button{font:600 14px system-ui;padding:8px 12px;border:0;border-radius:10px;cursor:pointer;background:#1273b8;color:#fff;}
+  .panel button.ghost{background:#e6eef5;color:#0a4d8c;}
+  .hint{position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font:600 13px system-ui;
+    color:#063;background:#ffffffbf;padding:5px 11px;border-radius:8px;}
+</style>
+</head>
+<body>
+  <div id="scene">
+    <div class="sand"></div>
+    <div class="panel">
+      <span class="tag">reef · fly test</span>
+      <button id="flyR">Fly across →</button>
+      <button id="flyL">← Fly across</button>
+      <button id="patrol" class="ghost">Patrol: off</button>
+      <button id="walk" class="ghost">Walk → (compare)</button>
+    </div>
+    <div class="hint">In the reef rumi swims past in fly mode (rotated 90°), fast, every few minutes</div>
+  </div>
+
+  <script src="chibi-walker.js"></script>
+  <script>
+    var scene = document.getElementById('scene');
+    var patrol = null;
+    var FLY = { mode: 'fly', height: '30vh', bottom: '40%', duration: 3250 };
+
+    function startPatrol() {
+      patrol = ChibiWalker.patrol(scene, Object.assign({}, FLY,
+        { direction: 'ltr', alternate: false, gapMin: 2500, gapMax: 5000 }));
+      document.getElementById('patrol').textContent = 'Patrol: on';
+    }
+    document.getElementById('flyR').onclick = function () { ChibiWalker.walk(scene, Object.assign({ direction: 'ltr' }, FLY)); };
+    document.getElementById('flyL').onclick = function () { ChibiWalker.walk(scene, Object.assign({ direction: 'rtl' }, FLY)); };
+    document.getElementById('walk').onclick = function () { ChibiWalker.walk(scene, { direction: 'ltr', height: '34vh', bottom: '12%', duration: 9000 }); };
+    document.getElementById('patrol').onclick = function () {
+      if (patrol) { patrol.stop(); patrol = null; this.textContent = 'Patrol: off'; }
+      else startPatrol();
+    };
+
+    startPatrol();
+  </script>
+</body>
+</html>

@@ -20,14 +20,21 @@
 
   RELATED FILES (keep them in sync!)
   ----------------------------------
-  • chibi-walker.js  — the SHIPPED, reusable module. It embeds the SAME figure
-      (as a JS string) but WITHOUT the white <rect> background and WITHOUT the
-      decorative hearts, plus a walk/patrol API and the same limb-animation CSS
-      (injected once into <head>). Backgrounds load THAT, never this file.
-      => If you change the art here, mirror the change into SVG_MARKUP there.
-  • walker-demo.html — previews the "walk across the screen and exit" behaviour.
-  • Integrated in:  unicorns.bg.js , savanna.bg.js  (via ChibiWalker.patrol).
+  • chibi-walker.js  — the SHIPPED, reusable module: it embeds the SAME figure
+      (as a JS string, transparent background) and carries ALL of rumi's
+      behaviour — walk/patrol API, ground shadow, blink, floating hearts, and the
+      click reactions (zap / jump / fly-out). Backgrounds load THAT, never this
+      file.  => If you change the ART here, mirror it into SVG_MARKUP there.
+  • rumi-test.html   — capability sandbox: buttons for Walk / Patrol / Zap / Jump
+      / Fly out / Hearts (the easiest way to see every behaviour).
+  • walker-demo.html — minimal "walk across and exit" demo.
+  • Integrated in:  unicorns.bg.js , savanna.bg.js  — she patrols, first
+      appearing only after 1-3 min of play, then re-crossing every 2-4 min.
   • figure2.jpg      — the original reference this was matched against.
+
+  NOTE: this preview shows the static art + the CSS animations (walk, blink,
+  hearts, shadow). The interactive click reactions (zap / jump / fly-out) and the
+  random/grounded behaviour live in chibi-walker.js — open rumi-test.html for them.
 
   CANVAS & COORDINATE SYSTEM
   --------------------------
@@ -51,6 +58,9 @@
 
   DRAW ORDER  (painter's model — later shapes paint ON TOP)
   ---------------------------------------------------------
+   0. GROUND SHADOW .... a soft flat ellipse under the feet, drawn FIRST so it
+                         sits behind everything (grounds her). In chibi-walker.js
+                         it's a separate grounded layer, so it stays put on jumps.
    1. HAIR behind face .. two side "frame locks" framing the cheeks (behind all).
    2. BRAID ............. viewer-LEFT braid, drawn EARLY on purpose so the face
                          + arm occlude its middle -> it reads as coming from
@@ -80,6 +90,9 @@
   16. LEGS ............ <g class="leg-l"> / <g class="leg-r"> — each = thigh +
                          white knee boot + gold sole + cuff + gold ladder laces
                          + lace eyelets. ANIMATED.
+  17. HEARTS .......... <g class="chibi-hearts"> big red hearts above the head.
+                         Here they loop for the preview; in chibi-walker.js they
+                         are spawned in bursts on a random timer + on click.
 
   COLOUR PALETTE
   --------------
@@ -93,14 +106,21 @@
 
   ANIMATION  (the <style> block below)
   ------------------------------------
-  The four limb groups carry classes arm-l / arm-r / leg-l / leg-r. Each uses
-  `transform-box: fill-box` + a `transform-origin` near the TOP of its own box
-  so it rotates about the SHOULDER (arms, 50% 6%) or the HIP (legs, 50% 2%).
-  Keyframes armA/armB rotate +/-12 deg, legA/legB +/-7 deg, mirrored L/R and
-  phased so the arms and opposite legs swing together — a simple diagonal walk.
-  1.5s loop.  NOTE: a `@media (prefers-reduced-motion: reduce)` rule that
-  switched the animation OFF was intentionally REMOVED, so the character always
-  moves even when the OS "reduce motion" setting is on. Do not re-add it.
+  WALK (limbs): the four limb groups carry classes arm-l / arm-r / leg-l / leg-r.
+  Each uses `transform-box: fill-box` + a `transform-origin` near the TOP of its
+  own box so it rotates about the SHOULDER (arms, 50% 6%) or the HIP (legs, 50%
+  2%). Keyframes armA/armB rotate +/-12 deg, legA/legB +/-7 deg, mirrored L/R and
+  phased so the arms and opposite legs swing — a simple diagonal walk, 1.5s loop.
+  BLINK: the .chibi-eyes group squashes shut (scaleY) briefly every ~4s.
+  HEARTS: the .chibi-hearts float up + fade (here on a CSS loop, for the preview).
+  NOTE: a `@media (prefers-reduced-motion: reduce)` rule that switched the
+  animation OFF was intentionally REMOVED, so she always moves even when the OS
+  "reduce motion" setting is on. Do not re-add it.
+
+  Behaviours that live ONLY in chibi-walker.js (not in this preview):
+   - the cross-screen WALK / PATROL motion + the grounded shadow during jumps,
+   - CLICK reactions: pop hearts + a random zap (35%) / jump (35%) / fly-out (30%),
+   - hearts fired on a random timer + on click (not a constant loop, in-game).
 
   EDITING — QUICK MAP
   -------------------
@@ -112,12 +132,17 @@
   • Brow height  -> shift the EYEBROWS path y's (lower y = closer to the eyes).
   • Blush        -> the BLUSH <ellipse cx/cy> (keep inside the face outline).
   • Walk feel    -> edit the @keyframes angles / the 1.5s duration in <style>.
+  • Shadow       -> the GROUND SHADOW <ellipse> here / the .chibi-shadow CSS in
+                    chibi-walker.js.
+  • Hearts size  -> the HEARTS <path>s here / heartD()'s size in chibi-walker.js.
+  • Click odds / fly-out / jump -> chibi-walker.js (triggerAction, doJump,
+                    doFlyOut); first-appearance delay -> startDelay in the bg files.
 
   PROVENANCE
   ----------
   Built by matching figure2.jpg through several iterative judge-panel passes
-  (proportions -> hair -> arms -> outfit/boots/ears). The decorative hearts that
-  floated around the head in the reference were removed for in-game use.
+  (proportions -> hair -> arms -> outfit/boots/ears). The decorative hearts from
+  the reference were dropped, then re-added as a bigger animated emote (timer + click).
 ═══════════════════════════════════════════════════════════════════════════════
 -->
 <style>

@@ -1,38 +1,69 @@
 /* =====================================================================
-   chibi-walker.js  —  reusable walking chibi character
+   chibi-walker.js  —  reusable walking chibi character "rumi"
    ---------------------------------------------------------------------
-   The character art (SVG) lives ONCE, here. Backgrounds never copy it;
-   they just load this script and call the API.
+   The character art (SVG) and ALL of her behaviour live ONCE, here.
+   Backgrounds never copy the art; they just load this script and call the
+   API, and rumi automatically brings every animation with her.
 
-   Design twin / preview + FULL documentation:  backgrounds/rumi/rumi.html
-   holds the SAME figure (on a white page background; hearts removed here too)
-   and a deep doc comment explaining its anatomy, coordinate system, palette and
-   animation. If you edit the art in one file, mirror it into the other.
+   Design twin / preview + FULL art documentation:  backgrounds/rumi/rumi.html
+   holds the SAME figure (on a white page background) with a deep doc comment
+   explaining its anatomy, coordinate system, palette and animation. If you
+   edit the art in one file, mirror it into the other.
+   Capability sandbox (buttons for everything below): backgrounds/rumi/rumi-test.html
 
        <script src="path/to/chibi-walker.js"></script>
 
+   ---- API -------------------------------------------------------------
    One crossing (enters off one edge, walks across, exits the other edge):
        ChibiWalker.walk(containerEl, {
          direction: 'ltr',     // 'ltr' (enter left -> exit right) or 'rtl'
          duration : 11000,     // ms to cross the whole screen
+         mode     : 'walk',    // 'walk' (upright) or 'fly' (rotated 90°, fast glide)
          height   : '40%',     // character height (any CSS length, vs container)
          bottom   : '6%',      // vertical position of the feet (CSS length)
          bob      : 8,         // px of vertical bounce while walking
          zIndex   : 6,
          faceWalkDir: true,    // mirror so the character faces the way it walks
-         onDone   : fn         // called after it exits (element auto-removed)
+         onDone   : fn         // called after she exits (element auto-removed)
        });
        // -> returns { element, animation, stop() }
 
    Continuous patrol (keeps crossing back and forth with random gaps):
        const p = ChibiWalker.patrol(containerEl, {
          height:'40%', bottom:'6%', duration:10000,
-         gapMin: 3000, gapMax: 8000, alternate: true, startDelay: 0
-       });
+         gapMin: 120000, gapMax: 240000,   // gap between crossings (ms)
+         alternate: true,                  // flip direction each crossing
+         startDelay: 0                     // ms before the FIRST appearance
+       });                                 // (game bgs use 60000-180000 = 1-3 min)
        // -> returns { stop() }   // call p.stop() to remove & cancel
 
-   Notes
-   - The limbs animate via CSS injected once into <head>; nothing per-call.
+   Fire a specific action on the live instance(s) — mainly for testing:
+       ChibiWalker.trigger('zap' | 'jump' | 'flyout' | 'hearts' | 'random')
+
+   ---- BEHAVIOUR (all automatic, all at this module level) --------------
+   • Walk     — arms swing + legs step (CSS), with a vertical bob + ground shadow.
+   • Fly mode — walk({mode:'fly'}): rotated 90° (head leads the travel direction),
+                arm raised, no shadow, gliding fast edge-to-edge. Used by the reef
+                background, where rumi "swims" past (rightward). Sandbox: reef-test.html.
+   • Shadow   — a soft ground ellipse under the feet; sits on the wrapper so it
+                stays grounded while the figure jumps / flies.
+   • Blink    — the eyes squash shut briefly every few seconds (CSS).
+   • Hearts   — big hearts rise above her head + fade; fired on a random per-
+                instance timer (~5-14s) AND on every click.
+   • Click    — clicking rumi pops hearts + ONE random action:
+                  35% lightning zap   (SVG bolts in front of her)
+                  35% light jump      (hops; shadow stays grounded)
+                  30% raise a hand and fly up out of the screen (then the
+                      patrol brings her back after the normal gap)
+                Detected via a document capture-phase listener that hit-tests
+                her live bounding box (robust even while she animates) and stops
+                the click from reaching the scene behind her.
+
+   ---- structure / notes -----------------------------------------------
+   DOM per instance:  .chibi-walker (wrapper, WAAPI translateX walk)
+                        └ .chibi-shadow (grounded)
+                        └ .chibi-act    (jump/fly transforms)  └ svg.chibi-svg (flip)
+   - All CSS (limb/blink keyframes, shadow, layers) is injected once into <head>.
    - Pure DOM/SVG + Web Animations API. No dependencies. Works on file://.
    - The container is made position:relative automatically if it is static.
    ===================================================================== */
@@ -123,7 +154,8 @@
 
   /* ARMS (animated at the shoulder) */
   '<g class="arm-l"><path fill="#f7c9c1" d="M262 505 C246,506 234,518 229,540 C224,562 222,588 222,614 C222,632 223,646 225,656 C219,662 215,672 216,682 C217,694 226,700 236,698 C245,696 251,690 251,680 C254,684 259,682 260,675 C261,667 257,659 251,658 C252,640 253,612 254,588 C255,560 256,532 258,514 C259,508 268,504 262,505 Z"/></g>' +
-  '<g class="arm-r"><path fill="#f7c9c1" d="M338 505 C354,506 366,518 371,540 C376,562 378,588 378,614 C378,632 377,646 375,656 C381,662 385,672 384,682 C383,694 374,700 364,698 C355,696 349,690 349,680 C346,684 341,682 340,675 C339,667 343,659 349,658 C348,640 347,612 346,588 C345,560 344,532 342,514 C341,508 332,504 338,505 Z"/></g>' +
+  '<g class="arm-r"><path fill="#f7c9c1" d="M338 505 C354,506 366,518 371,540 C376,562 378,588 378,614 C378,632 377,646 375,656 C381,662 385,672 384,682 C383,694 374,700 364,698 C355,696 349,690 349,680 C346,684 341,682 340,675 C339,667 343,659 349,658 C348,640 347,612 346,588 C345,560 344,532 342,514 C341,508 332,504 338,505 Z"/>' +
+  '</g>' +
 
   /* TOP — white halter crop + gem */
   '<path fill="#ffffff" d="M300 496 C284,496 271,501 263,511 C256,521 252,539 251,561 C250,585 252,614 257,636 L343,636 C348,614 350,585 349,561 C348,539 344,521 337,511 C329,501 316,496 300,496 Z"/>' +
@@ -183,6 +215,14 @@
     '</g>' +
   '</g>' +
 
+  /* water ripples at the LEADING edge — drawn on top, shown only in FLY mode
+     (after the 90° rotation this sits ahead of her, so she parts the water) */
+  '<g class="chibi-water">' +
+    '<circle cx="306" cy="190" r="13" fill="none" stroke="#ffffff" stroke-width="3.6"/>' +
+    '<circle cx="306" cy="190" r="13" fill="none" stroke="#cdeefb" stroke-width="3.2"/>' +
+    '<circle cx="306" cy="190" r="13" fill="none" stroke="#ffffff" stroke-width="3.4"/>' +
+  '</g>' +
+
 '</g></svg>';
 
   /* ---- animation + base CSS, injected once (keyframes namespaced) ---- */
@@ -207,8 +247,22 @@
     '.chibi-shadow{position:absolute;left:50%;bottom:-2%;width:108%;height:11%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.30),rgba(0,0,0,0) 72%);pointer-events:none;}' +
     /* action layer: wraps the figure; triggered jump/fly transforms live here */
     '.chibi-act{display:inline-block;height:100%;vertical-align:top;}' +
-    /* raised-arm pose used by the fly-out action — pivots at the shoulder so the arm stays attached */
-    '.chibi-act.chibi-arm-up .chibi-svg .arm-r{animation:none;transform-origin:12% 4%;transform:rotate(-128deg);transition:transform .22s ease-out;}';
+    /* raised-arm pose (fly-out + fly-across) — pivots at the shoulder, raised almost straight up (~180°) */
+    '.chibi-act.chibi-arm-up .chibi-svg .arm-r{animation:none;transform-origin:12% 4%;transform:rotate(-176deg);transition:transform .22s ease-out;}' +
+    /* FLY-ACROSS mode: rotate the whole figure 90° so the head leads the travel
+       direction (rightward by default), drop the shadow, and still the legs +
+       trailing arm for a smooth swim/fly glide */
+    '.chibi-walker.chibi-fly .chibi-act{transform:rotate(90deg);}' +
+    '.chibi-walker.chibi-fly.chibi-fly-rtl .chibi-act{transform:rotate(-90deg);}' +
+    '.chibi-walker.chibi-fly .chibi-shadow{display:none;}' +
+    '.chibi-walker.chibi-fly .chibi-svg .arm-l,.chibi-walker.chibi-fly .chibi-svg .leg-l,.chibi-walker.chibi-fly .chibi-svg .leg-r{animation:none;}' +
+    /* water ripples at the leading hand — hidden normally, expanding loop while flying */
+    '.chibi-svg .chibi-water{display:none;}' +
+    '.chibi-walker.chibi-fly .chibi-svg .chibi-water{display:block;}' +
+    '.chibi-walker.chibi-fly .chibi-svg .chibi-water circle{transform-box:fill-box;transform-origin:center;animation:chibiWater 1.05s ease-out infinite;}' +
+    '.chibi-walker.chibi-fly .chibi-svg .chibi-water circle:nth-child(2){animation-delay:.35s}' +
+    '.chibi-walker.chibi-fly .chibi-svg .chibi-water circle:nth-child(3){animation-delay:.7s}' +
+    '@keyframes chibiWater{0%{transform:scale(.15);opacity:0}22%{opacity:.95}100%{transform:scale(2);opacity:0}}';
 
   var cssInjected = false;
   function ensureCSS() {
@@ -331,7 +385,7 @@
 
   /* on click: a heart pop + a RANDOM action (zap / light jump / fly out) */
   function triggerAction(wrap) {
-    if (wrap._busy) return;                 // already mid jump/fly — ignore
+    if (wrap._busy || wrap.classList.contains('chibi-fly')) return;   // mid-action or flying by — ignore
     fireHearts(wrap);                       // hearts on every click
     var r = Math.random();
     if (r < 0.35) fireZap(wrap);            // 35% lightning
@@ -395,6 +449,7 @@
       zIndex: o.zIndex != null ? o.zIndex : 6,
       faceWalkDir: o.faceWalkDir !== false,
       flip: o.flip,
+      mode: o.mode || 'walk',          // 'walk' (upright) or 'fly' (rotated 90°, fast glide)
       loop: !!o.loop,
       onDone: o.onDone || null
     };
@@ -402,15 +457,23 @@
     var cs = global.getComputedStyle ? getComputedStyle(container) : null;
     if (cs && cs.position === 'static') container.style.position = 'relative';
 
+    var fly = opts.mode === 'fly';
     var faceLeft = opts.direction === 'rtl';
-    var flip = opts.faceWalkDir ? faceLeft : !!opts.flip;
+    var flip = fly ? false : (opts.faceWalkDir ? faceLeft : !!opts.flip);
+    var bob = fly ? 0 : opts.bob;       // smooth glide when flying (no walking bounce)
 
     var wrap = buildElement({ height: opts.height, bottom: opts.bottom, zIndex: opts.zIndex, flip: flip });
+    if (fly) {
+      wrap.classList.add('chibi-fly');
+      if (faceLeft) wrap.classList.add('chibi-fly-rtl');
+      wrap._act.classList.add('chibi-arm-up');     // raise the leading arm
+    }
     container.appendChild(wrap);
 
     var cw = container.clientWidth || (global.innerWidth || 800);
-    var ew = wrap.offsetWidth || (container.clientHeight * 0.33) || 200;
-    var margin = Math.max(40, ew * 0.25);
+    // when flying she is rotated 90°, so her horizontal extent ≈ her upright height
+    var ew = (fly ? wrap.offsetHeight : wrap.offsetWidth) || (container.clientHeight * 0.33) || 200;
+    var margin = Math.max(40, ew * 0.3);
     var startX = -ew - margin, endX = cw + margin;
     if (opts.direction === 'rtl') { var tmp = startX; startX = endX; endX = tmp; }
 
@@ -420,7 +483,7 @@
     for (var i = 0; i <= steps; i++) {
       var f = i / steps;
       var x = startX + (endX - startX) * f;
-      var y = -Math.abs(Math.sin(f * Math.PI * cycles)) * opts.bob;
+      var y = -Math.abs(Math.sin(f * Math.PI * cycles)) * bob;
       frames.push({ transform: 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)', offset: f });
     }
 
