@@ -13,7 +13,7 @@ Load order (from `index.html`, lines 8–12):
 
 1. `base.css` — layout, header, settings/difficulty modal, equation, answer input, buttons, end screen, the global answer-border contract, the number tooltip (`#num-tt`).
 2. `aids.css` — number-line panel, counting-jar / chain-tools containers, digit-hint button, try-first lock visuals, chain-garden display.
-3. `effects.css` — success overlays (`#fw-ov` + the `nfw-*` family), sad modal, report modal, theme & games menus, gift indicator, aid-toggle icons.
+3. `effects.css` — sad modal, score-history list, report modal, theme & games menus, gift indicator, end-screen gift. (Success-celebration markup is *not* here — `success.js` builds it at runtime.)
 4. `themes.css` — per-theme `#bg` load-flash gradients + `#stars-layer` display rules.
 5. `responsive.css` — the `@media` breakpoints (≤768 / ≤480 / ≤360) plus the girls-theme `#bg` gradient.
 
@@ -61,6 +61,7 @@ fixed-position jump trail/dust/firework particles); chain-garden button and disp
 - **Try-first lock.** `.tf-locked` greys out and disables an element. `body.tf-locked-nl` hides the number-line/garden number labels and ticks and desaturates the rider/dot, so kids must estimate before the scale is revealed. `#tf-msg` / `#tf-nl-note` are the prompt text (with per-theme color tweaks for `theme-girls` / `theme-galaxy`).
 - The counting-**jar item visuals** are *not* here — the jar display lives in `aids/jar_stage.js` (stable `.jst-*` classes) and container/item art comes from the active aid variant in `aids/<name>.aids.js`. The old `.pgm-nl` number line above the jar is force-hidden (`display:none`).
 - Cost hints are rendered with `::before` pseudo-content (e.g. `.tt-hint-icon::before` → `30⭐`, `.pgm-gn-eq-btn::before` → `20 ⭐`).
+- **Interactive-exercise number-line backdrop.** The self-contained column/coin exercises (`column_add` / `column_sub` / `coin_mul`) inject their own stylesheets and mount into a `#colx-root` node on a see-through card; the single rule `.card:has(#colx-root) #nl-panel` gives *only* the shared number-line panel its own frosted blur backdrop there, so the busy scene behind the transparent card doesn't wash the line out. This is the only place these CSS files touch the interactive exercises — all of their other DOM/styling/checking lives in `exercises/<name>.ex.js`.
 
 **Integration.** `game/js/aids.js` builds the panel DOM (ticks, nums, arcs, rider) and
 drives the rider with rAF, toggling classes like `.flying`, `.face-left`, `.nl-land`,
@@ -69,17 +70,16 @@ variant. Skins may restyle the jar/panel surfaces but inherit the structure here
 
 ### `effects.css`
 
-**Structure.** Legacy fireworks overlay (`#fw-ov` / `#fw-cv` / `.fw-*`); sad modal
-(`#sad-ov`, `.sad-box`); report modal (`#report-ov`, `.report-box`, `.rep-*`, shared
-`.ko-close`, `.b-rep`); theme toggle button + theme picker menu (`#theme-menu`,
-`.tm-item`); games dropdown (`.games-drop-btn`, `#games-menu`, `.gm-item`,
-`.aid-ico`); the **new success-overlay family** `nfw-*` (confetti `#nfw-cf`, burst
-`#nfw-bu`, hero `#nfw-hr`, ripple `#nfw-rp`, each with its own keyframes);
-gift indicator (`.gift-indicator`) and end-screen gift (`.end-gift`).
+**Structure.** Sad modal (`#sad-ov`, `.sad-box`); score-history list (`.hist-*`,
+shown in the settings *history* tab); report modal (`#report-ov`, `.report-box`,
+`.rep-*`, shared `.ko-close`, `.b-rep`); theme toggle button + theme picker menu
+(`#theme-menu`, `.tm-item`); games dropdown (`.games-drop-btn`, `#games-menu`,
+`.gm-item`, `.aid-ico`); gift indicator (`.gift-indicator`) and end-screen gift
+(`.end-gift`). No fireworks/celebration overlay markup lives here.
 
 **Key functionality.**
-- Overlays are `display:none` by default and z-indexed above the board; JS shows them and toggles `.open` (menus), `.gm-active` (games button), `.glow-click` (clickable hint glow).
-- Success celebrations are external screens (`success_screens/*.js`); `success.js` builds their modal root + a random scene-tinted dark backdrop at runtime (no celebration markup lives in `effects.css`).
+- Modals/menus are `display:none` by default and z-indexed above the board; JS shows them and toggles `.open` (menus), `.gm-active` (games button), `.glow-click` (clickable hint glow).
+- Success celebrations are external screens (`success_screens/*.js`); `success.js` builds their entire modal root + a random scene-tinted dark backdrop at runtime — no success/fireworks overlay or keyframes live in `effects.css`.
 
 **Integration.** Skins recolor menus, overlay backdrops and the gift indicator. JS
 (`themes.js`, `success.js`, report code) toggles visibility and the `.open` /

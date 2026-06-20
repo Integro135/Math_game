@@ -112,6 +112,7 @@ can restyle the jar without touching this module.
 | `dubai.aids.js`    | 🚁 helicopter | 💎 crystals (`קְרִיסְטַלִּים`)    | 🌴 palm trees    | `0 0 52 36` |
 | `reef.aids.js`     | 🐬 dolphin    | 🦪 pearls (`פְּנִינִים`)         | 🪸 coral sprigs  | `0 0 52 26` |
 | `unicorns.aids.js` | 🦄 unicorn    | 🧁 cupcakes (`קַאפְּקֵייקְס`)    | 🌸 crystal flowers | `0 0 52 34` |
+| `savanna.aids.js`  | 🐆 cheetah    | 🥭 marula fruits (`פֵּרוֹת`)     | 🌳 acacia trees  | `0 0 24 26` |
 
 Each variant cycles a 5-entry color palette for its items and another for its
 garden plants, and defines its own `numberLine.fx` (trail glyph, spark/dust

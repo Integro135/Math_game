@@ -60,7 +60,12 @@ the **chain mini-line** (`.pgm-bar`, `.pgm-dot`, `.pgm-nl-num*`,
 (`#settings-ov`, `.settings-box`, `.tier-tab`, `.lvl-btn`), the
 **success-tooltip** `#num-tt`, the header/stats/progress, the equation
 (`.eq-n`/`.eq-op`/`.eq-res`), action buttons (`.btn`, `.b-chk`/`.b-try`/
-`.b-nxt`/`.b-rpl`), the coin stage, and the end screen.
+`.b-nxt`/`.b-rpl`), the coin stage, and the end screen. Deeper in the settings
+modal sit the sub-tabs, prize editor and score history (`.set-tab`,
+`.prize-lbl`/`.prize-inp`, `.hist-grade`/`.hist-game`/`.hist-name`/`.hist-date`/
+`.hist-empty`); their base colors are **light** (authored for the dark skins),
+so a skin over a light scene must recolor them or they vanish (see unicorns,
+§4).
 
 ## 3. The hard rule skins must respect
 
@@ -82,7 +87,7 @@ the **chain mini-line** (`.pgm-bar`, `.pgm-dot`, `.pgm-nl-num*`,
 | Skin | Dresses background (body class) | primary / accent / glow / text | Design concept (from header) | `.wrap` width / position |
 |------|----------------------------------|--------------------------------|------------------------------|--------------------------|
 | `space` | space (`theme-galaxy`) | `#C77DFF` / `#FFD27D` / `#7DC4FF` / `#EAF0FF` | "Mission HUD" — a thin holographic instrument layer; occlude as little of the cosmos as possible; no blur anywhere | `max-width:700px`, slim center column |
-| `unicorns` | candy valley (`theme-girls`) | `#FF6FB5` / `#7DC4FF` / `#C77DFF` / `#5A2A52` | "Valley Light" — translucent layer over a *light* valley; contrast from deep-plum ink + white halos; `±` are lilac/strawberry, no green | `max-width:700px`, center band |
+| `unicorns` | candy valley (`theme-girls`) | `#FF6FB5` / `#7DC4FF` / `#C77DFF` / `#5A2A52` | "Valley Light" — translucent layer over a *light* valley; contrast from deep-plum ink + white halos; `±` are lilac/strawberry, no green. Because its settings/history box is near-white, the light base text (sub-tabs, prize fields, score history, `#parent-q`) is recolored plum (`#7A4070`/`#9A4ED9`/…) to stay readable | `max-width:700px`, center band |
 | `dubai` | Dubai dusk (`theme-dubai`) | `#FFB54D` / `#FFD27D` / `#6FB7FF` / `#F2EEDF` | "Golden Hour" — deep-navy glass etched with hairline gold; luxury-hotel elegance; keep the Burj + skyline sharp | `max-width:700px`, `margin:0 auto` (centered) |
 | `reef` | coral reef (`theme-reef`) | `#22C8C2` / `#FFD166` / `#66E0FF` / `#EAFBFF` | "Open Water" — instrument layer in open water; **the only blurred element is the equation island** (`.eq-row`), everything else stays crystal clear | `max-width:720px`, top-center calm zone |
 | `savanna` | Pride Rock sunset (`theme-savanna`) | `#E07028` / `#FFC568` / `#FF9A4D` / `#FFF3E0` | Warm amber dusk glass with a gentle blur so the sky/rock/herds glow through; add = golden sun, subtract = grass-green; a full skin (header, card, equation, buttons, number line, chain jar, end screen) | `max-width:640px`, pushed to the lower-**right** (`margin:0 calc(16px + 5cm) 0 auto`) so Pride Rock + the lions on the left stay visible (`margin:8px auto 0` below 900px) |

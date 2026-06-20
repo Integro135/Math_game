@@ -42,8 +42,11 @@ window.EXERCISES.types.coin_mul=(()=>{
   .colm-titlecoin svg{width:42px;height:42px;display:block}
   .colm-titlecoin .coin-lbl{display:none}
   .colm-tray{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;
-    min-height:66px;max-width:300px;padding:10px 8px;border-radius:18px;
+    min-height:74px;max-width:300px;padding:10px 8px;border-radius:18px;box-sizing:border-box;
     background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.22)}
+  /* before the 1st coin: KEEP the reserved space (so ＋ never shifts down) but
+     hide the box itself so no blank square shows */
+  .colm-tray.colm-tray-blank{background:transparent;border-color:transparent}
   /* the coin face already shows "5" — hide the ₪5 caption in the tray to stay tidy */
   #colx-root .colm-tray .coin-lbl{display:none}
   #colx-root .colm-tray .coin-wrap{gap:0}
@@ -62,14 +65,13 @@ window.EXERCISES.types.coin_mul=(()=>{
   .colm-bigbtn:disabled{opacity:.32;cursor:default;box-shadow:none}
   .colm-bigbtn.plus{background:linear-gradient(160deg,#86E29B,#2FA257 85%);border:2px solid rgba(255,255,255,.55)}
   .colm-bigbtn.minus{background:linear-gradient(160deg,#FF9DBE,#E0557E 85%);border:2px solid rgba(255,255,255,.55)}
-  .colm-ctl-cap{font-family:'Fredoka One',cursive;font-size:1rem;text-align:center;
-    color:var(--skin-text,#fff);opacity:.9;text-shadow:0 1px 4px rgba(0,0,0,.25)}
   .colm-btn{font-family:'Fredoka One',cursive;font-size:1.1rem;border:0;border-radius:14px;
     padding:11px 20px;cursor:pointer;background:var(--skin-primary,#c77dff);color:#fff;
     box-shadow:0 3px 0 rgba(0,0,0,.25)}
   .colm-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
   .colm-btn:disabled{opacity:.35;cursor:default;box-shadow:none}
-  .colm-ans-row{display:flex;gap:10px;align-items:center;margin-top:2px}
+  /* direction:ltr so the ✓ button (first child) sits to the LEFT of the input */
+  .colm-ans-row{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:2px;direction:ltr}
   .colm-ans-row span{font-family:'Fredoka One',cursive;color:var(--skin-text,#fff)}
   #colx-root .ans-inp.colm-inp{width:72px;height:58px;font-size:2rem;border-radius:14px;text-align:center}
   #colx-root .colm-inp.blink{animation:colmBlink 1.1s ease-in-out infinite alternate}
@@ -87,6 +89,9 @@ window.EXERCISES.types.coin_mul=(()=>{
   function mount({root,a,b,api}){
     injectStyle();
     const target=a, need=Math.round(a/COIN);
+    // the child may add MORE coins than fit — the ＋ must never disable AT the
+    // answer (that would reveal it). Cap only at a generous bound well past it.
+    const maxCoins=need+3;
     let count=0, done=false;
     const timers=[]; const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
 
@@ -98,10 +103,9 @@ window.EXERCISES.types.coin_mul=(()=>{
           <button class="colm-bigbtn minus" id="colm-rem" aria-label="הָסִירִי מַטְבֵּעַ">−</button>
           <button class="colm-bigbtn plus" id="colm-add" aria-label="הוֹסִיפִי מַטְבֵּעַ">＋</button>
         </div>
-        <div class="colm-ctl-cap">לַחֲצִי עַל ＋ לְהוֹסִיף מַטְבֵּעַ</div>
         <div class="colm-ans-row">
-          <input class="ans-inp colm-inp blink" id="colm-ans" type="text" inputmode="numeric" maxlength="2" aria-label="כַּמּוּת הַמַּטְבְּעוֹת">
           <button class="colm-btn" id="colm-chk" aria-label="בְּדִיקָה">✓</button>
+          <input class="ans-inp colm-inp blink" id="colm-ans" type="text" inputmode="numeric" maxlength="2" aria-label="כַּמּוּת הַמַּטְבְּעוֹת">
         </div>
       </div>`;
 
@@ -112,17 +116,17 @@ window.EXERCISES.types.coin_mul=(()=>{
     fb('🪙 הוֹסִיפִי מַטְבְּעוֹת שֶׁל 5 וְסִפְרִי כַּמָּה צְרִיכִים!');
 
     function render(){
-      addBtn.disabled=done||count>=need;           // cap at the target — never overshoot
+      tray.classList.toggle('colm-tray-blank',count===0);  // box invisible while empty, space reserved
+      addBtn.disabled=done||count>=maxCoins;        // cap only WAY past the answer (never reveals it)
       remBtn.disabled=done||count<=0;
     }
     function addCoin(){
-      if(done||count>=need)return;
+      if(done||count>=maxCoins)return;
       count++;
       const tmp=document.createElement('div');tmp.innerHTML=coinHTML();
       const node=tmp.firstElementChild;node.classList.add('colm-coin');   // marker for counting
       tray.appendChild(node);
       render();
-      if(count===need)fb('יֵשׁ! עַכְשָׁו סִפְרִי כַּמָּה מַטְבְּעוֹת יֵשׁ 🔢');
     }
     function removeCoin(){
       if(done||count<=0)return;
@@ -141,8 +145,10 @@ window.EXERCISES.types.coin_mul=(()=>{
         api.solved();
       }else{
         inp.classList.remove('blink');inp.classList.add('ans-err');
-        if(count<need)fb('הוֹסִיפִי עוֹד מַטְבְּעוֹת שֶׁל 5! 🪙');
-        else fb('סִפְרִי שׁוּב אֶת הַמַּטְבְּעוֹת שֶׁבַּמַּגָּשׁ 💗');
+        // guide by the TYPED value vs the answer — never by the coin count
+        // (the child may have added more coins than actually fit)
+        if(v<need)fb('נִכְנָסִים עוֹד! נַסִּי מִסְפָּר גָּדוֹל יוֹתֵר 🪙');
+        else fb('יוֹתֵר מִדַּי! נַסִּי מִסְפָּר קָטָן יוֹתֵר 💗');
         api.wrong(v);
         later(()=>{if(!done){inp.value='';inp.classList.remove('ans-err');inp.classList.add('blink');inp.focus();}},1000);
       }

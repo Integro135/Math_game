@@ -21,7 +21,8 @@ window.EXERCISES.types.column_add=(()=>{
 
   // pool: 12 column-addition problems (a=11..29, b=2..19), ≥7 with a carry.
   // Largest result reached is 29+19 = 48 (the tens of the result stay one digit).
-  function makePool(){
+  function makePool(nCarry,nNoCarry){
+    nCarry=nCarry==null?7:nCarry; nNoCarry=nNoCarry==null?5:nNoCarry;
     const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
     const out=[],seen=new Set();
     const want=(carry)=>{
@@ -32,8 +33,8 @@ window.EXERCISES.types.column_add=(()=>{
         if(hasCarry===carry&&!seen.has(key)){seen.add(key);out.push({t:TCA,a,b});return;}
       }
     };
-    for(let i=0;i<7;i++)want(true);
-    for(let i=0;i<5;i++)want(false);
+    for(let i=0;i<nCarry;i++)want(true);
+    for(let i=0;i<nNoCarry;i++)want(false);
     for(let i=out.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[out[i],out[j]]=[out[j],out[i]];}
     return out;
   }
@@ -344,7 +345,9 @@ window.EXERCISES.types.column_add=(()=>{
     t:TCA,
     modes:['sup'],
     aidsReveal:'always',   // the skinned number line shows from the start
-    make(mode){return mode==='sup'?makePool():[];},
+    // Superman weaves in an EQUAL share of each exercise type, so column
+    // addition contributes just 3 (2 with a carry, 1 without).
+    make(mode){return mode==='sup'?makePool(2,1):[];},
     mount,
   };
 })();

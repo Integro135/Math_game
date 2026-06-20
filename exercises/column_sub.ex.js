@@ -66,6 +66,27 @@ window.EXERCISES.types.column_sub=(()=>{
     return out;
   }
 
+  // Superman (sup): EQUAL representation of both column-subtraction kinds —
+  // 3 NO-BORROW and 3 WITH-BORROW (top units < bottom units → regrouping). The
+  // borrow ones use the full a∈[11,29] range (proper two-digit borrow, e.g. 25−17).
+  function makeSup(){
+    const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
+    const out=[...makeNoBorrow(3)];                 // 3 no-borrow
+    const seen=new Set(out.map(p=>p.a+'_'+p.b));
+    for(let n=0;n<3;n++){                             // 3 WITH borrow
+      for(let t=0;t<400;t++){
+        const a=ri(11,29),b=ri(2,19);
+        if(a<=b)continue;
+        if((a%10)>=(b%10))continue;                  // MUST need a borrow
+        const key=a+'_'+b;
+        if(seen.has(key))continue;
+        seen.add(key);out.push({t:TCS,a,b});break;
+      }
+    }
+    for(let i=out.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[out[i],out[j]]=[out[j],out[i]];}
+    return out;
+  }
+
   const CSS=`
   .colxs-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
   .colxs-wrap{position:relative;display:inline-block;padding-left:64px}
@@ -251,12 +272,20 @@ window.EXERCISES.types.column_sub=(()=>{
       if(unitsHint&&phase==='units'){
         const aU=c('colx-aU'),bU=c('colx-bU');
         const aCy=(aU.top+aU.bot)/2,bCy=(bU.top+bU.bot)/2;
-        html+=`<g class="hint-fade">${ell(aU.x,aCy,29,33)}${ell(bU.x,bCy,29,33)}${minusAt(aU.x+42,(aCy+bCy)/2)}</g>`;
+        // after a borrow the top-units cell ALSO carries the small borrowed "¹" at
+        // its top-left — grow the ring up-and-left so it ENCLOSES that 1 cleanly
+        // (instead of slicing through it)
+        const aRing=borrowed?ell(aU.x-8,aCy-9,38,43):ell(aU.x,aCy,29,33);
+        html+=`<g class="hint-fade">${aRing}${ell(bU.x,bCy,29,33)}${minusAt(aU.x+42,(aCy+bCy)/2)}</g>`;
       }
       if(tensHint&&phase==='tens'){
         const aT2=c('colx-aT'),bT2=c('colx-bT');
         const aTy=(aT2.top+aT2.bot)/2,bTy=(bT2.top+bT2.bot)/2;
-        html+=`<g class="hint-fade">${ell(aT2.x,aTy,29,33)}${ell(bT2.x,bTy,29,33)}${minusAt(aT2.x-42,(aTy+bTy)/2)}</g>`;
+        let g=ell(aT2.x,aTy,29,33)+ell(bT2.x,bTy,29,33)+minusAt(aT2.x-42,(aTy+bTy)/2);
+        // after a borrow the real tens operand is the DECREMENTED value shown
+        // above the struck tens digit — ring it too so she subtracts THAT number
+        if(borrowed){const bn=c('colx-bnew');g+=ell(bn.x,(bn.top+bn.bot)/2,26,30);}
+        html+=`<g class="hint-fade">${g}</g>`;
       }
       svg.innerHTML=html;
     }
@@ -348,41 +377,6 @@ window.EXERCISES.types.column_sub=(()=>{
       borrowHint=true;drawLines();
       fb('אֵין מַסְפִּיק אֲחָדוֹת — לַחֲצִי עַל הָעֲשָׂרוֹת לָקַחַת 10! 👆');
     }
-    /* AUTO method: an elaborate regrouping demo — a "10" lifts off the tens and
-       bursts into 10 little ones (showing the top now holds aU+10). */
-    function teachRegroup(){
-      if(phase!=='units')return;
-      clearTeach();
-      if(!borrowed){                       // make the board show the borrow (idempotent)
-        borrowed=true;
-        $('colx-aT').classList.remove('borrowable');
-        $('colx-aT').classList.add('struck');
-        const bn=$('colx-bnew');bn.textContent=P.aTeff;bn.classList.add('show','pop');
-        const bw=$('colx-borrow');bw.textContent='1';bw.classList.add('show');
-        borrowHint=false;drawLines();
-      }
-      const wrap=$('colx-pw'),aT=wrapXY('colx-aT'),aU=wrapXY('colx-aU');
-      const burstX=aU.x,burstY=aU.bot+26,cols=5,gap=20;
-      const ten=document.createElement('div');ten.className='colxs-teach colxs-ten';ten.textContent='10';
-      ten.style.left=aT.x+'px';ten.style.top=aT.y+'px';wrap.appendChild(ten);
-      void ten.offsetWidth;
-      later(()=>{ten.style.left=burstX+'px';ten.style.top=burstY+'px';},60);
-      later(()=>{
-        ten.style.opacity='0';ten.style.transform='translate(-50%,-50%) scale(.3)';
-        for(let i=0;i<10;i++){
-          const d=document.createElement('div');d.className='colxs-teach colxs-onedot';
-          d.style.left=burstX+'px';d.style.top=burstY+'px';wrap.appendChild(d);
-          const tx=burstX+((i%cols)-(cols-1)/2)*gap,ty=burstY+((i/cols)|0)*gap;
-          (function(dd,x,y,k){later(()=>{dd.style.transform='translate(-50%,-50%) scale(1)';dd.style.left=x+'px';dd.style.top=y+'px';},k*45);})(d,tx,ty,i);
-        }
-      },560);
-      const lbl=document.createElement('div');lbl.className='colxs-teach colxs-teach-lbl';
-      lbl.textContent='10 = עֶשֶׂר אֲחָדוֹת!';lbl.style.left=burstX+'px';lbl.style.top=(burstY+2*gap+8)+'px';wrap.appendChild(lbl);
-      later(()=>lbl.classList.add('show'),720);
-      fb(`רוֹאָה? עֶשֶׂר אֲחָדוֹת! עַכְשָׁו יֵשׁ ${P.aU+10} אֲחָדוֹת — חַסְּרִי ${P.bU} 💪`);
-      anchorNL();
-      later(()=>{clearTeach();if(phase==='units')iU.focus();},2400);
-    }
 
     /* the aid is the game's own skinned number line, COUNT-BACK: it is parked on
        the TOP number's current-column digit (after a borrow the units anchor is
@@ -407,10 +401,11 @@ window.EXERCISES.types.column_sub=(()=>{
       }else{
         if(!commit)return;
         iU.classList.remove('blink');iU.classList.add('ans-err');
-        // immediate textual nudge (the sad modal covers the board for ~1.5s)
+        // Mirror column ADDITION on a units mistake: just RING the units digits
+        // to subtract in red (no elaborate teaching animation). Before the borrow
+        // we still nudge to take a ten — ringing the raw "5−7" there would mislead.
         if(P.borrow&&!borrowed)
           fb(AUTO?'קֹדֶם לוֹקְחִים 10 מֵהָעֲשָׂרוֹת! 🔟':'אֵין מַסְפִּיק אֲחָדוֹת — לַחֲצִי עַל הָעֲשָׂרוֹת! 👆');
-        else if(P.borrow)fb('בּוֹאִי נִסְפֹּר שׁוּב יַחַד 💗');
         else{unitsHint=true;fb('חַסְּרִי אֶת הָאֲחָדוֹת שֶׁבָּעִגּוּלִים 💗');}
         drawLines();
         anchorNL();
@@ -418,13 +413,6 @@ window.EXERCISES.types.column_sub=(()=>{
         later(()=>{
           if(phase==='units'){iU.value='';iU.classList.remove('ans-err');iU.classList.add('blink');iU.focus();}
         },1000);
-        // after the sad modal clears, play the elaborate teaching animation for
-        // the active learning-method: the tap-guide (hybrid) or the regroup demo
-        // (auto, or whenever the ten has already come down)
-        if(P.borrow)later(()=>{
-          if(phase!=='units')return;
-          if(AUTO||borrowed)teachRegroup();else teachTap();
-        },1550);
       }
     }
     function unlockTens(){
@@ -478,13 +466,17 @@ window.EXERCISES.types.column_sub=(()=>{
        the RIGHT of the digit, scoped to the CURRENT column. */
     function digitInfo(kind){
       if(phase==='units'){
-        if(kind==='aU')return{n:borrowed?P.aU+10:P.aU};
-        if(kind==='bU')return{n:P.bU};
+        if(kind==='aU')return{n:borrowed?P.aU+10:P.aU,split:null};   // plain count
+        // bottom units (the subtrahend): in a borrow problem show the
+        // SUBTRACT-THROUGH-TEN split — bU = aU (brings the borrowed teen down to
+        // 10) on the LEFT + (bU−aU) (the rest, taken from 10) on the RIGHT.
+        // e.g. 15−7 → the 7 shows 5|2; 25−16 → the 6 shows 5|1. (aU=0 → no bridge.)
+        if(kind==='bU')return{n:P.bU,split:(P.borrow&&P.aU>0)?[P.aU,P.bU-P.aU]:null};
         return null;
       }
       if(phase==='tens'){
-        if(kind==='aT')return{n:P.aTeff};
-        if(kind==='bT')return{n:P.bT};
+        if(kind==='aT')return{n:P.aTeff,split:null};
+        if(kind==='bT')return{n:P.bT,split:null};
         return null;
       }
       return null;
@@ -494,7 +486,7 @@ window.EXERCISES.types.column_sub=(()=>{
       el.style.cursor=el.classList.contains('borrowable')?'pointer':'help';
       el.addEventListener('mouseenter',()=>{
         const info=digitInfo(kind);
-        if(info&&info.n>0&&typeof _nttRender==='function')_nttRender(info.n,null,el,'right');
+        if(info&&info.n>0&&typeof _nttRender==='function')_nttRender(info.n,info.split,el,'right');
         else if(typeof _nttHide==='function')_nttHide();
       });
       el.addEventListener('mouseleave',()=>{if(typeof _nttHide==='function')_nttHide();});
@@ -536,9 +528,10 @@ window.EXERCISES.types.column_sub=(()=>{
     t:TCS,
     modes:['sub_col','mx','sup'],
     aidsReveal:'always',   // the skinned number line shows from the start
-    // 'sub_col' = the dedicated game (borrow + no-borrow); 'mx' (Queen) & 'sup'
-    // (Superman) each get a couple of NO-BORROW column subtractions woven in.
-    make(mode){return mode==='sub_col'?makePool():(mode==='mx'||mode==='sup')?makeNoBorrow(2):[];},
+    // 'sub_col' = the dedicated game (borrow + no-borrow); 'mx' (Queen) gets a
+    // couple of NO-BORROW column subtractions; 'sup' (Superman) gets one
+    // no-borrow AND one with-borrow (makeSup), so it teaches both.
+    make(mode){return mode==='sub_col'?makePool():mode==='mx'?makeNoBorrow(2):mode==='sup'?makeSup():[];},
     mount,
   };
 })();

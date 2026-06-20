@@ -328,7 +328,7 @@ the sand.
 
 **On-screen fish are kept sparse** (~10 free-swimmers + jellies at a time): the
 fusilier `SCHOOL` is a single tight shoal (leader + 8 followers), `SHOALS` spawns
-2 small groups and `JELLIES` 2–4 bells.
+2 small groups and `JELLIES` 2–3 bells.
 
 **Fish cruise faster, at varied speeds:** each free-swimmer carries a random
 **1.5×–3× speed multiplier** (`sp = 1.5 + Math.random()*1.5`) on its per-frame
@@ -353,7 +353,7 @@ via the pure `drawTangBody`, clownfish via `drawClown`; Nemo and Dory no longer
 travel paired), a bottlenose dolphin **pod** (`DOLPHS` + `POD`,
 `spawnPod`/`updatePod`: 1–3 adults in an echelon plus a **baby dolphin** tucked
 beside the lead, all travelling together and re-spawning when they cross off
-screen), a drifting group of 2–4 pulsing `JELLIES` (translucent domed bells with
+screen), a drifting group of 2–3 pulsing `JELLIES` (translucent domed bells with
 scalloped rims + trailing tentacles/oral arms, sharing one drift direction;
 they **travel across and exit the screen, re-entering from the far side at a
 fresh depth** like the other swimmers),
@@ -449,7 +449,7 @@ on each fish object (`poopAt`, `poop`).
   **startles it into scattering**; the **treasure chest opens on click** too
   (`openChest`, shared with its schedule).
 - Passing giants (`updateGiant` + `WHALE`/`ORCA`): a **blue whale ~20× the
-  dolphin** glides past the surface **rarely, every ~3.5–6.5 min** — mottled back, a **soft
+  dolphin** glides past the surface **rarely, every ~3.7–5.7 min** — mottled back, a **soft
   gradient ventral belly** (feathered, no hard edge — no gray patch) with grooves
   clipped to the body (nothing pokes into the water), and a smooth **pointed
   tail-stock peduncle** + tucked dorsal-fin base so tail + fin read as connected. An **orca ~5×**

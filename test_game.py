@@ -1741,11 +1741,11 @@ class TestTryFirstScoring:
                     continue
                 if t == TBG:
                     # Big ±step: a is a big two-digit number; subtraction steps
-                    # down by 1-3 (never crossing the ten below → units ≥ step),
+                    # down by 1-4 (never crossing the ten below → units ≥ step),
                     # addition steps up by 1-2 (no carry).
                     if p["op"] == "sub":
-                        assert p["b"] in (1, 2, 3) and p["a"] % 10 >= p["b"], \
-                            f"TBG sub step must be 1-3 with no tens-cross at idx {i}: {p}"
+                        assert p["b"] in (1, 2, 3, 4) and p["a"] % 10 >= p["b"], \
+                            f"TBG sub step must be 1-4 with no tens-cross at idx {i}: {p}"
                     else:
                         assert p["b"] in (1, 2) and p["a"] % 10 + p["b"] <= 9, \
                             f"TBG add step must be 1-2 with no carry at idx {i}: {p}"
@@ -2519,14 +2519,14 @@ class TestDynamicExercises:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 17, b: 15}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
 
     def test_every_mode_builds_correct_pool_size(self, page):
         """Each mode's recipe produces its expected session length."""
         expected = {"5": 12, "10": 12, "20": 12, "'br'": 25,
-                    "'mx'": 19, "'sup'": 19, "'sub_col'": 14, "'big'": 12}
+                    "'mx'": 19, "'sup'": 15, "'sub_col'": 14, "'big'": 12}
         for arg, size in expected.items():
             page.evaluate(f"setMode({arg})")
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)
@@ -2555,9 +2555,9 @@ class TestBigStepMode:
         page.wait_for_timeout(150)
 
     def test_big_pool_is_valid_and_mixed(self, page):
-        """12 problems; subtraction steps 1-3 (never crossing the ten below),
+        """12 problems; subtraction steps 1-4 (never crossing the ten below),
         addition steps 1-2, no carry/borrow, every session mixes sub & add.
-        Across several sessions a 3-step subtraction (e.g. 76-3) must occur."""
+        Across several sessions a 4-step subtraction (e.g. 85-4) must occur."""
         self._enter_big(page)
         sub_steps = set()
         saw_sub = saw_add = False
@@ -2570,7 +2570,7 @@ class TestBigStepMode:
                 assert 21 <= p["a"] <= 98, f"a out of range: {p}"
                 if p["op"] == "sub":
                     saw_sub = True
-                    assert p["b"] in (1, 2, 3), f"sub step must be 1-3: {p}"
+                    assert p["b"] in (1, 2, 3, 4), f"sub step must be 1-4: {p}"
                     assert p["a"] % 10 >= p["b"], \
                         f"sub must not cross the ten below (units >= step): {p}"
                     sub_steps.add(p["b"])
@@ -2583,8 +2583,8 @@ class TestBigStepMode:
             page.evaluate("restart()")
             page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
         assert saw_sub and saw_add
-        assert 3 in sub_steps, \
-            "subtraction must be able to step down by 3 (e.g. 76-3)"
+        assert 4 in sub_steps, \
+            "subtraction must be able to step down by 4 (e.g. 85-4)"
 
     def test_big_correct_answer_scores_10(self, page):
         self._enter_big(page)
@@ -2673,7 +2673,7 @@ class TestSupermanColumnAdd:
         # the sup pool mixes column-add with big ±1/2 and coin-multiplication
         # problems, so wait for the pool to build, then force a TCA problem
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCA, a: {a}, b: {b}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
@@ -2691,7 +2691,7 @@ class TestSupermanColumnAdd:
             let maxA = 0, minA = 99, maxSum = 0, sawAbove38 = false, bad = null;
             for (let k = 0; k < 60; k++) {
                 const ps = EXERCISES.types.column_add.make('sup');
-                if (ps.length !== 12) bad = {reason: 'len', len: ps.length};
+                if (ps.length !== 3) bad = {reason: 'len', len: ps.length};
                 for (const p of ps) {
                     if (p.t !== TCA) bad = {reason: 't', p};
                     if (p.a < 11 || p.a > 29 || p.b < 2 || p.b > 19) bad = {reason: 'range', p};
@@ -2737,7 +2737,7 @@ class TestSupermanColumnAdd:
         assert page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
             "precondition: normal mode locks the aids on a fresh problem"
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 13, b: 18}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
@@ -2872,7 +2872,7 @@ class TestSupermanDigitPreview:
 
     def _enter(self, page, a, b):
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate(f"problems[0]={{t:TCA,a:{a},b:{b}}}; idx=0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(200)
@@ -3038,6 +3038,59 @@ class TestColumnSubtraction:
         page.wait_for_function("score === 15", timeout=TIMEOUT)
         assert page.evaluate("report[0].gotCorrect") is True
 
+    def test_sub_borrow_tens_mistake_rings_decremented_value(self, page):
+        """A tens mistake AFTER a borrow also rings (red) the DECREMENTED tens
+        value shown above the struck digit — so she subtracts THAT number, not
+        the crossed-out one. The tens hint then draws 3 circles (struck top
+        digit, its decremented value above it, bottom tens) instead of 2."""
+        self._enter_sub(page, 25, 17)
+        page.fill("#colx-iU", "8")              # correct units → the borrow plays
+        page.keyboard.press("Enter")
+        page.wait_for_function(
+            "document.getElementById('colx-borrow').textContent === '1'",
+            timeout=TIMEOUT)
+        page.wait_for_function(
+            "!document.getElementById('colx-iT').disabled", timeout=TIMEOUT)
+        page.fill("#colx-iT", "5")              # wrong: (2-1)-1 = 0
+        page.keyboard.press("Enter")
+        page.wait_for_function(
+            "document.getElementById('colx-iT').classList.contains('ans-err')",
+            timeout=TIMEOUT)
+        assert page.evaluate(
+            "document.getElementById('colx-bnew').classList.contains('show')"), \
+            "the decremented tens value must be visible to be ringed"
+        ells = page.evaluate(
+            "document.getElementById('colx-svg').querySelectorAll('ellipse').length")
+        assert ells == 3, \
+            f"borrow tens-mistake must ring 3 circles (incl. the decremented value), got {ells}"
+
+    def test_sub_units_hover_shows_make_ten_split(self, page):
+        """In column subtraction WITH a borrow, hovering the BOTTOM number's units
+        digit shows the subtract-through-ten split: bU = aU (brings the borrowed
+        teen down to 10) on the LEFT + (bU−aU) (the rest, from 10) on the RIGHT.
+        e.g. 15−7 → the 7 shows 5|2; 25−16 → the 6 shows 5|1. The bonded whole is
+        the bottom units itself."""
+        for a, b in [(15, 7), (25, 16)]:
+            aU, bU = a % 10, b % 10
+            left, right = aU, bU - aU
+            self._enter_sub(page, a, b)
+            page.evaluate(
+                "document.getElementById('colx-bU')"
+                ".dispatchEvent(new MouseEvent('mouseenter',{bubbles:true}))")
+            # wait for the bond to render the EXACT parts (robust vs a stale tooltip)
+            page.wait_for_function(
+                "(() => {const g=document.querySelector('#num-tt .ntt-grid');"
+                "if(!g||!g.classList.contains('ntt-split'))return false;"
+                "const ps=[...document.querySelectorAll('#num-tt .ntt-part')]"
+                ".map(x=>x.textContent);"
+                f"return ps.length===2 && ps[0]==='{left}' && ps[1]==='{right}';}})()",
+                timeout=TIMEOUT)
+            whole = page.evaluate(
+                "(document.querySelector('#num-tt .ntt-whole')||{}).textContent")
+            assert whole == str(bU), \
+                f"{a}-{b}: the bonded whole must be the bottom units {bU}, got {whole}"
+            page.evaluate("_nttHide()")          # clear the tooltip before the next problem
+
     def test_sub_tap_to_borrow(self, page):
         """Tapping the top tens digit performs the borrow (sends a ten down):
         the digit is struck and the units gain the ¹ borrow mark."""
@@ -3079,38 +3132,60 @@ class TestColumnSubtraction:
         assert page.evaluate("score") == 10, \
             f"a units mistake must drop the solved award to 67% (10), got {page.evaluate('score')}"
 
-    def test_sub_auto_mistake_shows_regroup_demo(self, page):
-        """In AUTO borrow mode, a units mistake plays the elaborate regroup
-        teaching demo: a '10' bursts into 10 little ones (after the sad modal)."""
-        page.evaluate("localStorage.setItem('subBorrow','auto')")
-        self._enter_sub(page, 25, 17)        # auto-borrow plays; correct units is 8
-        page.wait_for_timeout(400)
-        page.fill("#colx-iU", "3")           # wrong
+    def test_sub_units_mistake_rings_digits(self, page):
+        """After the borrow, a wrong units answer RINGS the two units digits in
+        red (like column addition) instead of playing a teaching animation. The
+        old elaborate animations (regroup demo / mistake finger) are removed."""
+        self._enter_sub(page, 25, 17)
+        page.click("#colx-aT")                   # borrow → top units becomes 15
+        page.wait_for_function(
+            "document.getElementById('colx-borrow').textContent === '1'", timeout=TIMEOUT)
+        page.fill("#colx-iU", "3")               # wrong (15-7=8)
         page.keyboard.press("Enter")
-        # the demo plays only after the ~1.5s sad modal clears
-        page.wait_for_selector(".colxs-onedot", timeout=TIMEOUT)
-        assert page.locator(".colxs-onedot").count() >= 1, \
-            "auto-mode mistake must show the 10-ones regroup demo"
-        assert page.locator(".colxs-finger").count() == 0, \
-            "auto mode shows the regroup demo, not the tap finger"
+        page.wait_for_function(
+            "document.getElementById('colx-svg').querySelectorAll('ellipse').length === 2",
+            timeout=TIMEOUT)
+        # both rings sit on the UNITS side, and the top-units ring fully ENCLOSES
+        # the borrowed ¹ (it must not slice through it)
+        geo = page.evaluate(
+            "(() => {const pw=document.getElementById('colx-pw').getBoundingClientRect();"
+            "const C=id=>{const r=document.getElementById(id).getBoundingClientRect();"
+            "return {x:r.left-pw.left+r.width/2,left:r.left-pw.left,top:r.top-pw.top,"
+            "right:r.right-pw.left,bot:r.bottom-pw.top};};"
+            "const aU=C('colx-aU'),aT=C('colx-aT'),o=C('colx-borrow');"
+            "const es=[...document.getElementById('colx-svg').querySelectorAll('ellipse')]"
+            ".map(e=>({cx:+e.getAttribute('cx'),cy:+e.getAttribute('cy'),"
+            "rx:+e.getAttribute('rx'),ry:+e.getAttribute('ry')}));"
+            "let ring=null,best=1e9;es.forEach(e=>{const d=Math.hypot(e.cx-aU.x,e.cy-(aU.top+aU.bot)/2);"
+            "if(d<best){best=d;ring=e;}});"
+            "const inside=(px,py)=>((px-ring.cx)*(px-ring.cx))/(ring.rx*ring.rx)+"
+            "((py-ring.cy)*(py-ring.cy))/(ring.ry*ring.ry)<=1;"
+            "const cn=[[o.left,o.top],[o.right,o.top],[o.left,o.bot],[o.right,o.bot]];"
+            "return {esCx:es.map(e=>Math.round(e.cx)),ux:Math.round(aU.x),"
+            "tx:Math.round(aT.x),oneInside:cn.every(c=>inside(c[0],c[1]))};})()")
+        mid = (geo["ux"] + geo["tx"]) / 2
+        assert all(x > mid for x in geo["esCx"]), \
+            f"both rings must sit on the units side (units≈{geo['ux']}, tens≈{geo['tx']}), got {geo['esCx']}"
+        assert geo["oneInside"], "the top-units ring must fully enclose the borrowed ¹"
+        page.wait_for_timeout(1800)              # past the OLD ~1.55s animation trigger
+        assert page.locator(".colxs-onedot").count() == 0, "regroup demo must be gone"
+        assert page.locator(".colxs-finger").count() == 0, "mistake finger guide must be gone"
 
-    def test_sub_tap_mistake_shows_finger_guide(self, page):
-        """In hybrid (tap) borrow mode, a units mistake while the borrow is still
-        pending plays the finger tap-guide on the tens digit. (Re-enter the
-        problem so the one-time auto-demo is already spent and the borrow stays
-        pending — the child must tap.)"""
-        self._enter_sub(page, 25, 17)        # first mount auto-demos the borrow once
-        page.wait_for_timeout(1300)
-        page.evaluate("problems[0] = {t: TCS, a: 25, b: 17}; idx = 0; loadProblem()")
-        page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
-        page.wait_for_timeout(300)
-        page.fill("#colx-iU", "3")           # wrong, borrow still pending
+    def test_sub_auto_units_mistake_no_animation(self, page):
+        """AUTO borrow mode: after the borrow auto-plays, a wrong units answer
+        rings the digits — the removed '10 bursts into ten ones' demo never plays."""
+        page.evaluate("localStorage.setItem('subBorrow','auto')")
+        self._enter_sub(page, 25, 17)
+        page.wait_for_function(                  # the auto-borrow completes
+            "document.getElementById('colx-borrow').textContent === '1'", timeout=TIMEOUT)
+        page.fill("#colx-iU", "3")               # wrong
         page.keyboard.press("Enter")
-        page.wait_for_selector(".colxs-finger", timeout=TIMEOUT)
-        assert page.locator(".colxs-finger").count() == 1, \
-            "tap-mode mistake must show the finger tap-guide"
+        page.wait_for_function(
+            "document.getElementById('colx-svg').querySelectorAll('ellipse').length === 2",
+            timeout=TIMEOUT)
+        page.wait_for_timeout(1800)
         assert page.locator(".colxs-onedot").count() == 0, \
-            "the pending-borrow guide must not show the 10-ones demo yet"
+            "the removed regroup demo must not play"
 
     def test_mx_includes_noborrow_column_sub(self, page):
         """The Queen (mx) weaves in column-subtraction problems that NEVER need a
@@ -3132,23 +3207,39 @@ class TestColumnSubtraction:
         assert seen_any
 
     def test_sup_includes_noborrow_column_sub(self, page):
-        """Superman also weaves in NO-BORROW column subtraction (top units >
-        bottom units, a > b, operands ≤ 20) alongside column-add / big-step /
-        coin-multiply. At least one appears every session."""
-        seen_any = False
+        """Superman weaves in column subtraction (alongside column-add / big-step
+        / coin-multiply). Every session has ≥1 NO-borrow one (top units > bottom
+        units, operands ≤ 20); all column-sub problems stay positive (a > b)."""
+        seen_noborrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")
-            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "Superman must contain ≥1 column-subtraction problem"
             for p in tcs:
                 assert p["a"] > p["b"], f"sup column-sub must be positive: {p}"
-                assert (p["a"] % 10) > (p["b"] % 10), \
-                    f"sup column-sub must be NO-borrow (top units > bottom units): {p}"
-                assert p["a"] <= 20 and p["b"] <= 20, f"sup operands must stay ≤20: {p}"
-                seen_any = True
-        assert seen_any
+                if (p["a"] % 10) > (p["b"] % 10):           # a NO-borrow one
+                    seen_noborrow = True
+                    assert p["a"] <= 20 and p["b"] <= 20, \
+                        f"no-borrow sup operands stay ≤20: {p}"
+        assert seen_noborrow, "Superman must weave in ≥1 NO-borrow column subtraction"
+
+    def test_sup_includes_borrow_column_sub(self, page):
+        """Superman ALSO weaves in a WITH-borrow column subtraction (top units <
+        bottom units → regrouping needed) every session — taught alongside the
+        no-borrow one. Uses the full a∈[11,29] range (proper two-digit borrow)."""
+        seen_borrow = False
+        for _ in range(6):
+            page.evaluate("setMode('sup'); restart()")
+            page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+            tcs = page.evaluate(
+                "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
+            for p in tcs:
+                assert p["a"] > p["b"], f"sup column-sub must be positive: {p}"
+                if (p["a"] % 10) < (p["b"] % 10):           # needs a borrow
+                    seen_borrow = True
+        assert seen_borrow, "Superman must weave in ≥1 WITH-borrow column subtraction"
 
     def test_sub_module_cleanup_on_mode_exit(self, page):
         """Leaving Column-subtraction removes the column DOM and restores the
@@ -3201,7 +3292,7 @@ class TestCoinMul:
     def _enter_cm(self, page, target=20):
         # coin_mul rides the Superman pool, so build it then force a TCM problem
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate(f"problems[0] = {{t: TCM, a: {target}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         page.wait_for_timeout(150)
@@ -3224,7 +3315,7 @@ class TestCoinMul:
             return null;
         })()""")
         assert bad is None, f"invalid coin_mul problem: {bad}"
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         assert page.evaluate("[...problems].some(p => p.t === TCM)"), \
             "the Superman session must contain coin-multiplication problems"
 
@@ -3233,7 +3324,7 @@ class TestCoinMul:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 20}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("ptype === TCM")
@@ -3243,24 +3334,60 @@ class TestCoinMul:
         assert page.evaluate("typeof tcCoinSVG === 'function'"), \
             "coins.ex.js must load in sup so the real coin art is available"
 
-    def test_coin_mul_add_fills_and_caps(self, page):
-        """Each ＋ drops a 5-coin; ＋ caps at the target (20 → 4 coins, then ＋
-        disabled — no overshoot). No total row."""
+    def test_coin_mul_empty_box_hidden_but_space_reserved(self, page):
+        """The empty coin box is invisible (no blank square) — class colm-tray-blank
+        — but its space is RESERVED, so adding the first coin does not push the ＋
+        button down. The box appears (blank class removed) once a coin is in, and
+        hides again when emptied."""
+        self._enter_cm(page, 15)
+        blank = "document.getElementById('colm-tray').classList.contains('colm-tray-blank')"
+        add_top = "Math.round(document.getElementById('colm-add').getBoundingClientRect().top)"
+        assert page.evaluate(blank) is True, "empty tray must be visually blank (box hidden)"
+        top_empty = page.evaluate(add_top)
+        page.click("#colm-add")
+        assert page.evaluate(blank) is False, "the box appears once a coin is added"
+        assert page.evaluate(add_top) == top_empty, \
+            "the ＋ button must NOT shift down when the first coin is added"
+        page.click("#colm-rem")
+        assert page.evaluate(blank) is True, "emptying the tray hides the box again"
+
+    def test_coin_mul_check_button_left_and_no_caption(self, page):
+        """The ✓ confirm button sits to the LEFT of the answer input, and the old
+        'press + to add a coin' caption is gone."""
+        self._enter_cm(page, 15)
+        assert page.locator(".colm-ctl-cap").count() == 0, "the +-caption must be removed"
+        sides = page.evaluate(
+            "(() => {const c=document.getElementById('colm-chk').getBoundingClientRect();"
+            "const a=document.getElementById('colm-ans').getBoundingClientRect();"
+            "return {chk:Math.round(c.left), ans:Math.round(a.left)};})()")
+        assert sides["chk"] < sides["ans"], \
+            f"✓ must be LEFT of the input, got chk={sides['chk']}, ans={sides['ans']}"
+
+    def test_coin_mul_add_past_answer_no_reveal(self, page):
+        """＋ must NOT disable at the answer — that would reveal it. For target 20
+        (answer 4) the child can keep adding past 4; ＋ caps only at a generous
+        bound (need+3 = 7). No total row."""
         self._enter_cm(page, 20)
-        for _ in range(4):
+        for _ in range(4):                       # reach the answer count
             page.click("#colm-add")
         assert page.locator(".colm-coin").count() == 4
-        assert page.evaluate("document.getElementById('colm-add').disabled") is True
+        assert page.evaluate("document.getElementById('colm-add').disabled") is False, \
+            "＋ must stay enabled at the answer (disabling would reveal it)"
+        for _ in range(3):                       # keep adding PAST the answer
+            page.click("#colm-add")
+        assert page.locator(".colm-coin").count() == 7
+        assert page.evaluate("document.getElementById('colm-add').disabled") is True, \
+            "＋ caps only at the generous bound (need+3)"
         assert page.locator("#colm-sum").count() == 0   # no running-total row
 
     def test_coin_mul_minus_removes_coin(self, page):
-        """The large minus button removes the last coin and re-enables ＋."""
+        """The large minus button removes the last coin and re-enables ＋ at the cap."""
         self._enter_cm(page, 20)
-        for _ in range(4):
+        for _ in range(7):                       # fill to the cap (need+3)
             page.click("#colm-add")
         assert page.evaluate("document.getElementById('colm-add').disabled") is True
         page.click("#colm-rem")
-        assert page.locator(".colm-coin").count() == 3
+        assert page.locator(".colm-coin").count() == 6
         assert page.evaluate("document.getElementById('colm-add').disabled") is False
 
     def test_coin_mul_correct_count_solves(self, page):
@@ -3518,7 +3645,7 @@ class TestModePersistence:
         page.reload()
         self._ready(page)
         assert page.evaluate("mode === 'sup'")
-        assert page.evaluate("problems.length === 19")
+        assert page.evaluate("problems.length === 15")
 
     def test_default_is_mx_when_nothing_saved(self, page):
         """A fresh context (no saved game) boots into Queen (mx)."""

@@ -1,5 +1,21 @@
 # Game File Separation Plan — v2
 
+> **⚠️ HISTORICAL RECORD — this plan is COMPLETED.** All phases (0–5) were
+> executed: the legacy monolith was split into `index.html` + `game/css/*` +
+> `game/js/*`, the mini-games / hearts / abacus were removed, success screens,
+> backgrounds, skins and the difficulty config were componentized, and the
+> project has since grown well beyond this v1 scope (a per-type
+> `exercises/*.ex.js` plug-in architecture; multiple backgrounds — space,
+> unicorns, reef, savanna, dubai; a 30+ screen success rotation). It is kept
+> only to document the original migration intent and decisions.
+>
+> **For the CURRENT architecture, read the living docs instead:**
+> `architecture.md`, `subtraction_game_docs.md`, the per-folder `README.md`s
+> (`game/js/`, `exercises/`, `backgrounds/`, `game/skins/`), and
+> `success_screens_spec.md`. Where this plan and those docs disagree, the docs
+> (and the code) win. A few sections below have been trimmed to remove claims
+> the shipped code now contradicts.
+
 **Goals (updated):**
 1. Drop all 12 mini-games — no longer in use. Of the auxiliary features, only
    **ישר המספרים (kangaroo number line)** and the **cookie jar** stay.
@@ -156,6 +172,16 @@ tier = one click + one click. `setMode(id)` and all per-mode logic (points, gift
 goals, problem pools) stay exactly as they are — the config only drives rendering
 and grouping of the buttons.
 
+> **As shipped (differs from the sketch above):** `DIFFICULTY_GROUPS` lives in
+> `game/js/data.js` and the two-tier picker (`renderModePicker`) was placed
+> INSIDE the **settings modal**, reached via a ⚙️ gear guarded by a parent gate
+> (a × challenge); the header only shows a read-only `#mode-ind` of the current
+> game. The shipped groups also grew: **easy = `0 / 5 / 10 / 20`**; **medium =
+> `br` (גָּשֵׁר 10) / `mx` (מַלְכָּה) / `sup` (סוּפֶּרְמֶן 🦸) / `sub_col`
+> (חִסּוּר בְּטוּר ➖)** — `20` moved up to easy, and Superman + column-subtraction
+> were added later. The 🎁 prize badge is appended at render time (only for games
+> with a prize set), not stored in the label.
+
 ---
 
 ## 7. Background module contract
@@ -173,6 +199,11 @@ BACKGROUNDS.space = {
 - Discovery bubble (click-for-facts) lives inside `space.bg.js`.
 - The old in-loop `theme !== 'galaxy'` lifecycle hack is replaced by `cleanup()`.
 - v1 ships **space only**; the theme picker is reduced accordingly.
+
+> **As shipped:** Phase 5 was carried out — `backgrounds/` now holds `space`,
+> `unicorns`, `reef`, `savanna` and `dubai` as `.bg.js` + `.skin.css` pairs (not
+> "space only"). The registry contract above is otherwise accurate; see
+> `backgrounds/README.md` and `NEW_BACKGROUND_GUIDE.md` for the current pattern.
 
 ---
 
@@ -218,4 +249,6 @@ frozen with a "superseded" header comment; version numbering continues on the sh
 6. **Obsolete tests:** delete ≈50 tests in Phase 1 — recommended.
 7. **Legacy file:** frozen in place untouched — recommended.
 
-Awaiting one final "approved" to start executing Phase 0/1.
+~~Awaiting one final "approved" to start executing Phase 0/1.~~ **DONE** — all
+phases were executed and the project has since evolved past this v1 scope (see
+the historical-record banner at the top of this file).

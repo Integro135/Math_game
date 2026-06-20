@@ -82,11 +82,18 @@ subtraction_game/
 │  ├─ chain.ex.js                  TZ/TX/TW  three-term chains (mx)
 │  ├─ coins.ex.js                  TC  coin counting + pool inject hook
 │  ├─ tens.ex.js                   TT  round tens (mx)
-│  ├─ big_step.ex.js               TBG big number ± 1/2 — its own עַד 100 💯
-│  │                                 game AND mixed into Queen + Superman; no
-│  │                                 carry/borrow; only the ones digit moves
-│  └─ column_add.ex.js             TCA column addition — Superman 🦸
-│                                    (also a full interactive mount module)
+│  ├─ big_step.ex.js               TBG big number ± 1-4 — the internal עַד 100 💯
+│  │                                 handle AND mixed into Queen + Superman +
+│  │                                 חִסּוּר בְּטוּר; no carry/borrow, never
+│  │                                 crosses the ten below; only the ones move
+│  ├─ column_add.ex.js             TCA column addition — Superman 🦸
+│  │                                 (interactive mount module, #colx-root)
+│  ├─ column_sub.ex.js             TCS column SUBTRACTION (borrow/פריטה) — its
+│  │                                 own חִסּוּר בְּטוּר ➖ game + Queen + Superman
+│  │                                 (interactive mount module, #colx-root)
+│  └─ coin_mul.ex.js               TCM "how many 5-coins fit in X" — first
+│                                    multiplication, Superman 🦸
+│                                    (interactive mount module, #colx-root)
 │
 ├─ backgrounds/
 │  ├─ README.md                    ★ per-background docs (scene inventory, timers,
@@ -202,10 +209,17 @@ standalone dev harness). Integration = add the file name to the
 
 ```js
 const DIFFICULTY_GROUPS=[
-  {id:'easy',  label:'קַל',      modes:[{id:0,label:'1+1 🌱'},{id:5,label:'עַד 5'},{id:10,label:'עַד 10'}]},
-  {id:'medium',label:'בֵּינוֹנִי', modes:[{id:20,label:'עַד 20'},{id:'br',label:'גָּשֵׁר 10 🌈 🎁'},{id:'mx',label:'מַלְכָּה 👸 🎁'},{id:'sup',label:'סוּפֶּרְמֶן 🦸'}]},
+  {id:'easy',  label:'קַל',      modes:[{id:0,label:'1+1 🌱'},{id:5,label:'עַד 5'},{id:10,label:'עַד 10'},{id:20,label:'עַד 20'}]},
+  {id:'medium',label:'בֵּינוֹנִי', modes:[{id:'br',label:'גָּשֵׁר 10 🌈'},{id:'mx',label:'מַלְכָּה 👸'},{id:'sup',label:'סוּפֶּרְמֶן 🦸'},{id:'sub_col',label:'חִסּוּר בְּטוּר ➖'}]},
 ];
 ```
+
+The 🎁 prize badge is **not** part of any label — `renderModePicker` appends
+it at render time only for games that currently carry a gift goal
+(`GIFT_GOALS[id] > 0`; defaults from `DEFAULT_GIFT_GOALS`, editable per game in
+settings via `setGiftGoal`). The standalone "עַד 100 💯" big-number game (`big`,
+TBG) is **not** in the picker — those exercises now live inside Queen and
+Superman (and חִסּוּר בְּטוּר); `big` survives only as an internal handle.
 
 The picker (tier tabs + game pills) is rendered from this config by
 `renderModePicker()` (core.js) into the **settings modal** (`#settings-ov`),
@@ -214,9 +228,9 @@ header's read-only current-game indicator `#mode-ind`, also rendered by
 `renderModePicker`). Picking a game switches the mode and closes the modal;
 ESC / backdrop / ✕ close it without changing anything. Browsing a tier does
 **not** switch the mode — only clicking a game does. Buttons keep their
-historical ids (`lb0`, `lb5`, `lb10`, `lb20`, `lbbr`, `lbmx`) and stay in the
-DOM while the modal is hidden, so automation keeps working. Moving/adding/
-renaming a game = editing this config only.
+`lb<id>` ids (`lb0`, `lb5`, `lb10`, `lb20`, `lbbr`, `lbmx`, `lbsup`,
+`lbsub_col`) and stay in the DOM while the modal is hidden, so automation keeps
+working. Moving/adding/renaming a game = editing this config only.
 
 ### 3.5 Aids (number line + counting jar) — `aids/<name>.aids.js`
 
@@ -283,17 +297,36 @@ window.EXERCISES.types.big_step = {
 
 The reveal policy is read generically by `_lockAids` (core.js) for whatever
 type is on screen — flipping one field in the type's file changes when its
-aids appear. Superman (`column_add`) declares `aidsReveal:'always'`, so its
-skinned number line is visible from the start; every other type keeps the
-hidden-until-first-mistake behavior.
+aids appear. The three column/coin interactive types (`column_add`,
+`column_sub`, `coin_mul`) all declare `aidsReveal:'always'`, so their aid
+(a skinned number line for the columns, the coin tray itself for `coin_mul`)
+is available from the start; every other type keeps the hidden-until-first-
+mistake behavior.
 
 `EXERCISE_INDEX` (data.js) maps file → supported modes. When a game mode
 starts, `bg-loader.loadExercisesFor(mode)` injects exactly the type files
 that mode lists (synchronously when cached), then the mode RECIPE in
-problems.js (`makePool`) asks each registered type for its contribution —
-e.g. Queen = every type's `make('mx')` quota shuffled; עד5/10/20 = the basic
-four types + TD slotting + the coins type's `inject()` hook. setMode /
-restart / boot all run their pool build inside the loader callback.
+problems.js (`makePool`) asks each registered type for its contribution.
+Current recipes:
+
+- **עד5/10/20** — the basic four types (`missing`/`sub`/`add`/`double`) with
+  TD slotting, then the coins type's `inject()` hook (1-2 coin problems).
+- **Queen (`mx`)** — `makeMxPool()` = each loaded type's `make('mx')` quota
+  shuffled into 19 problems: chains 6, add/sub/missing 1 each, double 2 (a
+  TDA + a TDS), round-tens 2, coins 2, big-step 2, and `column_sub.make('mx')`
+  = 2 NO-borrow column subtractions. A guard re-seats slot 0 if it landed on a
+  TCS column problem (the first card must show a normal `#ans` input, since the
+  column module renders its own staged UI).
+- **Superman (`sup`)** — a BALANCED equal share of every interactive type,
+  shuffled: `column_add.make('sup')` (3 = 2-carry + 1 no-carry),
+  `big_step.make('sup')` (3 big-number SUBTRACTIONS),
+  `coin_mul.make('sup')` (3 = targets 10/15/20), and
+  `column_sub.make('sup')` (6 = 3 no-borrow + 3 with-borrow) → 15 total.
+- **חִסּוּר בְּטוּר (`sub_col`)** — its own column-subtraction game:
+  `column_sub.make('sub_col')` (12 problems, ≥7 needing a borrow) plus
+  `big_step.make('sub_col')` (2 big-number ± steps), shuffled.
+
+setMode / restart / boot all run their pool build inside the loader callback.
 
 Shared single-input rendering (`renderEq`) and checking (`checkAns`) stay in
 core.js as generic infrastructure. A type that needs its OWN interaction
@@ -309,17 +342,46 @@ window.EXERCISES.types.column_add = {
 };
 ```
 
-`EXERCISE_OF_TYPE` (data.js) maps a ptype to its file; core.js injects
-`exercises/<name>.ex.js` on demand (bg-loader.loadExercise) and mounts it
-into the equation area. The host keeps scoring (`_tfPts`), tryFirst, the
-report, the sad modal and the success flow; the module owns everything
-visual + its own checking. Module inputs carry the global `ans-inp` class so
-the green/red answer-border contract applies automatically.
+`EXERCISE_OF_TYPE` (data.js) maps a ptype to its file —
+`{ [TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul' }` (THREE
+interactive types share this one host). `renderEq` emits a single
+`<div id="colx-root">` for any of TCA/TCS/TCM and calls `_colxMount` (core.js).
+`_colxMount` injects `exercises/<name>.ex.js` on demand (bg-loader
+.loadExercise) and mounts it into that root. Its async load callback re-checks
+that the live `idx`/`ptype` is still the same and that
+`EXERCISE_OF_TYPE[ptype] === exName`, so a stale module-load can never mount the
+wrong exercise (and each interactive module's own `mount()` cleanup cancels its
+layout rAF and timers). The host keeps scoring
+(`_tfPts`), tryFirst, the report, the sad modal and the success flow; the
+module owns everything visual + its own checking. Module inputs carry the
+global `ans-inp` class so the green/red answer-border contract applies
+automatically.
 
-First module: **column addition** (`column_add.ex.js`) — the Superman 🦸 game
-(`sup` mode, medium tier): units first, a carried 1 flies up to the tens
-column, hint circles + a private 0-20 number line open after a mistake.
-`column_addition.html` is its thin dev harness (single source of truth).
+The three interactive types served by this host:
+
+- **column addition** (`column_add.ex.js`, TCA) — units first, a carried 1
+  flies up to the tens column; the skinned 0-20 number line is on from the
+  start, with hint circles after a mistake. Reaches up to 48 (top addend
+  11-29, bottom 2-19). The bottom-units hover splits into complete-to-ten +
+  remainder (`_bridgeSplit`).
+- **column subtraction** (`column_sub.ex.js`, TCS) — the subtraction mirror,
+  staged units→tens, problem `{t:TCS,a,b}` with `a>b`. Handles the borrow
+  (פריטה) via a settings toggle (`#borrow-toggle` → localStorage `subBorrow` =
+  `hybrid` (default, the child taps the top tens digit) | `auto` (it regroups
+  itself)); read by `subBorrowMode()`/`setSubBorrowMode()` in core.js. Its aid
+  is the skinned number line in COUNT-BACK mode. A units mistake rings the two
+  units digits, a tens mistake rings the two tens; mistakes are NOT taught with
+  an animation (it mirrors `column_add`). The bottom-units hover shows a
+  subtract-through-ten split.
+- **coin multiplication** (`coin_mul.ex.js`, TCM) — "how many 5-coins fit in
+  X" (first multiplication), problem `{t:TCM,a}` where `a` is the target
+  (10/15/20) and the typed answer is the COUNT `a/5`. The child taps + / − to
+  add/remove silver 5-coins in a tray (the manipulative; no number-line aid),
+  capped at `need+3` so reaching the answer never reveals it; a wrong answer
+  gives directional (bigger/smaller) feedback off the TYPED value.
+
+Each ships a thin dev harness (single source of truth) — e.g.
+`column_addition.html` for `column_add`.
 
 ## 4. Verification trail
 

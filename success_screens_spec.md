@@ -123,7 +123,10 @@ existing idea (comet shower, constellation heart, unicorn rainbow, supernova,
 lightning storm, electric orb, blooming garden, black-hole stars, star race,
 aurora glow, bubble pop, magic wand, rocket launch, princess crown, butterfly
 swarm, snow sparkle, dolphin splash, fireworks, confetti, shooting stars,
-balloons, trophy, paint splash, music notes, pinwheel, fireflies, ribbons …).
+balloons, trophy, paint splash, music notes, pinwheel, fireflies, ribbons,
+phoenix rising, peacock fan, kaleidoscope bloom, birthday cake, carousel spin …).
+There are currently **32** rotation screens registered in `SUCCESS_FILES`
+(game/js/data.js), plus the **gift** reward screen in `SUCCESS_SPECIAL`.
 
 Wanted: fresh ideas that fit the dark backdrops and read instantly. Aim for
 delight + variety; 2–4 new styles is a great batch.

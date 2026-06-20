@@ -129,6 +129,15 @@ All rotation screens below register `supportsSuper: true`. Listed in
 | `success-magic-wand.js` | A wand (🪄) arcs across the screen scattering dense stardust; praise is "revealed" in the wand's wake. Super adds a return sweep and star rain. |
 | `success-unicorn-rainbow.js` | A unicorn (🦄) gallops across trailing a soft rainbow and falling sparkles. Super does a double (there-and-back) pass with floating hearts. |
 | `success-princess-crown.js` | A crown (👑) drops from above and lands above the praise; rotating gold rays behind it, sparkling diamonds orbit. Fits the "Queen" 👸 mode. |
+| `success-phoenix-rising.js` | A phoenix made of glowing embers rises from the bottom to mid-screen, flapping its wide wings (2 flap cycles, 3 in super) and shedding floating embers (white→gold→orange). At ~65% it spreads its wings and bursts into a fountain of gold feathers and sparks that curve outward and fall under gravity, with a soft warm flash; super adds a wider radial feather ring. |
+| `success-peacock-fan.js` | A peacock tail fans open from a low center point: long pointed feathers spread in an arc (~85°, ~99° in super) with an elastic ease, each a palette gradient tipped with a shimmering "eye" (gold/primary rings, glowing turquoise center). The fan then sways gently as the eyes twinkle and sparks drift off the tips; super widens the fan, runs a shimmer wave across the eyes, and adds a sparkle rain. Elegant — fits the "Queen" 👸 mode. |
+
+### Celebration / fairground
+| File | Effect |
+|---|---|
+| `success-kaleidoscope-bloom.js` | A symmetric kaleidoscope at screen center: N wedge segments (8 normal, 16 super) each draw the same set of colored shards/petals, mirrored and rotated into a mandala. The pattern blooms outward from the center (radius 0→max), rotates slowly, and the colors cycle through the palette; a gentle converging flash near the end (a brighter final pulse in super). |
+| `success-birthday-cake.js` | A cute multi-tier cake pops into the center (easeOutBack), candles light one by one with flickering flames, then a fountain of gold/white sparks erupts from the top — flying up, arcing and falling under gravity with flickering tips — while colored confetti spins down from above. Super adds more candles, a higher fountain with a second burst, and denser confetti. |
+| `success-carousel-spin.js` | A carousel of fairground horses (🦄/🐴) circles a glowing central pole on a perspective ellipse (front horses larger and drawn on top, rear ones smaller), each bobbing up and down on its pole; a scalloped roof above carries a ring of palette-colored bulbs chasing around. It accelerates up to speed, sheds sparks, and the praise appears above the roof. Super spins faster with 7 horses, brighter light chase, and a finishing sparkle ring. |
 
 ### Special / reward (not in the rotation)
 | File | Effect |

@@ -51,18 +51,22 @@ fills at runtime.
 - **ptype codes** — single-source string constants for every problem type:
   `TM`(missing), `TS`(sub), `TA`(add), `TX`(mixed −then+), `TZ`(triple add),
   `TW`(twin sub), `TDA`/`TDS`(double-unknown add/sub), `TC`(coins), `TT`(tens),
-  `TCA`(column add), `TBG`(big ± small step).
+  `TCA`(column add `'col_add'`), `TCS`(column sub `'col_sub'`),
+  `TBG`(big ± small step), `TCM`(coin multiplication `'coin_mul'`).
 - **`gameLen()`** — `() => problems.length`.
 - **`EXERCISE_INDEX`** — array mapping each exercise *file* (`exercises/<file>.ex.js`)
   to the game modes that include it. `loadExercisesFor` reads this to know which
   files to inject for a mode.
 - **`EXERCISE_OF_TYPE`** — maps a ptype that brings its own interactive UI to its
-  file. Currently `{[TCA]:'column_add'}`.
+  file. Currently `{[TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul'}` —
+  the three self-hosting types mounted by `core.js → _colxMount` into `#colx-root`.
 - **`DIFFICULTY_GROUPS`** — the difficulty picker config: two tiers (`easy`,
   `medium`) each holding mode descriptors `{id,label}`. Note ids mix **numbers**
   (`0,5,10,20`) and **strings** (`'big','br','mx','sup'`).
-- **`SUCCESS_FILES`** — manifest of per-answer celebration screen files (17 of
-  them) injected at boot.
+- **`SUCCESS_FILES`** — manifest of per-answer celebration screen files (32 of
+  them) injected at boot. Recently grew by five — `success-phoenix-rising`,
+  `success-peacock-fan`, `success-kaleidoscope-bloom`, `success-birthday-cake`,
+  `success-carousel-spin` — all of which join the random rotation.
 - **`SUCCESS_SPECIAL`** — manifest of *special* milestone screens
   (`gift/success-gift-surprise`), not part of the rotation.
 
@@ -90,25 +94,36 @@ fills at runtime.
 - **`sampleWithTD(pool,k)`** — picks `k` problems but guarantees a double-unknown
   (`TDA`/`TDS`) lands in **every 4th slot** (positions 4, 8, 12…).
 - **`makePool(m)`** — the master recipe dispatcher for mode `m`.
-- **`makeMxPool()`** — Queen (`'mx'`) mix builder.
+- **`makeMxPool()`** — Queen (`'mx'`) mix builder (**19 problems**).
 - **bridging-10 set machinery** — `_bridgeSet1()`, `_bridgeSet2()`,
-  `_BRIDGE_SETS`, `makeBridgePool()`, `bridgeNextSet()`, plus `_brPlay`/`_brNext`.
+  `_BRIDGE_SETS`, `makeBridgePool()`, plus the persisted turn `_brTurn`.
 - **`modePts()`** — points-per-correct-answer for the current `mode`
-  (mx→20, br→15, sup→15, big→10, otherwise the numeric mode or 5).
+  (mx→20, br→15, sup→15, **sub_col→15**, big→10, otherwise the numeric mode or 5).
 
 **Key functionality you must know**
 - A recipe only runs **after** `bg-loader.loadExercisesFor` has injected the
   mode's type files — `EX('add')` etc. would be `undefined` otherwise.
 - `makePool` dispatch: mode `0` → the full `add` 1+1 ladder; `'mx'` → curated mix
-  (`makeMxPool`); `'br'` → bridging curriculum; `'sup'` → `column_add` + a few
-  `big_step` problems shuffled; `'big'` → `big_step`; the numeric `5/10/20` →
+  (`makeMxPool`, 19 problems); `'br'` → bridging curriculum; `'sup'` → a
+  **balanced** shuffle of `column_add.make('sup')` (3) + `big_step.make('sup')`
+  (3 subtractions) + `coin_mul.make('sup')` (3) + `column_sub.make('sup')` (6 =
+  3 no-borrow + 3 borrow) → **15 problems, an equal share of each type**;
+  `'sub_col'` → a shuffle of `column_sub.make('sub_col')` (12) +
+  `big_step.make('sub_col')` (2); `'big'` → `big_step`; the numeric `5/10/20` →
   union of `missing/sub/add/double`, run through `sampleWithTD(pool, GL)`, then
   the `coins` type's `.inject()` hook seeds 1–2 coin problems.
+- **`makeMxPool` (Queen) now includes column subtraction.** Each loaded type
+  contributes its `mx` quota (chains 6, add/sub/missing/two-unknowns, round-tens
+  2, coins 2, big ±1/2 2, and `column_sub.make('mx')` = 2 NO-borrow column subs)
+  → 19, then one shuffle. A guard keeps a `TCS` problem out of **slot 0** (the
+  first card must show a normal `#ans` input for boot to find), swapping it with
+  the first non-`TCS` problem.
 - **Bridging-10 is two fixed pedagogical sets served alternately.** The order
-  *inside* each set is the curriculum and must never change. `_brPlay` = set
-  currently in play; `bridgeNextSet()` (called by `setMode` only on a genuine
-  switch into `'br'`) advances to the next set, so each fresh selection flips
-  set 1 → set 2 → set 1…, while `restart()` and boot replay the set in play.
+  *inside* each set is the curriculum and must never change. `makeBridgePool()`
+  serves the set selected by `_brTurn`, then advances the turn (`_brTurn` is
+  **persisted** in `localStorage.brTurn`) so every build — choosing the game,
+  "play again", or a reload — flips set 1 → set 2 → set 1…; each builder returns
+  fresh objects.
 - `GL` (=12, defined in core.js) is the standard session length used here.
 
 **Integration**
@@ -127,14 +142,17 @@ This is the largest file and owns nearly all gameplay state and logic.
   `ttOp`, `bgOp`, `aidUsed`, `report[]`, `tryFirst`, plus gift config
   `GIFT_GOALS`/`GIFT_MODE_LABELS` and `GL` (=12).
 - **Per-game prize levels** (settings): `GIFT_GOALS` is a live object built by
-  `_rebuildGiftGoals()` from `DEFAULT_GIFT_GOALS` (`br:800, mx:900, sup:650`)
-  merged with per-game overrides persisted in `localStorage.giftGoals`. A game
-  with **level 0 / empty has no prize** (absent from `GIFT_GOALS`, no 🎁 badge,
-  no gift screen). `setGiftGoal(mode, val)` saves an override (0 clears it) and
+  `_rebuildGiftGoals()` from `DEFAULT_GIFT_GOALS`
+  (`{br:900, mx:900, sup:825, sub_col:650}` — **only the reward games**; the
+  basic modes `0/5/10/20/big` ship with no default prize) merged with per-game
+  overrides persisted in `localStorage.giftGoals`. A game with **level 0 / empty
+  has no prize** (absent from `GIFT_GOALS`, no 🎁 badge, no gift screen).
+  `setGiftGoal(mode, val)` saves an override (0 clears it, capped at 1000) and
   refreshes the picker + indicator; `renderPrizeConfig()` renders one editable
   input per game in the settings modal (`#prize-row`). The 🎁 badge is appended
   to a picker button by `renderModePicker` only when `GIFT_GOALS[id] > 0` (the
-  labels in `DIFFICULTY_GROUPS` no longer hard-code 🎁).
+  labels in `DIFFICULTY_GROUPS` no longer hard-code 🎁). `GIFT_MODE_LABELS` adds
+  `sub_col:'חִסּוּר בְּטוּר'` alongside `br/mx/sup`.
 - **Score history**: every completed set is logged by `recordHistory(grade)`
   (called from `endGame`) into `localStorage.scoreHistory` — `{name, mode, game,
   grade, ts}`, newest-first, capped 60. `renderHistory()` lists name + game +
@@ -144,7 +162,15 @@ This is the largest file and owns nearly all gameplay state and logic.
   and **history** (`renderHistory`). `pickSetTab(tab)` toggles the active
   `.set-tab`/`.set-panel`; `openSettings()` resets to the general tab and renders
   all three panels (`_setTab`/`_applySetTab`). The prizes/history views live
-  inside the modal — there is no separate history overlay.
+  inside the modal — there is no separate history overlay. The general tab also
+  carries an intro-splash toggle and a **borrow-method toggle** (see below).
+- **Column-subtraction borrow method** (settings): `subBorrowMode()` reads
+  `localStorage.subBorrow` and returns `'hybrid'` (the default) or `'auto'`;
+  `setSubBorrowMode(v)` persists it and syncs the `#borrow-toggle` checkbox
+  (checked = `'auto'`). `column_sub.ex.js` reads this at mount to choose between
+  the child TAPPING the top tens digit to borrow (**hybrid**, with a one-time
+  finger-guide on her first borrow) and the regrouping animating itself on every
+  borrow (**auto**). `openSettings()` syncs the toggle to the saved value.
 - **Persisted mode**: `_savedMode()` reads `localStorage.gameMode` and resolves
   the string back through `DIFFICULTY_GROUPS` to recover the original id *type*
   (number vs string), falling back to `'mx'`; `_persistMode()` writes it.
@@ -160,7 +186,8 @@ This is the largest file and owns nearly all gameplay state and logic.
   only on a correct answer, `closeParentGate()` dismisses it.
 - **Problem flow**: `loadProblem()`, `renderEq()`, `checkAns()`, `nextP()`,
   `resetCur()`, `endGame()`, `calcGrade()`, `gradeMsg()`.
-- **Self-contained exercise host**: `_colxMount()` / `_colxCleanup`.
+- **Self-contained exercise host**: `_colxMount()` / `_colxCleanup` (hosts the
+  three `#colx-root` types — TCA/TCS/TCM).
 - **Scoring & aids gating**: `addScore()`, `_tfPts()`, `_lockAids()`,
   `_unlockAids()`, `_aidRevealPolicy()`, `markAidUsed()`/`resetAidUsed()`,
   `showDigitHint()`.
@@ -175,25 +202,33 @@ This is the largest file and owns nearly all gameplay state and logic.
   `loadExercisesFor(m, cb)` and, *inside* the callback, re-check `mode===m`
   before building `problems = makePool(m)` — if the user switched again while a
   load was in flight, the stale callback bails. `setMode` also resets score/idx/
-  report, persists the mode, and calls `bridgeNextSet()` for `'br'`.
+  report and persists the mode; re-selecting `'br'` is *not* a no-op (unlike
+  every other already-active mode) so its pool rebuilds and `makeBridgePool`
+  flips to the next bridging set.
 - **`loadProblem()`** destructures the current problem, computes the correct
-  answer for the ptype, seeds `report[idx]`, writes the per-ptype Hebrew hint,
-  then configures the right aid: the kangaroo number line is reconfigured per
-  type — coins (0–20, or 0–50 step-10 in Queen), tens (0–100 step 10), column-add
-  (0–20), and **big-step uses a *windowed* line** (`NL.configure(base+20,1,base)`
-  centered on `num1`, e.g. 75 → 65..85). It focuses the first input and finally
-  calls `_lockAids()`.
+  answer for the ptype (for `TCM` that is `num1/5` — the *count* of 5-coins, not
+  the target), seeds `report[idx]`, writes the per-ptype Hebrew hint, then
+  configures the right aid: the kangaroo number line is reconfigured per type —
+  coins (0–20, or 0–50 step-10 in Queen), tens (0–100 step 10), column-add and
+  column-sub both use the skinned **0–20** line (sub is COUNT-BACK — main.js
+  steps −1), `TCM` gets **no number-line aid** (its coin tray is the
+  manipulative), and **big-step uses a *windowed* line**
+  (`NL.configure(base+20,1,base)` centered on `num1`, e.g. 75 → 65..85). It
+  focuses the first input and finally calls `_lockAids()`.
 - **`renderEq()`** builds the equation HTML for every ptype (single input,
   missing-operand, the multi-input chain layout for `TX/TZ/TW`, the two-box
-  double-unknown layout, the coins stage, column-add root). It releases a
-  module-owned exercise's listeners when leaving `TCA`, and mounts `_colxMount`
-  when entering it.
+  double-unknown layout, the coins stage). For the three self-hosting types it
+  emits a single `<div id="colx-root">` placeholder and calls `_colxMount()`:
+  this covers `TCA` (column add), `TCS` (column subtraction) and `TCM` (coin
+  multiplication). On *entry* to `renderEq` it first releases a module-owned
+  exercise's listeners/timers via `_colxCleanup` whenever the new ptype is
+  **not** one of TCA/TCS/TCM.
 - **`checkAns()`** validates input, calls `_markAns` for the green/red border,
   and on success adds `_tfPts()` points and triggers `showFw()` (or auto-advances
   in mode 0); on a wrong answer it pushes to `report[idx].wrongs`, unlocks aids
   on the *first* mistake (`if(tryFirst===0)_unlockAids(); tryFirst++`), shows the
-  sad modal, and clears the input for a retry. `TCA` is skipped here — its module
-  checks itself.
+  sad modal, and clears the input for a retry. `TCA`/`TCS`/`TCM` are skipped here
+  — those modules check themselves.
 - **try-first scoring**: `_tfPts()` returns full `modePts()` on the first try,
   ~67% on the second, **0** afterward. `tryFirst` counts wrong attempts.
 - **`_lockAids` / `_aidRevealPolicy`**: aids are normally **fully hidden** until
@@ -211,8 +246,8 @@ This is the largest file and owns nearly all gameplay state and logic.
 - **`report` & `endGame`**: `calcGrade()` scores out of 1000 (100 per
   clean-first-try problem, floored at 101). `endGame()` renders the end screen,
   logs the set via `recordHistory()`, and if the grade clears the game's prize
-  level (`GIFT_GOALS[mode] > 0`, parent-configurable — defaults `br:800, mx:900,
-  sup:650`) shows the 🎁 badge + schedules `showGiftScreen()`.
+  level (`GIFT_GOALS[mode] > 0`, parent-configurable — defaults `br:900, mx:900,
+  sup:825, sub_col:650`) shows the 🎁 badge + schedules `showGiftScreen()`.
 - **number-hover tooltip** (`#num-tt`): hovering any `.eq-n`/`.eq-res` renders
   that number as **objects borrowed from the active aid variant's jar art**
   (`AIDS.current.jar.itemSVG`), grouped in fives, positioned below (flips above
@@ -248,31 +283,53 @@ This is the largest file and owns nearly all gameplay state and logic.
     value as objects while typing (`oninput` → `_nttInput`, hidden `onblur`),
     using the **plain** (non-split) display. `_nttRender(num, split, anchorEl, side)`
     is the shared renderer behind hover (`_nttShow`), this input preview, and the
-    Superman column preview; `side='right'` positions it beside the anchor.
+    column-add / column-sub digit previews; `side='right'` positions it beside the
+    anchor (vertically centred, flips left on overflow).
   - **Closes on celebration/prize:** `showFw` and `showGiftScreen` (success.js)
     call `_nttHide()`, AND `_nttRender` bails via `_celebrationUp()` (true while a
     success / gift / intro screen is up) — so a tooltip never floats over the
     screen even if a hover is still active and re-fires `mouseover`.
-  - **Superman column preview (`TCA`):** `column_add.ex.js` binds the column
+  - **Column-add digit preview (`TCA`):** `column_add.ex.js` binds the column
     digits — hovering one previews its objects in `#num-tt` to the **RIGHT** of the
     digit (below would cover a row; `side='right'`, compacter via the `ntt-rt`
     class). It is **scoped to the current column**: only the UNITS digits respond
     while adding units, only the TENS digits (+ the carried 1) while adding tens.
     On a units **carry**, the SECOND number's units digit splits complete-to-ten |
-    remainder via the same global `_bridgeSplit` (e.g. 18+15 → the 5 shows 2 | 3).
+    remainder via the same global `_bridgeSplit` — the **make-ten** bond (e.g.
+    18+15 → the 5 shows 2 | 3).
+  - **Column-sub digit preview (`TCS`):** `column_sub.ex.js` binds its column
+    digits the same way (`_nttRender(n, split, el, 'right')`, scoped to the active
+    column). On a **borrow** problem the BOTTOM-number units digit (`bU`) shows the
+    **subtract-through-ten** split — `bU = aU` on the LEFT (brings the borrowed teen
+    down to 10) and `(bU − aU)` on the RIGHT (the rest, taken from 10): e.g. 15−7 →
+    the 7 shows 5 | 2, 25−16 → the 6 shows 5 | 1. When `aU = 0` there is no split.
+    The TOP units shows a **plain** count (`aU + 10` after a borrow). It reuses the
+    exact same number-bond rendering as the make-ten split — only the two parts
+    differ.
   - **Tests:** `test_game.py::TestBridgeSplitTooltip` covers the subtraction/
     addition operand splits, the first-operand-never-splits and non-crossing
     cases, the chain third-term running-result split, the missing-type ten+ones
     result split, the bond (whole + 2 branch lines), and the two-addends input
     preview.
-- **column-add host** (`_colxMount`): loads `exercises/column_add.ex.js`, mounts
-  it into `#colx-root`, and passes an `api` with `wrong(v)` (penalty + sad modal),
-  `nl(v)` (park the skinned number-line rider) and `solved()` (score + success
-  screen). The host keeps scoring/report/sad/success; the module owns its visuals
-  and checking. A `myIdx` guard prevents a late mount after the problem changed.
+- **self-contained exercise host** (`_colxMount`): for the on-screen ptype it
+  looks up `EXERCISE_OF_TYPE[ptype]` (TCA→`column_add`, TCS→`column_sub`,
+  TCM→`coin_mul`), loads that `exercises/<name>.ex.js`, mounts it into
+  `#colx-root` (passing `{root, a:num1, b:num2, api}`), and stores the module's
+  returned cleanup in `_colxCleanup`. The `api` exposes `wrong(v)` (push to
+  `report[idx].wrongs`, unlock aids on the first miss, sad modal), `nl(v)` (park
+  the skinned number-line rider, clamped 0–20) and `solved()` (mark
+  `gotCorrect`, add `_tfPts()`, success message + `showFw`). The host keeps
+  scoring/report/sad/success; the module owns its visuals and checking. The async
+  load callback is **guarded against a stale mount**: it captures `myIdx=idx`
+  before loading and, when the module arrives, bails if the problem moved on
+  (`idx!==myIdx`), the user left a colx type (`ptype` no longer TCA/TCS/TCM), or
+  the resolved exercise no longer matches the current type
+  (`EXERCISE_OF_TYPE[ptype]!==exName`) — so a slow module load can never mount the
+  wrong exercise over a different problem. Re-entering `renderEq`/`_colxMount`
+  also runs the previous `_colxCleanup` first.
 
 **Integration**
-- Calls `problems.js` (`makePool`, `modePts`, `bridgeNextSet`), `success.js`
+- Calls `problems.js` (`makePool`, `makeBridgePool`, `modePts`), `success.js`
   (`showFw`, `showSadModal`, `showGiftScreen`), `aids.js` (`NL`, `buildGamesMenu`,
   `applyAidsVariant`, the `pgm*` jar drivers, `aidHint`), `bg-loader.js`
   (`loadExercisesFor`, `loadExercise`), and `data.js` constants/config.
@@ -374,9 +431,10 @@ This is the largest file and owns nearly all gameplay state and logic.
   every background* (small line-art SVGs), so the toggle reads the same
   everywhere even as the rider/jar art changes per scene.
 - **`buildGamesMenu()`** builds the dropdown: the kangaroo↔jar toggle applies to
-  every "plain numbers" ptype (TZ/TX/TW/TDA/TDS/TA/TS/TM); TC/TT/TCA/TBG bring
-  their own aid and are excluded. When the jar is active on a chain problem it
-  also offers the chain-garden upgrade (costs 20 ⭐ via `openChainGarden`).
+  every "plain numbers" ptype (TZ/TX/TW/TDA/TDS/TA/TS/TM); TC/TT/TCA/TCS/TCM/TBG
+  bring their own aid (or none) and are excluded. When the jar is active on a
+  chain problem it also offers the chain-garden upgrade (costs 20 ⭐ via
+  `openChainGarden`).
 - **`toggleAidMode`** flips `aidMode` (or jumps to a target), shows/hides the
   jar (`#chain-tools`) vs the kangaroo line (`#nl-panel`), seeds the jar count,
   rebuilds the menu, and rewrites the hint via `aidHint`. No-ops for TC/TT.
