@@ -1,7 +1,9 @@
-/* ── Exercise type: BIG NUMBER ± SMALL STEP (TBG) — 75−1, 32−2, 77+2 ────────
-   NEW type: add/subtract 1 or 2 from a big two-digit number. The point is
+/* ── Exercise type: BIG NUMBER ± SMALL STEP (TBG) — 75−1, 85−2, 76−3, 77+2 ──
+   Add 1–2 to / subtract 1–3 from a big two-digit number. The point is
    place-value intuition — only the ONES digit changes — so every problem is
    generated WITHOUT carry/borrow (units≥b for minus, units+b≤9 for plus).
+   Because units≥b, a subtraction never dips into the ten below: 76−3=73 is
+   allowed, but 71−3 (which would cross 70) is never generated.
    Serves the 'big' game mode (עַד 100 💯, medium tier).
 
    One file per exercise type; loaded dynamically per game mode.
@@ -17,7 +19,7 @@ window.EXERCISES.types.big_step=(()=>{
       // (core.js), so a≥90 would run the line past 100 and look broken
       const a=ri(21,89);
       const u=a%10;
-      if(op==='sub'&&u<b)continue;       // no borrow — only the ones change
+      if(op==='sub'&&u<b)continue;       // no borrow — only the ones change (never crosses the ten below)
       if(op==='add'&&u+b>9)continue;     // no carry
       const key=op+a+'_'+b;
       if(seen.has(key))continue;
@@ -27,23 +29,29 @@ window.EXERCISES.types.big_step=(()=>{
     return{t:TBG,a:op==='sub'?75:71,b,op};
   }
 
-  // build n problems, balanced across the four −1/−2/+1/+2 shapes, shuffled
+  // step sizes: subtract up to 3, add up to 2 — only the ones digit ever changes
+  const STEP={sub:[1,3],add:[1,2]};
+  // slot pattern keeps the original per-session composition: the dedicated game
+  // (n=12) stays a balanced 6-sub / 6-add mix; Queen & Superman (n=2) get two
+  // subtractions, as before — now any of them may step down by 3 (e.g. 76−3).
+  const PAT=['sub','sub','add','add'];
   function build(n){
     const seen=new Set(),out=[];
-    const combos=[['sub',1],['sub',2],['add',1],['add',2]];
-    for(let i=0;i<n;i++){const[op,b]=combos[i%4];out.push(makeOne(op,b,seen));}
+    for(let i=0;i<n;i++){const op=PAT[i%PAT.length],[lo,hi]=STEP[op];out.push(makeOne(op,ri(lo,hi),seen));}
     for(let i=out.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[out[i],out[j]]=[out[j],out[i]];}
     return out;
   }
 
   return{
     t:TBG,
-    // serves its own game ('big') and is also MIXED into Queen + Superman
-    modes:['big','mx','sup'],
+    // serves its own game ('big') and is also MIXED into Queen + Superman +
+    // Column-subtraction
+    modes:['big','mx','sup','sub_col'],
     make(mode){
       if(mode==='big')return build(12);   // the dedicated game
       if(mode==='mx') return build(2);     // a couple inside Queen
       if(mode==='sup')return build(2);     // a couple inside Superman
+      if(mode==='sub_col')return build(2); // a couple inside Column-subtraction
       return[];
     },
   };

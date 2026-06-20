@@ -32,7 +32,7 @@
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v7.74">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v7.91">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -105,6 +105,10 @@
       <label class="set-toggle">
         <input type="checkbox" id="intro-toggle" checked onchange="setIntroEnabled(this.checked)">
         <span>מָסַךְ פְּתִיחָה בִּטְעִינַת הַמִּשְׂחָק</span>
+      </label>
+      <label class="set-toggle">
+        <input type="checkbox" id="borrow-toggle" onchange="setSubBorrowMode(this.checked?'auto':'hybrid')">
+        <span>חִסּוּר בְּטוּר: פְּרִיטָה אוֹטוֹמָטִית (בִּמְקוֹם לְחִיצָה)</span>
       </label>
       <label class="set-name">
         <span>הַשֵּׁם שֶׁלִּי:</span>

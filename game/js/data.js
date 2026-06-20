@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TBG='big_step';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -24,14 +24,16 @@ const EXERCISE_INDEX=[
   {file:'sub',       modes:[5,10,20,'br','mx']},
   {file:'missing',   modes:[5,10,20,'mx']},
   {file:'double',    modes:[5,10,20,'mx']},
-  {file:'coins',     modes:[5,10,20,'mx']},
+  {file:'coins',     modes:[5,10,20,'mx','sup']},
   {file:'chain',     modes:['mx']},
   {file:'tens',      modes:['mx']},
   {file:'column_add',modes:['sup']},
-  {file:'big_step',  modes:['big','mx','sup']},
+  {file:'column_sub',modes:['sub_col','mx','sup']},
+  {file:'coin_mul',  modes:['sup']},
+  {file:'big_step',  modes:['big','mx','sup','sub_col']},
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TCA]:'column_add'};
+const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config
@@ -48,6 +50,7 @@ const DIFFICULTY_GROUPS=[
     {id:'br',label:'גָּשֵׁר 10 🌈'},
     {id:'mx',label:'מַלְכָּה 👸'},
     {id:'sup',label:'סוּפֶּרְמֶן 🦸'},
+    {id:'sub_col',label:'חִסּוּר בְּטוּר ➖'},
   ]},
 ];
 /* NOTE: the 🎁 prize badge is NOT part of the label — it is appended at render
@@ -90,6 +93,11 @@ const SUCCESS_FILES=[
   'success-pinwheel-spin',
   'success-firefly-dance',
   'success-ribbon-streamers',
+  'success-phoenix-rising',
+  'success-peacock-fan',
+  'success-kaleidoscope-bloom',
+  'success-birthday-cake',
+  'success-carousel-spin',
 ];
 
 /* ── Special reward screens (success_screens/<sub>/<name>.js) ────────────────

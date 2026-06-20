@@ -14,11 +14,11 @@ from playwright.sync_api import sync_playwright
 # ── CONFIG (edit these; never change the command line) ──────────────────────
 THEME    = "reef"
 DSF      = 3                       # device scale factor (higher = sharper zoom)
-HIDE_UI  = True                    # hide the .wrap game card to see the scene
+HIDE_UI  = True                    # hide the .wrap game card (background-only shots)
 STANDALONE = r""   # '' = load the game; else load this page raw (skip theme)
 VIEW     = {"width": 342, "height": 455}   # viewport
 EVAL      = ""                     # JS run after load ('' = skip)
-POST_EVAL = ""                     # JS run AFTER the wait, result printed ('' = skip)
+POST_EVAL = ""                     # JS run after WAIT_MS ('' = skip)
 CLICKS   = []                      # list of [xFrac, yFrac] doc clicks, e.g. [[0.5,0.9]]
 WAIT_MS  = 2500
 SHOTS    = [

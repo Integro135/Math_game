@@ -19,13 +19,14 @@
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.column_add=(()=>{
 
-  // pool: 12 column-addition problems (a=11..19, b=2..19), ≥7 with a carry
+  // pool: 12 column-addition problems (a=11..29, b=2..19), ≥7 with a carry.
+  // Largest result reached is 29+19 = 48 (the tens of the result stay one digit).
   function makePool(){
     const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
     const out=[],seen=new Set();
     const want=(carry)=>{
       for(let tries=0;tries<200;tries++){
-        const a=ri(11,19),b=ri(2,19);
+        const a=ri(11,29),b=ri(2,19);
         const hasCarry=(a%10)+(b%10)>=10;
         const key=a+'_'+b;
         if(hasCarry===carry&&!seen.has(key)){seen.add(key);out.push({t:TCA,a,b});return;}
@@ -130,7 +131,8 @@ window.EXERCISES.types.column_add=(()=>{
 
     /* the + sign centered between the two number rows */
     function positionPlus(){
-      const wr=$('colx-pw').getBoundingClientRect();
+      const pw=$('colx-pw');if(!pw)return;
+      const wr=pw.getBoundingClientRect();
       if(!wr.width)return;
       const ra=$('colx-aT').getBoundingClientRect(),rb=$('colx-bT').getBoundingClientRect();
       const midY=(ra.top+ra.height/2+rb.top+rb.height/2)/2-wr.top;
@@ -141,7 +143,8 @@ window.EXERCISES.types.column_add=(()=>{
     /* V connectors + post-mistake hint circles */
     function drawLines(){
       const svg=$('colx-svg');if(!svg)return;
-      const wr=$('colx-pw').getBoundingClientRect();
+      const pw=$('colx-pw');if(!pw)return;
+      const wr=pw.getBoundingClientRect();
       if(!wr.width)return;
       const c=id=>{const r=$(id).getBoundingClientRect();
         return{x:r.left-wr.left+r.width/2,top:r.top-wr.top,bot:r.bottom-wr.top};};
@@ -323,10 +326,15 @@ window.EXERCISES.types.column_add=(()=>{
     const onResize=()=>{positionPlus();drawLines();};
     window.addEventListener('resize',onResize);
 
-    requestAnimationFrame(()=>{positionPlus();drawLines();anchorNL();iU.focus();});
+    let _mountRaf=requestAnimationFrame(()=>{
+      _mountRaf=0;
+      if(!$('colx-pw'))return;   // mount torn down before first paint (rapid re-mount)
+      positionPlus();drawLines();anchorNL();iU.focus();
+    });
 
     return function cleanup(){
       window.removeEventListener('resize',onResize);
+      if(_mountRaf)cancelAnimationFrame(_mountRaf);
       timers.forEach(clearTimeout);
       root.innerHTML='';
     };

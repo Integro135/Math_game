@@ -51,12 +51,13 @@ document.addEventListener('keydown',e=>{
   if(typeof _fwOn!=='undefined'&&_fwOn)return;
   const panels=['sad-ov','report-ov'];
   if(panels.some(id=>{const el=document.getElementById(id);return el&&el.style.display&&el.style.display!=='none';}))return;
-  // TCA (column addition): spacebar hops the kangaroo NL forward (add direction).
-  // The focused digit box is a TEXT input and the NL is interactive from the
-  // start in Superman, so handle it BEFORE the text-field / try-first guards.
-  if(ptype===TCA){
+  // TCA/TCS (column add/subtract): spacebar hops the kangaroo NL — forward for
+  // addition, BACK for subtraction (count-back). The focused digit box is a TEXT
+  // input and the NL is interactive from the start, so handle it BEFORE the
+  // text-field / try-first guards.
+  if(ptype===TCA||ptype===TCS){
     const nlp=document.getElementById('nl-panel');
-    if(!done&&nlp&&nlp.style.display!=='none'){e.preventDefault();NL.step(1);}
+    if(!done&&nlp&&nlp.style.display!=='none'){e.preventDefault();NL.step(ptype===TCS?-1:1);}
     return;
   }
   const ae=document.activeElement;

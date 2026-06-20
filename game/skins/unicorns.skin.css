@@ -123,6 +123,27 @@ body.theme-girls .lvl-btn.active{
   transform:scale(1.06);
 }
 body.theme-girls .lvl-btn.active:hover{transform:scale(1.08)}
+/* settings sub-tabs + prize editor + history — the base colors are LIGHT (built
+   for dark skins) and vanish on this near-white box, so recolor them plum */
+body.theme-girls .set-tab{
+  background:transparent;border:1px solid rgba(194,81,156,.35);color:#9A5588;
+}
+body.theme-girls .set-tab:hover{background:rgba(255,111,181,.10)}
+body.theme-girls .set-tab.active{
+  background:rgba(199,125,255,.16);border-color:rgba(155,85,200,.6);color:#5A2A52;
+  box-shadow:0 2px 10px rgba(170,100,220,.25);
+}
+body.theme-girls .prize-lbl{color:#7A4070}
+body.theme-girls .prize-inp{
+  color:#5A2A52;border-color:rgba(194,81,156,.4);background:rgba(255,255,255,.55);
+}
+body.theme-girls .prize-inp:focus{border-color:#9A4ED9;background:rgba(255,255,255,.8)}
+body.theme-girls .prize-inp::placeholder{color:rgba(122,64,112,.5)}
+body.theme-girls .hist-grade{color:#B5008A}
+body.theme-girls .hist-game{color:#7A3E9E}
+body.theme-girls .hist-name{color:#2A5AA8}
+body.theme-girls .hist-date{color:rgba(122,64,112,.6)}
+body.theme-girls .hist-empty{color:rgba(122,64,112,.72)}
 
 /* ════ THE CARD — an open frame of light ════ */
 body.theme-girls .card{

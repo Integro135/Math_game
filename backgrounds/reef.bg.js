@@ -3629,9 +3629,9 @@ window.BACKGROUNDS.reef = {
         return;
       }
     }
-    // a sea star — a little arm wiggle
+    // a sea star — a little arm wiggle, and it summons rumi to glide across
     for (const st of STARS) {
-      if (Math.hypot(mx - st.x, my - st.y) < st.s * 1.6) { st.actT = t; return; }
+      if (Math.hypot(mx - st.x, my - st.y) < st.s * 1.6) { st.actT = t; summonRumi(); return; }
     }
     // either roaming seahorse — tap it to startle it (a quick darting hop + turn)
     for (const sh of [SEAHORSE, SEAHORSE2]) {
@@ -3680,11 +3680,15 @@ window.BACKGROUNDS.reef = {
   resize();
   rafId = requestAnimationFrame(draw);
 
-  // ── roaming chibi "rumi": swims past in FLY mode (rotated 90°, fast) every few minutes ──
+  // ── roaming chibi "rumi": swims past in FLY mode (rotated 90°, fast) ──
+  // The patrol shows her every few minutes; tapping a sea star also summons
+  // her for an extra glide on demand (see summonRumi, called from reefClick).
   const chibiLayer = document.createElement('div');
   chibiLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden';
   layer.appendChild(chibiLayer);
   let chibiPatrol = null;
+  // shared fly profile: rotated 90°, swims rightward, 25% slower than the original 2600
+  const RUMI_FLY = { mode: 'fly', direction: 'ltr', height: '30vh', bottom: '40%', duration: 3250 };
   function ensureChibiWalker(cb){
     if (window.ChibiWalker){ cb(); return; }
     const ex = document.querySelector('script[data-chibi-walker]');
@@ -3695,14 +3699,22 @@ window.BACKGROUNDS.reef = {
     s.onload = cb;
     document.head.appendChild(s);
   }
+  // Send rumi gliding across right now (a sea-star tap), unless she is already
+  // on screen — don't stack a second crossing over a patrol pass in progress.
+  function summonRumi(){
+    if (stopped) return;
+    ensureChibiWalker(function(){
+      if (stopped || chibiLayer.querySelector('.chibi-walker')) return;
+      ChibiWalker.walk(chibiLayer, RUMI_FLY);
+    });
+  }
   ensureChibiWalker(function(){
     if (stopped) return;                          // background already switched away
-    chibiPatrol = ChibiWalker.patrol(chibiLayer, {
-      mode: 'fly', direction: 'ltr', alternate: false,   // swims rightward (fits the water)
-      height: '30vh', bottom: '40%', duration: 3250,     // 25% slower than the original 2600
+    chibiPatrol = ChibiWalker.patrol(chibiLayer, Object.assign({}, RUMI_FLY, {
+      alternate: false,                           // always swims rightward (fits the water)
       gapMin: 120000, gapMax: 240000,             // reappears every 2–4 minutes
       startDelay: 60000 + Math.random() * 120000  // first appears only after 1–3 min of play
-    });
+    }));
   });
 
   // the loader calls this when the background is switched away

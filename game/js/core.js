@@ -5,7 +5,7 @@
    means NO prize for that game — no 🎁 badge on its picker button, no gift
    screen on completion. GIFT_GOALS holds ONLY the games that currently have a
    prize (a game with no prize is absent), so `GIFT_GOALS[mode]` is falsy then. */
-const DEFAULT_GIFT_GOALS={br:800,mx:900,sup:650};
+const DEFAULT_GIFT_GOALS={br:900,mx:900,sup:800,sub_col:650};
 const GIFT_GOALS={};
 function _savedGiftGoals(){try{return JSON.parse(localStorage.getItem('giftGoals')||'{}')||{};}catch(e){return {};}}
 function _rebuildGiftGoals(){
@@ -26,7 +26,7 @@ function setGiftGoal(m,val){
   if(typeof renderModePicker==='function')renderModePicker();   // refresh the 🎁 badges
   if(typeof updateGiftIndicator==='function')updateGiftIndicator();
 }
-const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן'};
+const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן',sub_col:'חִסּוּר בְּטוּר'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
@@ -149,6 +149,16 @@ function renderPrizeConfig(){
   }
   row.innerHTML=h;
 }
+/* column-subtraction borrow method: 'hybrid' (demo the regrouping once, then the
+   child taps the tens to borrow) or 'auto' (the regrouping animates itself on
+   every borrow — a passive demonstration). Chosen from the settings toggle and
+   read by exercises/column_sub.ex.js at mount. Default: hybrid. */
+function subBorrowMode(){try{return localStorage.getItem('subBorrow')==='auto'?'auto':'hybrid';}catch(e){return 'hybrid';}}
+function setSubBorrowMode(v){
+  try{localStorage.setItem('subBorrow',v==='auto'?'auto':'hybrid');}catch(e){}
+  const cb=document.getElementById('borrow-toggle');
+  if(cb)cb.checked=(v==='auto');
+}
 /* ── Settings modal ── */
 function openSettings(e){
   if(e)e.stopPropagation();
@@ -161,6 +171,9 @@ function openSettings(e){
   // sync the intro-splash toggle with its saved state
   const cb=document.getElementById('intro-toggle');
   if(cb&&typeof introEnabled==='function')cb.checked=introEnabled();
+  // sync the column-subtraction borrow-method toggle
+  const bt=document.getElementById('borrow-toggle');
+  if(bt&&typeof subBorrowMode==='function')bt.checked=(subBorrowMode()==='auto');
   // sync the player-name field with its saved value
   const ni=document.getElementById('name-input');
   if(ni&&typeof playerName==='function')ni.value=playerName();
@@ -212,7 +225,7 @@ function loadProblem(){
   if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
-  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TCM?num1/5:ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -220,6 +233,8 @@ function loadProblem(){
   setFb('','');
   document.getElementById('hint').textContent=
     ptype===TCA?'🦸 חַבְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
+   :ptype===TCS?'🦸 חַסְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
+   :ptype===TCM?'🪙 כַּמָּה מַטְבְּעוֹת שֶׁל 5 צְרִיכִים? הוֹסִיפִי וְסִפְרִי!'
    :ptype===TBG?'💯 רַק סִפְרַת הָאֲחָדוֹת מִשְׁתַּנָּה — הָעֲשָׂרוֹת נִשְׁאָרוֹת!'
    :ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
    :ptype===TDA?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'
@@ -254,6 +269,18 @@ function loadProblem(){
     const nlp=document.getElementById('nl-panel');
     if(nlp){nlp.style.display='';NL.configure(20,1);NL.init(0);}
     chainGnMode=false;tdaJarMode=false;}
+  // TCS (column subtraction): mirror of TCA — module owns the staged inputs and
+  // hints; the aid is the skinned 0-20 number line, COUNT-BACK (main.js steps −1)
+  if(ptype===TCS){
+    const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
+    const nlp=document.getElementById('nl-panel');
+    if(nlp){nlp.style.display='';NL.configure(20,1);NL.init(0);}
+    chainGnMode=false;tdaJarMode=false;}
+  // TCM (coin multiplication): the module owns the coin tray; no number-line aid
+  if(ptype===TCM){
+    const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
+    const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='none';
+    chainGnMode=false;tdaJarMode=false;}
   // TBG (big ± small): the number line is WINDOWED around the big number —
   // num1 sits in the middle, with 10 below and 10 above (e.g. 75 → 65..85),
   // so the child counts a step or two from there. Revealed on first mistake
@@ -265,7 +292,7 @@ function loadProblem(){
     if(nlp){nlp.style.display='';NL.configure(base+20,1,base);NL.init(num1);}
     chainGnMode=false;tdaJarMode=false;}
   // Aid display — kangaroo NL or the cookie jar, per aidMode
-  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TBG){
+  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBG){
   const isTD=ptype===TDA||ptype===TDS;
   const useNL=aidMode==='nl';
   const useKang=aidMode==='kang';
@@ -291,7 +318,7 @@ function loadProblem(){
   },60);
   buildGamesMenu();
   // the aid-toggle menu is meaningless inside a self-contained exercise
-  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TBG)?'hidden':'';}
+  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBG)?'hidden':'';}
   // Digit hint button — shown for TT, TBG, and for TS/TM where both nums > 10
   {const _dhBtn=document.getElementById('digit-hint-btn');
   if(_dhBtn){
@@ -310,7 +337,7 @@ function loadProblem(){
 /* ── Equation ── */
 function renderEq(){
   // leaving a module-owned exercise (TCA) → release its listeners/timers
-  if(_colxCleanup&&ptype!==TCA){_colxCleanup();_colxCleanup=null;}
+  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM){_colxCleanup();_colxCleanup=null;}
   // restore hint visibility (TC hides it and embeds it inline)
   if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
   const n=t=>`<span class="eq-n" data-num="${t}">${t}</span>`;
@@ -388,24 +415,26 @@ function renderEq(){
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
   }
-  else if(ptype===TCA)h='<div id="colx-root" class="colx-root"></div>';
+  else if(ptype===TCA||ptype===TCS||ptype===TCM)h='<div id="colx-root" class="colx-root"></div>';
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
   else               h=n(num1)+op('+','op-p')+nB(num2,num1,'add')+op('=','op-e')+inp;
   document.getElementById('eq').innerHTML=h;
-  if(ptype===TCA)_colxMount();
+  if(ptype===TCA||ptype===TCS||ptype===TCM)_colxMount();
 }
 
-/* ── self-contained exercise host (TCA → exercises/column_add.ex.js) ──
+/* ── self-contained exercise host (TCA → column_add, TCS → column_sub) ──
    The module owns rendering + checking inside #colx-root; the host supplies
    scoring, the sad modal, the report and the success flow via this api. */
 let _colxCleanup=null;
 function _colxMount(){
   if(_colxCleanup){_colxCleanup();_colxCleanup=null;}
-  const exName=typeof EXERCISE_OF_TYPE!=='undefined'&&EXERCISE_OF_TYPE[TCA];
+  const exName=typeof EXERCISE_OF_TYPE!=='undefined'&&EXERCISE_OF_TYPE[ptype];
   if(!exName)return;
   const myIdx=idx;
   loadExercise(exName,()=>{
-    if(ptype!==TCA||idx!==myIdx)return;     // problem changed while loading
+    // problem changed while loading (idx moved, left colx, or now a DIFFERENT
+    // colx type) → a stale async module-load must NOT clobber the live mount
+    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
     const root=document.getElementById('colx-root');
     const ex=window.EXERCISES&&EXERCISES.types[exName];
     if(!root||!ex)return;
@@ -439,8 +468,8 @@ function showBtns(s){
   if(s==='check'){
     btns.innerHTML='';
     btns.className='btn-row';
-    // exercise modules (TCA) check themselves — no host check button
-    if(cb)cb.style.display=ptype===TCA?'none':'flex';
+    // exercise modules (TCA/TCS/TCM) check themselves — no host check button
+    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM)?'none':'flex';
   }else{
     if(cb)cb.style.display='none';
     btns.innerHTML=
@@ -464,7 +493,7 @@ document.addEventListener('input',e=>{
 });
 function checkAns(){
   if(done)return;
-  if(ptype===TCA)return;   // the exercise module checks itself
+  if(ptype===TCA||ptype===TCS||ptype===TCM)return;   // the exercise module checks itself
   // ── Double-unknown problems (TDA/TDS) ──
   if(ptype===TDA||ptype===TDS){
     const i1=document.getElementById('ans1'),i2=document.getElementById('ans2');

@@ -355,7 +355,7 @@ def get_state(page) -> dict:
     return page.evaluate("""() => ({
         ptype, num1, num2, num3, num4,
         idx, score, done, mode, ttOp, bgOp,
-        TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TBG
+        TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TCS, TBG, TCM
     })""")
 
 
@@ -783,28 +783,15 @@ class TestDoubleUnknown:
         assert page.locator("#ans").count()  == 0, "#ans must be absent for TD"
 
     def test_tda_accepts_any_valid_pair(self, page):
-        """For TDA (___+___=R), entering v1,v2 where v1+v2=R must succeed."""
-        # Mode 10 guarantees 3 TD slots (sampleWithTD: Math.floor(12/4)=3 at
-        # slots 4,8,12), drawn from 12 TDA + 12 TDS candidates. Restart reshuffles
-        # that draw, so loop until a TDA actually lands (P(absent)~0.11/session).
+        """For TDA (___+___=R), entering v1,v2 where v1+v2=R must succeed.
+        The TDA problem is forced deterministically (the force-a-problem idiom
+        used throughout this file); mode-10 TD *generation* is covered by the
+        slot-placement tests, so no random session-hunting is needed here."""
         page.evaluate("setMode(10)")
         page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
-        consts   = page.evaluate("({TDA})")
-        tda_slots = []
-        for _ in range(40):
-            problems = page.evaluate("[...problems].map((p,i) => ({i, t: p.t, r: p.r}))")
-            tda_slots = [x for x in problems if x["t"] == consts["TDA"]]
-            if tda_slots:
-                break
-            page.evaluate("restart()")
-            page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
-        assert tda_slots, "Mode 10 must yield a TDA problem within 40 sessions"
-
-        slot = tda_slots[0]
-        page.evaluate(f"idx={slot['i']}; loadProblem()")
+        r = 8
+        page.evaluate(f"problems[0] = {{t: TDA, r: {r}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#ans1:not([disabled])", timeout=TIMEOUT)
-
-        r  = slot["r"]
         v1 = max(1, r // 2)           # non-trivial split
         v2 = r - v1
         page.fill("#ans1", str(v1))
@@ -814,27 +801,14 @@ class TestDoubleUnknown:
         wait_fw_and_advance(page, before)
 
     def test_tds_accepts_any_valid_pair(self, page):
-        """For TDS (___-___=R), entering v1,v2 where v1-v2=R must succeed."""
-        # Mode 10 guarantees 3 TD slots; restart reshuffles which subtype lands,
-        # so loop until a TDS actually appears (P(absent)~0.11/session).
+        """For TDS (___-___=R), entering v1,v2 where v1-v2=R must succeed.
+        The TDS problem is forced deterministically; mode-10 TD *generation* is
+        covered by the slot-placement tests, so no random session-hunting here."""
         page.evaluate("setMode(10)")
         page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
-        consts   = page.evaluate("({TDS})")
-        tds_slots = []
-        for _ in range(40):
-            problems = page.evaluate("[...problems].map((p,i) => ({i, t: p.t, r: p.r}))")
-            tds_slots = [x for x in problems if x["t"] == consts["TDS"]]
-            if tds_slots:
-                break
-            page.evaluate("restart()")
-            page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
-        assert tds_slots, "Mode 10 must yield a TDS problem within 40 sessions"
-
-        slot = tds_slots[0]
-        page.evaluate(f"idx={slot['i']}; loadProblem()")
+        r = 8
+        page.evaluate(f"problems[0] = {{t: TDS, r: {r}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#ans1:not([disabled])", timeout=TIMEOUT)
-
-        r  = slot["r"]
         v1 = r + 3                     # r+3 − 3 = r
         v2 = 3
         page.fill("#ans1", str(v1))
@@ -1008,18 +982,18 @@ class TestGameFlow:
     def test_mx_session_has_17_problems_with_each_type(self, page):
         """
         Queen (mx) session must:
-          - have exactly 17 problems (15 base + 2 big ±1/2 mixed in)
+          - have exactly 19 problems (17 base + 2 no-borrow column-sub mixed in)
           - contain ≥1 of EACH problem type:
-            TZ, TX, TW, TM, TS, TA, TDA, TDS, TT, TC, TBG.
+            TZ, TX, TW, TM, TS, TA, TDA, TDS, TT, TC, TBG, TCS.
         """
-        consts = page.evaluate("({TM,TS,TA,TX,TZ,TW,TDA,TDS,TC,TT,TBG})")
+        consts = page.evaluate("({TM,TS,TA,TX,TZ,TW,TDA,TDS,TC,TT,TBG,TCS})")
         # 5 fresh Queen sessions — each must satisfy the rule
         for session in range(5):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
             n = page.evaluate("problems.length")
-            assert n == 17, \
-                f"Session {session+1}: expected 17 mx problems, got {n}"
+            assert n == 19, \
+                f"Session {session+1}: expected 19 mx problems, got {n}"
             types = page.evaluate("[...problems].map(p => p.t)")
             for name, code in consts.items():
                 count = sum(1 for t in types if t == code)
@@ -1308,11 +1282,11 @@ class TestChainAndCoinAids:
         any_early_above_10 = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, b:p.b, c:p.c, r:p.r}))")
-            assert len(problems) == 17, \
-                f"makeMxPool must yield 17 problems (flat shuffle), got {len(problems)}"
+            assert len(problems) == 19, \
+                f"makeMxPool must yield 19 problems (flat shuffle), got {len(problems)}"
             consts = page.evaluate("({TA,TS,TM,TX,TZ,TW})")
             for p in problems[:5]:               # the former "phase 1" slots
                 ans = None
@@ -1335,9 +1309,9 @@ class TestChainAndCoinAids:
         Queen pool (chain TX/TZ/TW, TM, TS, TA, TDA/TDS, TT, TC, TBG)."""
         consts = page.evaluate("({TM,TS,TA,TX,TZ,TW,TDA,TDS,TC,TT,TBG})")
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
         types = page.evaluate("[...problems].map(p => p.t)")
-        assert len(types) == 17
+        assert len(types) == 19
         # chain family (TX/TZ/TW) must appear; each other type must appear ≥1
         chain = {consts["TX"], consts["TZ"], consts["TW"]}
         assert any(t in chain for t in types), "Chain problems must be present in mx"
@@ -1360,7 +1334,7 @@ class TestChainAndCoinAids:
         seen_small_first = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, r:p.r}))")
             for p in problems[-4:]:
@@ -1529,7 +1503,7 @@ class TestTensProblems:
 
         # TT now lives in 'mx' (מלכה) instead.
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
         ptypes = page.evaluate("[...problems].map(p => p.t)")
         assert sum(1 for t in ptypes if t == consts["TT"]) >= 1, \
             "Round-tens (TT) must now appear in the Queen (mx) game"
@@ -1551,7 +1525,7 @@ class TestTensProblems:
         # TT is wired only into 'mx' (data.js EXERCISE_INDEX), where tens.ex.js
         # make('mx') always emits exactly 2 TT problems -> _find_tt always hits.
         page.evaluate("setMode('mx')")
-        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -1575,7 +1549,7 @@ class TestTensProblems:
         """TT problem: submitting the correct tens answer marks the problem done."""
         # TT lives only in 'mx'; tens.ex.js make('mx') always emits 2 TT problems.
         page.evaluate("setMode('mx')")
-        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -1610,6 +1584,9 @@ class TestTryFirstScoring:
         """Sanity baseline: first-try correct → full modePts() awarded."""
         before = page.evaluate("score")
         solve_one(page)
+        # the score award is async (addScore runs in checkAns' flow); wait for it
+        # to settle before reading, so a heavily-loaded full-suite run can't race.
+        page.wait_for_function(f"score === {before + 20}", timeout=TIMEOUT)
         assert page.evaluate("score") == before + 20, \
             "Mode-20 first-try correct must add 20 points"
 
@@ -1753,7 +1730,7 @@ class TestTryFirstScoring:
 
         for _ in range(10):                # 10 fresh Queen sessions
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
             problems = page.evaluate("problems")
             for i, p in enumerate(problems):
                 t = p["t"]
@@ -1763,8 +1740,15 @@ class TestTryFirstScoring:
                         f"TT problem at idx {i} not in round tens: {p}"
                     continue
                 if t == TBG:
-                    # Big ±1/2: a is a big two-digit number, b is the small step
-                    assert p["b"] in (1, 2), f"TBG step must be 1/2 at idx {i}: {p}"
+                    # Big ±step: a is a big two-digit number; subtraction steps
+                    # down by 1-3 (never crossing the ten below → units ≥ step),
+                    # addition steps up by 1-2 (no carry).
+                    if p["op"] == "sub":
+                        assert p["b"] in (1, 2, 3) and p["a"] % 10 >= p["b"], \
+                            f"TBG sub step must be 1-3 with no tens-cross at idx {i}: {p}"
+                    else:
+                        assert p["b"] in (1, 2) and p["a"] % 10 + p["b"] <= 9, \
+                            f"TBG add step must be 1-2 with no carry at idx {i}: {p}"
                     continue
                 if t in (TC, TDA, TDS):
                     # TC: coins; TDA/TDS: only `r` matters and is ≤20
@@ -2535,21 +2519,22 @@ class TestDynamicExercises:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 14", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 17, b: 15}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
 
     def test_every_mode_builds_correct_pool_size(self, page):
         """Each mode's recipe produces its expected session length."""
         expected = {"5": 12, "10": 12, "20": 12, "'br'": 25,
-                    "'mx'": 17, "'sup'": 14, "'big'": 12}
+                    "'mx'": 19, "'sup'": 19, "'sub_col'": 14, "'big'": 12}
         for arg, size in expected.items():
             page.evaluate(f"setMode({arg})")
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)
 
     def test_big_step_mixed_into_mx_and_sup(self, page):
-        """The big ±1/2 type (TBG) is woven into both Queen and Superman pools."""
-        for arg in ["'mx'", "'sup'"]:
+        """The big ±1/2 type (TBG) is woven into Queen, Superman, and the
+        Column-subtraction pools."""
+        for arg in ["'mx'", "'sup'", "'sub_col'"]:
             page.evaluate(f"setMode({arg})")
             page.wait_for_function(
                 "typeof EXERCISES.types.big_step === 'object'", timeout=TIMEOUT)
@@ -2570,20 +2555,36 @@ class TestBigStepMode:
         page.wait_for_timeout(150)
 
     def test_big_pool_is_valid_and_mixed(self, page):
-        """12 problems, b∈{1,2}, no carry/borrow, all four op/b combos present."""
+        """12 problems; subtraction steps 1-3 (never crossing the ten below),
+        addition steps 1-2, no carry/borrow, every session mixes sub & add.
+        Across several sessions a 3-step subtraction (e.g. 76-3) must occur."""
         self._enter_big(page)
-        probs = page.evaluate("problems")
-        combos = set()
-        for p in probs:
-            assert p["t"] == "big_step"
-            assert p["b"] in (1, 2), f"b must be 1/2, got {p}"
-            assert 21 <= p["a"] <= 98, f"a out of range: {p}"
-            if p["op"] == "sub":
-                assert p["a"] % 10 >= p["b"], f"borrow not allowed: {p}"
-            else:
-                assert p["a"] % 10 + p["b"] <= 9, f"carry not allowed: {p}"
-            combos.add((p["op"], p["b"]))
-        assert len(combos) == 4, f"expected -1/-2/+1/+2 mix, got {combos}"
+        sub_steps = set()
+        saw_sub = saw_add = False
+        for _ in range(8):
+            probs = page.evaluate("problems")
+            assert len(probs) == 12
+            ops = set()
+            for p in probs:
+                assert p["t"] == "big_step"
+                assert 21 <= p["a"] <= 98, f"a out of range: {p}"
+                if p["op"] == "sub":
+                    saw_sub = True
+                    assert p["b"] in (1, 2, 3), f"sub step must be 1-3: {p}"
+                    assert p["a"] % 10 >= p["b"], \
+                        f"sub must not cross the ten below (units >= step): {p}"
+                    sub_steps.add(p["b"])
+                else:
+                    saw_add = True
+                    assert p["b"] in (1, 2), f"add step must be 1-2: {p}"
+                    assert p["a"] % 10 + p["b"] <= 9, f"carry not allowed: {p}"
+                ops.add(p["op"])
+            assert ops == {"sub", "add"}, f"each session mixes sub & add, got {ops}"
+            page.evaluate("restart()")
+            page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        assert saw_sub and saw_add
+        assert 3 in sub_steps, \
+            "subtraction must be able to step down by 3 (e.g. 76-3)"
 
     def test_big_correct_answer_scores_10(self, page):
         self._enter_big(page)
@@ -2669,14 +2670,46 @@ class TestBigStepMode:
 
 class TestSupermanColumnAdd:
     def _enter_sup(self, page, a=17, b=15):
-        # the sup pool mixes column-add with a couple of big ±1/2 problems, so
-        # wait for the pool to build, then force a TCA problem to mount the UI
+        # the sup pool mixes column-add with big ±1/2 and coin-multiplication
+        # problems, so wait for the pool to build, then force a TCA problem
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 14", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCA, a: {a}, b: {b}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
+
+    def test_sup_pool_reaches_48(self, page):
+        """Column addition now reaches up to 48: the top addend is 11-29 and the
+        bottom 2-19 (raised from the old 38 ceiling). Every generated problem
+        stays a valid two-column sum — a∈[11,29], b∈[2,19], result ≤ 48 with the
+        result's tens digit still one digit, and never a double carry."""
+        page.evaluate("setMode('sup')")
+        page.wait_for_function(
+            "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
+        stats = page.evaluate("""(() => {
+            let maxA = 0, minA = 99, maxSum = 0, sawAbove38 = false, bad = null;
+            for (let k = 0; k < 60; k++) {
+                const ps = EXERCISES.types.column_add.make('sup');
+                if (ps.length !== 12) bad = {reason: 'len', len: ps.length};
+                for (const p of ps) {
+                    if (p.t !== TCA) bad = {reason: 't', p};
+                    if (p.a < 11 || p.a > 29 || p.b < 2 || p.b > 19) bad = {reason: 'range', p};
+                    if (p.a + p.b > 48) bad = {reason: 'sum', p};
+                    if (Math.floor((p.a + p.b) / 10) > 9) bad = {reason: 'tens', p};
+                    maxA = Math.max(maxA, p.a); minA = Math.min(minA, p.a);
+                    maxSum = Math.max(maxSum, p.a + p.b);
+                    if (p.a + p.b > 38) sawAbove38 = true;
+                }
+            }
+            return {maxA, minA, maxSum, sawAbove38, bad};
+        })()""")
+        assert stats["bad"] is None, f"invalid column-add problem generated: {stats['bad']}"
+        assert stats["minA"] >= 11, f"a fell below 11: {stats}"
+        assert stats["maxA"] == 29, f"top addend must reach 29 (was 19): {stats}"
+        assert stats["maxSum"] <= 48, f"result must not exceed 48: {stats}"
+        assert stats["sawAbove38"], \
+            "the raised ceiling must produce results above the old 38 max"
 
     def test_sup_nl_visible_from_start(self, page):
         """aidsReveal:'always' — the skinned NL shows before any mistake,
@@ -2704,7 +2737,7 @@ class TestSupermanColumnAdd:
         assert page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
             "precondition: normal mode locks the aids on a fresh problem"
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 14", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 13, b: 18}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
@@ -2839,7 +2872,7 @@ class TestSupermanDigitPreview:
 
     def _enter(self, page, a, b):
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 14", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
         page.evaluate(f"problems[0]={{t:TCA,a:{a},b:{b}}}; idx=0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(200)
@@ -2915,6 +2948,346 @@ class TestSupermanDigitPreview:
         page.wait_for_timeout(150)
         assert page.evaluate("document.getElementById('num-tt').style.display") != "block", \
             "units digit must be inert during the tens phase"
+
+
+# ─────────────────────────────────────────────────────────
+# Column subtraction — חִסּוּר בְּטוּר (TCS / column_sub.ex.js)
+# ─────────────────────────────────────────────────────────
+
+class TestColumnSubtraction:
+    def _enter_sub(self, page, a=25, b=17):
+        # the sub_col pool mixes column-subtraction with a couple of big ±1/2
+        # problems, so wait for the pool to build, then force a TCS problem.
+        page.evaluate("setMode('sub_col')")
+        page.wait_for_function("problems.length === 14", timeout=TIMEOUT)
+        page.evaluate(
+            f"problems[0] = {{t: TCS, a: {a}, b: {b}}}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
+        page.wait_for_timeout(250)
+
+    def test_column_sub_loads_on_demand(self, page):
+        """Entering Column-subtraction injects exercises/column_sub.ex.js and
+        mounts it into #colx-root (the pool also mixes in big ±1/2 problems, so
+        force a TCS problem to guarantee the column UI mounts)."""
+        page.evaluate("setMode('sub_col')")
+        page.wait_for_function(
+            "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 14", timeout=TIMEOUT)
+        page.evaluate("problems[0] = {t: TCS, a: 25, b: 17}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
+        assert page.evaluate("ptype === TCS")
+
+    def test_sub_pool_range_valid(self, page):
+        """Across many builds every problem is a valid two-column subtraction:
+        a∈[11,29], b∈[2,19], a>b, result a-b∈[1,27]; borrow problems (top units
+        < bottom units) DO occur and the algorithm never goes negative."""
+        page.evaluate("setMode('sub_col')")
+        page.wait_for_function(
+            "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
+        stats = page.evaluate("""(() => {
+            let maxA=0, minA=99, maxDiff=0, sawBorrow=false, bad=null;
+            for (let k=0; k<60; k++) {
+                const ps = EXERCISES.types.column_sub.make('sub_col');
+                if (ps.length !== 12) bad = {reason:'len', len:ps.length};
+                for (const p of ps) {
+                    if (p.t !== TCS) bad = {reason:'t', p};
+                    if (p.a < 11 || p.a > 29 || p.b < 2 || p.b > 19) bad = {reason:'range', p};
+                    if (p.a <= p.b) bad = {reason:'order', p};
+                    const diff = p.a - p.b;
+                    if (diff < 1 || diff > 27) bad = {reason:'diff', p};
+                    if ((p.a % 10) < (p.b % 10)) sawBorrow = true;
+                    maxA = Math.max(maxA, p.a); minA = Math.min(minA, p.a);
+                    maxDiff = Math.max(maxDiff, diff);
+                }
+            }
+            return {maxA, minA, maxDiff, sawBorrow, bad};
+        })()""")
+        assert stats["bad"] is None, f"invalid column-sub problem: {stats['bad']}"
+        assert stats["minA"] >= 11, f"a fell below 11: {stats}"
+        assert stats["maxA"] == 29, f"a must reach 29: {stats}"
+        assert stats["sawBorrow"], "borrow problems (top units < bottom units) must occur"
+
+    def test_sub_no_borrow_flow_solves_and_scores(self, page):
+        """27-13 (no borrow): units 7-3=4 → tens 2-1=1 → solved, full 15 points."""
+        self._enter_sub(page, 27, 13)
+        page.fill("#colx-iU", "4")
+        page.keyboard.press("Enter")
+        page.wait_for_function(
+            "!document.getElementById('colx-iT').disabled", timeout=TIMEOUT)
+        page.fill("#colx-iT", "1")
+        page.keyboard.press("Enter")
+        page.wait_for_function("score === 15", timeout=TIMEOUT)
+        assert page.evaluate("report[0].gotCorrect") is True
+
+    def test_sub_borrow_flow_solves_and_scores(self, page):
+        """25-17 (borrow): units need a ten → 15-7=8, the ¹ borrow mark appears
+        and the top tens is struck → tens (2-1)-1=0 → solved, full 15 points."""
+        self._enter_sub(page, 25, 17)
+        page.fill("#colx-iU", "8")
+        page.keyboard.press("Enter")
+        # the borrow plays: the ¹ on the units appears and the tens is struck
+        page.wait_for_function(
+            "document.getElementById('colx-borrow').textContent === '1'",
+            timeout=TIMEOUT)
+        assert page.evaluate(
+            "document.getElementById('colx-aT').classList.contains('struck')")
+        page.wait_for_function(
+            "!document.getElementById('colx-iT').disabled", timeout=TIMEOUT)
+        page.fill("#colx-iT", "0")
+        page.keyboard.press("Enter")
+        page.wait_for_function("score === 15", timeout=TIMEOUT)
+        assert page.evaluate("report[0].gotCorrect") is True
+
+    def test_sub_tap_to_borrow(self, page):
+        """Tapping the top tens digit performs the borrow (sends a ten down):
+        the digit is struck and the units gain the ¹ borrow mark."""
+        self._enter_sub(page, 23, 8)
+        page.click("#colx-aT")
+        page.wait_for_function(
+            "document.getElementById('colx-borrow').textContent === '1'",
+            timeout=TIMEOUT)
+        assert page.evaluate(
+            "document.getElementById('colx-aT').classList.contains('struck')")
+
+    def test_sub_wrong_units_penalized(self, page):
+        """A committed wrong units answer is a real mistake (penalty+report)."""
+        self._enter_sub(page, 25, 17)
+        page.fill("#colx-iU", "5")          # wrong: 25-17 units is 8 (after borrow)
+        page.keyboard.press("Enter")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("report[0].wrongs.length") == 1
+        assert page.evaluate(
+            "document.getElementById('colx-iU').classList.contains('ans-err')")
+
+    def test_sub_units_mistake_reduces_final_score(self, page):
+        """END-TO-END: a wrong units digit penalises the exercise even when the
+        columns are ultimately completed correctly — the solved exercise then
+        awards only 67% (round(15*.67)=10), not 15. Uses a no-borrow problem
+        (28-13) for deterministic timing."""
+        self._enter_sub(page, 28, 13)        # modePts()=15 → 67% == 10
+        assert page.evaluate("score") == 0 and page.evaluate("tryFirst") == 0
+        page.fill("#colx-iU", "4")           # wrong (8-3=5)
+        page.keyboard.press("Enter")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        page.fill("#colx-iU", "5")           # correct units
+        page.keyboard.press("Enter")
+        page.wait_for_function(
+            "!document.getElementById('colx-iT').disabled", timeout=TIMEOUT)
+        page.fill("#colx-iT", "1")           # tens 2-1=1
+        page.keyboard.press("Enter")
+        page.wait_for_function("report[0].gotCorrect === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 10, \
+            f"a units mistake must drop the solved award to 67% (10), got {page.evaluate('score')}"
+
+    def test_sub_auto_mistake_shows_regroup_demo(self, page):
+        """In AUTO borrow mode, a units mistake plays the elaborate regroup
+        teaching demo: a '10' bursts into 10 little ones (after the sad modal)."""
+        page.evaluate("localStorage.setItem('subBorrow','auto')")
+        self._enter_sub(page, 25, 17)        # auto-borrow plays; correct units is 8
+        page.wait_for_timeout(400)
+        page.fill("#colx-iU", "3")           # wrong
+        page.keyboard.press("Enter")
+        # the demo plays only after the ~1.5s sad modal clears
+        page.wait_for_selector(".colxs-onedot", timeout=TIMEOUT)
+        assert page.locator(".colxs-onedot").count() >= 1, \
+            "auto-mode mistake must show the 10-ones regroup demo"
+        assert page.locator(".colxs-finger").count() == 0, \
+            "auto mode shows the regroup demo, not the tap finger"
+
+    def test_sub_tap_mistake_shows_finger_guide(self, page):
+        """In hybrid (tap) borrow mode, a units mistake while the borrow is still
+        pending plays the finger tap-guide on the tens digit. (Re-enter the
+        problem so the one-time auto-demo is already spent and the borrow stays
+        pending — the child must tap.)"""
+        self._enter_sub(page, 25, 17)        # first mount auto-demos the borrow once
+        page.wait_for_timeout(1300)
+        page.evaluate("problems[0] = {t: TCS, a: 25, b: 17}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
+        page.wait_for_timeout(300)
+        page.fill("#colx-iU", "3")           # wrong, borrow still pending
+        page.keyboard.press("Enter")
+        page.wait_for_selector(".colxs-finger", timeout=TIMEOUT)
+        assert page.locator(".colxs-finger").count() == 1, \
+            "tap-mode mistake must show the finger tap-guide"
+        assert page.locator(".colxs-onedot").count() == 0, \
+            "the pending-borrow guide must not show the 10-ones demo yet"
+
+    def test_mx_includes_noborrow_column_sub(self, page):
+        """The Queen (mx) weaves in column-subtraction problems that NEVER need a
+        borrow: every TCS in mx has top units strictly greater than bottom units,
+        a > b, and operands ≤ 20. At least one appears every session."""
+        seen_any = False
+        for _ in range(6):
+            page.evaluate("setMode('mx'); restart()")
+            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+            tcs = page.evaluate(
+                "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
+            assert len(tcs) >= 1, "mx must contain ≥1 column-subtraction problem"
+            for p in tcs:
+                assert p["a"] > p["b"], f"mx column-sub must be positive: {p}"
+                assert (p["a"] % 10) > (p["b"] % 10), \
+                    f"mx column-sub must be NO-borrow (top units > bottom units): {p}"
+                assert p["a"] <= 20 and p["b"] <= 20, f"mx operands must stay ≤20: {p}"
+                seen_any = True
+        assert seen_any
+
+    def test_sup_includes_noborrow_column_sub(self, page):
+        """Superman also weaves in NO-BORROW column subtraction (top units >
+        bottom units, a > b, operands ≤ 20) alongside column-add / big-step /
+        coin-multiply. At least one appears every session."""
+        seen_any = False
+        for _ in range(6):
+            page.evaluate("setMode('sup'); restart()")
+            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+            tcs = page.evaluate(
+                "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
+            assert len(tcs) >= 1, "Superman must contain ≥1 column-subtraction problem"
+            for p in tcs:
+                assert p["a"] > p["b"], f"sup column-sub must be positive: {p}"
+                assert (p["a"] % 10) > (p["b"] % 10), \
+                    f"sup column-sub must be NO-borrow (top units > bottom units): {p}"
+                assert p["a"] <= 20 and p["b"] <= 20, f"sup operands must stay ≤20: {p}"
+                seen_any = True
+        assert seen_any
+
+    def test_sub_module_cleanup_on_mode_exit(self, page):
+        """Leaving Column-subtraction removes the column DOM and restores the
+        check button."""
+        self._enter_sub(page)
+        page.evaluate("setMode(10)")
+        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_timeout(200)
+        assert page.locator("#colx-root").count() == 0
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('chk-btn')).display") != "none"
+
+    def test_sub_borrow_setting_persists(self, page):
+        """The borrow-method preference (settings toggle) persists and reads
+        back; the default is the hybrid (tap) method, and the toggle exists."""
+        assert page.evaluate("subBorrowMode()") == "hybrid"
+        assert page.locator("#borrow-toggle").count() == 1
+        page.evaluate("setSubBorrowMode('auto')")
+        assert page.evaluate("subBorrowMode()") == "auto"
+        assert page.evaluate("localStorage.getItem('subBorrow')") == "auto"
+        page.evaluate("setSubBorrowMode('hybrid')")
+        assert page.evaluate("subBorrowMode()") == "hybrid"
+
+    def test_sub_auto_borrow_mode(self, page):
+        """In 'automatic' borrow mode the regrouping plays itself — WITHOUT any
+        tap: a forced borrow problem (25-17) auto-shows the ¹ borrow mark and
+        strikes the top tens, then completes to a full 15-point solve."""
+        page.evaluate("localStorage.setItem('subBorrow','auto')")
+        self._enter_sub(page, 25, 17)
+        # no click — the borrow animates on its own
+        page.wait_for_function(
+            "document.getElementById('colx-borrow').textContent === '1'",
+            timeout=TIMEOUT)
+        assert page.evaluate(
+            "document.getElementById('colx-aT').classList.contains('struck')")
+        page.fill("#colx-iU", "8")
+        page.keyboard.press("Enter")
+        page.wait_for_function(
+            "!document.getElementById('colx-iT').disabled", timeout=TIMEOUT)
+        page.fill("#colx-iT", "0")
+        page.keyboard.press("Enter")
+        page.wait_for_function("score === 15", timeout=TIMEOUT)
+
+
+# ─────────────────────────────────────────────────────────
+# Coin-multiplication — רֵאשִׁית הַכֶּפֶל (TCM / coin_mul.ex.js, mixed into Superman)
+# ─────────────────────────────────────────────────────────
+
+class TestCoinMul:
+    def _enter_cm(self, page, target=20):
+        # coin_mul rides the Superman pool, so build it then force a TCM problem
+        page.evaluate("setMode('sup')")
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.evaluate(f"problems[0] = {{t: TCM, a: {target}}}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colm-add", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+
+    def test_coin_mul_in_sup_pool(self, page):
+        """coin_mul.make('sup') yields 3 TCM problems with target∈{10,15,20};
+        every Superman session weaves them in."""
+        page.evaluate("setMode('sup')")
+        page.wait_for_function(
+            "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
+        bad = page.evaluate("""(() => {
+            for (let k = 0; k < 30; k++) {
+                const ps = EXERCISES.types.coin_mul.make('sup');
+                if (ps.length !== 3) return {reason: 'len', len: ps.length};
+                for (const p of ps) {
+                    if (p.t !== TCM) return {reason: 't', p};
+                    if (![10, 15, 20].includes(p.a)) return {reason: 'target', p};
+                }
+            }
+            return null;
+        })()""")
+        assert bad is None, f"invalid coin_mul problem: {bad}"
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        assert page.evaluate("[...problems].some(p => p.t === TCM)"), \
+            "the Superman session must contain coin-multiplication problems"
+
+    def test_coin_mul_loads_and_mounts(self, page):
+        """Forcing a TCM problem mounts the coin tray + ＋ control; starts empty."""
+        page.evaluate("setMode('sup')")
+        page.wait_for_function(
+            "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.evaluate("problems[0] = {t: TCM, a: 20}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colm-add", timeout=TIMEOUT)
+        assert page.evaluate("ptype === TCM")
+        assert page.locator("#colm-ans").count() == 1
+        assert page.locator(".colm-coin").count() == 0
+        # the silver real ₪5 coin is used (from the coin-counting exercise)
+        assert page.evaluate("typeof tcCoinSVG === 'function'"), \
+            "coins.ex.js must load in sup so the real coin art is available"
+
+    def test_coin_mul_add_fills_and_caps(self, page):
+        """Each ＋ drops a 5-coin; ＋ caps at the target (20 → 4 coins, then ＋
+        disabled — no overshoot). No total row."""
+        self._enter_cm(page, 20)
+        for _ in range(4):
+            page.click("#colm-add")
+        assert page.locator(".colm-coin").count() == 4
+        assert page.evaluate("document.getElementById('colm-add').disabled") is True
+        assert page.locator("#colm-sum").count() == 0   # no running-total row
+
+    def test_coin_mul_minus_removes_coin(self, page):
+        """The large minus button removes the last coin and re-enables ＋."""
+        self._enter_cm(page, 20)
+        for _ in range(4):
+            page.click("#colm-add")
+        assert page.evaluate("document.getElementById('colm-add').disabled") is True
+        page.click("#colm-rem")
+        assert page.locator(".colm-coin").count() == 3
+        assert page.evaluate("document.getElementById('colm-add').disabled") is False
+
+    def test_coin_mul_correct_count_solves(self, page):
+        """20 with 5-coins → 4 coins. Filling the tray and entering the COUNT (4)
+        solves for full Superman points (15)."""
+        self._enter_cm(page, 20)
+        before = page.evaluate("score")
+        for _ in range(4):
+            page.click("#colm-add")
+        page.fill("#colm-ans", "4")
+        page.click("#colm-chk")
+        page.wait_for_function(f"score === {before + 15}", timeout=TIMEOUT)
+        assert page.evaluate("report[0].gotCorrect") is True
+
+    def test_coin_mul_answer_is_count_not_value(self, page):
+        """The answer is the COUNT of coins, not the total value: for target 15
+        the correct answer is 3 (3×5); entering 15 (the value) is rejected."""
+        self._enter_cm(page, 15)
+        for _ in range(3):
+            page.click("#colm-add")
+        page.fill("#colm-ans", "15")          # the VALUE — wrong
+        page.click("#colm-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("report[0].wrongs.length") == 1
+        page.fill("#colm-ans", "3")           # the COUNT — correct
+        page.click("#colm-chk")
+        page.wait_for_function("report[0].gotCorrect === true", timeout=TIMEOUT)
 
 
 # ─────────────────────────────────────────────────────────
@@ -3145,7 +3518,7 @@ class TestModePersistence:
         page.reload()
         self._ready(page)
         assert page.evaluate("mode === 'sup'")
-        assert page.evaluate("problems.length === 14")
+        assert page.evaluate("problems.length === 19")
 
     def test_default_is_mx_when_nothing_saved(self, page):
         """A fresh context (no saved game) boots into Queen (mx)."""
