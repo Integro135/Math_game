@@ -97,6 +97,10 @@ const SUCCESS_FILES=[
   'success-kaleidoscope-bloom',
   'success-birthday-cake',
   'success-carousel-spin',
+  'success-sky-lanterns',
+  'success-treasure-chest',
+  'success-prism-rainbow',
+  'success-enchanted-tree',
 ];
 
 /* ── Special reward screens (success_screens/<sub>/<name>.js) ────────────────

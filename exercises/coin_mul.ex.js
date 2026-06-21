@@ -1,31 +1,35 @@
-/* ── Coin-multiplication exercise (רֵאשִׁית הַכֶּפֶל — מַטְבְּעוֹת שֶׁל 5 וְשֶׁל 2) ──
+/* ── Coin-multiplication exercise (רֵאשִׁית הַכֶּפֶל — מַטְבְּעוֹת שֶׁל 2 / 5 / 10) ──
    "How many <v>-coins fit in X?" The child taps ＋ to drop real coins into a tray
    one at a time (＋ keeps going a little past the answer so it never reveals it),
    then COUNTS the coins and types that count — teaching that N coins of v make
-   N×v (first multiplication as repeated equal groups). Each session MIXES the
-   two denominations: ₪5 (targets 10/15/20 → 2/3/4 coins) and ₪2 (targets 4/6/8
-   → 2/3/4 coins). The coins are the SAME real coins as the coin-counting
-   exercise, drawn by the global tcCoinSVG(v) (coins.ex.js is loaded in 'sup');
-   the title shows that coin as an inline icon.
+   N×v (first multiplication as repeated equal groups). Each session shows ONE
+   problem of EACH coin value, with a random target from its range:
+     ₪2  → targets 4..10  (2..5 coins)
+     ₪5  → targets 10..35 (2..7 coins)
+     ₪10 → targets 20..90 (2..9 coins)
+   The coins are the SAME real coins as the coin-counting exercise, drawn by the
+   global tcCoinSVG(v) (coins.ex.js is loaded in 'sup'); the title shows that coin
+   as an inline icon.
 
    Mounted by core.js _colxMount (the same self-contained-exercise host path as
    the column modules) into #colx-root; self-checks via api.solved()/api.wrong().
    Mixed into the Superman ('sup') pool.
    Problem shape: { t:TCM, a, b }  where a = the target and b = the coin value
-   (2 or 5); the answer is a/b (the number of coins). */
+   (2, 5 or 10); the answer is a/b (the number of coins). */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.coin_mul=(()=>{
 
-  // A session mixes BOTH coin values so she meets ×5 and ×2. Returns 3 problems
-  // with a GUARANTEED mix (2 of one value + 1 of the other); each problem carries
-  // its coin value in `b` (read by core.js as num2 and by mount as the coin).
+  // A session shows ONE problem of EACH coin value (₪2, ₪5, ₪10), each with a
+  // random target from its range — so she meets ×2, ×5 AND ×10 every time. The
+  // coin value rides in `b` (read by core.js as num2 and by mount as the coin).
   function makePool(){
     const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
-    const fives=sh([10,15,20].map(t=>({t:TCM,a:t,b:5})));   // 2,3,4 coins of ₪5
-    const twos =sh([4,6,8].map(t=>({t:TCM,a:t,b:2})));      // 2,3,4 coins of ₪2
-    const out=Math.random()<0.5
-      ? [...fives.slice(0,2),...twos.slice(0,1)]
-      : [...fives.slice(0,1),...twos.slice(0,2)];
+    const pick=a=>a[(Math.random()*a.length)|0];
+    const out=[
+      {t:TCM,a:pick([4,6,8,10]),                b:2},   // 2..5 coins of ₪2
+      {t:TCM,a:pick([10,15,20,25,30,35]),       b:5},   // 2..7 coins of ₪5
+      {t:TCM,a:pick([20,30,40,50,60,70,80,90]), b:10},  // 2..9 coins of ₪10
+    ];
     return sh(out);
   }
 
@@ -41,7 +45,7 @@ window.EXERCISES.types.coin_mul=(()=>{
   .colm-q{font-family:'Fredoka One',cursive;font-size:1.25rem;color:var(--skin-text,#fff);
     text-align:center;line-height:1.4;text-shadow:0 0 12px rgba(160,190,255,.3)}
   .colm-q b{color:var(--skin-accent,#ffd27d)}
-  /* the coin (₪5 or ₪2) shown inline in the title — the real coin, scaled small */
+  /* the coin (₪2/₪5/₪10) shown inline in the title — the real coin, scaled small */
   .colm-titlecoin{display:inline-block;vertical-align:middle;margin:0 3px}
   .colm-titlecoin .coin-wrap{display:inline-block;gap:0;animation:none;vertical-align:middle}
   .colm-titlecoin svg{width:42px;height:42px;display:block}
@@ -55,8 +59,9 @@ window.EXERCISES.types.coin_mul=(()=>{
   /* the coin face already shows "5" — hide the ₪5 caption in the tray to stay tidy */
   #colx-root .colm-tray .coin-lbl{display:none}
   #colx-root .colm-tray .coin-wrap{gap:0}
-  /* size the coins so UP TO 5 fit in one row (never wrap after just a couple) */
-  #colx-root .colm-tray .coin-wrap svg{width:50px;height:50px}
+  /* size the coins so UP TO 6 fit in one row — keeps the large counts (up to 9
+     ₪10 coins in 90, +overshoot) to about two rows */
+  #colx-root .colm-tray .coin-wrap svg{width:42px;height:42px}
   .colm-coin-fallback{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;
     justify-content:center;font-family:'Fredoka One',cursive;font-size:1.8rem;color:#0D1B21;
     background:radial-gradient(circle at 35% 30%,#CFD8DC,#90A4AE 55%,#455A64)}

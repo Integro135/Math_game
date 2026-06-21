@@ -114,6 +114,7 @@ All rotation screens below register `supportsSuper: true`. Listed in
 | `success-electric-orb.js` | A central energy orb charges and crackles with arcs, then discharges an expanding electric ring and radial bolts. |
 | `success-aurora-glow.js` | Soft green-pink-purple aurora ribbons undulate across the sky with twinkling stars — calm and dreamy, a counterweight to the energetic styles. |
 | `success-snow-sparkle.js` | Snowflakes (❄) drift and spin down with twinkling light points; praise glows in an icy halo. Super adds an opening swirl from center. |
+| `success-prism-rainbow.js` | A glowing triangular prism splits a thin white beam into a fanning rainbow spectrum (7 beams, red→violet) that sweeps and shimmers toward the lower-right, with sparkles travelling along the beams and a glint along the prism edges. Super widens the fan, adds a second prism that re-splits a beam, and a bright central flash. |
 
 ### Nature / sea
 | File | Effect |
@@ -122,6 +123,7 @@ All rotation screens below register `supportsSuper: true`. Listed in
 | `success-butterfly-swarm.js` | Butterflies (🦋) flutter out from the center along curving paths with wing-flap and sparkle trails. Super adds floating hearts. |
 | `success-dolphin-splash.js` | Dolphins (🐬) leap in arcs over an invisible waterline, rotating with their motion and splashing light droplets. Matches the reef skin. |
 | `success-bubble-pop.js` | Translucent shimmering bubbles rise and pop into light droplets; a giant bubble rises to center, pops, and the praise springs out. |
+| `success-enchanted-tree.js` | A magical tree grows from the ground — the trunk rises, branches sprout, then glowing blossoms pop in one by one along them; petals drift down and fireflies float around the canopy over a soft glow. Super grows a fuller tree with more blossoms, a firefly swarm, and a final sparkle ring. |
 
 ### Magic / royalty
 | File | Effect |
@@ -138,6 +140,8 @@ All rotation screens below register `supportsSuper: true`. Listed in
 | `success-kaleidoscope-bloom.js` | A symmetric kaleidoscope at screen center: N wedge segments (8 normal, 16 super) each draw the same set of colored shards/petals, mirrored and rotated into a mandala. The pattern blooms outward from the center (radius 0→max), rotates slowly, and the colors cycle through the palette; a gentle converging flash near the end (a brighter final pulse in super). |
 | `success-birthday-cake.js` | A cute multi-tier cake pops into the center (easeOutBack), candles light one by one with flickering flames, then a fountain of gold/white sparks erupts from the top — flying up, arcing and falling under gravity with flickering tips — while colored confetti spins down from above. Super adds more candles, a higher fountain with a second burst, and denser confetti. |
 | `success-carousel-spin.js` | A carousel of fairground horses (🦄/🐴) circles a glowing central pole on a perspective ellipse (front horses larger and drawn on top, rear ones smaller), each bobbing up and down on its pole; a scalloped roof above carries a ring of palette-colored bulbs chasing around. It accelerates up to speed, sheds sparks, and the praise appears above the roof. Super spins faster with 7 horses, brighter light chase, and a finishing sparkle ring. |
+| `success-treasure-chest.js` | A wooden treasure chest swings its lid open as golden light rays beam out; a fountain of gold coins and faceted gems bursts up and rains back under gravity, with drifting sparkles and a warm glow. Super adds more coins/gems, a large jewelled crown rising out of the chest, and a final sparkle ring. |
+| `success-sky-lanterns.js` | Warm glowing paper lanterns rise from below into a starry night, swaying gently — each with a soft halo, a flickering flame and a faint trail — while background stars twinkle and embers drift. Super adds more lanterns, a large lead lantern, and a shooting star streaking across. |
 
 ### Special / reward (not in the rotation)
 | File | Effect |

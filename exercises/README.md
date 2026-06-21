@@ -37,7 +37,7 @@ exercises/
 ├─ big_step.ex.js     big ± small step   75−1, 85−4, 77+2 (no carry/borrow)
 ├─ column_add.ex.js   INTERACTIVE column addition (Superman)
 ├─ column_sub.ex.js   INTERACTIVE column subtraction, with BORROW (פְּרִיטָה)
-└─ coin_mul.ex.js     INTERACTIVE "how many ₪5/₪2 coins fit in X" (first ×)
+└─ coin_mul.ex.js     INTERACTIVE "how many ₪2/₪5/₪10 coins fit in X" (first ×)
 ```
 
 Every file opens with the same idempotent guard and self-registration:
@@ -129,7 +129,7 @@ ptype constants (`game/js/data.js`):
 | `big_step.ex.js`| `TBG`          | `'big','mx','sup'`      | **Add 1–2** to / **subtract 1–4** from a two-digit number (21–89). Generated **without carry/borrow** — only the ONES digit changes (`u<b` rejected for sub, `u+b>9` rejected for add), so a subtraction never crosses the ten below (85−4 ok, 82−3 never). `'big'`: `build(12)` balanced sub/add then shuffled. `'mx'`: `build(2)` (2 mixed problems). `'sup'`: `buildSubs(3)` — **3 big-number SUBTRACTIONS only**. |
 | `column_add.ex.js`| `TCA`        | `'sup'`                 | The **Superman** interactive column-addition module. `make('sup')` → `makePool(2,1)` = **3 problems** (2 with a units carry + 1 without; `a=11..29`, `b=2..19`, largest result 29+19 = **48**), shuffled. Declares `aidsReveal:'always'` and provides `mount()`. See §4. |
 | `column_sub.ex.js`| `TCS`        | `'mx','sup'`            | Interactive column **subtraction** with BORROW (פְּרִיטָה). `'mx'` (Queen) → `makeNoBorrow(2)` (NO-borrow only, teen minuends `a≤19`). `'sup'` (Superman) → `makeSup()` = **6** (3 no-borrow + 3 with-borrow), both kinds spanning the full `a=11..29` range. `aidsReveal:'always'`; provides `mount()`. See §4b. |
-| `coin_mul.ex.js`| `TCM`          | `'sup'`                 | Interactive **first multiplication**: "how many `b`-coins fit in `a`". `make('sup')` → `makePool()` = **3** problems with a GUARANTEED MIX of both coin values — ₪5 (targets 10/15/20) and ₪2 (targets 4/6/8), each 2/3/4 coins. The answer is `a/b` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
+| `coin_mul.ex.js`| `TCM`          | `'sup'`                 | Interactive **first multiplication**: "how many `b`-coins fit in `a`". `make('sup')` → `makePool()` = **3** problems, ONE of EACH coin value — ₪2 (targets 4/6/8/10), ₪5 (10..35), ₪10 (20..90), so a/b ∈ 2..9 coins. The answer is `a/b` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
 
 Notes:
 - `add`/`sub`/`missing`/`double` share the same `pick(arr,n)` Fisher–Yates
@@ -314,7 +314,7 @@ the 6 shows **5 | 1** (aU=0 → no split). The TOP units shows a plain count.
 ## 4c. `coin_mul.ex.js` in depth
 
 First multiplication, framed as repeated equal groups: **"how many `b`-coins fit
-in X?"** Each session MIXES both coin values (₪5 and ₪2). Interactive, but with
+in X?"** Each session shows ONE problem of each coin value (₪2, ₪5, ₪10). Interactive, but with
 **no number-line aid** — the coin tray itself is the manipulative.
 
 ```js
@@ -322,10 +322,10 @@ return { t:TCM, modes:['sup'], aidsReveal:'always', make(mode){…}, mount };
 ```
 
 ### Data side — `make('sup')`
-`makePool()` = **3** problems with a GUARANTEED MIX of both coin values: ₪5
-(targets **10, 15, 20**) and ₪2 (targets **4, 6, 8**), each → 2/3/4 coins. Every
-problem carries its coin value in `b` (`{t:TCM,a,b}`). The answer is `a/b`, the
-COUNT of coins (e.g. 6 ÷ ₪2 = 3).
+`makePool()` = **3** problems, ONE of EACH coin value: ₪2 (targets **4/6/8/10**),
+₪5 (**10/15/20/25/30/35**) and ₪10 (**20/30/…/90**) — so a/b ∈ **2..9** coins.
+Every problem carries its coin value in `b` (`{t:TCM,a,b}`). The answer is `a/b`,
+the COUNT of coins (e.g. 6 ÷ ₪2 = 3, 90 ÷ ₪10 = 9).
 
 ### Interactive side — `mount({root,a,b,api})`
 `a` = the target, `b` = the coin value (`COIN = b||5`). On mount it injects
@@ -335,7 +335,7 @@ the shared global `tcCoinSVG(COIN)`, with a fallback), an empty coin tray, a big
 round `＋` and `−`, then an answer row whose **check (✓) button sits to the LEFT**
 of the input (`.colm-ans-row{direction:ltr}`).
 
-- `＋` drops one real coin (`tcCoinSVG(COIN)` — silver ₪5 or ₪2) into the tray;
+- `＋` drops one real coin (`tcCoinSVG(COIN)` — silver ₪2/₪5 or gold ₪10) into the tray;
   `−` removes the last. The child counts the coins and types that COUNT.
 - `＋` **caps at `need+3`** — OVERSHOOT IS ALLOWED so reaching the answer never
   reveals it; `＋` only disables at that generous bound, not at the answer.

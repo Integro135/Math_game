@@ -91,7 +91,7 @@ subtraction_game/
 │  ├─ column_sub.ex.js             TCS column SUBTRACTION (borrow/פריטה) — woven
 │  │                                 into Queen (no-borrow) + Superman
 │  │                                 (interactive mount module, #colx-root)
-│  └─ coin_mul.ex.js               TCM "how many ₪5/₪2 coins fit in X" — first
+│  └─ coin_mul.ex.js               TCM "how many ₪2/₪5/₪10 coins fit in X" — first
 │                                    multiplication, Superman 🦸
 │                                    (interactive mount module, #colx-root)
 │
@@ -324,7 +324,7 @@ Current recipes:
 - **Superman (`sup`)** — a BALANCED equal share of every interactive type,
   shuffled: `column_add.make('sup')` (3 = 2-carry + 1 no-carry),
   `big_step.make('sup')` (3 big-number SUBTRACTIONS),
-  `coin_mul.make('sup')` (3 = targets 10/15/20), and
+  `coin_mul.make('sup')` (3 = one each ₪2/₪5/₪10), and
   `column_sub.make('sup') = makeSup()` (6 = 3 no-borrow + 3 with-borrow, both
   now spanning the full a∈[11,29] range, e.g. 27−13) → 15 total. The no-borrow
   subtractions were WIDENED from the old ≤20 cap to the full 11–29 range, so
@@ -378,9 +378,10 @@ The three interactive types served by this host:
   units digits, a tens mistake rings the two tens; mistakes are NOT taught with
   an animation (it mirrors `column_add`). The bottom-units hover shows a
   subtract-through-ten split.
-- **coin multiplication** (`coin_mul.ex.js`, TCM) — "how many ₪5/₪2 coins fit
-  in X" (first multiplication), problem `{t:TCM,a,b}` where `a` is the target and
-  `b` the coin value; each session mixes ₪5 (10/15/20) and ₪2 (4/6/8), so the
+- **coin multiplication** (`coin_mul.ex.js`, TCM) — "how many ₪2/₪5/₪10 coins
+  fit in X" (first multiplication), problem `{t:TCM,a,b}` where `a` is the target
+  and `b` the coin value; each session shows one of EACH — ₪2 (4–10), ₪5 (10–35),
+  ₪10 (20–90) — so the
   typed answer is the COUNT `a/b`. The child taps + / − to add/remove the coins
   in a tray (the manipulative; no number-line aid),
   capped at `need+3` so reaching the answer never reveals it; a wrong answer

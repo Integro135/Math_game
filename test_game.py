@@ -1028,7 +1028,12 @@ class TestGameFlow:
         assert grade < 1000, f"Grade should be < 1000 after a wrong attempt, got {grade}"
 
     def test_progress_bar_advances_each_problem(self, page):
-        """The progress bar width must grow after each solved problem."""
+        """The progress bar width must grow after each solved problem. Pinned to a
+        basic numeric mode so the first problems are plain #ans inputs — the
+        default Queen/mx pool can place a column-sub or two-unknown problem (no
+        single #ans) at an early slot, which would make solve_one() non-deterministic."""
+        page.evaluate("setMode(10); restart()")
+        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
         def width():
             style = page.locator("#prog-bar").get_attribute("style") or ""
             return float(style.split("width:")[1].split("%")[0].strip()) if "width:" in style else 0.0
@@ -3304,34 +3309,34 @@ class TestCoinMul:
         page.wait_for_timeout(150)
 
     def test_coin_mul_in_sup_pool(self, page):
-        """coin_mul.make('sup') yields 3 TCM problems mixing BOTH coin values —
-        ₪5 (targets 10/15/20) and ₪2 (targets 4/6/8), each carrying b = the coin
-        value, with a/b ∈ {2,3,4}. Both denominations appear across builds, and
-        every Superman session weaves coin-multiplication in."""
+        """coin_mul.make('sup') yields 3 TCM problems — ONE of EACH coin value
+        (₪2/₪5/₪10), each carrying b = the coin value and a valid target for that
+        coin: ₪2→{4,6,8,10}, ₪5→{10,15,20,25,30,35}, ₪10→{20..90}, with a/b ∈
+        {2..9}. Every Superman session weaves coin-multiplication in."""
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
         res = page.evaluate("""(() => {
-            let saw5=false, saw2=false, bad=null;
+            const T={2:[4,6,8,10], 5:[10,15,20,25,30,35], 10:[20,30,40,50,60,70,80,90]};
+            let saw={2:false,5:false,10:false}, bad=null;
             for (let k = 0; k < 40; k++) {
                 const ps = EXERCISES.types.coin_mul.make('sup');
                 if (ps.length !== 3) bad = {reason:'len', len: ps.length};
+                if (ps.map(p => p.b).sort((a,b)=>a-b).join(',') !== '2,5,10')
+                    bad = {reason:'coins', got: ps.map(p=>p.b)};
                 for (const p of ps) {
                     if (p.t !== TCM) bad = {reason:'t', p};
-                    if (p.b !== 5 && p.b !== 2) bad = {reason:'coin', p};
-                    if (p.b === 5 && ![10,15,20].includes(p.a)) bad = {reason:'five', p};
-                    if (p.b === 2 && ![4,6,8].includes(p.a)) bad = {reason:'two', p};
+                    if (!T[p.b] || !T[p.b].includes(p.a)) bad = {reason:'target', p};
                     const need = p.a / p.b;
-                    if (need < 2 || need > 4 || need !== Math.round(need)) bad = {reason:'need', p};
-                    if (p.b === 5) saw5 = true;
-                    if (p.b === 2) saw2 = true;
+                    if (need < 2 || need > 9 || need !== Math.round(need)) bad = {reason:'need', p};
+                    if (saw[p.b] !== undefined) saw[p.b] = true;
                 }
             }
-            return {saw5, saw2, bad};
+            return {saw, bad};
         })()""")
         assert res["bad"] is None, f"invalid coin_mul problem: {res['bad']}"
-        assert res["saw5"], "₪5 coin problems must appear across builds"
-        assert res["saw2"], "₪2 coin problems must appear across builds"
+        assert res["saw"]["2"] and res["saw"]["5"] and res["saw"]["10"], \
+            f"each coin value (₪2/₪5/₪10) must appear every session: {res['saw']}"
         page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         assert page.evaluate("[...problems].some(p => p.t === TCM)"), \
             "the Superman session must contain coin-multiplication problems"
@@ -3348,6 +3353,27 @@ class TestCoinMul:
             "((document.querySelector('.colm-titlecoin .coin-lbl')||{}).textContent||'')"
             ".includes('2')"), "the title must show the ₪2 coin"
         page.fill("#colm-ans", "3")
+        page.click("#colm-chk")
+        page.wait_for_function("report[0].gotCorrect === true", timeout=TIMEOUT)
+
+    def test_coin_mul_ten_coin_variant(self, page):
+        """A ₪10 problem (90 → 9 coins): the answer is a/b = 9, the title shows the
+        ₪10 coin, ＋ stays enabled at 9 (cap need+3, so the answer is never given
+        away), and entering 9 solves it."""
+        page.evaluate("setMode('sup')")
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.evaluate("problems[0] = {t: TCM, a: 90, b: 10}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colm-add", timeout=TIMEOUT)
+        assert page.evaluate("report[0].correct") == 9, "90 ÷ ₪10 must be 9 coins"
+        assert page.evaluate(
+            "((document.querySelector('.colm-titlecoin .coin-lbl')||{}).textContent||'')"
+            ".includes('10')"), "the title must show the ₪10 coin"
+        for _ in range(9):
+            page.click("#colm-add")
+        assert page.locator(".colm-coin").count() == 9
+        assert page.evaluate("document.getElementById('colm-add').disabled") is False, \
+            "＋ must stay enabled at the answer count (cap is need+3)"
+        page.fill("#colm-ans", "9")
         page.click("#colm-chk")
         page.wait_for_function("report[0].gotCorrect === true", timeout=TIMEOUT)
 
