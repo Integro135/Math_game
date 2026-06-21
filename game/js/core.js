@@ -5,7 +5,7 @@
    means NO prize for that game — no 🎁 badge on its picker button, no gift
    screen on completion. GIFT_GOALS holds ONLY the games that currently have a
    prize (a game with no prize is absent), so `GIFT_GOALS[mode]` is falsy then. */
-const DEFAULT_GIFT_GOALS={br:900,mx:900,sup:825,sub_col:650};
+const DEFAULT_GIFT_GOALS={br:900,mx:900,sup:825};
 const GIFT_GOALS={};
 function _savedGiftGoals(){try{return JSON.parse(localStorage.getItem('giftGoals')||'{}')||{};}catch(e){return {};}}
 function _rebuildGiftGoals(){
@@ -26,7 +26,7 @@ function setGiftGoal(m,val){
   if(typeof renderModePicker==='function')renderModePicker();   // refresh the 🎁 badges
   if(typeof updateGiftIndicator==='function')updateGiftIndicator();
 }
-const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן',sub_col:'חִסּוּר בְּטוּר'};
+const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
@@ -225,7 +225,7 @@ function loadProblem(){
   if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
-  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TCM?num1/5:ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TCM?num1/(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -234,7 +234,7 @@ function loadProblem(){
   document.getElementById('hint').textContent=
     ptype===TCA?'🦸 חַבְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
    :ptype===TCS?'🦸 חַסְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
-   :ptype===TCM?'🪙 כַּמָּה מַטְבְּעוֹת שֶׁל 5 צְרִיכִים? הוֹסִיפִי וְסִפְרִי!'
+   :ptype===TCM?('🪙 כַּמָּה מַטְבְּעוֹת שֶׁל '+(num2||5)+' צְרִיכִים? הוֹסִיפִי וְסִפְרִי!')
    :ptype===TBG?'💯 רַק סִפְרַת הָאֲחָדוֹת מִשְׁתַּנָּה — הָעֲשָׂרוֹת נִשְׁאָרוֹת!'
    :ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
    :ptype===TDA?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'

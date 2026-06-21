@@ -177,10 +177,18 @@ and grouping of the buttons.
 > INSIDE the **settings modal**, reached via a ⚙️ gear guarded by a parent gate
 > (a × challenge); the header only shows a read-only `#mode-ind` of the current
 > game. The shipped groups also grew: **easy = `0 / 5 / 10 / 20`**; **medium =
-> `br` (גָּשֵׁר 10) / `mx` (מַלְכָּה) / `sup` (סוּפֶּרְמֶן 🦸) / `sub_col`
-> (חִסּוּר בְּטוּר ➖)** — `20` moved up to easy, and Superman + column-subtraction
-> were added later. The 🎁 prize badge is appended at render time (only for games
-> with a prize set), not stored in the label.
+> `br` (גָּשֵׁר 10) / `mx` (מַלְכָּה) / `sup` (סוּפֶּרְמֶן 🦸)** — `20` moved up to
+> easy, and Superman was added later. The 🎁 prize badge is appended at render
+> time (only for games with a prize set), not stored in the label.
+>
+> Column subtraction (`column_sub.ex.js`, "חִסּוּר בְּטוּר ➖") is NOT a
+> standalone game in the picker — it lives only INSIDE Superman (`sup`, both
+> no-borrow and with-borrow, full 11–29 range) and the Queen's no-borrow weave
+> (`mx`, teen minuends ≤20). A short-lived standalone `sub_col` game was added
+> and then removed; a stale saved `gameMode='sub_col'` now falls back to `mx`
+> (core.js `_savedMode`). Superman's column subtractions widened to the full
+> a∈[11,29] range (e.g. 27−13), so its no-borrow set is a strict superset of the
+> removed game — nothing was lost.
 
 ---
 

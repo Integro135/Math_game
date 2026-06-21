@@ -83,15 +83,15 @@ subtraction_game/
 │  ├─ coins.ex.js                  TC  coin counting + pool inject hook
 │  ├─ tens.ex.js                   TT  round tens (mx)
 │  ├─ big_step.ex.js               TBG big number ± 1-4 — the internal עַד 100 💯
-│  │                                 handle AND mixed into Queen + Superman +
-│  │                                 חִסּוּר בְּטוּר; no carry/borrow, never
-│  │                                 crosses the ten below; only the ones move
+│  │                                 handle AND mixed into Queen + Superman;
+│  │                                 no carry/borrow, never crosses the ten
+│  │                                 below; only the ones move
 │  ├─ column_add.ex.js             TCA column addition — Superman 🦸
 │  │                                 (interactive mount module, #colx-root)
-│  ├─ column_sub.ex.js             TCS column SUBTRACTION (borrow/פריטה) — its
-│  │                                 own חִסּוּר בְּטוּר ➖ game + Queen + Superman
+│  ├─ column_sub.ex.js             TCS column SUBTRACTION (borrow/פריטה) — woven
+│  │                                 into Queen (no-borrow) + Superman
 │  │                                 (interactive mount module, #colx-root)
-│  └─ coin_mul.ex.js               TCM "how many 5-coins fit in X" — first
+│  └─ coin_mul.ex.js               TCM "how many ₪5/₪2 coins fit in X" — first
 │                                    multiplication, Superman 🦸
 │                                    (interactive mount module, #colx-root)
 │
@@ -210,7 +210,7 @@ standalone dev harness). Integration = add the file name to the
 ```js
 const DIFFICULTY_GROUPS=[
   {id:'easy',  label:'קַל',      modes:[{id:0,label:'1+1 🌱'},{id:5,label:'עַד 5'},{id:10,label:'עַד 10'},{id:20,label:'עַד 20'}]},
-  {id:'medium',label:'בֵּינוֹנִי', modes:[{id:'br',label:'גָּשֵׁר 10 🌈'},{id:'mx',label:'מַלְכָּה 👸'},{id:'sup',label:'סוּפֶּרְמֶן 🦸'},{id:'sub_col',label:'חִסּוּר בְּטוּר ➖'}]},
+  {id:'medium',label:'בֵּינוֹנִי', modes:[{id:'br',label:'גָּשֵׁר 10 🌈'},{id:'mx',label:'מַלְכָּה 👸'},{id:'sup',label:'סוּפֶּרְמֶן 🦸'}]},
 ];
 ```
 
@@ -219,7 +219,9 @@ it at render time only for games that currently carry a gift goal
 (`GIFT_GOALS[id] > 0`; defaults from `DEFAULT_GIFT_GOALS`, editable per game in
 settings via `setGiftGoal`). The standalone "עַד 100 💯" big-number game (`big`,
 TBG) is **not** in the picker — those exercises now live inside Queen and
-Superman (and חִסּוּר בְּטוּר); `big` survives only as an internal handle.
+Superman; `big` survives only as an internal handle. A stale saved
+`gameMode='sub_col'` (the removed standalone column-subtraction game) no longer
+resolves in `DIFFICULTY_GROUPS`, so `_savedMode()` (core.js) falls back to `mx`.
 
 The picker (tier tabs + game pills) is rendered from this config by
 `renderModePicker()` (core.js) into the **settings modal** (`#settings-ov`),
@@ -228,8 +230,8 @@ header's read-only current-game indicator `#mode-ind`, also rendered by
 `renderModePicker`). Picking a game switches the mode and closes the modal;
 ESC / backdrop / ✕ close it without changing anything. Browsing a tier does
 **not** switch the mode — only clicking a game does. Buttons keep their
-`lb<id>` ids (`lb0`, `lb5`, `lb10`, `lb20`, `lbbr`, `lbmx`, `lbsup`,
-`lbsub_col`) and stay in the DOM while the modal is hidden, so automation keeps
+`lb<id>` ids (`lb0`, `lb5`, `lb10`, `lb20`, `lbbr`, `lbmx`, `lbsup`)
+and stay in the DOM while the modal is hidden, so automation keeps
 working. Moving/adding/renaming a game = editing this config only.
 
 ### 3.5 Aids (number line + counting jar) — `aids/<name>.aids.js`
@@ -313,18 +315,21 @@ Current recipes:
   TD slotting, then the coins type's `inject()` hook (1-2 coin problems).
 - **Queen (`mx`)** — `makeMxPool()` = each loaded type's `make('mx')` quota
   shuffled into 19 problems: chains 6, add/sub/missing 1 each, double 2 (a
-  TDA + a TDS), round-tens 2, coins 2, big-step 2, and `column_sub.make('mx')`
-  = 2 NO-borrow column subtractions. A guard re-seats slot 0 if it landed on a
-  TCS column problem (the first card must show a normal `#ans` input, since the
-  column module renders its own staged UI).
+  TDA + a TDS), round-tens 2, coins 2, big-step 2, and
+  `column_sub.make('mx') = makeNoBorrow(2)` = 2 NO-borrow column subtractions
+  (Queen keeps teen minuends, a≤19/b≤18 — narrower than Superman's 11–29). A
+  guard re-seats slot 0 if it landed on a TCS column problem (the first card
+  must show a normal `#ans` input, since the column module renders its own
+  staged UI).
 - **Superman (`sup`)** — a BALANCED equal share of every interactive type,
   shuffled: `column_add.make('sup')` (3 = 2-carry + 1 no-carry),
   `big_step.make('sup')` (3 big-number SUBTRACTIONS),
   `coin_mul.make('sup')` (3 = targets 10/15/20), and
-  `column_sub.make('sup')` (6 = 3 no-borrow + 3 with-borrow) → 15 total.
-- **חִסּוּר בְּטוּר (`sub_col`)** — its own column-subtraction game:
-  `column_sub.make('sub_col')` (12 problems, ≥7 needing a borrow) plus
-  `big_step.make('sub_col')` (2 big-number ± steps), shuffled.
+  `column_sub.make('sup') = makeSup()` (6 = 3 no-borrow + 3 with-borrow, both
+  now spanning the full a∈[11,29] range, e.g. 27−13) → 15 total. The no-borrow
+  subtractions were WIDENED from the old ≤20 cap to the full 11–29 range, so
+  Superman is a strict superset of the removed standalone column-subtraction
+  game — nothing was lost.
 
 setMode / restart / boot all run their pool build inside the loader callback.
 
@@ -373,10 +378,11 @@ The three interactive types served by this host:
   units digits, a tens mistake rings the two tens; mistakes are NOT taught with
   an animation (it mirrors `column_add`). The bottom-units hover shows a
   subtract-through-ten split.
-- **coin multiplication** (`coin_mul.ex.js`, TCM) — "how many 5-coins fit in
-  X" (first multiplication), problem `{t:TCM,a}` where `a` is the target
-  (10/15/20) and the typed answer is the COUNT `a/5`. The child taps + / − to
-  add/remove silver 5-coins in a tray (the manipulative; no number-line aid),
+- **coin multiplication** (`coin_mul.ex.js`, TCM) — "how many ₪5/₪2 coins fit
+  in X" (first multiplication), problem `{t:TCM,a,b}` where `a` is the target and
+  `b` the coin value; each session mixes ₪5 (10/15/20) and ₪2 (4/6/8), so the
+  typed answer is the COUNT `a/b`. The child taps + / − to add/remove the coins
+  in a tray (the manipulative; no number-line aid),
   capped at `need+3` so reaching the answer never reveals it; a wrong answer
   gives directional (bigger/smaller) feedback off the TYPED value.
 

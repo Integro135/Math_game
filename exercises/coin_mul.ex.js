@@ -1,34 +1,39 @@
-/* ── Coin-multiplication exercise (רֵאשִׁית הַכֶּפֶל — מַטְבְּעוֹת שֶׁל 5) ──────────
-   "How many 5-coins fit in X?" The child taps ＋ to drop real 5-coins into a
-   tray one at a time; ＋ caps at the target (it disables once enough coins are
-   in, the only "you've arrived" signal — there is no running-total row). The
-   child then COUNTS the coins and types that count — teaching that N coins of 5
-   make N×5 (first multiplication as repeated equal groups).
-   The coins are the SAME silver ₪5 coin as the coin-counting exercise, drawn by
-   the global tcCoinSVG(5) (coins.ex.js is loaded in 'sup' so it is available);
+/* ── Coin-multiplication exercise (רֵאשִׁית הַכֶּפֶל — מַטְבְּעוֹת שֶׁל 5 וְשֶׁל 2) ──
+   "How many <v>-coins fit in X?" The child taps ＋ to drop real coins into a tray
+   one at a time (＋ keeps going a little past the answer so it never reveals it),
+   then COUNTS the coins and types that count — teaching that N coins of v make
+   N×v (first multiplication as repeated equal groups). Each session MIXES the
+   two denominations: ₪5 (targets 10/15/20 → 2/3/4 coins) and ₪2 (targets 4/6/8
+   → 2/3/4 coins). The coins are the SAME real coins as the coin-counting
+   exercise, drawn by the global tcCoinSVG(v) (coins.ex.js is loaded in 'sup');
    the title shows that coin as an inline icon.
 
    Mounted by core.js _colxMount (the same self-contained-exercise host path as
    the column modules) into #colx-root; self-checks via api.solved()/api.wrong().
    Mixed into the Superman ('sup') pool.
-   Problem shape: { t:TCM, a }  where a = the target (a multiple of 5); the
-   answer is a/5 (the number of coins). */
+   Problem shape: { t:TCM, a, b }  where a = the target and b = the coin value
+   (2 or 5); the answer is a/b (the number of coins). */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.coin_mul=(()=>{
-  const COIN=5;
 
+  // A session mixes BOTH coin values so she meets ×5 and ×2. Returns 3 problems
+  // with a GUARANTEED mix (2 of one value + 1 of the other); each problem carries
+  // its coin value in `b` (read by core.js as num2 and by mount as the coin).
   function makePool(){
-    const targets=[10,15,20];                 // 2,3,4 coins → 2×5, 3×5, 4×5
-    const out=targets.map(t=>({t:TCM,a:t}));
-    for(let i=out.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[out[i],out[j]]=[out[j],out[i]];}
-    return out;
+    const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+    const fives=sh([10,15,20].map(t=>({t:TCM,a:t,b:5})));   // 2,3,4 coins of ₪5
+    const twos =sh([4,6,8].map(t=>({t:TCM,a:t,b:2})));      // 2,3,4 coins of ₪2
+    const out=Math.random()<0.5
+      ? [...fives.slice(0,2),...twos.slice(0,1)]
+      : [...fives.slice(0,1),...twos.slice(0,2)];
+    return sh(out);
   }
 
-  // the real silver ₪5 coin from the coin-counting exercise (tcCoinSVG is global,
-  // defined by coins.ex.js — loaded in 'sup'); a silver fallback if unavailable
-  function coinHTML(){
-    if(typeof tcCoinSVG==='function')return tcCoinSVG(COIN);
-    return '<div class="coin-wrap"><div class="colm-coin-fallback">5</div></div>';
+  // the real coin from the coin-counting exercise (tcCoinSVG is global, defined
+  // by coins.ex.js — loaded in 'sup'); a silver fallback if unavailable
+  function coinHTML(coin){
+    if(typeof tcCoinSVG==='function')return tcCoinSVG(coin);
+    return '<div class="coin-wrap"><div class="colm-coin-fallback">'+coin+'</div></div>';
   }
 
   const CSS=`
@@ -36,7 +41,7 @@ window.EXERCISES.types.coin_mul=(()=>{
   .colm-q{font-family:'Fredoka One',cursive;font-size:1.25rem;color:var(--skin-text,#fff);
     text-align:center;line-height:1.4;text-shadow:0 0 12px rgba(160,190,255,.3)}
   .colm-q b{color:var(--skin-accent,#ffd27d)}
-  /* the 5-coin shown inline in the title — the real coin, scaled small */
+  /* the coin (₪5 or ₪2) shown inline in the title — the real coin, scaled small */
   .colm-titlecoin{display:inline-block;vertical-align:middle;margin:0 3px}
   .colm-titlecoin .coin-wrap{display:inline-block;gap:0;animation:none;vertical-align:middle}
   .colm-titlecoin svg{width:42px;height:42px;display:block}
@@ -88,7 +93,7 @@ window.EXERCISES.types.coin_mul=(()=>{
 
   function mount({root,a,b,api}){
     injectStyle();
-    const target=a, need=Math.round(a/COIN);
+    const COIN=b||5, target=a, need=Math.round(a/COIN);
     // the child may add MORE coins than fit — the ＋ must never disable AT the
     // answer (that would reveal it). Cap only at a generous bound well past it.
     const maxCoins=need+3;
@@ -97,7 +102,7 @@ window.EXERCISES.types.coin_mul=(()=>{
 
     root.innerHTML=`
       <div class="colm-root">
-        <div class="colm-q">כַּמָּה <span class="colm-titlecoin">${coinHTML()}</span> נִכְנָסִים בְּ-<b>${target}</b>?</div>
+        <div class="colm-q">כַּמָּה <span class="colm-titlecoin">${coinHTML(COIN)}</span> נִכְנָסִים בְּ-<b>${target}</b>?</div>
         <div class="colm-tray" id="colm-tray"></div>
         <div class="colm-controls">
           <button class="colm-bigbtn minus" id="colm-rem" aria-label="הָסִירִי מַטְבֵּעַ">−</button>
@@ -113,7 +118,7 @@ window.EXERCISES.types.coin_mul=(()=>{
     const tray=$('colm-tray'),addBtn=$('colm-add'),remBtn=$('colm-rem'),inp=$('colm-ans'),chk=$('colm-chk');
 
     function fb(msg){const h=document.getElementById('hint');if(h)h.textContent=msg;}
-    fb('🪙 הוֹסִיפִי מַטְבְּעוֹת שֶׁל 5 וְסִפְרִי כַּמָּה צְרִיכִים!');
+    fb('🪙 הוֹסִיפִי מַטְבְּעוֹת שֶׁל '+COIN+' וְסִפְרִי כַּמָּה צְרִיכִים!');
 
     function render(){
       tray.classList.toggle('colm-tray-blank',count===0);  // box invisible while empty, space reserved
@@ -123,7 +128,7 @@ window.EXERCISES.types.coin_mul=(()=>{
     function addCoin(){
       if(done||count>=maxCoins)return;
       count++;
-      const tmp=document.createElement('div');tmp.innerHTML=coinHTML();
+      const tmp=document.createElement('div');tmp.innerHTML=coinHTML(COIN);
       const node=tmp.firstElementChild;node.classList.add('colm-coin');   // marker for counting
       tray.appendChild(node);
       render();

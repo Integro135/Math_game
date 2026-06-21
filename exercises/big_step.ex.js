@@ -51,14 +51,12 @@ window.EXERCISES.types.big_step=(()=>{
 
   return{
     t:TBG,
-    // serves its own game ('big') and is also MIXED into Queen + Superman +
-    // Column-subtraction
-    modes:['big','mx','sup','sub_col'],
+    // serves its own game ('big') and is also MIXED into Queen + Superman
+    modes:['big','mx','sup'],
     make(mode){
       if(mode==='big')return build(12);   // the dedicated game
       if(mode==='mx') return build(2);     // a couple inside Queen
       if(mode==='sup')return buildSubs(3); // 3 big-number SUBTRACTIONS in Superman
-      if(mode==='sub_col')return build(2); // a couple inside Column-subtraction
       return[];
     },
   };

@@ -26,36 +26,18 @@
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.column_sub=(()=>{
 
-  // pool: 12 column-subtraction problems (a=11..29, b=2..19, a>b), ≥7 needing a
-  // borrow (top units < bottom units). Generated so the standard algorithm never
-  // goes negative in any column (a>b guarantees it).
-  function makePool(){
-    const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
-    const out=[],seen=new Set();
-    const want=(borrow)=>{
-      for(let tries=0;tries<300;tries++){
-        const a=ri(11,29),b=ri(2,19);
-        if(a<=b)continue;                          // positive result only
-        const needsBorrow=(a%10)<(b%10);
-        const key=a+'_'+b;
-        if(needsBorrow===borrow&&!seen.has(key)){seen.add(key);out.push({t:TCS,a,b});return;}
-      }
-    };
-    for(let i=0;i<7;i++)want(true);
-    for(let i=0;i<5;i++)want(false);
-    for(let i=out.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[out[i],out[j]]=[out[j],out[i]];}
-    return out;
-  }
-
-  // NO-BORROW column subtractions for the Queen (mx): the top units digit is
-  // ALWAYS strictly greater than the bottom's, so no regrouping is ever needed.
-  // Kept to teen minuends (a≤19) so every operand stays ≤20 like the rest of mx.
-  function makeNoBorrow(n){
+  // NO-BORROW column subtractions (top units ALWAYS strictly greater than the
+  // bottom's, so no regrouping is ever needed). maxA/maxB cap the operands: the
+  // Queen (mx) keeps teen minuends (a≤19, everything ≤20 like the rest of mx);
+  // Superman (sup) widens to a≤29 (e.g. 27−13) — the superset that absorbed the
+  // former standalone column-subtraction game.
+  function makeNoBorrow(n,maxA,maxB){
+    maxA=maxA||19; maxB=maxB||18;
     const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
     const out=[],seen=new Set();
     for(let i=0;i<n;i++){
       for(let t=0;t<300;t++){
-        const a=ri(11,19),b=ri(2,18);
+        const a=ri(11,maxA),b=ri(2,maxB);
         if(a<=b)continue;
         if((a%10)<=(b%10))continue;          // top units must be > bottom units
         const key=a+'_'+b;
@@ -67,11 +49,12 @@ window.EXERCISES.types.column_sub=(()=>{
   }
 
   // Superman (sup): EQUAL representation of both column-subtraction kinds —
-  // 3 NO-BORROW and 3 WITH-BORROW (top units < bottom units → regrouping). The
-  // borrow ones use the full a∈[11,29] range (proper two-digit borrow, e.g. 25−17).
+  // 3 NO-BORROW and 3 WITH-BORROW (top units < bottom units → regrouping). BOTH
+  // span the full a∈[11,29] range (e.g. 27−13 no-borrow, 25−17 with borrow), so
+  // Superman is a strict superset of the old standalone חִסּוּר בְּטוּר game.
   function makeSup(){
     const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
-    const out=[...makeNoBorrow(3)];                 // 3 no-borrow
+    const out=[...makeNoBorrow(3,29,19)];           // 3 no-borrow (full 11–29 range)
     const seen=new Set(out.map(p=>p.a+'_'+p.b));
     for(let n=0;n<3;n++){                             // 3 WITH borrow
       for(let t=0;t<400;t++){
@@ -526,12 +509,11 @@ window.EXERCISES.types.column_sub=(()=>{
 
   return{
     t:TCS,
-    modes:['sub_col','mx','sup'],
+    modes:['mx','sup'],
     aidsReveal:'always',   // the skinned number line shows from the start
-    // 'sub_col' = the dedicated game (borrow + no-borrow); 'mx' (Queen) gets a
-    // couple of NO-BORROW column subtractions; 'sup' (Superman) gets one
-    // no-borrow AND one with-borrow (makeSup), so it teaches both.
-    make(mode){return mode==='sub_col'?makePool():mode==='mx'?makeNoBorrow(2):mode==='sup'?makeSup():[];},
+    // 'mx' (Queen) gets a couple of NO-BORROW column subtractions (≤20); 'sup'
+    // (Superman) gets makeSup() = 3 no-borrow + 3 with-borrow, full 11–29 range.
+    make(mode){return mode==='mx'?makeNoBorrow(2):mode==='sup'?makeSup():[];},
     mount,
   };
 })();

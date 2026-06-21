@@ -37,7 +37,7 @@ exercises/
 ├─ big_step.ex.js     big ± small step   75−1, 85−4, 77+2 (no carry/borrow)
 ├─ column_add.ex.js   INTERACTIVE column addition (Superman)
 ├─ column_sub.ex.js   INTERACTIVE column subtraction, with BORROW (פְּרִיטָה)
-└─ coin_mul.ex.js     INTERACTIVE "how many 5-coins fit in X" (first ×)
+└─ coin_mul.ex.js     INTERACTIVE "how many ₪5/₪2 coins fit in X" (first ×)
 ```
 
 Every file opens with the same idempotent guard and self-registration:
@@ -106,7 +106,7 @@ A registered type is an object of this exact shape:
 | `big_step`  | `{t:TBG, a, b, op:'add'|'sub'}`                    | big number + 1–2 / − 1–4                  |
 | `column_add`| `{t:TCA, a, b}`                                    | column-addition problem (interactive)    |
 | `column_sub`| `{t:TCS, a, b}`  (always `a > b`)                 | column-subtraction problem (interactive) |
-| `coin_mul`  | `{t:TCM, a}`  (`a` = target, a multiple of 5)     | "how many 5-coins fit in `a`" (answer `a/5`, interactive) |
+| `coin_mul`  | `{t:TCM, a, b}`  (`a` = target, `b` = coin value 2/5) | "how many `b`-coins fit in `a`" (answer `a/b`, interactive) |
 
 ptype constants (`game/js/data.js`):
 `TM='missing'`, `TS='sub'`, `TA='add'`, `TX='mixed'`, `TZ='triple'`,
@@ -126,19 +126,20 @@ ptype constants (`game/js/data.js`):
 | `chain.ex.js`  | `[TZ,TX,TW]`    | `'mx'`                  | `'mx'` only: 2 problems of each shape (TZ `a+b+c`, TX `a−b+c`, TW `a−b−c`), operands range-checked so totals stay sensible (≤ 20). Other modes → `[]`. |
 | `coins.ex.js`  | `TC`            | `5,10,20,'mx'`          | `'mx'`: 2 coin problems (sums ≤ 50, 3–7 coins, weighted toward ₪10/₪5). `5/10/20`: `make` returns `[]` — these pools get coins via **`inject(arr,mode)`** instead (guarantees 1–2 coin problems, avoiding the first/last slot and the every-4th TD slots). Also exports the global `tcCoinSVG(v)` used by the equation renderer to draw coins. |
 | `tens.ex.js`   | `TT`            | `'mx'`                  | `'mx'` only: 2 round-tens problems; ~50/50 add vs subtract, operands are multiples of 10 chosen so results stay in 0–90. Other modes → `[]`. |
-| `big_step.ex.js`| `TBG`          | `'big','mx','sup','sub_col'` | **Add 1–2** to / **subtract 1–4** from a two-digit number (21–89). Generated **without carry/borrow** — only the ONES digit changes (`u<b` rejected for sub, `u+b>9` rejected for add), so a subtraction never crosses the ten below (85−4 ok, 82−3 never). `'big'`: `build(12)` balanced sub/add then shuffled. `'mx'` / `'sub_col'`: `build(2)` (2 mixed problems). `'sup'`: `buildSubs(3)` — **3 big-number SUBTRACTIONS only**. |
+| `big_step.ex.js`| `TBG`          | `'big','mx','sup'`      | **Add 1–2** to / **subtract 1–4** from a two-digit number (21–89). Generated **without carry/borrow** — only the ONES digit changes (`u<b` rejected for sub, `u+b>9` rejected for add), so a subtraction never crosses the ten below (85−4 ok, 82−3 never). `'big'`: `build(12)` balanced sub/add then shuffled. `'mx'`: `build(2)` (2 mixed problems). `'sup'`: `buildSubs(3)` — **3 big-number SUBTRACTIONS only**. |
 | `column_add.ex.js`| `TCA`        | `'sup'`                 | The **Superman** interactive column-addition module. `make('sup')` → `makePool(2,1)` = **3 problems** (2 with a units carry + 1 without; `a=11..29`, `b=2..19`, largest result 29+19 = **48**), shuffled. Declares `aidsReveal:'always'` and provides `mount()`. See §4. |
-| `column_sub.ex.js`| `TCS`        | `'sub_col','mx','sup'`  | Interactive column **subtraction** with BORROW (פְּרִיטָה). `'sub_col'` (its own game) → `makePool()` = **12** problems (`a=11..29`, `b=2..19`, `a>b`, ≥ 7 needing a borrow), shuffled. `'mx'` (Queen) → `makeNoBorrow(2)` (NO-borrow only, teen minuends `a≤19`). `'sup'` (Superman) → `makeSup()` = **6** (3 no-borrow + 3 with-borrow). `aidsReveal:'always'`; provides `mount()`. See §4b. |
-| `coin_mul.ex.js`| `TCM`          | `'sup'`                 | Interactive **first multiplication**: "how many 5-coins fit in `a`". `make('sup')` → `makePool()` = **3** problems (targets 10/15/20 = 2/3/4 coins), shuffled. The answer is `a/5` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
+| `column_sub.ex.js`| `TCS`        | `'mx','sup'`            | Interactive column **subtraction** with BORROW (פְּרִיטָה). `'mx'` (Queen) → `makeNoBorrow(2)` (NO-borrow only, teen minuends `a≤19`). `'sup'` (Superman) → `makeSup()` = **6** (3 no-borrow + 3 with-borrow), both kinds spanning the full `a=11..29` range. `aidsReveal:'always'`; provides `mount()`. See §4b. |
+| `coin_mul.ex.js`| `TCM`          | `'sup'`                 | Interactive **first multiplication**: "how many `b`-coins fit in `a`". `make('sup')` → `makePool()` = **3** problems with a GUARANTEED MIX of both coin values — ₪5 (targets 10/15/20) and ₪2 (targets 4/6/8), each 2/3/4 coins. The answer is `a/b` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
 
 Notes:
 - `add`/`sub`/`missing`/`double` share the same `pick(arr,n)` Fisher–Yates
   helper and per-cap `TABLES` pattern.
-- `big_step` is the data type with the **widest** reach — **four** modes
-  (`'big','mx','sup','sub_col'`). It defines the whole `'big'` pool but is only
-  "mixed into" the other three (`'mx'`/`'sup'`/`'sub_col'`).
-- `column_sub` is the only interactive type served in **three** modes; the
-  other two interactive types (`column_add`, `coin_mul`) are Superman-only.
+- `big_step` is the data type with the **widest** reach — **three** modes
+  (`'big','mx','sup'`). It defines the whole `'big'` pool but is only
+  "mixed into" the other two (`'mx'`/`'sup'`).
+- `column_sub` is the only interactive type served in **two** modes (Queen
+  `'mx'` no-borrow + Superman `'sup'`); the other two interactive types
+  (`column_add`, `coin_mul`) are Superman-only.
 
 ---
 
@@ -234,21 +235,25 @@ The mirror of `column_add`: two-stage column **subtraction** (units → tens →
 the exact reverse of the carry.
 
 ```js
-return { t:TCS, modes:['sub_col','mx','sup'], aidsReveal:'always', make(mode){…}, mount };
+return { t:TCS, modes:['mx','sup'], aidsReveal:'always', make(mode){…}, mount };
 ```
 
 ### Data side — `make(mode)`
-Three generators, one per mode (all emit `{t:TCS,a,b}` with `a>b`, so the
-standard algorithm never goes negative in any column):
+Two generators, one per mode (both emit `{t:TCS,a,b}` with `a>b`, so the
+standard algorithm never goes negative in any column). `makeNoBorrow(n,maxA,maxB)`
+caps the operands: `maxA` defaults to 19, `maxB` to 18.
 
-- `'sub_col'` (its own dedicated game) → `makePool()` = **12** problems
-  (`a=11..29`, `b=2..19`), ≥ 7 needing a borrow (`(a%10)<(b%10)`), de-duped and
-  shuffled.
 - `'mx'` (Queen) → `makeNoBorrow(2)` = **2 NO-borrow** subtractions only; teen
   minuends (`a=11..19`) so every operand stays ≤ 20 like the rest of Queen.
-- `'sup'` (Superman) → `makeSup()` = **6** total: 3 no-borrow (`makeNoBorrow(3)`)
-  + 3 with-borrow (full `a=11..29` range, e.g. 25−17), shuffled — an equal
-  share of both kinds.
+- `'sup'` (Superman) → `makeSup()` = **6** total: 3 no-borrow
+  (`makeNoBorrow(3,29,19)`) + 3 with-borrow, both now spanning the **full
+  `a=11..29` range** (e.g. 27−13 no-borrow, 25−17 with borrow), shuffled — an
+  equal share of both kinds.
+
+The NO-borrow column subtractions used to be capped at 20; they were **widened**
+so Superman's no-borrow problems span the whole `a∈[11,29]` range. Superman is
+therefore a strict **superset** of the old standalone column-subtraction game
+(now removed) — nothing was lost when that game went away.
 
 ### Interactive side — `mount({root,a,b,api})`
 `a` = minuend (top), `b` = subtrahend (bottom). On mount it injects its private
@@ -308,28 +313,30 @@ the 6 shows **5 | 1** (aU=0 → no split). The TOP units shows a plain count.
 
 ## 4c. `coin_mul.ex.js` in depth
 
-First multiplication, framed as repeated equal groups: **"how many 5-coins fit
-in X?"** Interactive, but with **no number-line aid** — the coin tray itself is
-the manipulative.
+First multiplication, framed as repeated equal groups: **"how many `b`-coins fit
+in X?"** Each session MIXES both coin values (₪5 and ₪2). Interactive, but with
+**no number-line aid** — the coin tray itself is the manipulative.
 
 ```js
 return { t:TCM, modes:['sup'], aidsReveal:'always', make(mode){…}, mount };
 ```
 
 ### Data side — `make('sup')`
-`makePool()` = **3** problems (`{t:TCM,a}` for targets **10, 15, 20** → 2/3/4
-coins → 2×5, 3×5, 4×5), shuffled. The answer is `a/5`, the COUNT of coins.
+`makePool()` = **3** problems with a GUARANTEED MIX of both coin values: ₪5
+(targets **10, 15, 20**) and ₪2 (targets **4, 6, 8**), each → 2/3/4 coins. Every
+problem carries its coin value in `b` (`{t:TCM,a,b}`). The answer is `a/b`, the
+COUNT of coins (e.g. 6 ÷ ₪2 = 3).
 
 ### Interactive side — `mount({root,a,b,api})`
-`a` = the target (`b` unused). On mount it injects `#colm-style`, computes
-`need = round(a/5)` and a cap `maxCoins = need+3`, and writes its DOM: a title
-row "כַּמָּה [5-coin] נִכְנָסִים בְּ-X?" (the inline 5-coin via the shared global
-`tcCoinSVG(5)`, with a silver fallback), an empty coin tray, a big round `＋` and
-`−`, then an answer row whose **check (✓) button sits to the LEFT** of the input
-(`.colm-ans-row{direction:ltr}`).
+`a` = the target, `b` = the coin value (`COIN = b||5`). On mount it injects
+`#colm-style`, computes `need = round(a/COIN)` and a cap `maxCoins = need+3`, and
+writes its DOM: a title row "כַּמָּה [coin] נִכְנָסִים בְּ-X?" (the inline coin via
+the shared global `tcCoinSVG(COIN)`, with a fallback), an empty coin tray, a big
+round `＋` and `−`, then an answer row whose **check (✓) button sits to the LEFT**
+of the input (`.colm-ans-row{direction:ltr}`).
 
-- `＋` drops one real silver ₪5 coin (`tcCoinSVG(5)`) into the tray; `−` removes
-  the last. The child counts the coins and types that COUNT.
+- `＋` drops one real coin (`tcCoinSVG(COIN)` — silver ₪5 or ₪2) into the tray;
+  `−` removes the last. The child counts the coins and types that COUNT.
 - `＋` **caps at `need+3`** — OVERSHOOT IS ALLOWED so reaching the answer never
   reveals it; `＋` only disables at that generous bound, not at the answer.
 - A wrong answer gives **DIRECTIONAL** feedback ("try a bigger / smaller
@@ -378,8 +385,6 @@ boot / setMode(m) / restart()
     ...coin_mul.make('sup') /*3*/, ...column_sub.make('sup') /*6 = 3 no-borrow + 3
     borrow*/])`. (Note: `column_sub` contributes 6, so the total is 15 cards but
     only 3 *no-borrow* + 3 *borrow* of those are subtraction.)
-  - `'sub_col'` (its own game) →
-    `shuffle([...column_sub.make('sub_col') /*12*/, ...big_step.make('sub_col') /*2*/])`.
   - `'big'` → `EX('big_step').make('big')` (`build(12)`).
   - `'br'` → fixed bridge-10 curriculum baked into the recipe (the `add`/`sub`
     files return `[]` for `'br'`).
@@ -396,9 +401,9 @@ boot / setMode(m) / restart()
   `{[TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul'}`.
 - **`aidsReveal`** is read generically by `core.js` `_lockAids` for whichever
   ptype is on screen, so one field in a type file changes when its aids appear.
-- **Gift goals.** `DEFAULT_GIFT_GOALS` (`core.js`) = `{br:900, mx:900, sup:825,
-  sub_col:650}` — the four reward modes; the basic modes (`0/5/10/20/big`) have
-  no prize threshold.
+- **Gift goals.** `DEFAULT_GIFT_GOALS` (`core.js`) = `{br:900, mx:900, sup:825}`
+  — the three reward modes; the basic modes (`0/5/10/20/big`) have no prize
+  threshold.
 
 ---
 

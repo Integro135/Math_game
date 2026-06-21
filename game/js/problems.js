@@ -28,12 +28,10 @@ function makePool(m){
   if(m===0)return EX('add').make(0);                 // the full 1+1 ladder
   if(m==='mx')return makeMxPool();                   // Queen — curated mix
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
-  // Superman — column addition + a couple of big-number ± 1/2 steps + a few
-  // coin-multiplication problems + a couple of NO-BORROW column subtractions
+  // Superman — an EQUAL 3-per-type mix: column addition + big-number subtraction
+  // + coin-multiplication + column subtraction (3 no-borrow + 3 with-borrow)
   if(m==='sup')return shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('column_sub').make('sup')]);
-  // Column subtraction — column subtraction + a couple of big-number ± 1/2 steps
-  if(m==='sub_col')return shuffle([...EX('column_sub').make('sub_col'),...EX('big_step').make('sub_col')]);
-  if(m==='big')return EX('big_step').make('big');    // big number ± 1/2 game
+  if(m==='big')return EX('big_step').make('big');    // big number ± step game
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
   // then the coins type seeds 1-2 coin problems
   const pool=[
@@ -105,4 +103,4 @@ function makeBridgePool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='sup'?15:mode==='sub_col'?15:mode==='big'?10:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='sup'?15:mode==='big'?10:mode||5;}

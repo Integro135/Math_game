@@ -98,7 +98,7 @@ fills at runtime.
 - **bridging-10 set machinery** — `_bridgeSet1()`, `_bridgeSet2()`,
   `_BRIDGE_SETS`, `makeBridgePool()`, plus the persisted turn `_brTurn`.
 - **`modePts()`** — points-per-correct-answer for the current `mode`
-  (mx→20, br→15, sup→15, **sub_col→15**, big→10, otherwise the numeric mode or 5).
+  (mx→20, br→15, sup→15, big→10, otherwise the numeric mode or 5).
 
 **Key functionality you must know**
 - A recipe only runs **after** `bg-loader.loadExercisesFor` has injected the
@@ -107,9 +107,8 @@ fills at runtime.
   (`makeMxPool`, 19 problems); `'br'` → bridging curriculum; `'sup'` → a
   **balanced** shuffle of `column_add.make('sup')` (3) + `big_step.make('sup')`
   (3 subtractions) + `coin_mul.make('sup')` (3) + `column_sub.make('sup')` (6 =
-  3 no-borrow + 3 borrow) → **15 problems, an equal share of each type**;
-  `'sub_col'` → a shuffle of `column_sub.make('sub_col')` (12) +
-  `big_step.make('sub_col')` (2); `'big'` → `big_step`; the numeric `5/10/20` →
+  3 no-borrow + 3 borrow, all over the **full 11–29 range**) → **15 problems, an
+  equal share of each type**; `'big'` → `big_step`; the numeric `5/10/20` →
   union of `missing/sub/add/double`, run through `sampleWithTD(pool, GL)`, then
   the `coins` type's `.inject()` hook seeds 1–2 coin problems.
 - **`makeMxPool` (Queen) now includes column subtraction.** Each loaded type
@@ -118,6 +117,13 @@ fills at runtime.
   → 19, then one shuffle. A guard keeps a `TCS` problem out of **slot 0** (the
   first card must show a normal `#ans` input for boot to find), swapping it with
   the first non-`TCS` problem.
+- **Column subtraction lives ONLY inside Queen + Superman** (the standalone
+  `'sub_col'` game was removed). `column_sub.ex.js` exposes `makeNoBorrow(n,
+  maxA,maxB)` (defaults `maxA=19,maxB=18`): Queen (`'mx'`) calls `makeNoBorrow(2)`
+  for teen minuends (a≤19, everything ≤20), while Superman (`'sup'`) calls
+  `makeSup()` = 3 no-borrow + 3 with-borrow, **both spanning the full a∈[11,29]
+  range** (e.g. 27−13, 25−17). Superman's column subtraction is thus a strict
+  **superset** of the old standalone game — nothing was lost.
 - **Bridging-10 is two fixed pedagogical sets served alternately.** The order
   *inside* each set is the curriculum and must never change. `makeBridgePool()`
   serves the set selected by `_brTurn`, then advances the turn (`_brTurn` is
@@ -143,7 +149,7 @@ This is the largest file and owns nearly all gameplay state and logic.
   `GIFT_GOALS`/`GIFT_MODE_LABELS` and `GL` (=12).
 - **Per-game prize levels** (settings): `GIFT_GOALS` is a live object built by
   `_rebuildGiftGoals()` from `DEFAULT_GIFT_GOALS`
-  (`{br:900, mx:900, sup:825, sub_col:650}` — **only the reward games**; the
+  (`{br:900, mx:900, sup:825}` — **only the reward games**; the
   basic modes `0/5/10/20/big` ship with no default prize) merged with per-game
   overrides persisted in `localStorage.giftGoals`. A game with **level 0 / empty
   has no prize** (absent from `GIFT_GOALS`, no 🎁 badge, no gift screen).
@@ -151,8 +157,8 @@ This is the largest file and owns nearly all gameplay state and logic.
   refreshes the picker + indicator; `renderPrizeConfig()` renders one editable
   input per game in the settings modal (`#prize-row`). The 🎁 badge is appended
   to a picker button by `renderModePicker` only when `GIFT_GOALS[id] > 0` (the
-  labels in `DIFFICULTY_GROUPS` no longer hard-code 🎁). `GIFT_MODE_LABELS` adds
-  `sub_col:'חִסּוּר בְּטוּר'` alongside `br/mx/sup`.
+  labels in `DIFFICULTY_GROUPS` no longer hard-code 🎁). `GIFT_MODE_LABELS`
+  carries `{br, mx, sup}`.
 - **Score history**: every completed set is logged by `recordHistory(grade)`
   (called from `endGame`) into `localStorage.scoreHistory` — `{name, mode, game,
   grade, ts}`, newest-first, capped 60. `renderHistory()` lists name + game +
@@ -206,8 +212,9 @@ This is the largest file and owns nearly all gameplay state and logic.
   every other already-active mode) so its pool rebuilds and `makeBridgePool`
   flips to the next bridging set.
 - **`loadProblem()`** destructures the current problem, computes the correct
-  answer for the ptype (for `TCM` that is `num1/5` — the *count* of 5-coins, not
-  the target), seeds `report[idx]`, writes the per-ptype Hebrew hint, then
+  answer for the ptype (for `TCM` that is `num1/(num2||5)` — the *count* of coins,
+  where `num2` is the coin value 2 or 5, not the target), seeds `report[idx]`,
+  writes the per-ptype Hebrew hint, then
   configures the right aid: the kangaroo number line is reconfigured per type —
   coins (0–20, or 0–50 step-10 in Queen), tens (0–100 step 10), column-add and
   column-sub both use the skinned **0–20** line (sub is COUNT-BACK — main.js
@@ -247,7 +254,7 @@ This is the largest file and owns nearly all gameplay state and logic.
   clean-first-try problem, floored at 101). `endGame()` renders the end screen,
   logs the set via `recordHistory()`, and if the grade clears the game's prize
   level (`GIFT_GOALS[mode] > 0`, parent-configurable — defaults `br:900, mx:900,
-  sup:825, sub_col:650`) shows the 🎁 badge + schedules `showGiftScreen()`.
+  sup:825`) shows the 🎁 badge + schedules `showGiftScreen()`.
 - **number-hover tooltip** (`#num-tt`): hovering any `.eq-n`/`.eq-res` renders
   that number as **objects borrowed from the active aid variant's jar art**
   (`AIDS.current.jar.itemSVG`), grouped in fives, positioned below (flips above

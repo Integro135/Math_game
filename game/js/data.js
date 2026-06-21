@@ -28,9 +28,9 @@ const EXERCISE_INDEX=[
   {file:'chain',     modes:['mx']},
   {file:'tens',      modes:['mx']},
   {file:'column_add',modes:['sup']},
-  {file:'column_sub',modes:['sub_col','mx','sup']},
+  {file:'column_sub',modes:['mx','sup']},
   {file:'coin_mul',  modes:['sup']},
-  {file:'big_step',  modes:['big','mx','sup','sub_col']},
+  {file:'big_step',  modes:['big','mx','sup']},
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
 const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul'};
@@ -50,7 +50,6 @@ const DIFFICULTY_GROUPS=[
     {id:'br',label:'גָּשֵׁר 10 🌈'},
     {id:'mx',label:'מַלְכָּה 👸'},
     {id:'sup',label:'סוּפֶּרְמֶן 🦸'},
-    {id:'sub_col',label:'חִסּוּר בְּטוּר ➖'},
   ]},
 ];
 /* NOTE: the 🎁 prize badge is NOT part of the label — it is appended at render
