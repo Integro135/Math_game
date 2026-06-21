@@ -1935,15 +1935,14 @@ class TestNumberHoverTooltip:
             f"Expected at least 1 .eq-n / .eq-res element with data-num, got {nums}"
 
     def test_hover_shows_tooltip_with_correct_emoji_count(self, page):
-        """Hovering a .eq-n shows #num-tt with EXACTLY that many emoji spans
-        across all groups."""
-        page.evaluate("setMode(10)")
-        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        """Hovering a revealable number shows #num-tt with EXACTLY that many
+        emoji spans across all groups. (A single TDA result is never suppressed.)"""
+        page.evaluate("problems[0] = {t: TDA, r: 7}; idx = 0; loadProblem();")
         page.wait_for_timeout(150)
-        el = page.locator("#eq .eq-n[data-num]").first
-        num = int(el.get_attribute("data-num"))
-
-        el.hover()
+        page.evaluate("""
+            const el = document.querySelector('#eq .eq-n[data-num="7"]');
+            el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+        """)
         page.wait_for_function(
             "document.getElementById('num-tt')?.style.display === 'block'",
             timeout=TIMEOUT,
@@ -1951,39 +1950,42 @@ class TestNumberHoverTooltip:
         emoji_count = page.evaluate(
             "document.querySelectorAll('#num-tt .ntt-group span').length"
         )
-        assert emoji_count == num, \
-            f"Expected {num} emojis in tooltip for number {num}, got {emoji_count}"
+        assert emoji_count == 7, \
+            f"Expected 7 emojis in tooltip for number 7, got {emoji_count}"
 
     def test_tooltip_label_shows_the_number(self, page):
         """The .ntt-lbl text content equals the hovered number."""
-        page.evaluate("setMode(10)")
-        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        page.evaluate("problems[0] = {t: TDA, r: 7}; idx = 0; loadProblem();")
         page.wait_for_timeout(150)
-        el = page.locator("#eq .eq-n[data-num]").first
-        num = int(el.get_attribute("data-num"))
-
-        el.hover()
+        page.evaluate("""
+            const el = document.querySelector('#eq .eq-n[data-num="7"]');
+            el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+        """)
         page.wait_for_function(
             "document.getElementById('num-tt')?.style.display === 'block'",
             timeout=TIMEOUT,
         )
         lbl = page.evaluate("document.querySelector('#num-tt .ntt-lbl').textContent")
-        assert lbl.strip() == str(num), \
-            f"Tooltip label should be '{num}', got '{lbl}'"
+        assert lbl.strip() == "7", \
+            f"Tooltip label should be '7', got '{lbl}'"
 
     def test_tooltip_hides_on_mouseout(self, page):
         """Moving the mouse away hides the tooltip."""
-        page.evaluate("setMode(10)")
-        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        page.evaluate("problems[0] = {t: TDA, r: 7}; idx = 0; loadProblem();")
         page.wait_for_timeout(150)
-        el = page.locator("#eq .eq-n[data-num]").first
-        el.hover()
+        page.evaluate("""
+            const el = document.querySelector('#eq .eq-n[data-num="7"]');
+            el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+        """)
         page.wait_for_function(
             "document.getElementById('num-tt')?.style.display === 'block'",
             timeout=TIMEOUT,
         )
-        # Move away to a corner
-        page.mouse.move(5, 5)
+        # Move away — fire mouseout on the element
+        page.evaluate("""
+            const el = document.querySelector('#eq .eq-n[data-num="7"]');
+            el.dispatchEvent(new MouseEvent('mouseout', {bubbles: true}));
+        """)
         page.wait_for_function(
             "document.getElementById('num-tt')?.style.display !== 'block'",
             timeout=TIMEOUT,
@@ -1991,9 +1993,10 @@ class TestNumberHoverTooltip:
 
     def test_tooltip_grouped_in_fives(self, page):
         """Emojis are organized in groups of 5 (last group may have fewer)."""
-        # Force a known number — 18 → 4 groups: [5, 5, 5, 3]
+        # a single, non-suppressed number (TDA result) = 9 → groups [5,4]
+        # (the FIRST operand of a 2-number equation no longer reveals its objects)
         page.evaluate(
-            "problems[0] = {t: TA, a: 9, b: 9}; idx = 0; loadProblem();"
+            "problems[0] = {t: TDA, r: 9}; idx = 0; loadProblem();"
         )
         page.wait_for_timeout(150)
         page.evaluate("""
@@ -2016,7 +2019,7 @@ class TestNumberHoverTooltip:
         """For num=18 with 4 groups [5,5,5,3], columns align vertically:
         item 11 (row 2 group 1, col 1) aligns horizontally with item 1 (row 1 group 1, col 1)."""
         page.evaluate(
-            "problems[0] = {t: TS, a: 19, b: 1}; idx = 0; loadProblem();"
+            "problems[0] = {t: TDA, r: 19}; idx = 0; loadProblem();"
         )
         page.wait_for_timeout(150)
         page.evaluate("""
@@ -2049,9 +2052,9 @@ class TestNumberHoverTooltip:
     def test_tooltip_partial_group_takes_only_needed_width(self, page):
         """A group with 3 emojis should be ~3 columns wide, not 5.
         Tooltip width must scale to actual content, not assume max group size."""
-        # Force a TS(13,10) problem → num1=13 → 13 emojis = groups [5, 5, 3]
+        # a single, non-suppressed number (TDA result) = 13 → groups [5, 5, 3]
         page.evaluate(
-            "problems[0] = {t: TS, a: 13, b: 10}; idx = 0; loadProblem();"
+            "problems[0] = {t: TDA, r: 13}; idx = 0; loadProblem();"
         )
         page.wait_for_timeout(150)
         page.evaluate("""
@@ -2077,9 +2080,9 @@ class TestNumberHoverTooltip:
 
     def test_tooltip_small_number_compact_modal(self, page):
         """For num=3 (a single small group), tooltip width is compact (≤120px)."""
-        # Create a problem with num1=3 directly
+        # a single, non-suppressed number (TDA result) = 3
         page.evaluate(
-            "problems[0] = {t: TS, a: 3, b: 1}; idx = 0; loadProblem();"
+            "problems[0] = {t: TDA, r: 3}; idx = 0; loadProblem();"
         )
         page.wait_for_timeout(150)
         page.evaluate("""
@@ -2101,7 +2104,7 @@ class TestNumberHoverTooltip:
     def test_tooltip_visible_gap_between_groups(self, page):
         """Visible horizontal gap between group 1 and group 2 in the same row."""
         page.evaluate(
-            "problems[0] = {t: TS, a: 15, b: 7}; idx = 0; loadProblem();"
+            "problems[0] = {t: TDA, r: 15}; idx = 0; loadProblem();"
         )
         page.wait_for_timeout(150)
         page.evaluate("""
@@ -2132,9 +2135,10 @@ class TestNumberHoverTooltip:
         page.wait_for_timeout(150)
         page.evaluate("problems[0]={t:TS,a:18,b:11}; idx=0; loadProblem()")
         page.wait_for_timeout(120)
+        # hover the SECOND operand (11) — the first (18) no longer reveals objects
         page.evaluate(
             "[...document.querySelectorAll('#eq .eq-n')]"
-            ".find(e=>e.getAttribute('data-num')==='18')"
+            ".find(e=>e.getAttribute('data-num')==='11')"
             ".dispatchEvent(new MouseEvent('mouseover',{bubbles:true}))")
         page.wait_for_function(
             "document.getElementById('num-tt')?.style.display === 'block'", timeout=TIMEOUT)
@@ -2145,11 +2149,34 @@ class TestNumberHoverTooltip:
         # the success screen is up
         page.evaluate(
             "[...document.querySelectorAll('#eq .eq-n')]"
-            ".find(e=>e.getAttribute('data-num')==='18')"
+            ".find(e=>e.getAttribute('data-num')==='11')"
             ".dispatchEvent(new MouseEvent('mouseover',{bubbles:true}))")
         page.wait_for_timeout(120)
         assert page.evaluate("document.getElementById('num-tt').style.display") == "none", \
             "a lingering hover must not re-open the tooltip during the celebration"
+
+    def test_only_second_number_reveals_objects(self, page):
+        """In a 2-number equation (8 + 5), hovering the FIRST number (8) reveals
+        nothing, while hovering the SECOND (5) reveals its objects — so the child
+        must rely on the second number's make-ten visualisation."""
+        page.evaluate("problems[0] = {t: TA, a: 8, b: 5}; idx = 0; loadProblem();")
+        page.wait_for_timeout(120)
+        # FIRST number → suppressed
+        page.evaluate(
+            "document.querySelector('#eq .eq-n[data-num=\"8\"]')"
+            ".dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))")
+        page.wait_for_timeout(150)
+        assert page.evaluate("document.getElementById('num-tt').style.display") != "block", \
+            "first number (8) must reveal no objects"
+        # SECOND number → reveals objects
+        page.evaluate(
+            "document.querySelector('#eq .eq-n[data-num=\"5\"]')"
+            ".dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))")
+        page.wait_for_function(
+            "document.getElementById('num-tt')?.style.display === 'block'", timeout=TIMEOUT)
+        count = page.evaluate(
+            "document.querySelectorAll('#num-tt .ntt-objs span, #num-tt .ntt-group span').length")
+        assert count == 5, f"second number (5) must reveal 5 objects, got {count}"
 
 
 # ─────────────────────────────────────────────────────────
@@ -2193,12 +2220,22 @@ class TestBridgeSplitTooltip:
         self._hover(page, "{t: TA, a: 8, b: 7}", 7)
         assert self._split_attr(page, 7) == "2,5"
 
-    def test_first_operand_never_splits(self, page):
-        """Hovering the FIRST number (18 in 18−11) stays a plain tooltip."""
-        self._hover(page, "{t: TS, a: 18, b: 11}", 18)
-        is_split = page.evaluate(
-            "document.querySelector('#num-tt .ntt-grid').classList.contains('ntt-split')")
-        assert is_split is False, "first operand must render a plain (non-split) tooltip"
+    def test_first_operand_shows_no_tooltip(self, page):
+        """Hovering the FIRST number (18 in 18−11) reveals NOTHING — the child
+        must use the SECOND number's visualisation instead. The first span
+        carries class eq-noobj and its mouseover opens no tooltip."""
+        page.evaluate("problems[0] = {t: TS, a: 18, b: 11}; idx = 0; loadProblem();")
+        page.wait_for_timeout(120)
+        first = page.evaluate(
+            "document.querySelector('#eq .eq-n[data-num=\"18\"]').classList.contains('eq-noobj')")
+        assert first is True, "first operand must carry the eq-noobj (suppressed) class"
+        # firing mouseover on it must NOT open the tooltip
+        page.evaluate(
+            "document.querySelector('#eq .eq-n[data-num=\"18\"]')"
+            ".dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))")
+        page.wait_for_timeout(150)
+        assert page.evaluate("document.getElementById('num-tt').style.display") != "block", \
+            "first operand must NOT reveal an objects tooltip"
 
     def test_non_crossing_does_not_split(self, page):
         """18 − 3 does not cross ten → the 3 carries no split."""

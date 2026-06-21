@@ -419,6 +419,13 @@ function renderEq(){
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
   else               h=n(num1)+op('+','op-p')+nB(num2,num1,'add')+op('=','op-e')+inp;
   document.getElementById('eq').innerHTML=h;
+  // number-objects hover: reveal objects for the SECOND number only. When the
+  // equation shows ≥2 numbers, suppress the FIRST number's tooltip + hover cue
+  // (class eq-noobj) so the child must visualise the second number (with its
+  // make-ten split) rather than reading the first number's objects.
+  {const _eq=document.getElementById('eq');
+   const _nums=_eq.querySelectorAll('.eq-n[data-num],.eq-res[data-num]');
+   if(_nums.length>=2)_nums[0].classList.add('eq-noobj');}
   if(ptype===TCA||ptype===TCS||ptype===TCM)_colxMount();
 }
 
@@ -1021,7 +1028,7 @@ function _nttBond(tt,grid,split){
 function _nttHide(){const tt=document.getElementById('num-tt');if(tt)tt.style.display='none';}
 document.addEventListener('mouseover',e=>{
   const t=e.target;
-  if(t&&t.nodeType===1&&t.hasAttribute('data-num')&&(t.classList.contains('eq-n')||t.classList.contains('eq-res')))_nttShow(t);
+  if(t&&t.nodeType===1&&t.hasAttribute('data-num')&&(t.classList.contains('eq-n')||t.classList.contains('eq-res'))&&!t.classList.contains('eq-noobj'))_nttShow(t);
 });
 document.addEventListener('mouseout',e=>{
   const t=e.target;
