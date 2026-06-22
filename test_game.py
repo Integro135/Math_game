@@ -2296,10 +2296,10 @@ class TestBridgeSplitTooltip:
 # Bridging-10 mode (br): focused practice on crossing 10
 # ─────────────────────────────────────────────────────────
 class TestBridgingMode:
-    """The 'br' mode (גָּשֵׁר 10) serves TWO fixed pedagogical sets in a prescribed
+    """The 'br' mode (גָּשֵׁר 10) serves THREE fixed pedagogical sets in a prescribed
        order — no random generation, no shuffle. The sets ALTERNATE on EVERY
        rebuild — choosing the game, re-clicking it, "play again" (restart) or a
-       reload (set 1, then set 2, then 1 …); a fresh start serves set 1. The
+       reload (set 1 → set 2 → set 3 → set 1 …); a fresh start serves set 1. The
        order INSIDE each set is the curriculum and must never change."""
 
     # SET 1 — the original prescribed order: (type, a, b)
@@ -2321,6 +2321,16 @@ class TestBridgingMode:
         ("TS", 11, 0), ("TS", 11, 1), ("TS", 11, 2), ("TS", 11, 3), ("TS", 11, 4), ("TA", 7, 4),
         ("TS", 12, 0), ("TS", 12, 1), ("TS", 12, 2), ("TS", 12, 3), ("TS", 12, 4), ("TA", 8, 4),
         ("TS", 13, 0), ("TS", 13, 1), ("TS", 13, 2), ("TS", 13, 3), ("TS", 13, 4), ("TS", 13, 5),
+    ]
+
+    # SET 3 — "גְּשָׁרִים גְּדוֹלִים": doubles & near-doubles bridging into the high teens
+    # (results up to 18), each addition paired with its inverse subtraction; 15 problems
+    EXPECTED_SEQ_3 = [
+        ("TA", 6, 6), ("TS", 12, 6), ("TA", 7, 7), ("TS", 14, 7),
+        ("TA", 8, 8), ("TS", 16, 8), ("TA", 9, 9), ("TS", 18, 9),
+        ("TA", 6, 7), ("TS", 13, 7), ("TA", 7, 8), ("TS", 15, 8),
+        ("TA", 8, 9), ("TS", 17, 9),
+        ("TA", 9, 6),
     ]
 
     def _switch_br(self, page):
@@ -2373,20 +2383,24 @@ class TestBridgingMode:
         )
 
     def test_br_restart_alternates_sets(self, page):
-        """Every rebuild advances the set, so restart() serves the OTHER set:
-        set 1 → set 2 → set 1 (deterministic, no shuffle)."""
+        """Every rebuild advances the set, so restart() cycles through the three
+        sets: set 1 → set 2 → set 3 → set 1 (deterministic, no shuffle)."""
         consts = page.evaluate("({TA, TS})")
         exp1 = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ]
         exp2 = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_2]
+        exp3 = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_3]
         self._switch_br(page)
         s1 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
         page.evaluate("restart()"); page.wait_for_timeout(120)
         s2 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
         page.evaluate("restart()"); page.wait_for_timeout(120)
         s3 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        page.evaluate("restart()"); page.wait_for_timeout(120)
+        s4 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
         assert s1 == exp1, "first build serves set 1"
         assert s2 == exp2, "restart advances to set 2"
-        assert s3 == exp1, "next restart returns to set 1"
+        assert s3 == exp3, "next restart advances to set 3"
+        assert s4 == exp1, "the following restart wraps back to set 1"
 
     def test_br_no_coin_or_tens_problems(self, page):
         """Bridging mode is pure arithmetic — no TC or TT injected."""
@@ -2479,30 +2493,69 @@ class TestBridgingMode:
             f"expected={expected}\ngot={probs}"
         )
 
+    def test_br_set3_has_15_problems(self, page):
+        """The third bridging set (big bridges) serves exactly 15 problems."""
+        self._switch_br(page)            # set 1
+        self._reenter_br(page)           # set 2
+        self._reenter_br(page)           # set 3
+        assert page.evaluate("problems.length") == 15, \
+            f"Expected 15 problems in set 3, got {page.evaluate('problems.length')}"
+
+    def test_br_set3_exact_order(self, page):
+        """The third selection serves SET 3 (big bridges) in its exact prescribed order."""
+        consts = page.evaluate("({TA, TS})")
+        self._switch_br(page)            # set 1
+        self._reenter_br(page)           # set 2
+        self._reenter_br(page)           # set 3
+        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_3]
+        assert probs == expected, (
+            f"br set 3 deviates from the prescribed order.\n"
+            f"expected={expected}\ngot={probs}"
+        )
+
+    def test_br_set3_all_cross_ten(self, page):
+        """Every set-3 problem genuinely bridges 10 (it IS a crossing-ten curriculum)."""
+        consts = page.evaluate("({TA, TS})")
+        TA, TS = consts["TA"], consts["TS"]
+        self._switch_br(page); self._reenter_br(page); self._reenter_br(page)   # set 3
+        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        assert len(probs) == 15
+        for t, a, b in probs:
+            if t == TA:
+                assert a < 10 and b < 10 and a + b > 10, f"addition {a}+{b} must cross 10"
+            else:  # TS
+                assert 10 < a <= 18 and (a % 10) < b and (a - b) < 10, \
+                    f"subtraction {a}-{b} must cross 10"
+
     def test_br_alternates_sets_in_turns(self, page):
-        """Each menu selection alternates: set1 → set2 → set1, order preserved."""
+        """Each menu selection advances: set1 → set2 → set3 → set1, order preserved."""
         consts = page.evaluate("({TA, TS})")
         exp1 = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ]
         exp2 = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_2]
+        exp3 = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_3]
         self._switch_br(page)
         seq1 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
         self._reenter_br(page)
         seq2 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
         self._reenter_br(page)
         seq3 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        self._reenter_br(page)
+        seq4 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
         assert seq1 == exp1, "first selection must serve set 1"
         assert seq2 == exp2, "second selection must serve set 2"
-        assert seq3 == exp1, "third selection must return to set 1"
+        assert seq3 == exp3, "third selection must serve set 3"
+        assert seq4 == exp1, "fourth selection must wrap back to set 1"
 
     def test_br_restart_size_alternates(self, page):
-        """The two sets differ in length (25 vs 18); restarts alternate between
-        them (25 → 18 → 25 → 18)."""
+        """The three sets differ in length (25, 18, 15); restarts cycle through
+        them (25 → 18 → 15 → 25)."""
         self._switch_br(page)
         lens = [page.evaluate("problems.length")]
         for _ in range(3):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             lens.append(page.evaluate("problems.length"))
-        assert lens == [25, 18, 25, 18], f"sizes must alternate on restart, got {lens}"
+        assert lens == [25, 18, 15, 25], f"sizes must cycle on restart, got {lens}"
 
     def test_br_reclick_while_active_rotates_set(self, page):
         """Re-selecting גָּשֵׁר 10 while ALREADY in it starts a fresh game with
@@ -2517,7 +2570,7 @@ class TestBridgingMode:
 
     def test_br_boot_alternates_across_reloads(self, page):
         """Booting straight into br (the persisted mode) rotates the set, so
-        reloads alternate set1↔set2 instead of always replaying set 1."""
+        reloads cycle set1→set2→set3 instead of always replaying set 1."""
         sets = []
         for _ in range(4):
             page.evaluate("localStorage.setItem('gameMode','br')")
@@ -2525,10 +2578,11 @@ class TestBridgingMode:
             page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
             page.wait_for_function("mode==='br' && problems.length>0", timeout=TIMEOUT)
             sets.append(page.evaluate("problems.length"))
-        assert 25 in sets and 18 in sets, \
-            f"both bridge sets must appear across reloads, got {sets}"
+        # 4 consecutive reloads span a full 3-set cycle → all three sizes appear
+        assert {25, 18, 15} <= set(sets), \
+            f"all three bridge sets must appear across reloads, got {sets}"
         assert all(sets[i] != sets[i + 1] for i in range(len(sets) - 1)), \
-            f"reloads must alternate sets, got {sets}"
+            f"reloads must rotate sets, got {sets}"
 
 
 # ─────────────────────────────────────────────────────────

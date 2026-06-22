@@ -67,10 +67,10 @@ function makeMxPool(){
   return pool;
 }
 
-// ── bridging-10 ("גָּשֵׁר 10") — TWO fixed pedagogical sets, served ALTERNATELY.
+// ── bridging-10 ("גָּשֵׁר 10") — THREE fixed pedagogical sets, served ALTERNATELY.
 //    EVERY time a bridge pool is built — choosing the game, "play again"
-//    (restart), or a reload — it advances to the next set (set 1, set 2, set 1
-//    …). The turn is PERSISTED in localStorage so the alternation survives
+//    (restart), or a reload — it advances to the next set (set 1, set 2, set 3,
+//    set 1 …). The turn is PERSISTED in localStorage so the alternation survives
 //    refreshes instead of always replaying set 1 (9+2…). The order INSIDE each
 //    set is the curriculum and must NEVER change; each builder returns fresh
 //    objects.
@@ -94,7 +94,18 @@ function _bridgeSet2(){
     S(13,0),S(13,1),S(13,2),S(13,3),S(13,4),S(13,5),
   ];
 }
-const _BRIDGE_SETS=[_bridgeSet1,_bridgeSet2];
+// SET 3 — "גְּשָׁרִים גְּדוֹלִים": doubles & near-doubles that bridge into the HIGH teens
+// (results up to 18) — the harder bridges sets 1–2 don't reach. Each crossing addition is
+// paired with its inverse subtraction; all 15 cross 10, taught via the same complete-to-10 split.
+function _bridgeSet3(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    A(6,6),S(12,6),A(7,7),S(14,7),A(8,8),S(16,8),A(9,9),S(18,9),   // doubles + inverses
+    A(6,7),S(13,7),A(7,8),S(15,8),A(8,9),S(17,9),                  // near-doubles + inverses
+    A(9,6),                                                        // a bigger non-double bridge to finish
+  ];
+}
+const _BRIDGE_SETS=[_bridgeSet1,_bridgeSet2,_bridgeSet3];
 // serve the current set, then advance the turn (persisted) for the NEXT build
 function makeBridgePool(){
   const set=_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length]();
