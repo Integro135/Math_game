@@ -1,43 +1,34 @@
-/* ── Coin-multiplication exercise (רֵאשִׁית הַכֶּפֶל — מַטְבְּעוֹת שֶׁל 2 / 5 / 10) ──
-   "How many <v>-coins fit in X?" The child taps ＋ to drop real coins into a tray
-   one at a time (＋ keeps going a little past the answer so it never reveals it),
-   then COUNTS the coins and types that count — teaching that N coins of v make
-   N×v (first multiplication as repeated equal groups). Each session shows ONE
-   problem of EACH coin value, with a random target from its range:
-     ₪2  → targets 4..10  (2..5 coins)
-     ₪5  → targets 10..35 (2..7 coins)
-     ₪10 → targets 20..90 (2..9 coins)
-   The coins are the SAME real coins as the coin-counting exercise, drawn by the
-   global tcCoinSVG(v) (coins.ex.js is loaded in 'sup'); the title shows that coin
-   as an inline icon.
+/* ── Bagel-cost exercise (כַּמָּה עוֹלִים x בֵּיגַלֶה — רֵאשִׁית הַכֶּפֶל בִּשְׁקָלִים) ──
+   "How much do X bagels cost?" The child KNOWS one bagel costs 5 ₪. She taps ＋
+   to drop a real silver ₪5 coin into the tray — ONE coin per bagel — then counts
+   by fives (5, 10, 15 …) and types the TOTAL cost. This teaches multiplication as
+   repeated equal groups (X bagels × 5 ₪ = 5X), the mirror of the coin-counting
+   exercise: here the COUNT of coins is given (the bagels) and the SUM is the answer.
 
-   Mounted by core.js _colxMount (the same self-contained-exercise host path as
-   the column modules) into #colx-root; self-checks via api.solved()/api.wrong().
+   Same design + same real coins as coin_mul / the coin-counting exercise — the coin
+   is drawn by the global tcCoinSVG(5) (coins.ex.js is loaded in 'sup'). Mounted by
+   core.js _colxMount into #colx-root; self-checks via api.solved()/api.wrong().
    Mixed into the Superman ('sup') pool.
-   Problem shape: { t:TCM, a, b }  where a = the target and b = the coin value
-   (2, 5 or 10); the answer is a/b (the number of coins). */
+   Problem shape: { t:TBC, a, b }  where a = the number of bagels and b = the price
+   per bagel (always 5); the answer is a*b (the total cost). */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
-window.EXERCISES.types.coin_mul=(()=>{
+window.EXERCISES.types.bagel_cost=(()=>{
 
-  // A session shows ONE problem of EACH coin value (₪2, ₪5, ₪10), each with a
-  // random target from its range — so she meets ×2, ×5 AND ×10 every time. The
-  // coin value rides in `b` (read by core.js as num2 and by mount as the coin).
+  const PRICE=5;   // one bagel always costs ₪5 (the child knows this)
+
+  // a session shows THREE bagel problems with distinct counts, drawn from {2,3,4,6}
+  // (totals 10/15/20/30). We ask UP TO 6 and deliberately SKIP 5 — "how much do 5
+  // bagels cost" is confusing because the count (5) equals the per-bagel price (₪5).
   function makePool(){
     const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
-    const pick=a=>a[(Math.random()*a.length)|0];
-    const out=[
-      {t:TCM,a:pick([4,6,8,10]),                b:2},   // 2..5 coins of ₪2
-      {t:TCM,a:pick([10,15,20,25,30,35]),       b:5},   // 2..7 coins of ₪5
-      {t:TCM,a:pick([20,30,40,50,60,70,80,90]), b:10},  // 2..9 coins of ₪10
-    ];
-    return sh(out);
+    return sh([2,3,4,6]).slice(0,3).map(n=>({t:TBC,a:n,b:PRICE}));
   }
 
-  // the real coin from the coin-counting exercise (tcCoinSVG is global, defined
-  // by coins.ex.js — loaded in 'sup'); a silver fallback if unavailable
-  function coinHTML(coin){
-    if(typeof tcCoinSVG==='function')return tcCoinSVG(coin);
-    return '<div class="coin-wrap"><div class="colm-coin-fallback">'+coin+'</div></div>';
+  // the real silver ₪5 coin (tcCoinSVG is global, defined by coins.ex.js — loaded
+  // in 'sup'); a silver fallback if unavailable
+  function coinHTML(){
+    if(typeof tcCoinSVG==='function')return tcCoinSVG(PRICE);
+    return '<div class="coin-wrap"><div class="colm-coin-fallback">'+PRICE+'</div></div>';
   }
 
   const CSS=`
@@ -45,7 +36,19 @@ window.EXERCISES.types.coin_mul=(()=>{
   .colm-q{font-family:'Fredoka One',cursive;font-size:1.25rem;color:var(--skin-text,#fff);
     text-align:center;line-height:1.4;text-shadow:0 0 12px rgba(160,190,255,.3)}
   .colm-q b{color:var(--skin-accent,#ffd27d)}
-  /* the coin (₪2/₪5/₪10) shown inline in the title — the real coin, scaled small */
+  /* the bagel ICON stands in for the word "בייגלה" — a touch larger so it reads as the item */
+  .bagc-emoji{font-size:1.35em;line-height:1;vertical-align:-3px}
+  /* RTL so the word order reads "כמה עולים <x> 🥨" — the number BEFORE the icon (without this, the
+     LTR base flips it to "🥨 <x>"). Scoped to bagel; the coin exercise keeps its own .colm-q layout. */
+  .bagc-q{direction:rtl}
+  /* RTL block (NOT flex): in Hebrew the coin is the END of the sentence, so it must sit to the LEFT of
+     the text — "כל בייגלה 🥨 עולה [מטבע]". A flex row laid the coin out LTR (on the right); plain RTL
+     inline flow + vertical-align puts it correctly on the left. */
+  .colm-sub{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--skin-text,#fff);opacity:.85;
+    text-align:center;direction:rtl}
+  .colm-sub .colm-titlecoin{margin-right:5px}
+  .colm-sub .colm-titlecoin svg{width:30px;height:30px;vertical-align:middle}
+  /* the ₪5 coin shown inline — the real coin, scaled small */
   .colm-titlecoin{display:inline-block;vertical-align:middle;margin:0 3px}
   .colm-titlecoin .coin-wrap{display:inline-block;gap:0;animation:none;vertical-align:middle}
   .colm-titlecoin svg{width:42px;height:42px;display:block}
@@ -56,17 +59,14 @@ window.EXERCISES.types.coin_mul=(()=>{
   /* before the 1st coin: KEEP the reserved space (so ＋ never shifts down) but
      hide the box itself so no blank square shows */
   .colm-tray.colm-tray-blank{background:transparent;border-color:transparent}
-  /* the coin face already shows "5" — hide the ₪5 caption in the tray to stay tidy */
   #colx-root .colm-tray .coin-lbl{display:none}
   #colx-root .colm-tray .coin-wrap{gap:0}
-  /* size the coins so UP TO 6 fit in one row — keeps the large counts (up to 9
-     ₪10 coins in 90, +overshoot) to about two rows */
+  /* size the coins so UP TO 6 fit in one row (7 bagels → about two rows) */
   #colx-root .colm-tray .coin-wrap svg{width:42px;height:42px}
   .colm-coin-fallback{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;
     justify-content:center;font-family:'Fredoka One',cursive;font-size:1.8rem;color:#0D1B21;
     background:radial-gradient(circle at 35% 30%,#CFD8DC,#90A4AE 55%,#455A64)}
   .colm-controls{display:flex;gap:24px;align-items:center;justify-content:center}
-  /* big round add / remove buttons */
   .colm-bigbtn{width:70px;height:70px;border-radius:50%;border:0;cursor:pointer;color:#fff;
     font-family:'Fredoka One',cursive;font-size:2.6rem;line-height:1;
     display:flex;align-items:center;justify-content:center;
@@ -91,23 +91,24 @@ window.EXERCISES.types.coin_mul=(()=>{
   `;
 
   function injectStyle(){
-    if(document.getElementById('colm-style'))return;
-    const st=document.createElement('style');st.id='colm-style';st.textContent=CSS;
+    if(document.getElementById('bagc-style'))return;
+    const st=document.createElement('style');st.id='bagc-style';st.textContent=CSS;
     document.head.appendChild(st);
   }
 
   function mount({root,a,b,api}){
     injectStyle();
-    const COIN=b||5, target=a, need=Math.round(a/COIN);
-    // the child may add MORE coins than fit — the ＋ must never disable AT the
-    // answer (that would reveal it). Cap only at a generous bound well past it.
-    const maxCoins=need+3;
+    const COIN=b||PRICE, bagels=a, total=bagels*COIN;
+    // ＋ must NEVER disable AT the correct count — that would reveal the answer. Allow a generous
+    // overshoot past it (like the coin-counting exercise), capping only well beyond.
+    const maxCoins=bagels+3;
     let count=0, done=false;
     const timers=[]; const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
 
     root.innerHTML=`
       <div class="colm-root">
-        <div class="colm-q">כַּמָּה <span class="colm-titlecoin">${coinHTML(COIN)}</span> נִכְנָסִים בְּ-<b>${target}</b>?</div>
+        <div class="colm-q bagc-q">כַּמָּה עוֹלִים <b>${bagels}</b> <span class="bagc-emoji">🥨</span>?</div>
+        <div class="colm-sub">כָּל בֵּיגַלֶה <span class="bagc-emoji">🥨</span> עוֹלֶה <span class="colm-titlecoin">${coinHTML()}</span></div>
         <div class="colm-tray" id="colm-tray"></div>
         <div class="colm-controls">
           <button class="colm-bigbtn minus" id="colm-rem" aria-label="הָסִירִי מַטְבֵּעַ">−</button>
@@ -115,7 +116,7 @@ window.EXERCISES.types.coin_mul=(()=>{
         </div>
         <div class="colm-ans-row">
           <button class="colm-btn" id="colm-chk" aria-label="בְּדִיקָה">✓</button>
-          <input class="ans-inp colm-inp blink" id="colm-ans" type="text" inputmode="numeric" maxlength="2" aria-label="כַּמּוּת הַמַּטְבְּעוֹת">
+          <input class="ans-inp colm-inp blink" id="colm-ans" type="text" inputmode="numeric" maxlength="3" aria-label="הָעֲלוּת הַכּוֹלֶלֶת">
         </div>
       </div>`;
 
@@ -123,7 +124,7 @@ window.EXERCISES.types.coin_mul=(()=>{
     const tray=$('colm-tray'),addBtn=$('colm-add'),remBtn=$('colm-rem'),inp=$('colm-ans'),chk=$('colm-chk');
 
     function fb(msg){const h=document.getElementById('hint');if(h)h.textContent=msg;}
-    fb('🪙 הוֹסִיפִי מַטְבְּעוֹת שֶׁל '+COIN+' וְסִפְרִי כַּמָּה צְרִיכִים!');
+    fb('🥨 הוֹסִיפִי מַטְבֵּעַ שֶׁל '+COIN+' לְכָל בֵּיגַלֶה — וְסַכְּמִי כַּמָּה זֶה עוֹלֶה!');
 
     function render(){
       tray.classList.toggle('colm-tray-blank',count===0);  // box invisible while empty, space reserved
@@ -133,7 +134,7 @@ window.EXERCISES.types.coin_mul=(()=>{
     function addCoin(){
       if(done||count>=maxCoins)return;
       count++;
-      const tmp=document.createElement('div');tmp.innerHTML=coinHTML(COIN);
+      const tmp=document.createElement('div');tmp.innerHTML=coinHTML();
       const node=tmp.firstElementChild;node.classList.add('colm-coin');   // marker for counting
       tray.appendChild(node);
       render();
@@ -147,17 +148,15 @@ window.EXERCISES.types.coin_mul=(()=>{
     function check(){
       if(done)return;
       const v=parseInt(inp.value,10);
-      if(inp.value===''||isNaN(v)){fb('כִּתְבִי כַּמָּה מַטְבְּעוֹת 💗');return;}
-      if(v===need){
+      if(inp.value===''||isNaN(v)){fb('כִּתְבִי כַּמָּה זֶה עוֹלֶה 💗');return;}
+      if(v===total){
         done=true;
         inp.classList.remove('blink','ans-err');inp.classList.add('ans-ok');inp.disabled=true;
         render();
         api.solved();
       }else{
         inp.classList.remove('blink');inp.classList.add('ans-err');
-        // guide by the TYPED value vs the answer — never by the coin count
-        // (the child may have added more coins than actually fit)
-        if(v<need)fb('נִכְנָסִים עוֹד! נַסִּי מִסְפָּר גָּדוֹל יוֹתֵר 🪙');
+        if(v<total)fb('עוֹד קְצָת! סִפְרִי בְּחֲמִשּׁוֹת: 5, 10, 15… 🪙');
         else fb('יוֹתֵר מִדַּי! נַסִּי מִסְפָּר קָטָן יוֹתֵר 💗');
         api.wrong(v);
         later(()=>{if(!done){inp.value='';inp.classList.remove('ans-err');inp.classList.add('blink');inp.focus();}},1000);
@@ -181,9 +180,9 @@ window.EXERCISES.types.coin_mul=(()=>{
   }
 
   return{
-    t:TCM,
+    t:TBC,
     modes:['sup'],
-    aidsReveal:'always',   // no number-line aid — the tray is the manipulative
+    aidsReveal:'always',   // no number-line aid — the coin tray is the manipulative
     make(mode){return mode==='sup'?makePool():[];},
     mount,
   };

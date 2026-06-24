@@ -29,8 +29,9 @@ function makePool(m){
   if(m==='mx')return makeMxPool();                   // Queen — curated mix
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
   // Superman — an EQUAL 3-per-type mix: column addition + big-number subtraction
-  // + coin-multiplication + column subtraction (3 no-borrow + 3 with-borrow)
-  if(m==='sup')return shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('column_sub').make('sup')]);
+  // + coin-multiplication + bagel-cost (×5 in shekels) + column subtraction
+  // (3 no-borrow + 3 with-borrow)  → 18 problems
+  if(m==='sup')return shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup')]);
   if(m==='big')return EX('big_step').make('big');    // big number ± step game
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
   // then the coins type seeds 1-2 coin problems

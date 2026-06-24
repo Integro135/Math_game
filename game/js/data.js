@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -30,10 +30,11 @@ const EXERCISE_INDEX=[
   {file:'column_add',modes:['sup']},
   {file:'column_sub',modes:['mx','sup']},
   {file:'coin_mul',  modes:['sup']},
+  {file:'bagel_cost',modes:['sup']},
   {file:'big_step',  modes:['big','mx','sup']},
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul'};
+const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config

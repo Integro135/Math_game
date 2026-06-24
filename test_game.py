@@ -355,7 +355,7 @@ def get_state(page) -> dict:
     return page.evaluate("""() => ({
         ptype, num1, num2, num3, num4,
         idx, score, done, mode, ttOp, bgOp,
-        TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TCS, TBG, TCM
+        TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TCS, TBG, TCM, TBC
     })""")
 
 
@@ -1746,11 +1746,11 @@ class TestTryFirstScoring:
                     continue
                 if t == TBG:
                     # Big ±step: a is a big two-digit number; subtraction steps
-                    # down by 1-4 (never crossing the ten below → units ≥ step),
+                    # down by 1-6 (never crossing the ten below → units ≥ step),
                     # addition steps up by 1-2 (no carry).
                     if p["op"] == "sub":
-                        assert p["b"] in (1, 2, 3, 4) and p["a"] % 10 >= p["b"], \
-                            f"TBG sub step must be 1-4 with no tens-cross at idx {i}: {p}"
+                        assert p["b"] in (1, 2, 3, 4, 5, 6) and p["a"] % 10 >= p["b"], \
+                            f"TBG sub step must be 1-6 with no tens-cross at idx {i}: {p}"
                     else:
                         assert p["b"] in (1, 2) and p["a"] % 10 + p["b"] <= 9, \
                             f"TBG add step must be 1-2 with no carry at idx {i}: {p}"
@@ -2615,14 +2615,14 @@ class TestDynamicExercises:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 17, b: 15}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
 
     def test_every_mode_builds_correct_pool_size(self, page):
         """Each mode's recipe produces its expected session length."""
         expected = {"5": 12, "10": 12, "20": 12, "'br'": 25,
-                    "'mx'": 19, "'sup'": 15, "'big'": 12}
+                    "'mx'": 19, "'sup'": 18, "'big'": 12}
         for arg, size in expected.items():
             page.evaluate(f"setMode({arg})")
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)
@@ -2651,9 +2651,9 @@ class TestBigStepMode:
         page.wait_for_timeout(150)
 
     def test_big_pool_is_valid_and_mixed(self, page):
-        """12 problems; subtraction steps 1-4 (never crossing the ten below),
+        """12 problems; subtraction steps 1-6 (never crossing the ten below),
         addition steps 1-2, no carry/borrow, every session mixes sub & add.
-        Across several sessions a 4-step subtraction (e.g. 85-4) must occur."""
+        Across several sessions a step beyond the old 4-cap (e.g. 87-6) must occur."""
         self._enter_big(page)
         sub_steps = set()
         saw_sub = saw_add = False
@@ -2666,7 +2666,7 @@ class TestBigStepMode:
                 assert 21 <= p["a"] <= 98, f"a out of range: {p}"
                 if p["op"] == "sub":
                     saw_sub = True
-                    assert p["b"] in (1, 2, 3, 4), f"sub step must be 1-4: {p}"
+                    assert p["b"] in (1, 2, 3, 4, 5, 6), f"sub step must be 1-6: {p}"
                     assert p["a"] % 10 >= p["b"], \
                         f"sub must not cross the ten below (units >= step): {p}"
                     sub_steps.add(p["b"])
@@ -2679,8 +2679,8 @@ class TestBigStepMode:
             page.evaluate("restart()")
             page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
         assert saw_sub and saw_add
-        assert 4 in sub_steps, \
-            "subtraction must be able to step down by 4 (e.g. 85-4)"
+        assert max(sub_steps) >= 5, \
+            f"subtraction must now step beyond the old 4-cap (up to 6), got {sorted(sub_steps)}"
 
     def test_big_correct_answer_scores_10(self, page):
         self._enter_big(page)
@@ -2769,43 +2769,43 @@ class TestSupermanColumnAdd:
         # the sup pool mixes column-add with big ±1/2 and coin-multiplication
         # problems, so wait for the pool to build, then force a TCA problem
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCA, a: {a}, b: {b}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
 
-    def test_sup_pool_reaches_48(self, page):
-        """Column addition now reaches up to 48: the top addend is 11-29 and the
-        bottom 2-19 (raised from the old 38 ceiling). Every generated problem
-        stays a valid two-column sum — a∈[11,29], b∈[2,19], result ≤ 48 with the
+    def test_sup_pool_reaches_58(self, page):
+        """Column addition now reaches up to 58: the top addend is 11-39 and the
+        bottom 2-19 (raised by 10 as the child progressed). Every generated problem
+        stays a valid two-column sum — a∈[11,39], b∈[2,19], result ≤ 58 with the
         result's tens digit still one digit, and never a double carry."""
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
         stats = page.evaluate("""(() => {
-            let maxA = 0, minA = 99, maxSum = 0, sawAbove38 = false, bad = null;
+            let maxA = 0, minA = 99, maxSum = 0, sawAbove48 = false, bad = null;
             for (let k = 0; k < 60; k++) {
                 const ps = EXERCISES.types.column_add.make('sup');
                 if (ps.length !== 3) bad = {reason: 'len', len: ps.length};
                 for (const p of ps) {
                     if (p.t !== TCA) bad = {reason: 't', p};
-                    if (p.a < 11 || p.a > 29 || p.b < 2 || p.b > 19) bad = {reason: 'range', p};
-                    if (p.a + p.b > 48) bad = {reason: 'sum', p};
+                    if (p.a < 11 || p.a > 39 || p.b < 2 || p.b > 19) bad = {reason: 'range', p};
+                    if (p.a + p.b > 58) bad = {reason: 'sum', p};
                     if (Math.floor((p.a + p.b) / 10) > 9) bad = {reason: 'tens', p};
                     maxA = Math.max(maxA, p.a); minA = Math.min(minA, p.a);
                     maxSum = Math.max(maxSum, p.a + p.b);
-                    if (p.a + p.b > 38) sawAbove38 = true;
+                    if (p.a + p.b > 48) sawAbove48 = true;
                 }
             }
-            return {maxA, minA, maxSum, sawAbove38, bad};
+            return {maxA, minA, maxSum, sawAbove48, bad};
         })()""")
         assert stats["bad"] is None, f"invalid column-add problem generated: {stats['bad']}"
         assert stats["minA"] >= 11, f"a fell below 11: {stats}"
-        assert stats["maxA"] == 29, f"top addend must reach 29 (was 19): {stats}"
-        assert stats["maxSum"] <= 48, f"result must not exceed 48: {stats}"
-        assert stats["sawAbove38"], \
-            "the raised ceiling must produce results above the old 38 max"
+        assert stats["maxA"] == 39, f"top addend must reach 39 (raised from 29): {stats}"
+        assert stats["maxSum"] <= 58, f"result must not exceed 58: {stats}"
+        assert stats["sawAbove48"], \
+            "the raised ceiling must produce results above the old 48 max"
 
     def test_sup_nl_visible_from_start(self, page):
         """aidsReveal:'always' — the skinned NL shows before any mistake,
@@ -2833,7 +2833,7 @@ class TestSupermanColumnAdd:
         assert page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
             "precondition: normal mode locks the aids on a fresh problem"
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 13, b: 18}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
@@ -2968,7 +2968,7 @@ class TestSupermanDigitPreview:
 
     def _enter(self, page, a, b):
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate(f"problems[0]={{t:TCA,a:{a},b:{b}}}; idx=0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(200)
@@ -3055,7 +3055,7 @@ class TestColumnSubtraction:
         # column subtraction now lives inside Superman — build that pool, then
         # force a TCS problem so the column UI mounts.
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCS, a: {a}, b: {b}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
@@ -3068,16 +3068,16 @@ class TestColumnSubtraction:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCS, a: 25, b: 17}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         assert page.evaluate("ptype === TCS")
 
     def test_sup_column_sub_range_valid(self, page):
         """Superman's column subtraction (make('sup')) yields 6 valid problems
-        (a∈[11,29], b∈[2,19], a>b); BOTH with-borrow and no-borrow occur, and the
-        no-borrow ones now reach the 20s (e.g. 27-13) — the widened superset that
-        absorbed the former standalone column-subtraction game."""
+        (a∈[11,39], b∈[2,19], a>b); BOTH with-borrow and no-borrow occur, and the
+        no-borrow ones reach the 20s+ (e.g. 37-13) — the ceiling was raised by 10
+        as the child progressed."""
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
@@ -3089,7 +3089,7 @@ class TestColumnSubtraction:
                 if (ps.length !== 6) bad = {reason:'len', len:ps.length};
                 for (const p of ps) {
                     if (p.t !== TCS) bad = {reason:'t', p};
-                    if (p.a < 11 || p.a > 29 || p.b < 2 || p.b > 19) bad = {reason:'range', p};
+                    if (p.a < 11 || p.a > 39 || p.b < 2 || p.b > 19) bad = {reason:'range', p};
                     if (p.a <= p.b) bad = {reason:'order', p};
                     const noBorrow = (p.a % 10) > (p.b % 10);
                     if ((p.a % 10) < (p.b % 10)) sawBorrow = true;
@@ -3102,7 +3102,7 @@ class TestColumnSubtraction:
         })()""")
         assert stats["bad"] is None, f"invalid column-sub problem: {stats['bad']}"
         assert stats["minA"] >= 11, f"a fell below 11: {stats}"
-        assert stats["maxA"] == 29, f"a must reach 29: {stats}"
+        assert stats["maxA"] == 39, f"a must reach 39 (raised from 29): {stats}"
         assert stats["sawBorrow"], "with-borrow problems must occur"
         assert stats["sawNoBorrow"], "no-borrow problems must occur"
         assert stats["sawNoBorrowOver20"], \
@@ -3310,12 +3310,12 @@ class TestColumnSubtraction:
     def test_sup_includes_noborrow_column_sub(self, page):
         """Superman weaves in column subtraction (alongside column-add / big-step
         / coin-multiply). Every session has ≥1 NO-borrow one (top units > bottom
-        units); these now span the full a∈[11,29] range (widened from the old ≤20
-        cap when the standalone game was folded in). All stay positive (a > b)."""
+        units); these now span the full a∈[11,39] range (raised by 10 as the child
+        progressed). All stay positive (a > b)."""
         seen_noborrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")
-            page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "Superman must contain ≥1 column-subtraction problem"
@@ -3323,18 +3323,18 @@ class TestColumnSubtraction:
                 assert p["a"] > p["b"], f"sup column-sub must be positive: {p}"
                 if (p["a"] % 10) > (p["b"] % 10):           # a NO-borrow one
                     seen_noborrow = True
-                    assert 11 <= p["a"] <= 29 and 2 <= p["b"] <= 19, \
-                        f"no-borrow sup operands must be valid (a∈[11,29], b∈[2,19]): {p}"
+                    assert 11 <= p["a"] <= 39 and 2 <= p["b"] <= 19, \
+                        f"no-borrow sup operands must be valid (a∈[11,39], b∈[2,19]): {p}"
         assert seen_noborrow, "Superman must weave in ≥1 NO-borrow column subtraction"
 
     def test_sup_includes_borrow_column_sub(self, page):
         """Superman ALSO weaves in a WITH-borrow column subtraction (top units <
         bottom units → regrouping needed) every session — taught alongside the
-        no-borrow one. Uses the full a∈[11,29] range (proper two-digit borrow)."""
+        no-borrow one. Uses the full a∈[11,39] range (proper two-digit borrow)."""
         seen_borrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")
-            page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             for p in tcs:
@@ -3394,7 +3394,7 @@ class TestCoinMul:
     def _enter_cm(self, page, target=20):
         # coin_mul rides the Superman pool, so build it then force a TCM problem
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate(f"problems[0] = {{t: TCM, a: {target}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         page.wait_for_timeout(150)
@@ -3428,7 +3428,7 @@ class TestCoinMul:
         assert res["bad"] is None, f"invalid coin_mul problem: {res['bad']}"
         assert res["saw"]["2"] and res["saw"]["5"] and res["saw"]["10"], \
             f"each coin value (₪2/₪5/₪10) must appear every session: {res['saw']}"
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         assert page.evaluate("[...problems].some(p => p.t === TCM)"), \
             "the Superman session must contain coin-multiplication problems"
 
@@ -3436,7 +3436,7 @@ class TestCoinMul:
         """A ₪2 problem (6 → 3 coins of ₪2): the answer is a/b = 3 (not a/5), the
         title shows the ₪2 coin, and entering 3 solves it."""
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 6, b: 2}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("report[0].correct") == 3, "6 ÷ ₪2 must be 3 coins (not 6/5)"
@@ -3452,7 +3452,7 @@ class TestCoinMul:
         ₪10 coin, ＋ stays enabled at 9 (cap need+3, so the answer is never given
         away), and entering 9 solves it."""
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 90, b: 10}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("report[0].correct") == 9, "90 ÷ ₪10 must be 9 coins"
@@ -3473,7 +3473,7 @@ class TestCoinMul:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 20}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("ptype === TCM")
@@ -3529,6 +3529,15 @@ class TestCoinMul:
             "＋ caps only at the generous bound (need+3)"
         assert page.locator("#colm-sum").count() == 0   # no running-total row
 
+    def test_coin_mul_space_adds_a_coin(self, page):
+        """Pressing SPACE drops a coin in the coin-counting exercise too (no double-fire)."""
+        self._enter_cm(page, 20)
+        for _ in range(3):
+            page.keyboard.press("Space")
+        page.wait_for_timeout(50)
+        assert page.locator(".colm-coin").count() == 3, \
+            "each SPACE press must add exactly one coin"
+
     def test_coin_mul_minus_removes_coin(self, page):
         """The large minus button removes the last coin and re-enables ＋ at the cap."""
         self._enter_cm(page, 20)
@@ -3564,6 +3573,127 @@ class TestCoinMul:
         page.fill("#colm-ans", "3")           # the COUNT — correct
         page.click("#colm-chk")
         page.wait_for_function("report[0].gotCorrect === true", timeout=TIMEOUT)
+
+
+# ─────────────────────────────────────────────────────────
+# Bagel cost — כַּמָּה עוֹלִים x בֵּיגַלֶה (TBC / bagel_cost.ex.js, mixed into Superman)
+# ─────────────────────────────────────────────────────────
+
+class TestBagelCost:
+    def _enter_bagel(self, page, bagels=4):
+        # bagel_cost rides the Superman pool, so build it then force a TBC problem
+        page.evaluate("setMode('sup')")
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.evaluate(f"problems[0] = {{t: TBC, a: {bagels}, b: 5}}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colm-add", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+
+    def test_bagel_cost_in_sup_pool(self, page):
+        """bagel_cost.make('sup') yields 3 TBC problems with DISTINCT bagel counts
+        from {2,3,4,6} — up to 6, SKIPPING 5 (5 bagels × ₪5 confuses count=price) —
+        each carrying b=5 (price per bagel); Superman includes them."""
+        page.evaluate("setMode('sup')")
+        page.wait_for_function(
+            "typeof EXERCISES.types.bagel_cost === 'object'", timeout=TIMEOUT)
+        res = page.evaluate("""(() => {
+            let bad = null;
+            for (let k = 0; k < 40 && !bad; k++) {
+                const ps = EXERCISES.types.bagel_cost.make('sup');
+                if (ps.length !== 3) { bad = {reason:'len', len: ps.length}; break; }
+                if (new Set(ps.map(p => p.a)).size !== 3) { bad = {reason:'dup', a: ps.map(p=>p.a)}; break; }
+                for (const p of ps) {
+                    if (p.t !== TBC) { bad = {reason:'t', p}; break; }
+                    if (p.b !== 5) { bad = {reason:'price', p}; break; }
+                    if (![2,3,4,6].includes(p.a)) { bad = {reason:'range', p}; break; }  // 2..6, never 5
+                }
+            }
+            return { bad };
+        })()""")
+        assert res["bad"] is None, f"invalid bagel_cost problem: {res['bad']}"
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        assert page.evaluate("[...problems].some(p => p.t === TBC)"), \
+            "the Superman session must contain bagel-cost problems"
+
+    def test_bagel_cost_loads_and_mounts(self, page):
+        """Forcing a TBC problem mounts the coin tray + ＋ control; starts empty,
+        states the bagel count, and shows the ₪5 price coin."""
+        self._enter_bagel(page, 4)
+        assert page.evaluate("ptype === TBC")
+        assert page.locator("#colm-ans").count() == 1
+        assert page.locator(".colm-coin").count() == 0
+        assert "4" in page.eval_on_selector(".colm-q", "el => el.textContent")
+        assert page.locator(".colm-sub .colm-titlecoin").count() == 1   # the ₪5 price coin
+
+    def test_bagel_cost_answer_is_the_total_not_the_count(self, page):
+        """4 bagels × ₪5 = 20: the answer is the TOTAL (20), not the count (4)."""
+        self._enter_bagel(page, 4)
+        assert page.evaluate("report[0].correct") == 20, "4 bagels × 5 must total 20"
+        page.fill("#colm-ans", "4")           # the COUNT — wrong
+        page.click("#colm-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("report[0].wrongs.length") == 1
+        page.fill("#colm-ans", "20")          # the TOTAL — correct
+        page.click("#colm-chk")
+        page.wait_for_function("report[0].gotCorrect === true", timeout=TIMEOUT)
+
+    def test_bagel_cost_plus_allows_overshoot_past_answer(self, page):
+        """＋ must NOT disable at the correct count (4) — that would reveal the
+        answer; it stays enabled and caps only at the generous bound (bagels+3 = 7),
+        exactly like the coin-counting exercise."""
+        self._enter_bagel(page, 4)
+        for _ in range(4):
+            page.click("#colm-add")
+        assert page.locator(".colm-coin").count() == 4
+        assert page.evaluate("document.getElementById('colm-add').disabled") is False, \
+            "＋ must stay enabled at the answer count (no reveal)"
+        for _ in range(3):                       # keep adding PAST the answer
+            page.click("#colm-add")
+        assert page.locator(".colm-coin").count() == 7
+        assert page.evaluate("document.getElementById('colm-add').disabled") is True, \
+            "＋ caps only at the generous bound (bagels+3 = 7)"
+
+    def test_bagel_question_shows_icon_after_number(self, page):
+        """The question reads 'כמה עולים <x> 🥨' — the number sits to the RIGHT of
+        the bagel icon (correct RTL order, number before icon)."""
+        self._enter_bagel(page, 4)
+        res = page.evaluate("""(() => {
+            const q = document.querySelector('.colm-q');
+            const num = q.querySelector('b'), emo = q.querySelector('.bagc-emoji');
+            return { numLeft: num.getBoundingClientRect().left,
+                     emoLeft: emo.getBoundingClientRect().left }; })()""")
+        assert res["numLeft"] > res["emoLeft"], \
+            f"number must sit RIGHT of the icon (RTL 'x 🥨'): {res}"
+
+    def test_bagel_space_adds_a_coin(self, page):
+        """Pressing SPACE drops a ₪5 coin — the same as tapping ＋ (no double-fire)."""
+        self._enter_bagel(page, 4)
+        for _ in range(3):
+            page.keyboard.press("Space")
+        page.wait_for_timeout(50)
+        assert page.locator(".colm-coin").count() == 3, \
+            "each SPACE press must add exactly one coin"
+
+    def test_bagel_cost_minus_removes_coin(self, page):
+        """The large minus button removes the last coin and re-enables ＋ at the cap."""
+        self._enter_bagel(page, 4)
+        for _ in range(7):                # fill to the cap (bagels+3 = 7)
+            page.click("#colm-add")
+        assert page.evaluate("document.getElementById('colm-add').disabled") is True
+        page.click("#colm-rem")
+        assert page.locator(".colm-coin").count() == 6
+        assert page.evaluate("document.getElementById('colm-add').disabled") is False
+
+    def test_bagel_cost_correct_total_solves(self, page):
+        """Filling the tray (a coin per bagel) and entering the TOTAL solves it
+        and awards the Superman 15 points. 6 bagels × 5 = 30."""
+        self._enter_bagel(page, 6)
+        before = page.evaluate("score")
+        for _ in range(6):
+            page.click("#colm-add")
+        page.fill("#colm-ans", "30")
+        page.click("#colm-chk")
+        page.wait_for_function(f"score === {before + 15}", timeout=TIMEOUT)
+        assert page.evaluate("report[0].gotCorrect === true")
 
 
 # ─────────────────────────────────────────────────────────
@@ -3794,7 +3924,7 @@ class TestModePersistence:
         page.reload()
         self._ready(page)
         assert page.evaluate("mode === 'sup'")
-        assert page.evaluate("problems.length === 15")
+        assert page.evaluate("problems.length === 18")
 
     def test_default_is_mx_when_nothing_saved(self, page):
         """A fresh context (no saved game) boots into Queen (mx)."""
@@ -4020,6 +4150,41 @@ class TestScoreHistory:
         self._record(page, 20, 12, 12)
         page.evaluate("clearHistory()")
         assert page.evaluate("_loadHistory().length") == 0, "clear must wipe the log"
+
+    def test_history_records_prize_won_and_detail_rows(self, page):
+        """A completed set logs whether the PRIZE was won + the per-exercise rows."""
+        self._record(page, "sup", 18, 18, "מַיָּה")     # perfect Superman → wins the 🎁 (goal 825)
+        e = page.evaluate("_loadHistory()[0]")
+        assert e["won"] is True, "a perfect prize-game set must record won=true"
+        assert isinstance(e["rows"], list) and len(e["rows"]) == 18, \
+            "the per-exercise detail rows must be stored in the history entry"
+        self._record(page, "sup", 3, 18)               # low score → no prize
+        assert page.evaluate("_loadHistory()[0].won") is False, \
+            "a low score on a prize game must record won=false"
+
+    def test_history_renders_gift_icon_and_expandable_detail(self, page):
+        """The history tab shows 🎁 for a won set and, on tapping a row, its
+        exercises + answers (the same rows as the end-of-set summary)."""
+        page.evaluate("""() => {
+            localStorage.setItem('scoreHistory', JSON.stringify([{
+                name:'מַיָּה', mode:'sup', game:'סוּפֶּרְמֶן 🦸', grade:1000, won:true,
+                rows:[{eq:'15 − 7 = 8',  ok:true,  wrongs:[],   correct:8,  skipped:false},
+                      {eq:'24 + 13 = 37', ok:false, wrongs:[36], correct:37, skipped:false}],
+                ts: 1700000000000
+            }]));
+            renderHistory();
+        }""")
+        # 🎁 shows next to the grade for a won set
+        assert "🎁" in page.eval_on_selector("#history-body .hist-grade", "el => el.textContent")
+        # the detail rows (exercises + answers) are in the DOM, hidden until the row is tapped
+        assert page.locator("#history-body .hist-detail .rep-row").count() == 2
+        assert page.eval_on_selector("#hist-detail-0", "el => el.style.display") == "none"
+        page.evaluate("toggleHistDetail(0)")
+        assert page.eval_on_selector("#hist-detail-0", "el => el.style.display") == "block"
+        # a correct row shows ✓; the mistaken row shows its wrong value + the correction
+        assert page.locator("#history-body .hist-detail .rep-check").count() == 1
+        assert page.locator("#history-body .hist-detail .rep-wrong-val").count() >= 1
+        assert page.locator("#history-body .hist-detail .rep-correct").count() == 1
 
 
 # ─────────────────────────────────────────────────────────

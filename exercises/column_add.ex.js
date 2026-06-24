@@ -19,15 +19,15 @@
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.column_add=(()=>{
 
-  // pool: 12 column-addition problems (a=11..29, b=2..19), ≥7 with a carry.
-  // Largest result reached is 29+19 = 48 (the tens of the result stay one digit).
+  // pool: 12 column-addition problems (a=11..39, b=2..19), ≥7 with a carry.
+  // Largest result reached is 39+19 = 58 (the tens of the result stay one digit).
   function makePool(nCarry,nNoCarry){
     nCarry=nCarry==null?7:nCarry; nNoCarry=nNoCarry==null?5:nNoCarry;
     const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
     const out=[],seen=new Set();
     const want=(carry)=>{
       for(let tries=0;tries<200;tries++){
-        const a=ri(11,29),b=ri(2,19);
+        const a=ri(11,39),b=ri(2,19);
         const hasCarry=(a%10)+(b%10)>=10;
         const key=a+'_'+b;
         if(hasCarry===carry&&!seen.has(key)){seen.add(key);out.push({t:TCA,a,b});return;}

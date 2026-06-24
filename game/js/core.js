@@ -225,7 +225,7 @@ function loadProblem(){
   if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
-  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TCM?num1/(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TCM?num1/(num2||5):ptype===TBC?num1*(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -235,6 +235,7 @@ function loadProblem(){
     ptype===TCA?'🦸 חַבְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
    :ptype===TCS?'🦸 חַסְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
    :ptype===TCM?('🪙 כַּמָּה מַטְבְּעוֹת שֶׁל '+(num2||5)+' צְרִיכִים? הוֹסִיפִי וְסִפְרִי!')
+   :ptype===TBC?'🥨 כַּמָּה זֶה עוֹלֶה? הוֹסִיפִי מַטְבְּעוֹת שֶׁל 5 וְסַכְּמִי!'
    :ptype===TBG?'💯 רַק סִפְרַת הָאֲחָדוֹת מִשְׁתַּנָּה — הָעֲשָׂרוֹת נִשְׁאָרוֹת!'
    :ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
    :ptype===TDA?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'
@@ -276,8 +277,8 @@ function loadProblem(){
     const nlp=document.getElementById('nl-panel');
     if(nlp){nlp.style.display='';NL.configure(20,1);NL.init(0);}
     chainGnMode=false;tdaJarMode=false;}
-  // TCM (coin multiplication): the module owns the coin tray; no number-line aid
-  if(ptype===TCM){
+  // TCM (coin multiplication) / TBC (bagel cost): the module owns the coin tray; no number-line aid
+  if(ptype===TCM||ptype===TBC){
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
     const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='none';
     chainGnMode=false;tdaJarMode=false;}
@@ -292,7 +293,7 @@ function loadProblem(){
     if(nlp){nlp.style.display='';NL.configure(base+20,1,base);NL.init(num1);}
     chainGnMode=false;tdaJarMode=false;}
   // Aid display — kangaroo NL or the cookie jar, per aidMode
-  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBG){
+  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TBG){
   const isTD=ptype===TDA||ptype===TDS;
   const useNL=aidMode==='nl';
   const useKang=aidMode==='kang';
@@ -318,7 +319,7 @@ function loadProblem(){
   },60);
   buildGamesMenu();
   // the aid-toggle menu is meaningless inside a self-contained exercise
-  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBG)?'hidden':'';}
+  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TBG)?'hidden':'';}
   // Digit hint button — shown for TT, TBG, and for TS/TM where both nums > 10
   {const _dhBtn=document.getElementById('digit-hint-btn');
   if(_dhBtn){
@@ -337,7 +338,7 @@ function loadProblem(){
 /* ── Equation ── */
 function renderEq(){
   // leaving a module-owned exercise (TCA) → release its listeners/timers
-  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM){_colxCleanup();_colxCleanup=null;}
+  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC){_colxCleanup();_colxCleanup=null;}
   // restore hint visibility (TC hides it and embeds it inline)
   if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
   const n=t=>`<span class="eq-n" data-num="${t}">${t}</span>`;
@@ -415,7 +416,7 @@ function renderEq(){
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
   }
-  else if(ptype===TCA||ptype===TCS||ptype===TCM)h='<div id="colx-root" class="colx-root"></div>';
+  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)h='<div id="colx-root" class="colx-root"></div>';
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
   else               h=n(num1)+op('+','op-p')+nB(num2,num1,'add')+op('=','op-e')+inp;
   document.getElementById('eq').innerHTML=h;
@@ -426,7 +427,7 @@ function renderEq(){
   {const _eq=document.getElementById('eq');
    const _nums=_eq.querySelectorAll('.eq-n[data-num],.eq-res[data-num]');
    if(_nums.length>=2)_nums[0].classList.add('eq-noobj');}
-  if(ptype===TCA||ptype===TCS||ptype===TCM)_colxMount();
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)_colxMount();
 }
 
 /* ── self-contained exercise host (TCA → column_add, TCS → column_sub) ──
@@ -441,7 +442,7 @@ function _colxMount(){
   loadExercise(exName,()=>{
     // problem changed while loading (idx moved, left colx, or now a DIFFERENT
     // colx type) → a stale async module-load must NOT clobber the live mount
-    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
+    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
     const root=document.getElementById('colx-root');
     const ex=window.EXERCISES&&EXERCISES.types[exName];
     if(!root||!ex)return;
@@ -475,8 +476,8 @@ function showBtns(s){
   if(s==='check'){
     btns.innerHTML='';
     btns.className='btn-row';
-    // exercise modules (TCA/TCS/TCM) check themselves — no host check button
-    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM)?'none':'flex';
+    // exercise modules (TCA/TCS/TCM/TBC) check themselves — no host check button
+    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)?'none':'flex';
   }else{
     if(cb)cb.style.display='none';
     btns.innerHTML=
@@ -500,7 +501,7 @@ document.addEventListener('input',e=>{
 });
 function checkAns(){
   if(done)return;
-  if(ptype===TCA||ptype===TCS||ptype===TCM)return;   // the exercise module checks itself
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)return;   // the exercise module checks itself
   // ── Double-unknown problems (TDA/TDS) ──
   if(ptype===TDA||ptype===TDS){
     const i1=document.getElementById('ans1'),i2=document.getElementById('ans2');
@@ -749,7 +750,7 @@ function endGame(){
   document.getElementById('prog-bar').style.width='100%';
   document.getElementById('prog-txt').textContent='🎊 סִיַּמְתְּ!';
   const g=calcGrade();const giftGoal=GIFT_GOALS[mode];const wonGift=giftGoal>0&&g>=giftGoal;
-  recordHistory(g);              // log this completed set (name + game + grade)
+  recordHistory(g,wonGift);      // log this completed set (name + game + grade + prize + per-exercise detail)
   if(mode===0){
     document.getElementById('card').innerHTML=`
       <div class="end-scr">
@@ -820,74 +821,94 @@ function restart(){
 
 
 /* ── Report ── */
-function reportOpen(){
-  if(!report||!report.length)return;
-  const body=document.getElementById('report-body');
-  const errCount=report.filter(r=>r.wrongs.length>0).length;
-  const perfect=errCount===0;
-  let html=`<div class="rep-sum ${perfect?'rep-sum-ok':'rep-sum-err'}">`;
-  html+=perfect
-    ?'🌟 מְצֻיֶּנֶת! כָּל הַתַּרְגִּילִים בְּלִי טְעֻיּוֹת!'
-    :`טָעִיתְ בְּ-${errCount} תַּרְגִּילִים מִתּוֹךְ ${report.length}`;
-  html+='</div>';
-  report.forEach((r,i)=>{
-    const ok=r.wrongs.length===0;
-    let eq='';
+/* one summary row per completed exercise → {eq, ok, wrongs, correct, skipped}. Built at end-of-set while
+   problems[] is still intact, so the equation TEXT can be captured (and persisted into the score history).
+   Every ptype renders its real operation (subtraction shows −, coin/bagel show their multiplication, …). */
+function _reportRows(){
+  return (report||[]).map((r,i)=>{
+    const p=problems[i]||{};
+    let eq;
     if(r.ptype===TM)      eq=`${r.num1} − ${r.correct} = ${r.num2}`;
     else if(r.ptype===TS) eq=`${r.num1} − ${r.num2} = ${r.correct}`;
     else if(r.ptype===TX) eq=`${r.num1} − ${r.num2} + ${r.num3} = ${r.correct}`;
+    else if(r.ptype===TW) eq=`${r.num1} − ${r.num2} − ${r.num3} = ${r.correct}`;
     else if(r.ptype===TZ) eq=r.num4>0?`${r.num1} + ${r.num2} + ${r.num3} + ${r.num4} = ${r.correct}`:`${r.num1} + ${r.num2} + ${r.num3} = ${r.correct}`;
-    else if(r.ptype===TDA){const p=r.userPair;eq=p?`${p[0]} + ${p[1]} = ${r.correct}`:`___ + ___ = ${r.correct}`;}
-    else if(r.ptype===TDS){const p=r.userPair;eq=p?`${p[0]} − ${p[1]} = ${r.correct}`:`___ − ___ = ${r.correct}`;}
-    else if(r.ptype===TC) eq=`🪙 ${(problems[i]?.coins||[]).join(' + ')} = ${r.correct}`;
-    else if(r.ptype===TBG)eq=`${r.num1} ${(problems[i]?.op||'sub')==='add'?'+':'−'} ${r.num2} = ${r.correct}`;
-    else                  eq=`${r.num1} + ${r.num2} = ${r.correct}`;
-    html+=`<div class="rep-row ${ok?'rep-ok':'rep-bad'}">
-      <span class="rep-badge">${i+1}</span>
-      <span class="rep-eq-txt">${eq}</span>
-      <div class="rep-right">`;
-    if(ok){
-      html+=`<span class="rep-check">✓</span>`;
-    }else if(r.skipped){
-      html+=r.wrongs.map(w=>`<span class="rep-wrong-val">✗${w}</span>`).join('');
-      html+=`<span class="rep-arrow">→</span><span class="rep-skipped">דולג</span>`;
-    }else{
-      html+=r.wrongs.map(w=>`<span class="rep-wrong-val">✗${w}</span>`).join('');
-      html+=`<span class="rep-arrow">→</span><span class="rep-correct">✓${r.correct}</span>`;
-    }
-    html+=`</div></div>`;
+    else if(r.ptype===TDA){const pr=r.userPair;eq=pr?`${pr[0]} + ${pr[1]} = ${r.correct}`:`___ + ___ = ${r.correct}`;}
+    else if(r.ptype===TDS){const pr=r.userPair;eq=pr?`${pr[0]} − ${pr[1]} = ${r.correct}`:`___ − ___ = ${r.correct}`;}
+    else if(r.ptype===TC) eq=`🪙 ${(p.coins||[]).join(' + ')} = ${r.correct}`;
+    else if(r.ptype===TT) eq=`${r.num1} ${(r.num1+r.num2===r.correct)?'+':'−'} ${r.num2} = ${r.correct}`;
+    else if(r.ptype===TBG)eq=`${r.num1} ${(p.op||'sub')==='add'?'+':'−'} ${r.num2} = ${r.correct}`;
+    else if(r.ptype===TCS)eq=`${r.num1} − ${r.num2} = ${r.correct}`;
+    else if(r.ptype===TCM)eq=`🪙 ${r.correct} × ${r.num2||5} = ${r.num1}`;
+    else if(r.ptype===TBC)eq=`🥨 ${r.num1} × ${r.num2||5} = ${r.correct}`;
+    else                  eq=`${r.num1} + ${r.num2} = ${r.correct}`;   // TA, TCA (column add)
+    return {eq,ok:(r.wrongs||[]).length===0,wrongs:(r.wrongs||[]).slice(),correct:r.correct,skipped:!!r.skipped};
   });
-  body.innerHTML=html;
+}
+/* one .rep-row's HTML — shared by the end-of-set summary AND the per-entry history detail */
+function _reportRowHtml(row,i){
+  let right;
+  if(row.ok) right=`<span class="rep-check">✓</span>`;
+  else if(row.skipped) right=row.wrongs.map(w=>`<span class="rep-wrong-val">✗${w}</span>`).join('')+`<span class="rep-arrow">→</span><span class="rep-skipped">דולג</span>`;
+  else right=row.wrongs.map(w=>`<span class="rep-wrong-val">✗${w}</span>`).join('')+`<span class="rep-arrow">→</span><span class="rep-correct">✓${row.correct}</span>`;
+  return `<div class="rep-row ${row.ok?'rep-ok':'rep-bad'}"><span class="rep-badge">${i+1}</span>`
+       + `<span class="rep-eq-txt">${row.eq}</span><div class="rep-right">${right}</div></div>`;
+}
+function reportOpen(){
+  if(!report||!report.length)return;
+  const rows=_reportRows();
+  const errCount=rows.filter(r=>!r.ok).length, perfect=errCount===0;
+  let html=`<div class="rep-sum ${perfect?'rep-sum-ok':'rep-sum-err'}">`;
+  html+=perfect
+    ?'🌟 מְצֻיֶּנֶת! כָּל הַתַּרְגִּילִים בְּלִי טְעֻיּוֹת!'
+    :`טָעִיתְ בְּ-${errCount} תַּרְגִּילִים מִתּוֹךְ ${rows.length}`;
+  html+='</div>';
+  rows.forEach((r,i)=>{html+=_reportRowHtml(r,i);});
+  document.getElementById('report-body').innerHTML=html;
   document.getElementById('report-ov').style.display='flex';
 }
 function reportClose(){document.getElementById('report-ov').style.display='none';}
 
-/* ── Score history — every completed set is logged (name + game + grade) and
-   kept across runs in localStorage 'scoreHistory' (newest first, capped 60).
-   Shown in the settings modal's 📜 history tab (renderHistory → #history-body). ── */
+/* ── Score history — every completed set is logged (name + game + grade + whether the PRIZE 🎁 was won +
+   the per-exercise detail rows) and kept across runs in localStorage 'scoreHistory' (newest first, capped
+   60). Shown in the settings modal's 📜 history tab (renderHistory → #history-body); tapping a row reveals
+   its exercises + answers, exactly like the end-of-set summary (📊). ── */
 function _escHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function _gameLabel(m){const md=DIFFICULTY_GROUPS.flatMap(g=>g.modes).find(x=>x.id===m);return md?md.label:String(m);}
 function _loadHistory(){try{return JSON.parse(localStorage.getItem('scoreHistory')||'[]')||[];}catch(e){return [];}}
-function recordHistory(grade){
+function recordHistory(grade,won){
   try{
     const h=_loadHistory();
     h.unshift({name:(typeof playerName==='function'?playerName():''),mode:String(mode),
-               game:_gameLabel(mode),grade:grade,ts:Date.now()});
+               game:_gameLabel(mode),grade:grade,won:!!won,rows:_reportRows(),ts:Date.now()});
     localStorage.setItem('scoreHistory',JSON.stringify(h.slice(0,60)));
   }catch(e){}
 }
 function clearHistory(){try{localStorage.removeItem('scoreHistory');}catch(e){}renderHistory();}
+function toggleHistDetail(i){const d=document.getElementById('hist-detail-'+i);if(d)d.style.display=(d.style.display==='none'?'block':'none');}
 function renderHistory(){
   const body=document.getElementById('history-body');if(!body)return;
   const h=_loadHistory();
   if(!h.length){body.innerHTML='<div class="hist-empty">עֲדַיִן אֵין צִיּוּנִים שְׁמוּרִים 🙂</div>';return;}
-  const rows=h.map(e=>{
+  const rows=h.map((e,i)=>{
     const d=new Date(e.ts||0);
     const dt=(e.ts&&!isNaN(d))?`${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:'';
     const nm=e.name?`<span class="hist-name">${_escHtml(e.name)}</span>`:'';
-    return `<div class="hist-row"><span class="hist-grade">${e.grade}</span>`+
+    const gift=e.won?'🎁 ':'';                     // earned the prize this set
+    const hasDetail=!!(e.rows&&e.rows.length);
+    const caret=hasDetail?'<span class="hist-caret">▾</span>':'';
+    const rowAttr=hasDetail?` onclick="toggleHistDetail(${i})" style="cursor:pointer" title="הַצִּיגִי אֶת הַתַּרְגִּילִים"`:'';
+    let detail='';
+    if(hasDetail){
+      const errCount=e.rows.filter(r=>!r.ok).length, perfect=errCount===0;
+      const sum=perfect?'🌟 כָּל הַתַּרְגִּילִים בְּלִי טְעֻיּוֹת!':`טָעֻיּוֹת בְּ-${errCount} מִתּוֹךְ ${e.rows.length}`;
+      detail=`<div class="hist-detail" id="hist-detail-${i}" style="display:none">`+
+             `<div class="rep-sum ${perfect?'rep-sum-ok':'rep-sum-err'}">${sum}</div>`+
+             e.rows.map((r,j)=>_reportRowHtml(r,j)).join('')+`</div>`;
+    }
+    return `<div class="hist-row"${rowAttr}><span class="hist-grade">${gift}${e.grade}</span>`+
            `<span class="hist-game">${_escHtml(e.game||e.mode||'')}</span>${nm}`+
-           `<span class="hist-date">${dt}</span></div>`;
+           `<span class="hist-date">${dt}${caret}</span></div>${detail}`;
   }).join('');
   body.innerHTML=`<div class="hist-list">${rows}</div>`+
     `<button class="hist-clear" onclick="clearHistory()">🗑️ נַקֵּה הִיסְטוֹרְיָה</button>`;

@@ -46,6 +46,15 @@
   font-family:'Nunito',sans-serif;font-weight:800;font-size:.9rem;transition:all .18s;
 }
 .hist-clear:hover{background:rgba(255,60,90,.3);color:#fff}
+/* a history row's expandable detail — its exercises + answers, like the end-of-set summary (📊) */
+.hist-caret{opacity:.55;margin-right:5px;font-size:.8rem}
+.hist-detail{
+  margin:-2px 4px 8px;padding:10px 12px;border-radius:14px;direction:rtl;
+  background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);
+}
+.hist-detail .rep-sum{font-size:.95rem;padding:8px 12px;margin-bottom:10px}
+.hist-detail .rep-row{margin-bottom:5px}
+.hist-detail .rep-eq-txt{font-size:1.15rem}
 /* close button (shared style, formerly defined with the knockout panel) */
 .ko-close{
   background:linear-gradient(135deg,rgba(255,60,90,.18),rgba(180,20,55,.12));
