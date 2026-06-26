@@ -20,8 +20,8 @@ const gameLen=()=>problems.length;
    pool recipes (problems.js) build the session from the registered types.
    (architecture.md §3.6) */
 const EXERCISE_INDEX=[
-  {file:'add',       modes:[0,5,10,20,'br','mx']},
-  {file:'sub',       modes:[5,10,20,'br','mx']},
+  {file:'add',       modes:[0,5,10,20,'br','b20','mx']},
+  {file:'sub',       modes:[5,10,20,'br','b20','mx']},
   {file:'missing',   modes:[5,10,20,'mx']},
   {file:'double',    modes:[5,10,20,'mx']},
   {file:'coins',     modes:[5,10,20,'mx','sup']},
@@ -49,6 +49,7 @@ const DIFFICULTY_GROUPS=[
   ]},
   {id:'medium',label:'בֵּינוֹנִי',modes:[
     {id:'br',label:'גָּשֵׁר 10 🌈'},
+    {id:'b20',label:'גָּשֵׁר 20 🌉'},
     {id:'mx',label:'מַלְכָּה 👸'},
     {id:'sup',label:'סוּפֶּרְמֶן 🦸'},
   ]},

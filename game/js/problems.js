@@ -28,6 +28,7 @@ function makePool(m){
   if(m===0)return EX('add').make(0);                 // the full 1+1 ladder
   if(m==='mx')return makeMxPool();                   // Queen — curated mix
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
+  if(m==='b20')return makeBridge20Pool();            // bridge-20 curriculum (two alternating sets)
   // Superman — an EQUAL 3-per-type mix: column addition + big-number subtraction
   // + coin-multiplication + bagel-cost (×5 in shekels) + column subtraction
   // (3 no-borrow + 3 with-borrow)  → 18 problems
@@ -68,12 +69,12 @@ function makeMxPool(){
   return pool;
 }
 
-// ── bridging-10 ("גָּשֵׁר 10") — THREE fixed pedagogical sets, served ALTERNATELY.
+// ── bridging-10 ("גָּשֵׁר 10") — FOUR fixed pedagogical sets, served ALTERNATELY.
 //    EVERY time a bridge pool is built — choosing the game, "play again"
 //    (restart), or a reload — it advances to the next set (set 1, set 2, set 3,
-//    set 1 …). The turn is PERSISTED in localStorage so the alternation survives
-//    refreshes instead of always replaying set 1 (9+2…). The order INSIDE each
-//    set is the curriculum and must NEVER change; each builder returns fresh
+//    set 4, set 1 …). The turn is PERSISTED in localStorage so the alternation
+//    survives refreshes instead of always replaying set 1 (9+2…). The order INSIDE
+//    each set is the curriculum and must NEVER change; each builder returns fresh
 //    objects.
 let _brTurn=0;
 try{const _s=localStorage.getItem('brTurn');if(_s!=null)_brTurn=(+_s)||0;}catch(e){}
@@ -106,7 +107,19 @@ function _bridgeSet3(){
     A(9,6),                                                        // a bigger non-double bridge to finish
   ];
 }
-const _BRIDGE_SETS=[_bridgeSet1,_bridgeSet2,_bridgeSet3];
+// SET 4 — "גְּשָׁרִים קְטַנִּים": the GENTLEST crossings — every sum / minuend stays in 11–13
+// (10 is crossed by only 1, 2 or 3), the opposite end from set 3's high-teen bridges. Grouped
+// cross-by-1 → 2 → 3, additions with their inverse subtractions; all 15 cross 10. Fresh pairs
+// (5+6, 4+7, 5+7, 4+8, 5+8, 4+9 …) the family/ladder sets don't use.
+function _bridgeSet4(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    A(5,6),S(11,5),A(4,7),S(11,7),A(3,8),S(11,8),A(2,9),   // cross by 1 (sum / from 11)
+    A(5,7),S(12,7),A(4,8),S(12,8),                          // cross by 2 (sum / from 12)
+    A(5,8),S(13,8),A(4,9),S(13,9),                          // cross by 3 (sum / from 13)
+  ];
+}
+const _BRIDGE_SETS=[_bridgeSet1,_bridgeSet2,_bridgeSet3,_bridgeSet4];
 // serve the current set, then advance the turn (persisted) for the NEXT build
 function makeBridgePool(){
   const set=_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length]();
@@ -115,4 +128,37 @@ function makeBridgePool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='sup'?15:mode==='big'?10:mode||5;}
+// ── bridging-20 ("גָּשֵׁר 20") — TWO fixed pedagogical sets of 15, served ALTERNATELY
+//    (set 1 → set 2 → set 1 …), like גָּשֵׁר 10. The turn is PERSISTED so the alternation
+//    survives refreshes. Both cross 20 by only 1–3 (sums/minuends 21–23); the order
+//    INSIDE each set is the curriculum and must NEVER change; fresh objects each build.
+//    SET 1 — SMALL jumps: anchors 19/18/17 (the addend just below 20).
+//    SET 2 — BIGGER jumps: anchors 16/15/14, so the make-20 split is larger (16+5 → 4|1,
+//            14+9 → 6|3) — the same gentle crossing practised with a wider decomposition.
+let _b20Turn=0;
+try{const _s=localStorage.getItem('b20Turn');if(_s!=null)_b20Turn=(+_s)||0;}catch(e){}
+function _bridge20Set1(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    A(19,2),A(19,3),A(19,4),S(21,2),S(22,3),S(23,4),   // 19-family (cross by 1/2/3) + inverses
+    A(18,3),A(18,4),A(18,5),S(21,3),S(22,4),S(23,5),   // 18-family + inverses
+    A(17,4),A(17,5),A(17,6),                            // 17-family (additions to finish)
+  ];
+}
+function _bridge20Set2(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    A(16,5),A(16,6),A(16,7),S(21,5),S(22,6),S(23,7),   // 16-family (bigger jumps) + inverses
+    A(15,6),A(15,7),A(15,8),S(21,6),S(22,7),S(23,8),   // 15-family + inverses
+    A(14,7),A(14,8),A(14,9),                            // 14-family (additions to finish)
+  ];
+}
+const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2];
+function makeBridge20Pool(){
+  const set=_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length]();
+  _b20Turn=(_b20Turn+1)%_BRIDGE20_SETS.length;
+  try{localStorage.setItem('b20Turn',String(_b20Turn));}catch(e){}
+  return set;
+}
+
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode||5;}

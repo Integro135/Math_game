@@ -5,7 +5,7 @@
    means NO prize for that game — no 🎁 badge on its picker button, no gift
    screen on completion. GIFT_GOALS holds ONLY the games that currently have a
    prize (a game with no prize is absent), so `GIFT_GOALS[mode]` is falsy then. */
-const DEFAULT_GIFT_GOALS={br:900,mx:900,sup:825};
+const DEFAULT_GIFT_GOALS={br:900,b20:900,mx:900,sup:825};
 const GIFT_GOALS={};
 function _savedGiftGoals(){try{return JSON.parse(localStorage.getItem('giftGoals')||'{}')||{};}catch(e){return {};}}
 function _rebuildGiftGoals(){
@@ -26,7 +26,7 @@ function setGiftGoal(m,val){
   if(typeof renderModePicker==='function')renderModePicker();   // refresh the 🎁 badges
   if(typeof updateGiftIndicator==='function')updateGiftIndicator();
 }
-const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן'};
+const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',b20:'גָּשֵׁר 20',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן'};
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
@@ -301,7 +301,8 @@ function loadProblem(){
   const nlp=document.getElementById('nl-panel');
   // kangaroo line spans 0..20 by default; for missing-subtrahend (e.g. 18−x=11)
   // and plain subtraction it must never be shorter than the minuend on screen.
-  const _nlMax=Math.max(20,(ptype===TM||ptype===TS)?num1:0);
+  // גָּשֵׁר 20 crosses the SECOND ten (sums/minuends up to 23) → widen to 0..24 there.
+  const _nlMax=Math.max(20,mode==='b20'?24:0,(ptype===TM||ptype===TS)?num1:0);
   if(nlp){nlp.style.display=useKang?'':'none';if(useKang){NL.configure(_nlMax,1);NL.init(0);}}
   if(useNL){
     pgmTensMode=false;chainGnMode=false;
