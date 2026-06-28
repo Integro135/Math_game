@@ -4,7 +4,7 @@ let _specialPtc=[];
 /* themes served by a canvas background module (backgrounds/<bg>.bg.js);
    these get their scene, skin and aid art from the dynamic loader, and no
    floating emoji particles (the scenes carry their own life) */
-const _BG_THEMES={galaxy:'space',girls:'unicorns',reef:'reef',dubai:'dubai',savanna:'savanna'};
+const _BG_THEMES={galaxy:'space',girls:'unicorns',reef:'reef',dubai:'dubai',savanna:'savanna',dinosaurs:'dinosaurs'};
 const THEMES={
   girls:{
     titleEmoji:'',uniL:'',uniR:'',toggleIcon:'👦',
@@ -31,6 +31,11 @@ const THEMES={
     particles:['🦁','🌅','🦓','🌿','🐆','✨'],
     specialEm:'🦁',
   },
+  dinosaurs:{
+    titleEmoji:'',uniL:'',uniR:'',toggleIcon:'🦕',
+    particles:['🦕','🦖','🌋','🌿','🥚','✨'],
+    specialEm:'🦕',
+  },
 };
 
 
@@ -42,7 +47,7 @@ function applyTheme(t){
   if(!THEMES[theme])theme='girls';   // stale localStorage from a removed theme
   // body.className wipes every class — keep the number-line lock state intact
   const _tfLocked=document.body.classList.contains('tf-locked-nl');
-  document.body.className=theme==='galaxy'?'theme-galaxy':theme==='reef'?'theme-reef':theme==='dubai'?'theme-dubai':theme==='savanna'?'theme-savanna':'theme-girls';
+  document.body.className=theme==='galaxy'?'theme-galaxy':theme==='reef'?'theme-reef':theme==='dubai'?'theme-dubai':theme==='savanna'?'theme-savanna':theme==='dinosaurs'?'theme-dinosaurs':'theme-girls';
   if(_tfLocked)document.body.classList.add('tf-locked-nl');
   const _bg=_BG_THEMES[theme];
   if(_bg)loadBackground(_bg);
@@ -59,7 +64,7 @@ function applyTheme(t){
   if(ur)ur.textContent=T.uniR;
   const _ew=e=>`<span style="-webkit-text-fill-color:initial">${e}</span>`;
   if(tt)tt.innerHTML=`${_ew(T.titleEmoji)} מִשְׂחֲקֵי חֶשְׁבּוֹן ${_ew(T.titleEmoji)}`;
-  const _themeIcons={girls:'🦄',galaxy:'🌌',reef:'🐠',dubai:'🏙️',savanna:'🦁'};
+  const _themeIcons={girls:'🦄',galaxy:'🌌',reef:'🐠',dubai:'🏙️',savanna:'🦁',dinosaurs:'🦕'};
   if(tb)tb.textContent=_themeIcons[theme]||'🎨';
   // Mark active theme in menu
   document.querySelectorAll('.tm-item').forEach(el=>{
@@ -86,7 +91,7 @@ function pickTheme(t){
 
 /* toggleTheme — cycles themes, persists the choice */
 function toggleTheme(){
-  const cycle={girls:'galaxy',galaxy:'reef',reef:'dubai',dubai:'savanna',savanna:'girls'};
+  const cycle={girls:'galaxy',galaxy:'reef',reef:'dubai',dubai:'savanna',savanna:'dinosaurs',dinosaurs:'girls'};
   applyTheme(cycle[theme]||'girls');
   spawnParticles();
   localStorage.setItem('gameTheme',theme);

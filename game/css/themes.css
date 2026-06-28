@@ -10,10 +10,17 @@ body.theme-galaxy  #stars-layer{display:block}
 body.theme-reef    #stars-layer{display:block}
 body.theme-dubai   #stars-layer{display:block}
 body.theme-savanna #stars-layer{display:block}
+body.theme-dinosaurs #stars-layer{display:block}
 
 /* ── Savanna (Pride Rock) — warm load-flash fallback behind the canvas ── */
 body.theme-savanna #bg{
   background:linear-gradient(180deg,#33102e 0%,#6d2030 30%,#b3402a 55%,#e07028 75%,#f59c3c 100%);
+  animation:none;
+}
+
+/* ── Dinosaurs (volcano valley) — sunset load-flash fallback behind the scene ── */
+body.theme-dinosaurs #bg{
+  background:linear-gradient(180deg,#F2B65F 0%,#F0AA77 60%,#EFA18B 100%);
   animation:none;
 }
 

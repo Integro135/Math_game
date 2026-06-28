@@ -12,17 +12,17 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "reef"
-DSF      = 3                       # device scale factor (higher = sharper zoom)
-HIDE_UI  = True                    # hide the .wrap game card (background-only shots)
+THEME    = "dinosaurs"
+DSF      = 2                       # device scale factor (higher = sharper zoom)
+HIDE_UI  = False                   # hide the .wrap game card (background-only shots)
 STANDALONE = r""   # '' = load the game; else load this page raw (skip theme)
-VIEW     = {"width": 342, "height": 455}   # viewport
-EVAL      = ""                     # JS run after load ('' = skip)
-POST_EVAL = ""                     # JS run after WAIT_MS ('' = skip)
+VIEW     = {"width": 1280, "height": 720}   # viewport
+EVAL      = ""
+POST_EVAL = ""
 CLICKS   = []                      # list of [xFrac, yFrac] doc clicks, e.g. [[0.5,0.9]]
-WAIT_MS  = 2500
+WAIT_MS  = 2600
 SHOTS    = [
-    {"path": r"c:\tmp\reef_verify.png", "clip": None},
+    {"path": r"c:\tmp\dino_game.png", "clip": None},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

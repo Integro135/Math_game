@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dinosaurs — background dev harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin dev harness for the OFFICIAL dinosaurs background pack. It loads only
+     dinosaurs.bg.js (which itself pulls in the volcano + dino-walker modules)
+     and mounts it the way the game's bg-loader does:
+         window.BACKGROUNDS.dinosaurs.init({ stage })
+     This is the single source of truth — open it to iterate on the scene.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  html, body { margin: 0; height: 100%; background: #EFA18B; }
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+  .hud { position: absolute; left: 12px; top: 10px; z-index: 50;
+    font: 14px system-ui; color: #3b2a4a; background: #fffc;
+    padding: 6px 10px; border-radius: 8px; }
+  .hud button { font: 13px system-ui; margin-left: 6px; }
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div class="hud">dinosaurs background <button id="restart">restart</button></div>
+
+  <script src="dinosaurs.bg.js"></script>
+  <script>
+    var stage = document.getElementById('stage');
+    var cleanup = window.BACKGROUNDS.dinosaurs.init({ stage: stage });
+    document.getElementById('restart').onclick = function () {
+      if (cleanup) cleanup();
+      cleanup = window.BACKGROUNDS.dinosaurs.init({ stage: stage });
+    };
+  </script>
+</body>
+</html>

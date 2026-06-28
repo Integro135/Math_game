@@ -1,0 +1,237 @@
+/* ── Dinosaurs skin — "Volcano valley at dusk" ──────────────────────────────
+   The game's look over the dinosaurs background (backgrounds/dinosaurs.bg.js:
+   sunset sky + stars + clouds + snow-capped ranges + an erupting volcano on the
+   RIGHT + foreground grass with roaming dinosaurs). Warm dusk glass that lets
+   the sky, the volcano and the herd glow through. The game column hugs the LEFT
+   so the volcano + its plume (right) stay in full view (mirror of savanna, which
+   hugs right to clear Pride Rock).
+
+   A skin owns four families: 1. palette  2. fonts/type  3. glass transparency
+   4. position. Add direction = sunset gold; subtract direction = grass-green —
+   which doubles as the dinosaurs' own green. The number-line rider + counting
+   jar come from the aid variant (here: classic). ───────────────────────────── */
+
+:root{
+  --skin-primary:#E8743C;   /* sunset / lava orange */
+  --skin-accent: #7FB84E;   /* fresh leaf green     */
+  --skin-glow:   #FF9A4D;   /* warm amber           */
+  --skin-text:   #FFF3E0;   /* warm cream           */
+}
+
+/* ── 4. POSITION — full-size board (like the other themes), hugging the LEFT so
+   the erupting volcano + plume on the RIGHT stay clear. On mid-size windows the
+   card narrows just enough to keep the summit uncovered; on small screens it
+   re-centres. ── */
+body.theme-dinosaurs .wrap{
+  max-width:700px;
+  margin:0 auto 0 calc(8px + 0.5cm);
+}
+@media(max-width:1120px){body.theme-dinosaurs .wrap{max-width:600px;margin:0 auto 0 8px}}
+@media(max-width:840px){body.theme-dinosaurs .wrap{margin:8px auto 0}}
+
+/* ── 3. GLASS — warm smoked dusk, a soft blur so the valley glows through ── */
+body.theme-dinosaurs .glass{
+  background:rgba(48,24,14,.40);
+  backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+  border:1px solid rgba(255,185,105,.30);
+  box-shadow:0 14px 44px rgba(20,5,4,.5),inset 0 1px 0 rgba(255,215,160,.20);
+}
+
+/* ════ HEADER — a slim sun-bleached nameplate ════ */
+body.theme-dinosaurs .header{
+  background:linear-gradient(180deg,rgba(48,24,14,.42),rgba(48,24,14,.12));
+  border:none;box-shadow:none;border-radius:16px;padding:10px 18px;margin-bottom:10px;position:relative;
+}
+body.theme-dinosaurs .header::after{
+  content:'';position:absolute;left:6%;right:6%;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,180,90,.65) 30%,rgba(255,215,130,.8) 50%,rgba(255,180,90,.65) 70%,transparent);
+  box-shadow:0 0 8px rgba(255,170,70,.45);
+}
+body.theme-dinosaurs .uni{display:none}
+
+/* title — molten gold against the sky */
+body.theme-dinosaurs .title{
+  font-family:'Fredoka One',cursive;font-size:1.5rem;letter-spacing:.06em;animation:none;
+  background:linear-gradient(180deg,#FFF3D6 0%,#FFD27D 40%,#E8743C 74%,#FFE2B0 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 1px 1px rgba(30,10,0,.6)) drop-shadow(0 0 14px rgba(255,160,70,.35));
+}
+body.theme-dinosaurs .hdr-stats{margin-top:4px;gap:24px;font-size:.86rem;font-weight:800;color:#F3D9B8;letter-spacing:.04em}
+body.theme-dinosaurs .hdr-stats strong{color:#FFD27D;text-shadow:0 0 9px rgba(255,170,70,.5)}
+body.theme-dinosaurs .prog-wrap{height:4px;max-width:330px;margin-top:8px;border-radius:2px;background:rgba(255,210,130,.14)}
+body.theme-dinosaurs .prog-bar{background:linear-gradient(90deg,#FFD700,#7FB84E);box-shadow:0 0 10px rgba(255,160,70,.8)}
+
+/* ════ CURRENT-GAME INDICATOR + SETTINGS MODAL ════ */
+body.theme-dinosaurs .mode-ind{color:#E9CDA6;text-shadow:0 1px 4px rgba(30,8,2,.7)}
+body.theme-dinosaurs .mode-ind .mi-cur{color:#FFD27D;text-shadow:0 0 8px rgba(255,170,70,.5)}
+body.theme-dinosaurs #settings-ov,body.theme-dinosaurs #parent-ov{background:rgba(20,6,2,.74)}
+body.theme-dinosaurs .settings-box{
+  background:linear-gradient(168deg,rgba(52,28,14,.97),rgba(30,16,8,.98));
+  border:1px solid rgba(255,185,105,.45);
+  box-shadow:0 0 46px rgba(255,150,60,.16),0 22px 60px rgba(0,0,0,.8);
+}
+body.theme-dinosaurs .settings-title{
+  background:linear-gradient(180deg,#FFF3D6,#FFD27D 45%,#E8743C);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-dinosaurs .set-sec-lbl{color:#E9CDA6}
+body.theme-dinosaurs .tier-tab{background:transparent;border:1px solid rgba(255,185,105,.26);color:#D8BC97}
+body.theme-dinosaurs .tier-tab:hover{background:rgba(255,185,105,.09)}
+body.theme-dinosaurs .tier-tab.active{
+  background:rgba(255,160,70,.14);border-color:rgba(255,170,70,.7);color:#FFF3E0;
+  box-shadow:0 0 12px rgba(255,150,60,.28),inset 0 0 12px rgba(255,170,70,.08);
+}
+body.theme-dinosaurs .lvl-btn{background:transparent;border:1px solid rgba(228,200,160,.28);color:#E4D2B6;box-shadow:none}
+body.theme-dinosaurs .lvl-btn:hover{background:rgba(255,210,130,.09);border-color:rgba(255,210,130,.45);box-shadow:0 0 14px rgba(255,160,70,.22)}
+body.theme-dinosaurs .lvl-btn.active{
+  background:rgba(255,210,130,.13);border:1px solid rgba(255,210,130,.9);color:#FFD27D;font-weight:900;
+  box-shadow:0 0 14px rgba(255,170,70,.35),inset 0 0 12px rgba(255,200,100,.1);
+  text-shadow:0 0 8px rgba(255,210,130,.5);transform:scale(1.05);
+}
+
+/* ════ THE CARD — a pane of dusk glass; the valley glows softly behind ════ */
+body.theme-dinosaurs .card{
+  background:linear-gradient(180deg,rgba(48,24,14,.44),rgba(48,24,14,.22));
+  backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+  border:1px solid rgba(255,185,105,.28);border-radius:18px;
+  box-shadow:0 18px 50px rgba(18,5,3,.5);padding:18px 18px 14px;
+}
+body.theme-dinosaurs .card::before{
+  content:'';position:absolute;left:24px;right:24px;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,225,165,.8),transparent);pointer-events:none;
+}
+
+/* ════ EQUATION — warm light, strong shadow so it reads over the bright sky ══ */
+body.theme-dinosaurs .eq-n,body.theme-dinosaurs .eq-res{
+  color:#FFF6E6;
+  text-shadow:0 0 16px rgba(255,160,70,.45),0 0 4px rgba(255,235,200,.7),0 2px 10px rgba(20,6,2,.8);
+}
+body.theme-dinosaurs .eq-op{text-shadow:0 0 12px rgba(255,160,70,.5),0 2px 8px rgba(20,6,2,.75)}
+body.theme-dinosaurs .op-m,body.theme-dinosaurs .op-p,body.theme-dinosaurs .op-e{color:#FFC568}
+body.theme-dinosaurs .eq-res{color:#FFD27D;text-shadow:0 0 20px rgba(255,160,70,.65),0 2px 10px rgba(20,6,2,.7)}
+
+body.theme-dinosaurs .ans-inp,body.theme-dinosaurs .tx-sub-inp{
+  background:rgba(30,16,8,.5);border:1px solid rgba(255,185,105,.55);color:#FFF6E6;
+  box-shadow:0 0 10px rgba(255,150,60,.14),inset 0 0 14px rgba(20,6,2,.4);
+}
+body.theme-dinosaurs .ans-inp:focus,body.theme-dinosaurs .tx-sub-inp:focus{
+  border-color:#FFB54D;background:rgba(38,20,9,.55);
+  box-shadow:0 0 22px rgba(255,160,70,.5),0 0 4px rgba(255,225,165,.8),inset 0 0 14px rgba(60,30,8,.3);
+}
+
+/* the check button — a glowing amber signet */
+body.theme-dinosaurs .chk-btn{
+  background:rgba(38,20,9,.5);border:1px solid rgba(255,210,130,.7);color:#FFD27D;
+  box-shadow:0 0 14px rgba(255,160,70,.32),inset 0 0 10px rgba(255,170,70,.1);
+}
+body.theme-dinosaurs .chk-btn::after{background:none}
+body.theme-dinosaurs .chk-btn:hover{
+  border-color:#FFE9A8;color:#FFF3D6;background:rgba(255,170,70,.16);
+  box-shadow:0 0 24px rgba(255,175,80,.55),inset 0 0 12px rgba(255,190,90,.16);
+}
+body.theme-dinosaurs .hint{color:#E9CDA6;text-shadow:0 0 8px rgba(255,150,60,.22)}
+body.theme-dinosaurs .div{background:linear-gradient(90deg,transparent,rgba(255,185,105,.4),transparent)}
+body.theme-dinosaurs .fb-ok{color:#BDED8E;text-shadow:0 0 16px rgba(150,230,110,.5)}
+body.theme-dinosaurs .fb-err{color:#FF9D8A;text-shadow:0 0 16px rgba(255,130,100,.45)}
+
+/* ════ ACTION BUTTONS — warm outlines that fill softly on press ════ */
+body.theme-dinosaurs .btn{
+  background:rgba(38,20,9,.42);text-shadow:none;border:1px solid rgba(255,185,105,.45);color:#FFF3E0;
+  box-shadow:0 0 10px rgba(255,150,60,.12);font-weight:800;
+}
+body.theme-dinosaurs .btn::after{background:none}
+body.theme-dinosaurs .b-chk{border-color:rgba(255,170,70,.6);color:#FFD8A0;box-shadow:0 0 12px rgba(255,160,70,.22)}
+body.theme-dinosaurs .b-chk:hover,body.theme-dinosaurs .b-chk:active{background:rgba(255,170,70,.15);box-shadow:0 0 22px rgba(255,175,80,.45)}
+body.theme-dinosaurs .b-try{border-color:rgba(127,184,78,.6);color:#D6F0BE;box-shadow:0 0 12px rgba(110,190,70,.2)}
+body.theme-dinosaurs .b-try:hover,body.theme-dinosaurs .b-try:active{background:rgba(127,184,78,.16);box-shadow:0 0 22px rgba(130,210,90,.45)}
+body.theme-dinosaurs .b-nxt{border-color:rgba(255,210,130,.6);color:#FFE3B0;box-shadow:0 0 12px rgba(255,170,70,.22)}
+body.theme-dinosaurs .b-nxt:hover,body.theme-dinosaurs .b-nxt:active{background:rgba(255,210,130,.14);box-shadow:0 0 22px rgba(255,200,100,.45)}
+body.theme-dinosaurs .b-rpl{
+  background:rgba(255,210,130,.1);border-color:rgba(255,210,130,.85);color:#FFD27D;
+  text-shadow:0 0 9px rgba(255,170,70,.4);box-shadow:0 0 16px rgba(255,170,70,.32);
+}
+body.theme-dinosaurs .b-rpl:hover,body.theme-dinosaurs .b-rpl:active{background:rgba(255,210,130,.18);box-shadow:0 0 28px rgba(255,200,100,.5)}
+
+/* utility discs */
+body.theme-dinosaurs .games-drop-btn,body.theme-dinosaurs .theme-toggle-btn{
+  background:rgba(38,20,9,.42);border:1px solid rgba(255,185,105,.32);box-shadow:0 0 9px rgba(255,150,60,.15);
+}
+body.theme-dinosaurs .tt-hint-icon{background:rgba(38,20,9,.42);border-color:rgba(255,210,130,.5);color:#FFD27D;box-shadow:0 0 9px rgba(255,170,70,.22)}
+body.theme-dinosaurs .gift-indicator{background:transparent;border:1px solid rgba(255,210,130,.38);box-shadow:0 0 10px rgba(255,170,70,.16)}
+body.theme-dinosaurs #score-star{filter:drop-shadow(0 0 7px rgba(255,200,80,.85))}
+
+/* coin stage (TC) */
+body.theme-dinosaurs .coins-stage{background:rgba(38,20,9,.3);border:1px solid rgba(255,185,105,.18)}
+body.theme-dinosaurs .coin-lbl{color:#E9CDA6}
+body.theme-dinosaurs .tc-eq-lbl,body.theme-dinosaurs .tc-hint-top{color:#E4D2B6}
+
+/* ════ NUMBER LINE — a warm dusk trail with golden markers ════ */
+body.theme-dinosaurs #nl-panel{background:transparent;border:none;box-shadow:none}
+body.theme-dinosaurs #nl-panel .nl-bar-track{
+  height:5px;border:none;border-radius:3px;
+  background:linear-gradient(90deg,rgba(120,70,30,.4),rgba(255,170,70,.6) 22%,rgba(255,210,130,.7) 50%,rgba(255,170,70,.6) 78%,rgba(120,70,30,.4));
+  box-shadow:0 0 12px rgba(255,170,70,.45),0 0 4px rgba(255,210,130,.5);
+}
+body.theme-dinosaurs #nl-panel .tick{
+  width:4px;height:4px;border-radius:50%;top:calc(100% + 5px);
+  background:rgba(255,225,170,.6);box-shadow:0 0 5px rgba(255,200,130,.55);
+}
+body.theme-dinosaurs #nl-panel .tick.major{
+  width:8px;height:8px;top:calc(100% + 3px);background:#FFD27D;box-shadow:0 0 11px rgba(255,170,70,.9),0 0 4px rgba(255,225,165,.8);
+}
+body.theme-dinosaurs #nl-panel .nl-num{color:#E9CDA6}
+body.theme-dinosaurs #nl-panel .nl-num.major{color:#FFD27D;text-shadow:0 0 9px rgba(255,170,70,.55)}
+body.theme-dinosaurs #nl-panel .nl-dot::after{background:rgba(255,210,130,.85);box-shadow:0 0 6px rgba(255,170,70,.9)}
+body.theme-dinosaurs #nl-panel .kang{filter:drop-shadow(0 2px 5px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,170,70,.5))}
+body.theme-dinosaurs #nl-panel .arc-add{stroke:rgba(255,210,130,.9)}
+body.theme-dinosaurs #nl-panel .arc-sub{stroke:rgba(127,184,78,.9)}
+
+body.theme-dinosaurs #nl-panel .side-btn{background:rgba(38,20,9,.5);border-radius:50%}
+body.theme-dinosaurs #nl-panel .btn-plus{background:rgba(38,20,9,.5);color:#FFC97E;border:1px solid rgba(255,170,70,.65);box-shadow:0 0 12px rgba(255,160,70,.35),inset 0 0 10px rgba(255,150,60,.1)}
+body.theme-dinosaurs #nl-panel .btn-minus{background:rgba(38,20,9,.5);color:#CDEBAE;border:1px solid rgba(127,184,78,.6);box-shadow:0 0 12px rgba(110,190,70,.32),inset 0 0 10px rgba(90,160,50,.1)}
+body.theme-dinosaurs #nl-panel .ctrl-btn{border-radius:50px}
+body.theme-dinosaurs #nl-panel .btn-reset{background:rgba(255,210,130,.1);border:1px solid rgba(255,210,130,.7);color:#FFD27D;box-shadow:0 0 10px rgba(255,170,70,.28)}
+body.theme-dinosaurs #nl-panel .btn-reset:hover{background:rgba(255,210,130,.18)}
+body.theme-dinosaurs #nl-panel .btn-undo{background:transparent;border:1px solid rgba(228,200,160,.4);color:#E9CDA6}
+body.theme-dinosaurs #nl-panel .btn-undo:hover{background:rgba(228,200,160,.12)}
+
+/* ════ CHAIN MODE (mini trail + the jar) ════ */
+body.theme-dinosaurs #tf-nl-note{color:#FFD27D;text-shadow:0 0 8px rgba(255,170,70,.4)}
+body.theme-dinosaurs .pgm-bar{
+  height:5px;border:none;border-radius:3px;
+  background:linear-gradient(90deg,rgba(120,70,30,.4),rgba(255,170,70,.55) 22%,rgba(255,210,130,.6) 50%,rgba(255,170,70,.55) 78%,rgba(120,70,30,.4));
+  box-shadow:0 0 10px rgba(255,170,70,.4);
+}
+body.theme-dinosaurs .pgm-dot{background:radial-gradient(circle at 38% 36%,#FFF3D6,#FFB54D 70%);border-color:rgba(255,235,170,.85);box-shadow:0 0 12px rgba(255,180,80,.95)}
+body.theme-dinosaurs .pgm-nl-num{color:#E9CDA6}
+body.theme-dinosaurs .pgm-nl-num5{color:#FFD27D;text-shadow:0 0 8px rgba(255,170,70,.5)}
+body.theme-dinosaurs .pgm-arc-add{stroke:rgba(255,210,130,.9)}
+body.theme-dinosaurs .pgm-arc-sub{stroke:rgba(127,184,78,.9)}
+body.theme-dinosaurs .pgm-side{border-radius:50%;font-size:2.1rem}
+body.theme-dinosaurs .pgm-side::after{background:none}
+body.theme-dinosaurs .pgm-plus{background:rgba(38,20,9,.5);color:#FFC97E;border:1px solid rgba(255,170,70,.65);box-shadow:0 0 12px rgba(255,160,70,.35),inset 0 0 10px rgba(255,150,60,.1)}
+body.theme-dinosaurs .pgm-minus{background:rgba(38,20,9,.5);color:#CDEBAE;border:1px solid rgba(127,184,78,.6);box-shadow:0 0 12px rgba(110,190,70,.32),inset 0 0 10px rgba(90,160,50,.1)}
+body.theme-dinosaurs .pgm-jar-btm{background:rgba(38,20,9,.55);border-color:rgba(255,185,105,.5)}
+
+/* number-hover tooltip */
+body.theme-dinosaurs #num-tt{
+  --ntt-accent:#FFD27D;background:rgba(38,20,9,.97);border:1px solid rgba(255,185,105,.5);
+  box-shadow:0 6px 24px rgba(18,5,3,.7),0 0 16px rgba(255,160,70,.2);
+}
+body.theme-dinosaurs #num-tt .ntt-lbl{color:#FFD27D;text-shadow:0 0 10px rgba(255,200,100,.4)}
+
+/* ════ END SCREEN ════ */
+body.theme-dinosaurs .end-ttl{
+  background:linear-gradient(180deg,#FFF3D6,#FFD27D 45%,#E8743C);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-dinosaurs .end-sc{color:#E4D2B6}
+body.theme-dinosaurs .end-grade-num{
+  background:linear-gradient(180deg,#FFF3D6,#FFB54D 55%,#E8743C);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(255,160,70,.45));
+}
+body.theme-dinosaurs .end-grade-max{color:rgba(228,210,182,.75)}
+body.theme-dinosaurs .end-grade-msg{color:#E4D2B6}
+
+@media(max-width:480px){body.theme-dinosaurs .title{font-size:1.15rem}}
