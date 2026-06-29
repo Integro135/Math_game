@@ -100,8 +100,17 @@
          with a soft highlight, fine black/grey SPECKLES (so the surface reads
          as textured, not flat) and a few hairline CRACKS. The green dino is
          untouched. ---- */
-  var EGG = '#efe8d6';        // off-white shell
-  var EGG_EDGE = '#e6ddc9';   // slightly shaded cracked-rim edges
+  // shell base colour as a CSS var so a CLICK can recolour the whole shell
+  // (speckles + cracks stay); cycled through EGG_PACKS by cycleEggColor().
+  var EGG = 'var(--bte-egg,#efe8d6)';            // off-white shell
+  var EGG_EDGE = 'var(--bte-egg-edge,#e6ddc9)';  // slightly shaded cracked-rim edges
+  var EGG_PACKS = [
+    ['#efe8d6', '#e6ddc9'],   // off-white (default)
+    ['#cfe3f0', '#b9d4e6'],   // pale blue
+    ['#f5d5e0', '#ecc1d2'],   // pale pink
+    ['#d6ecc6', '#c2e0ad'],   // mint green
+    ['#f6ecb8', '#efe19f'],   // pale yellow
+  ];
   // speckles: an 84px SVG tile of IRREGULARLY scattered tiny dots (grey + a few
   // darker) — organic, not the grid a tiled radial-gradient would give.
   var SPECKLE = "background-image:url(\"data:image/svg+xml," +
@@ -132,6 +141,10 @@
     '.bte{position:absolute;width:' + DESIGN_W + 'px;height:' + DESIGN_H + 'px;box-sizing:content-box;',
       'transform-origin:bottom center;transform:translateX(-50%) scale(var(--bte-s,1));',
       'pointer-events:auto;}',
+    /* rolling layer (only present on a roll()-ed egg): tumbles about its centre
+       while the wrapper translates across; 2-class selector beats the * reset */
+    '.bte .bte-roll{position:absolute;top:0;left:0;width:' + DESIGN_W + 'px;height:' + DESIGN_H + 'px;',
+      'transform-box:content-box;transform-origin:50% 50%;}',
     /* >.bte-shadow / .bte .bte-pop use a 2-class selector so the scoped
        `.bte *{position:relative}` reset (equal specificity, declared later)
        can't flip these module helpers back to relative. */
@@ -288,6 +301,14 @@
 
   /* one document-level capture click handler hit-tests each egg's LIVE box and
      plays its hatch (and stops the click reaching the scene behind it). */
+  /* recolour the shell on click (off-white → blue → pink → mint → yellow → …) */
+  function cycleEggColor(wrap) {
+    wrap._egg = ((wrap._egg == null ? 0 : wrap._egg) + 1) % EGG_PACKS.length;
+    var p = EGG_PACKS[wrap._egg];
+    wrap.style.setProperty('--bte-egg', p[0]);
+    wrap.style.setProperty('--bte-egg-edge', p[1]);
+  }
+
   var clickBound = false;
   function ensureClickHandler() {
     if (clickBound || typeof document === 'undefined') return;
@@ -301,7 +322,9 @@
         var r = list[i].getBoundingClientRect();
         if (r.width && e.clientX >= r.left && e.clientX <= r.right &&
             e.clientY >= r.top && e.clientY <= r.bottom) {
-          hatch(list[i]);
+          var w = list[i];
+          if (w._roll) rollClick(w);            // stop rolling + settle + hatch
+          else { cycleEggColor(w); hatch(w); }
           e.stopPropagation();
           return;
         }
@@ -379,6 +402,117 @@
     return { element: wrap, remove: function () { if (wrap.parentNode) wrap.remove(); } };
   }
 
+  /* read an element's current rotation (deg) from its computed matrix */
+  function currentRot(el) {
+    if (typeof getComputedStyle === 'undefined') return 0;
+    var m = getComputedStyle(el).transform;
+    if (!m || m === 'none') return 0;
+    var v = m.match(/matrix\(([^)]+)\)/);
+    if (!v) return 0;
+    var p = v[1].split(',');
+    return Math.atan2(parseFloat(p[1]), parseFloat(p[0])) * 180 / Math.PI;
+  }
+
+  /* a click on a ROLLING egg: stop the crossing, settle it upright, hatch. The
+     hatch's loop-boundary listener then resumes the roll. */
+  function rollClick(wrap) {
+    if (wrap._hatching) return;
+    var rollLayer = wrap.querySelector('.bte-roll');
+    if (wrap._moveAnim) { try { wrap._moveAnim.pause(); } catch (e) {} }
+    if (rollLayer) {
+      var ang = currentRot(rollLayer);
+      if (wrap._spinAnim) { try { wrap._spinAnim.cancel(); } catch (e) {} wrap._spinAnim = null; }
+      if (rollLayer.animate)
+        wrap._settleAnim = rollLayer.animate(
+          [{ transform: 'rotate(' + ang + 'deg)' }, { transform: 'rotate(0deg)' }],
+          { duration: 280, easing: 'ease-out', fill: 'forwards' });
+    }
+    cycleEggColor(wrap);
+    hatch(wrap);
+  }
+
+  /* after a hatch cycle, the rolling egg trundles on again */
+  function resumeRoll(wrap) {
+    if (!wrap._roll || wrap._stopped) return;
+    if (wrap._settleAnim) { try { wrap._settleAnim.cancel(); } catch (e) {} wrap._settleAnim = null; }
+    if (wrap._moveAnim) { try { wrap._moveAnim.play(); } catch (e) {} }
+    if (wrap._spin) wrap._spin();
+  }
+
+  /* place an egg that slowly ROLLS across the container (like the dinosaurs
+     cross); clicking it stops it + plays the hatch, then it rolls on.
+       BabyTrexEgg.roll(container, { direction, duration, height, bottom, zIndex,
+                                     gapMin, gapMax })  -> { element, stop(), remove() } */
+  function roll(container, options) {
+    ensureCSS();
+    ensureClickHandler();
+    var o = options || {};
+    if (!container) return { stop: function () {}, remove: function () {} };
+    var cs = global.getComputedStyle ? getComputedStyle(container) : null;
+    if (cs && cs.position === 'static') container.style.position = 'relative';
+
+    var ch = container.clientHeight || (global.innerHeight || 600);
+    var h = o.height == null ? 150 : o.height;
+    var px = typeof h === 'number' ? h : (/%\s*$/.test(h) ? ch * parseFloat(h) / 100 : parseFloat(h));
+
+    var wrap = document.createElement('div');
+    wrap.className = 'bte';
+    wrap.style.bottom = o.bottom != null ? o.bottom : '5%';
+    if (o.zIndex != null) wrap.style.zIndex = o.zIndex;
+    wrap.style.setProperty('--bte-s', px / DESIGN_H);
+    wrap.style.setProperty('--bte-play', 'paused');     // stays closed while rolling
+    wrap.innerHTML = '<div class="bte-shadow"></div><div class="bte-roll">' + MARKUP + '</div>';
+    container.appendChild(wrap);
+    wrap._roll = true;
+    var rollLayer = wrap.querySelector('.bte-roll');
+
+    var topEl = wrap.querySelector('.egg__top');
+    if (topEl) topEl.addEventListener('animationiteration', function () {
+      wrap.style.setProperty('--bte-play', 'paused');   // back to closed at the loop boundary
+      wrap._hatching = false;
+      resumeRoll(wrap);                                  // …and roll on
+    });
+
+    var dir = o.direction || (Math.random() < 0.5 ? 'ltr' : 'rtl');
+    var dur = o.duration != null ? o.duration : 24000;
+    var gapMin = o.gapMin != null ? o.gapMin : 4000, gapMax = o.gapMax != null ? o.gapMax : 12000;
+
+    wrap._spin = function () {
+      if (!rollLayer || !rollLayer.animate || wrap._stopped || wrap._hatching) return;
+      wrap._spinAnim = rollLayer.animate(
+        [{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + (dir === 'ltr' ? 360 : -360) + 'deg)' }],
+        { duration: 5200, iterations: Infinity, easing: 'linear' });
+    };
+    function cross() {
+      if (wrap._stopped) return;
+      if (wrap._moveAnim) { try { wrap._moveAnim.cancel(); } catch (e) {} }
+      if (wrap._spinAnim) { try { wrap._spinAnim.cancel(); } catch (e) {} wrap._spinAnim = null; }
+      var s = dir === 'ltr' ? -12 : 112, en = dir === 'ltr' ? 112 : -12;
+      wrap.style.left = s + '%';
+      if (wrap.animate) {
+        wrap._moveAnim = wrap.animate([{ left: s + '%' }, { left: en + '%' }],
+          { duration: dur, easing: 'linear', fill: 'forwards' });
+        wrap._moveAnim.onfinish = function () {
+          if (wrap._stopped) return;
+          dir = dir === 'ltr' ? 'rtl' : 'ltr';
+          wrap._gapT = setTimeout(cross, gapMin + Math.random() * (gapMax - gapMin));
+        };
+      }
+      wrap._spin();
+    }
+    cross();
+
+    var doStop = function () {
+      wrap._stopped = true;
+      if (wrap._moveAnim) { try { wrap._moveAnim.cancel(); } catch (e) {} }
+      if (wrap._spinAnim) { try { wrap._spinAnim.cancel(); } catch (e) {} }
+      if (wrap._settleAnim) { try { wrap._settleAnim.cancel(); } catch (e) {} }
+      clearTimeout(wrap._gapT);
+      if (wrap.parentNode) wrap.remove();
+    };
+    return { element: wrap, stop: doStop, remove: doStop };
+  }
+
   /* fire an action on the live instance(s) — handy for testing.
      name: 'hearts' = just hearts; anything else ('hatch'/default) = play the
      hatch. -> count of instances acted on. */
@@ -393,5 +527,5 @@
     return n;
   }
 
-  global.BabyTrexEgg = { place: place, trigger: trigger, markup: MARKUP, css: CSS };
+  global.BabyTrexEgg = { place: place, roll: roll, trigger: trigger, markup: MARKUP, css: CSS };
 })(typeof window !== 'undefined' ? window : this);

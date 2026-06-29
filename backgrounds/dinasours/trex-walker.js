@@ -117,8 +117,8 @@
         '<div class="head">' +
           '<div class="head-fill"></div>' +
           '<ul class="teeth upper"><li></li><li></li><li></li><li></li></ul>' +
-          '<ul class="teeth lower"><li></li><li></li><li></li></ul>' +
-          '<div class="eye"></div>' +
+          '<i class="lt lt1"></i><i class="lt lt2"></i><i class="lt lt3"></i>' +
+          '<div class="eye"><i class="eye-pupil"></i><i class="eye-shine"></i></div>' +
         '</div>' +
         '<div class="hand"><div class="elbow"><div class="forearm"></div></div></div>' +
         '<div id="second-hand" class="hand"><div class="elbow"><div class="forearm"></div></div></div>' +
@@ -216,13 +216,23 @@
     '.trex-walker .dinosaur .body .head ul.teeth li{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;}',
     '.trex-walker .dinosaur .body .head ul.teeth.upper{bottom:64px;left:84px;transform:rotate(85deg);}',
     '.trex-walker .dinosaur .body .head ul.teeth.upper li{border-top:15px solid #fbf5e6;}',
-    '.trex-walker .dinosaur .body .head ul.teeth.lower{bottom:70px;left:35px;transform:rotate(108deg);}',
-    '.trex-walker .dinosaur .body .head ul.teeth.lower li{border-bottom:15px solid #fbf5e6;}',
+    /* lower fangs: THREE independent teeth, each seated on the curved lower
+       jaw with its own position + tilt (a single rotated flex row could not
+       follow the jaw curve). transform-origin bottom-center = the tooth tip's
+       seat on the jaw. */
+    '.trex-walker .dinosaur .body .head i.lt{position:absolute;width:0;height:0;',
+      'border-left:5px solid transparent;border-right:5px solid transparent;',
+      'border-bottom:15px solid #fbf5e6;transform-origin:bottom center;}',
+    '.trex-walker .dinosaur .body .head i.lt1{bottom:90px;left:8px;transform:rotate(100deg);}',
+    '.trex-walker .dinosaur .body .head i.lt2{bottom:68px;left:12px;transform:rotate(100deg);}',
+    '.trex-walker .dinosaur .body .head i.lt3{bottom:46px;left:16px;transform:rotate(100deg);}',
     /* (the old .head-mask paint-over shapes are now the #trexMouthMask cut-out) */
-    '.trex-walker .dinosaur .body .head .eye{position:absolute;top:65px;right:15px;width:45px;height:55px;',
-      'background-color:#f5f5f5;border-radius:50%;transform:rotate(-30deg);animation:trexBlinkEye 6s infinite;overflow:hidden;}',
-    '.trex-walker .dinosaur .body .head .eye::after{content:"";position:absolute;bottom:15px;left:10px;width:10px;height:10px;',
-      'border-radius:50%;background-color:#333333;}',
+    /* CUTE eye (in the stegosaurus/triceratops style): big white eye with a soft
+       dark-green outline, a big round pupil + a bright catchlight, vertical blink */
+    '.trex-walker .dinosaur .body .head .eye{position:absolute;top:62px;right:13px;width:46px;height:50px;box-sizing:border-box;',
+      'background-color:#fff;border:3.5px solid #3f6e2c;border-radius:50%;transform:rotate(-24deg);animation:trexBlinkEye 4.4s ease-in-out infinite;overflow:hidden;}',
+    '.trex-walker .dinosaur .body .head .eye .eye-pupil{position:absolute;top:15px;left:12px;width:22px;height:22px;border-radius:50%;background-color:#22331a;}',
+    '.trex-walker .dinosaur .body .head .eye .eye-shine{position:absolute;top:12px;left:10px;width:9px;height:9px;border-radius:50%;background-color:#fff;}',
 
     '.trex-walker .dinosaur .body .hand{z-index:5;position:absolute;top:0;right:5px;width:40px;height:60px;',
       'background-color:var(--primary);transform-origin:top right;transform:rotate(-30deg);border-radius:30px;}',
@@ -270,19 +280,22 @@
       'border-color:transparent transparent transparent var(--primary);}',
     '.trex-walker .dinosaur .body ul.tail li:nth-child(6)::after,.trex-walker .dinosaur .body ul.tail li:nth-child(6)::before{content:none;}',
 
-    /* ── running state ── */
+    /* ── running state ──
+       every run period (and its delay) scales by a per-instance --gait multiplier
+       so the whole rig stays internally in phase but two identical T-Rexes run at
+       slightly different tempos (set in walk()). */
     '.trex-walker .dinosaur.run .body{transform:rotate(25deg);}',
-    '.trex-walker .dinosaur.run .head{animation:trexMoveHead 4s infinite;}',
-    '.trex-walker .dinosaur.run .hand{animation:trexRunHand 2s infinite;}',
-    '.trex-walker .dinosaur.run .hand#second-hand{animation:trexRunHandSecond 2s 0.5s infinite;}',
-    '.trex-walker .dinosaur.run .hand .elbow{animation:trexRunElbow 2s infinite;}',
-    '.trex-walker .dinosaur.run .leg{animation:trexRunLeg 0.6s infinite;}',
-    '.trex-walker .dinosaur.run .leg .knee{animation:trexRunKnee 0.6s infinite;}',
-    '.trex-walker .dinosaur.run .leg .knee .foreleg{animation:trexRunForeleg 0.6s infinite;}',
-    '.trex-walker .dinosaur.run .leg#second-leg{bottom:0px;animation:trexRunLegSecond 0.6s 0.3s infinite;}',
-    '.trex-walker .dinosaur.run .leg#second-leg .knee{animation:trexRunKneeSecond 0.6s 0.3s infinite;}',
-    '.trex-walker .dinosaur.run .leg#second-leg .knee .foreleg{animation:trexRunForelegSecond 0.6s 0.3s infinite;}',
-    '.trex-walker .dinosaur.run ul.tail{animation:trexMoveTail 0.6s infinite;}',
+    '.trex-walker .dinosaur.run .head{animation:trexMoveHead calc(4s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .hand{animation:trexRunHand calc(2s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .hand#second-hand{animation:trexRunHandSecond calc(2s * var(--gait,1)) calc(0.5s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .hand .elbow{animation:trexRunElbow calc(2s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .leg{animation:trexRunLeg calc(0.6s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .leg .knee{animation:trexRunKnee calc(0.6s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .leg .knee .foreleg{animation:trexRunForeleg calc(0.6s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .leg#second-leg{bottom:0px;animation:trexRunLegSecond calc(0.6s * var(--gait,1)) calc(0.3s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .leg#second-leg .knee{animation:trexRunKneeSecond calc(0.6s * var(--gait,1)) calc(0.3s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run .leg#second-leg .knee .foreleg{animation:trexRunForelegSecond calc(0.6s * var(--gait,1)) calc(0.3s * var(--gait,1)) infinite;}',
+    '.trex-walker .dinosaur.run ul.tail{animation:trexMoveTail calc(0.6s * var(--gait,1)) infinite;}',
 
     /* ── keyframes (namespaced) ── */
     '@keyframes trexRunHand{0%{transform:rotate(-30deg);}50%{transform:rotate(-25deg);}100%{transform:rotate(-30deg);}}',
@@ -296,7 +309,7 @@
     '@keyframes trexRunForelegSecond{0%{transform:rotate(-50deg);}50%{transform:rotate(-10deg);}100%{transform:rotate(-50deg);}}',
     '@keyframes trexMoveTail{0%{transform:rotate(-200deg);}50%{transform:rotate(-210deg);}100%{transform:rotate(-200deg);}}',
     '@keyframes trexMoveHead{0%{transform:rotate(-125deg);}50%{transform:rotate(-110deg);}100%{transform:rotate(-125deg);}}',
-    '@keyframes trexBlinkEye{0%{transform:rotate(-30deg) scaleX(1);}1%{transform:rotate(-30deg) scaleX(0);}3%{transform:rotate(-30deg) scaleX(1);}}',
+    '@keyframes trexBlinkEye{0%,92%,100%{transform:rotate(-24deg) scaleY(1);}96%{transform:rotate(-24deg) scaleY(.08);}}',
 
     /* a click-pop "RoOar!" (module nicety, above the head) */
     '.trex-walker .trex-roar{position:absolute;left:50%;top:4%;transform:translateX(-50%);',
@@ -606,8 +619,19 @@
   /* on click: count clicks per instance — every 5th click ROARS (like the lion
      firing every 5th click); clicks 1–4 fire ONE random action + a heart/roar
      pop, exactly as before. */
+  /* clicking the dino also cycles its colour pack (green → pink → green2 → …) */
+  function cyclePalette(wrap) {
+    var dino = wrap.querySelector('.dinosaur');
+    if (!dino) return;
+    var cur = dino.classList.contains('pal-pink') ? 1 : dino.classList.contains('pal-green2') ? 2 : 0;
+    var nxt = (cur + 1) % 3;
+    dino.classList.remove('pal-pink', 'pal-green2');
+    if (nxt === 1) dino.classList.add('pal-pink');
+    else if (nxt === 2) dino.classList.add('pal-green2');
+  }
   function triggerAction(wrap) {
-    if (wrap._busy) return;                 // mid-action — ignore
+    cyclePalette(wrap);                     // every click → a fresh colour
+    if (wrap._busy) return;                 // mid-action — ignore the rest
     wrap._clicks = (wrap._clicks || 0) + 1;
     if (wrap._clicks % 5 === 0) { doRoar(wrap); return; }
     var r = Math.random();
@@ -710,6 +734,7 @@
       flip: o.flip,
       loop: !!o.loop,
       palette: o.palette || 'green',
+      gait: o.gait != null ? o.gait : (0.85 + Math.random() * 0.3),  // 0.85–1.15× run tempo
       onDone: o.onDone || null
     };
     if (!container) return null;
@@ -721,6 +746,7 @@
     var flip = opts.faceWalkDir ? faceLeft : !!opts.flip;
 
     var wrap = buildElement({ height: opts.height, bottom: opts.bottom, zIndex: opts.zIndex, flip: flip, palette: opts.palette });
+    wrap.style.setProperty('--gait', opts.gait.toFixed(3));   // this T-Rex's own run tempo
     container.appendChild(wrap);
     fitScale(wrap);   // now that it's in the DOM we can measure its pixel height
 

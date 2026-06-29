@@ -62,6 +62,11 @@
   var N_BUBBLES = 64;                     // lava bubbles in the plume (as authored)
   var CRATER_RISE = 1200;                 // px (user units) a bubble climbs per cycle
   var SVGNS = 'http://www.w3.org/2000/svg';
+  /* meteor shower cadence: every 5th volcano CLICK or once every 10 minutes
+     (mirrors the savanna lion's roar cadence). Needs window.MeteorShower
+     (backgrounds/dinasours/meteor.js) — loaded by the dinosaurs background; if
+     absent (e.g. the bare volcano demo) the shower simply doesn't fire. */
+  var METEOR_EVERY_CLICKS = 10, METEOR_EVERY_MS = 600000;
 
   /* one knob (~2cm in viewBox units): the grass band, the mountain ranges AND the
      volcano are all lifted up by this much, together, so the world stays consistent. */
@@ -519,17 +524,19 @@
   }
 
   /* a fast burst of extra lava out of the crater (click / trigger) */
-  function erupt(st) {
+  function erupt(st, n) {
     if (st.stopped) return;
     flashLightning(st);                        // lightning crashes down with the eruption
-    var n = Math.min(N_BUBBLES, 18);
+    n = Math.min(N_BUBBLES, n || 18);
+    var big = n >= N_BUBBLES;                  // a CLICK erupts ALL bubbles (distinct)
+    var spread = big ? 260 : 160, scHi = big ? 2.2 : 1.7;   // wider + bigger when big
     for (var k = 0; k < n; k++) {
-      var i = (Math.random() * N_BUBBLES) | 0;
+      var i = big ? k : ((Math.random() * N_BUBBLES) | 0);
       var g = st.bubbles[i];
       if (!g || !g.animate) continue;
       if (st.bubbleAnims[i]) { try { st.bubbleAnims[i].cancel(); } catch (e) {} }
       (function (g, i) {
-        var fromX = rnd(-50, 50), sc = rnd(0.5, 1.7), toX = rnd(-160, 160);
+        var fromX = rnd(-50, 50), sc = rnd(0.5, scHi), toX = rnd(-spread, spread);
         var dur = rnd(1800, 3800);
         var a = g.animate(
           [{ transform: 'translate(' + fromX + 'px,0px) scale(' + (sc * 0.6) + ')' },
@@ -541,6 +548,39 @@
     }
   }
 
+  /* a fresh meteor shower over the scene (if the module is loaded). Stops any
+     prior one first so showers never stack. */
+  function meteorShower(st) {
+    if (st.stopped) return;
+    // if the host wired an onMeteor hook, let IT orchestrate (e.g. the dinosaurs
+    // scene runs the dinos off first, then starts the shower). Otherwise fire it
+    // directly over our own container (the bare volcano demo).
+    if (st.onMeteor) { st.onMeteor(); return; }
+    if (!global.MeteorShower) return;
+    var host = (st.wrap && st.wrap.parentNode) || st.wrap;
+    if (!host) return;
+    if (st._meteor && st._meteor.stop) { try { st._meteor.stop(); } catch (e) {} }
+    st._meteor = global.MeteorShower.start(host, { duration: 14000 });
+  }
+
+  /* a CLICK on the volcano: a BIG bubble eruption + bump the on-cone counter; on
+     every 10th click a meteor shower (the 10-min timer fires it too — see place()). */
+  function volcanoClick(st) {
+    st.clicks = (st.clicks || 0) + 1;
+    // counter counts DOWN to the meteor shower: 9,8,…,1,0 (0 = this click fired it).
+    if (st.counter) {
+      var r = st.clicks % METEOR_EVERY_CLICKS;          // 1..9, then 0 on the 10th
+      st.counter.textContent = String((r === 0) ? 0 : (METEOR_EVERY_CLICKS - r));
+      st.counter.style.opacity = '0.9';                 // flash it on…
+      clearTimeout(st._counterT);
+      st._counterT = setTimeout(function () {           // …then hide after ~0.5s
+        if (st.counter) st.counter.style.opacity = '0';
+      }, 350);
+    }
+    erupt(st, N_BUBBLES);
+    if (st.clicks % METEOR_EVERY_CLICKS === 0) meteorShower(st);
+  }
+
   /* one document capture-phase click handler: erupt ONLY when the click actually
      lands on the volcano itself (its visible summit, the skirt, or the lava) —
      not on the mountains, grass, sky or a dino. Uses the real top-most element at
@@ -550,13 +590,25 @@
     if (clickBound || typeof document === 'undefined') return;
     clickBound = true;
     document.addEventListener('click', function (e) {
-      var el = document.elementFromPoint(e.clientX, e.clientY);
-      if (!el) return;
+      // elementsFromPoint (not elementFromPoint): the scene stage can sit at
+      // z-index:-1 behind the page (the math game), so the TOP element is the
+      // body — but the volcano's own painted SVG shapes (pointer-events:auto)
+      // still appear deeper in the stack. We take the FIRST element belonging
+      // to this volcano's SVG (= the topmost painted shape at that point) and
+      // erupt only if it is inside the #volcano group — so a click on the
+      // mountains / sky / grass still does nothing.
+      var stack = document.elementsFromPoint
+        ? document.elementsFromPoint(e.clientX, e.clientY)
+        : [document.elementFromPoint(e.clientX, e.clientY)];
       for (var i = 0; i < INSTANCES.length; i++) {
         var st = INSTANCES[i];
-        if (st.stopped || !st.wrap.isConnected || !st.volc) continue;
-        if (st.volc === el || st.volc.contains(el)) {   // the volcano group only
-          erupt(st);
+        if (st.stopped || !st.wrap.isConnected || !st.volc || !st.svg) continue;
+        var topInSvg = null;
+        for (var k = 0; k < stack.length; k++) {
+          if (stack[k] && st.svg.contains(stack[k])) { topInSvg = stack[k]; break; }
+        }
+        if (topInSvg && (st.volc === topInSvg || st.volc.contains(topInSvg))) {
+          volcanoClick(st);
           e.stopPropagation();
           return;
         }
@@ -627,9 +679,27 @@
     }
 
     var st = {
-      wrap: wrap, svg: svg, stopped: false, volc: volc,
+      wrap: wrap, svg: svg, stopped: false, volc: volc, onMeteor: o.onMeteor || null,
       bubbles: [], bubbleAnims: [], cloudAnims: []
     };
+
+    // a SMALL countdown on the cone: hidden by default, it flashes for ~1s on
+    // each volcano press showing how many clicks REMAIN (9 → 0) before the meteor
+    // shower. Sits on the visible upper cone, scaled + moved with the volcano.
+    if (volc) {
+      var counter = document.createElementNS(SVGNS, 'text');
+      counter.setAttribute('x', '625'); counter.setAttribute('y', '958');
+      counter.setAttribute('text-anchor', 'middle');
+      counter.setAttribute('font-family', 'system-ui,Arial,sans-serif');
+      counter.setAttribute('font-size', '22'); counter.setAttribute('font-weight', '700');
+      counter.setAttribute('fill', '#dfe6ff');
+      counter.setAttribute('pointer-events', 'none');
+      counter.style.opacity = '0';                       // hidden until a click
+      counter.style.transition = 'opacity .3s ease';
+      counter.textContent = String(METEOR_EVERY_CLICKS);
+      volc.appendChild(counter);
+      st.counter = counter;
+    }
 
     // grow the plume: clone the single bubble N times into #bubbleGroup.
     // Parse as real SVG (image/svg+xml) so the nodes get the SVG namespace.
@@ -657,6 +727,8 @@
         scheduleErupt();
       }, rnd(16000, 30000));
     })();
+    // a meteor shower every 10 minutes on its own (also fires on every 5th click)
+    st.meteorTimer = setInterval(function () { meteorShower(st); }, METEOR_EVERY_MS);
 
     INSTANCES.push(st);
     return {
@@ -665,6 +737,9 @@
       remove: function () {
         st.stopped = true;
         if (st.eruptTimer) clearTimeout(st.eruptTimer);
+        if (st.meteorTimer) clearInterval(st.meteorTimer);
+        if (st._counterT) clearTimeout(st._counterT);
+        if (st._meteor && st._meteor.stop) { try { st._meteor.stop(); } catch (e) {} }
         var all = st.bubbleAnims.concat(st.cloudAnims);
         for (var k = 0; k < all.length; k++) { try { all[k].cancel(); } catch (e) {} }
         var ix = INSTANCES.indexOf(st); if (ix >= 0) INSTANCES.splice(ix, 1);

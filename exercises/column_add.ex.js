@@ -19,15 +19,20 @@
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.column_add=(()=>{
 
-  // pool: 12 column-addition problems (a=11..39, b=2..19), ≥7 with a carry.
-  // Largest result reached is 39+19 = 58 (the tens of the result stay one digit).
+  // pool: column-addition problems, BOTH operands two-digit, sum ≤ 99 (so the
+  // tens of the result stay a single digit), ≥ nCarry with a units-carry.
+  // Results now reach up to 99 (e.g. 47 + 38 = 85, 64 + 29 = 93) — was capped at
+  // 39 + 19 = 58; widened to "up to 99" as the child progressed.
   function makePool(nCarry,nNoCarry){
     nCarry=nCarry==null?7:nCarry; nNoCarry=nNoCarry==null?5:nNoCarry;
     const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
     const out=[],seen=new Set();
     const want=(carry)=>{
-      for(let tries=0;tries<200;tries++){
-        const a=ri(11,39),b=ri(2,19);
+      for(let tries=0;tries<400;tries++){
+        const a=ri(13,86);
+        const bMax=Math.min(99-a,86);
+        if(bMax<10)continue;                 // keep b a genuine two-digit addend
+        const b=ri(10,bMax);
         const hasCarry=(a%10)+(b%10)>=10;
         const key=a+'_'+b;
         if(hasCarry===carry&&!seen.has(key)){seen.add(key);out.push({t:TCA,a,b});return;}

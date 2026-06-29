@@ -18,15 +18,14 @@
   --skin-text:   #FFF3E0;   /* warm cream           */
 }
 
-/* ── 4. POSITION — full-size board (like the other themes), hugging the LEFT so
-   the erupting volcano + plume on the RIGHT stay clear. On mid-size windows the
-   card narrows just enough to keep the summit uncovered; on small screens it
-   re-centres. ── */
+/* ── 4. POSITION — full-size board, nudged 4cm to the RIGHT of the left edge
+   (per request) while still leaving the erupting volcano visible on the far
+   right. On mid-size windows the card narrows; on small screens it re-centres. ── */
 body.theme-dinosaurs .wrap{
   max-width:700px;
-  margin:0 auto 0 calc(8px + 0.5cm);
+  margin:0 auto 0 calc(8px + 0.5cm + 4cm);
 }
-@media(max-width:1120px){body.theme-dinosaurs .wrap{max-width:600px;margin:0 auto 0 8px}}
+@media(max-width:1120px){body.theme-dinosaurs .wrap{max-width:600px;margin:0 auto 0 calc(8px + 4cm)}}
 @media(max-width:840px){body.theme-dinosaurs .wrap{margin:8px auto 0}}
 
 /* ── 3. GLASS — warm smoked dusk, a soft blur so the valley glows through ── */

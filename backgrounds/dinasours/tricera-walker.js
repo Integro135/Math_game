@@ -83,10 +83,22 @@
   /* scaly-skin pattern + a clip of the body so the scales stay on the body */
   '<defs>' +
     '<pattern id="trikeScales" patternUnits="userSpaceOnUse" width="22" height="11">' +
+      /* scale SHADOW (lower edge of each scale) */
       '<path d="M0 11 A11 8 0 0 1 22 11" fill="none" stroke="#5f9447" stroke-width="1.4" opacity="0.45"></path>' +
       '<path d="M-11 5.5 A11 8 0 0 1 11 5.5" fill="none" stroke="#5f9447" stroke-width="1.4" opacity="0.45"></path>' +
       '<path d="M11 5.5 A11 8 0 0 1 33 5.5" fill="none" stroke="#5f9447" stroke-width="1.4" opacity="0.45"></path>' +
+      /* scale HIGHLIGHT (top edge, lifted ~1.4px) → an embossed, tactile look */
+      '<path d="M0 9.6 A11 8 0 0 1 22 9.6" fill="none" stroke="#c4e6a3" stroke-width="1" opacity="0.55"></path>' +
+      '<path d="M-11 4.1 A11 8 0 0 1 11 4.1" fill="none" stroke="#c4e6a3" stroke-width="1" opacity="0.55"></path>' +
+      '<path d="M11 4.1 A11 8 0 0 1 33 4.1" fill="none" stroke="#c4e6a3" stroke-width="1" opacity="0.55"></path>' +
     '</pattern>' +
+    /* form-shading gradient: light along the top (back), shadow on the underside */
+    '<linearGradient id="trikeForm" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0.05" stop-color="#eef4e0" stop-opacity="0.42"></stop>' +
+      '<stop offset="0.30" stop-color="#eef4e0" stop-opacity="0"></stop>' +
+      '<stop offset="0.56" stop-color="#3f6e2c" stop-opacity="0"></stop>' +
+      '<stop offset="0.78" stop-color="#3f6e2c" stop-opacity="0.30"></stop>' +
+    '</linearGradient>' +
     '<clipPath id="trikeBodyClip"><path d="M41 160 C41 160,70 172,100 169 C100 169,150 158,200 127 L290 71 L295 71 C295 71,345 35,420 55 C420 55,460 30,565 95 L576 95 L573 81 L583 78 L579 66 L594 67 L594 54 L607 54 L611 48 C611 48,613 40,620 50 L625 42 L630 46 L638 39 L645 45 L655 45 L658 55 L666 60 L663 70 L668 73 L666 75 L674 84 L670 89 L671 115 C671 115,675 130,686 132 L751 125 L784 118 C784 118,750 140,705 150 C705 150,703 155,708 160 C708 160,700 180,723 188 C723 188,733 193,768 183 C768 183,755 199,745 212 C745 212,753 214,751 230 C751 230,745 257,735 262 L728 253 C728 253,723 255,718 254 C718 254,698 250,685 239 C685 239,669 240,653 227 C653 227,620 215,575 233 C562 244,534 250,506 252 C480 250,360 256,309 250 C309 250,310 235,325 215 C325 215,315 211,300 195 C300 195,260 190,240 185 L160 199 C160 199,100 210,65 180 Z"></path></clipPath>' +
   '</defs>' +
 
@@ -102,19 +114,49 @@
   '<path d="M318 252 C390 256,470 252,536 256 C528 286,440 290,360 290 C332 290,322 272,318 252 Z" fill="#c4e6a3" stroke="none" opacity="0.4"></path>' +
   /* scaly skin (clipped to the body) */
   '<rect x="20" y="20" width="770" height="345" fill="url(#trikeScales)" clip-path="url(#trikeBodyClip)"></rect>' +
+  /* big COW-style body patches — large irregular blobs (not little dots),
+     clipped to the body so they hug the silhouette; #6ea653 is in PALETTES so
+     they recolour per pack */
+  '<g clip-path="url(#trikeBodyClip)" fill="#6ea653" stroke="#3f6e2c" stroke-width="1.5" stroke-opacity="0.25" opacity="0.92">' +
+    '<path d="M248,168 C300,150 358,156 388,190 C412,216 396,250 348,254 C300,258 254,248 232,218 C216,196 222,180 248,168 Z"></path>' +
+    '<path d="M148,178 C188,160 228,170 238,204 C246,230 220,252 182,252 C146,252 120,228 125,200 C128,184 132,186 148,178 Z"></path>' +
+    '<path d="M434,168 C476,153 522,162 532,190 C542,214 516,230 478,226 C444,223 414,208 413,187 C411,173 422,172 434,168 Z"></path>' +
+    '<path d="M300,138 C338,124 378,132 390,156 C399,174 380,188 350,186 C320,184 298,168 298,150 C298,143 296,144 300,138 Z"></path>' +
+  '</g>' +
+  /* ── PRO depth pass (all clipped to the body, palette-safe) ── */
+  /* 1. form shading: smooth top-light → underside-shadow gives the body volume */
+  '<rect x="20" y="20" width="770" height="345" fill="url(#trikeForm)" clip-path="url(#trikeBodyClip)"></rect>' +
+  /* 2. ambient-occlusion contact shadows (under the head/jaw + near-leg joints) */
+  '<g clip-path="url(#trikeBodyClip)" fill="#3f6e2c">' +
+    '<path d="M600,202 C638,197 674,208 678,233 C666,251 624,251 600,241 C586,231 590,208 600,202 Z" opacity="0.15"></path>' +
+    '<ellipse cx="409" cy="251" rx="30" ry="15" opacity="0.13"></ellipse>' +
+    '<ellipse cx="527" cy="251" rx="30" ry="15" opacity="0.13"></ellipse>' +
+  '</g>' +
+  /* 3. rim light along the lit top-back edge + a belly bounce (countershade) */
+  '<g clip-path="url(#trikeBodyClip)">' +
+    '<path d="M108,164 C205,126 330,80 440,68 C470,65 460,84 410,90 C300,100 195,138 120,172 C112,170 109,167 108,164 Z" fill="#eef4e0" opacity="0.5"></path>' +
+    '<path d="M300,256 C400,262 480,258 538,252 C534,266 440,276 330,272 C312,270 304,264 300,256 Z" fill="#c4e6a3" opacity="0.4"></path>' +
+  '</g>' +
   /* frill fan accent + warm spots */
   '<path d="M676 116 C712 100,752 104,780 112 C752 126,712 130,686 126 C681 122,678 119,676 116 Z" fill="#76b65d" stroke="none" opacity="0.5"></path>' +
   '<circle cx="702" cy="110" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle><circle cx="728" cy="107" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle><circle cx="752" cy="109" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle><circle cx="715" cy="120" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle><circle cx="740" cy="118" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle>' +
-  /* brow-horn highlight */
-  '<path d="M735 196 C752 196,766 188,778 184 C770 198,756 206,742 210 C739 205,737 200,735 196 Z" fill="#eef4e0" stroke="none" opacity="0.7"></path>' +
+  /* brow-horn fill — white, outer edge from body path C420→460→565, inner return below */
+  '<path d="M420 55 C420 55,460 30,565 95 C540 88,480 65,420 55 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="3" stroke-linejoin="round"></path>' +
+  /* lower nose-horn highlight — aligned to actual horn tip (768,183) */
+  '<path d="M735 194 C748 188,762 184,768 183 C766 190,757 200,745 210 C741 205,737 199,735 194 Z" fill="#eef4e0" stroke="none" opacity="0.7"></path>' +
 
   /* NEAR legs (this-side pair) — drawn over the body in body colour.
      gaitB = near-back, gaitA = near-front (diagonal with the far legs). */
   '<g class="leg gaitB"><path d="M391 250 C389 288,390 324,392 337 C392 345,400.5 348,410 348 C419.5 348,428 345,428 337 C430 324,431 288,429 250 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></path><path d="M403 340 L403 347" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path><path d="M417 340 L417 347" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path></g>' +
   '<g class="leg gaitA"><path d="M509 250 C507 288,508 324,510 337 C510 345,518.5 348,528 348 C537.5 348,546 345,546 337 C548 324,549 288,547 250 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></path><path d="M521 340 L521 347" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path><path d="M535 340 L535 347" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path></g>' +
 
+  /* nose-horn fill — white, traced from the body outline bump C723→768→745 */
+  '<path d="M724 190 C733 188,755 184,768 183 C762 194,750 207,741 212 C735 208,726 202,724 190 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="3" stroke-linejoin="round"></path>' +
+
   /* FACE — just the eye (mouth/nostril/blush/brow removed per request), raised up & forward */
   '<g>' +
+    /* soft eye-socket shadow — gives the eye depth (sits behind the white) */
+    '<ellipse cx="660" cy="179" rx="26" ry="29" fill="#3f6e2c" opacity="0.16"></ellipse>' +
     '<g class="trike-eyes">' +
       '<ellipse cx="662" cy="174" rx="21" ry="24" fill="#ffffff" stroke="#3f6e2c" stroke-width="3.5"></ellipse>' +
       '<circle cx="668" cy="178" r="11.5" fill="#22331a" stroke="none"></circle>' +
@@ -163,8 +205,10 @@
     '.trike-walker.trike-flip .trike-svg{transform:scaleX(-1);}' +
     /* the 4 legs swing about their hip (top-centre of each leg) */
     '.trike-svg .leg{transform-box:fill-box;transform-origin:50% 5%;}' +
-    '.trike-svg .leg.gaitA{animation:trikeGaitA 1s ease-in-out infinite;}' +
-    '.trike-svg .leg.gaitB{animation:trikeGaitB 1s ease-in-out infinite;}' +
+    /* gait period scales with a per-instance --gait multiplier so two identical
+       triceratops never march in perfect lockstep (set in walk()). */
+    '.trike-svg .leg.gaitA{animation:trikeGaitA calc(1s * var(--gait,1)) ease-in-out infinite;}' +
+    '.trike-svg .leg.gaitB{animation:trikeGaitB calc(1s * var(--gait,1)) ease-in-out infinite;}' +
     '@keyframes trikeGaitA{0%,100%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}}' +
     '@keyframes trikeGaitB{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}' +
     /* blink: the eye group squashes fully shut on a clear cadence (a quick
@@ -360,6 +404,7 @@
       flip: o.flip,
       loop: !!o.loop,
       palette: o.palette || 'green',
+      gait: o.gait != null ? o.gait : (0.82 + Math.random() * 0.4),  // 0.82–1.22× leg cadence
       onDone: o.onDone || null
     };
     if (!container) return null;
@@ -371,6 +416,7 @@
     var flip = opts.faceWalkDir ? faceLeft : !!opts.flip;
 
     var wrap = buildElement({ height: opts.height, bottom: opts.bottom, zIndex: opts.zIndex, flip: flip, palette: opts.palette });
+    wrap.style.setProperty('--gait', opts.gait.toFixed(3));   // this dino's own leg rhythm
     container.appendChild(wrap);
 
     var cw = container.clientWidth || (global.innerWidth || 800);

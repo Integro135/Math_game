@@ -12,15 +12,15 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "dinosaurs"
+THEME    = "girls"
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False                   # hide the .wrap game card (background-only shots)
 STANDALONE = r""   # '' = load the game; else load this page raw (skip theme)
-VIEW     = {"width": 1280, "height": 720}   # viewport
-EVAL      = ""
-POST_EVAL = ""
+VIEW     = {"width": 900, "height": 700}   # viewport
+EVAL      = "try{setMode(10);problems=[{t:TDA,r:10}];idx=0;loadProblem();if(typeof toggleAidMode==='function'&&aidMode!=='nl'){toggleAidMode('nl');}'setup aid='+aidMode+' ptype='+ptype+' num1='+num1;}catch(e){'ERR '+e.message;}"
+POST_EVAL = "try{var a=document.getElementById('ans1');a.value='6';a.dispatchEvent(new Event('input',{bubbles:true}));'aid='+aidMode+' pgmCV='+pgmCV+' ans1='+a.value+' jarKids='+(document.getElementById('pgm-ck-jar')||{}).childElementCount;}catch(e){'ERR '+e.message;}"
 CLICKS   = []                      # list of [xFrac, yFrac] doc clicks, e.g. [[0.5,0.9]]
-WAIT_MS  = 2600
+WAIT_MS  = 900
 SHOTS    = [
     {"path": r"c:\tmp\dino_game.png", "clip": None},
 ]

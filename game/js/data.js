@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -32,6 +32,7 @@ const EXERCISE_INDEX=[
   {file:'coin_mul',  modes:['sup']},
   {file:'bagel_cost',modes:['sup']},
   {file:'big_step',  modes:['big','mx','sup']},
+  {file:'var_one',   modes:['br','b20','mx']},   // shape-variable add/sub with one unknown (⃝ = N, then a ± ⃝ = ?)
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
 const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost'};

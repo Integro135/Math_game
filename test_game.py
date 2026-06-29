@@ -990,10 +990,10 @@ class TestGameFlow:
         # 5 fresh Queen sessions — each must satisfy the rule
         for session in range(5):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
             n = page.evaluate("problems.length")
-            assert n == 19, \
-                f"Session {session+1}: expected 19 mx problems, got {n}"
+            assert n == 21, \
+                f"Session {session+1}: expected 21 mx problems, got {n}"
             types = page.evaluate("[...problems].map(p => p.t)")
             for name, code in consts.items():
                 count = sum(1 for t in types if t == code)
@@ -1287,11 +1287,11 @@ class TestChainAndCoinAids:
         any_early_above_10 = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, b:p.b, c:p.c, r:p.r}))")
-            assert len(problems) == 19, \
-                f"makeMxPool must yield 19 problems (flat shuffle), got {len(problems)}"
+            assert len(problems) == 21, \
+                f"makeMxPool must yield 21 problems (flat shuffle), got {len(problems)}"
             consts = page.evaluate("({TA,TS,TM,TX,TZ,TW})")
             for p in problems[:5]:               # the former "phase 1" slots
                 ans = None
@@ -1314,9 +1314,9 @@ class TestChainAndCoinAids:
         Queen pool (chain TX/TZ/TW, TM, TS, TA, TDA/TDS, TT, TC, TBG)."""
         consts = page.evaluate("({TM,TS,TA,TX,TZ,TW,TDA,TDS,TC,TT,TBG})")
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
         types = page.evaluate("[...problems].map(p => p.t)")
-        assert len(types) == 19
+        assert len(types) == 21
         # chain family (TX/TZ/TW) must appear; each other type must appear ≥1
         chain = {consts["TX"], consts["TZ"], consts["TW"]}
         assert any(t in chain for t in types), "Chain problems must be present in mx"
@@ -1339,7 +1339,7 @@ class TestChainAndCoinAids:
         seen_small_first = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, r:p.r}))")
             for p in problems[-4:]:
@@ -1508,7 +1508,7 @@ class TestTensProblems:
 
         # TT now lives in 'mx' (מלכה) instead.
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
         ptypes = page.evaluate("[...problems].map(p => p.t)")
         assert sum(1 for t in ptypes if t == consts["TT"]) >= 1, \
             "Round-tens (TT) must now appear in the Queen (mx) game"
@@ -1530,7 +1530,7 @@ class TestTensProblems:
         # TT is wired only into 'mx' (data.js EXERCISE_INDEX), where tens.ex.js
         # make('mx') always emits exactly 2 TT problems -> _find_tt always hits.
         page.evaluate("setMode('mx')")
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -1554,7 +1554,7 @@ class TestTensProblems:
         """TT problem: submitting the correct tens answer marks the problem done."""
         # TT lives only in 'mx'; tens.ex.js make('mx') always emits 2 TT problems.
         page.evaluate("setMode('mx')")
-        page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -1735,7 +1735,7 @@ class TestTryFirstScoring:
 
         for _ in range(10):                # 10 fresh Queen sessions
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
             problems = page.evaluate("problems")
             for i, p in enumerate(problems):
                 t = p["t"]
@@ -2391,21 +2391,25 @@ class TestBridgingMode:
         )
 
     def test_br_restart_alternates_sets(self, page):
-        """Every rebuild advances the set, so restart() cycles through the four
-        sets: set 1 → 2 → 3 → 4 → set 1 (deterministic, no shuffle)."""
-        consts = page.evaluate("({TA, TS})")
+        """Every rebuild advances the set, so restart() cycles through the five
+        sets: set 1 → 2 → 3 → 4 → 5(unknowns) → set 1 (deterministic)."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
                (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3, self.EXPECTED_SEQ_4)]
         self._switch_br(page)
         seen = [page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")]
-        for _ in range(4):
+        for _ in range(5):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             seen.append(page.evaluate("[...problems].map(p => [p.t, p.a, p.b])"))
         assert seen[0] == exp[0], "first build serves set 1"
         assert seen[1] == exp[1], "restart → set 2"
         assert seen[2] == exp[2], "restart → set 3"
         assert seen[3] == exp[3], "restart → set 4"
-        assert seen[4] == exp[0], "the following restart wraps back to set 1"
+        # set 5 → the shape-variable "one unknown" set (all TVA/TVS)
+        types5 = set(p[0] for p in seen[4])
+        assert types5 <= {consts["TVA"], consts["TVS"]} and len(seen[4]) == 15, \
+            f"restart → set 5 (unknowns, 15 TVA/TVS), got {seen[4]}"
+        assert seen[5] == exp[0], "the following restart wraps back to set 1"
 
     def test_br_no_coin_or_tens_problems(self, page):
         """Bridging mode is pure arithmetic — no TC or TT injected."""
@@ -2573,30 +2577,34 @@ class TestBridgingMode:
                     f"subtraction {a}-{b} must cross 10 from a low teen (minuend 11–13)"
 
     def test_br_alternates_sets_in_turns(self, page):
-        """Each menu selection advances: set1 → 2 → 3 → 4 → set1, order preserved."""
-        consts = page.evaluate("({TA, TS})")
+        """Each menu selection advances: set1 → 2 → 3 → 4 → 5(unknowns) → set1."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
                (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3, self.EXPECTED_SEQ_4)]
         self._switch_br(page)
         seen = [page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")]
-        for _ in range(4):
+        for _ in range(5):
             self._reenter_br(page)
             seen.append(page.evaluate("[...problems].map(p => [p.t, p.a, p.b])"))
         assert seen[0] == exp[0], "1st selection → set 1"
         assert seen[1] == exp[1], "2nd selection → set 2"
         assert seen[2] == exp[2], "3rd selection → set 3"
         assert seen[3] == exp[3], "4th selection → set 4"
-        assert seen[4] == exp[0], "5th selection wraps back to set 1"
+        # 5th selection → SET 5: the shape-variable "one unknown" set (all TVA/TVS)
+        types5 = set(p[0] for p in seen[4])
+        assert types5 <= {consts["TVA"], consts["TVS"]} and len(seen[4]) == 15, \
+            f"5th selection → the unknowns set (15 TVA/TVS), got {seen[4]}"
+        assert seen[5] == exp[0], "6th selection wraps back to set 1"
 
     def test_br_restart_size_alternates(self, page):
-        """The four sets have lengths 25, 18, 15, 15; restarts cycle through them
-        (25 → 18 → 15 → 15 → 25). Sets 3 and 4 share a length (both 15)."""
+        """The five sets have lengths 25, 18, 15, 15, 15; restarts cycle through them
+        (25 → 18 → 15 → 15 → 15 → 25). Set 5 is the shape-variable 'one unknown' set."""
         self._switch_br(page)
         lens = [page.evaluate("problems.length")]
-        for _ in range(4):
+        for _ in range(5):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             lens.append(page.evaluate("problems.length"))
-        assert lens == [25, 18, 15, 15, 25], f"sizes must cycle on restart, got {lens}"
+        assert lens == [25, 18, 15, 15, 15, 25], f"sizes must cycle on restart, got {lens}"
 
     def test_br_reclick_while_active_rotates_set(self, page):
         """Re-selecting גָּשֵׁר 10 while ALREADY in it starts a fresh game with
@@ -2692,8 +2700,8 @@ class TestBridge20:
         assert page.locator("#lbbr.active").count() == 0
 
     def test_b20_alternates_two_sets(self, page):
-        """Every rebuild advances the set: set 1 → set 2 → set 1 (deterministic)."""
-        consts = page.evaluate("({TA, TS})")
+        """Every rebuild advances the set: set 1 → set 2 → set 3(unknowns) → set 1."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp1 = [[consts[t], a, b] for t, a, b in self.B20_SEQ]
         exp2 = [[consts[t], a, b] for t, a, b in self.B20_SEQ_2]
         self._switch(page)
@@ -2702,9 +2710,15 @@ class TestBridge20:
         s2 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
         page.evaluate("restart()"); page.wait_for_timeout(120)
         s3 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        page.evaluate("restart()"); page.wait_for_timeout(120)
+        s4 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
         assert s1 == exp1, "first build serves set 1"
         assert s2 == exp2, "restart advances to set 2"
-        assert s3 == exp1, "next restart wraps back to set 1"
+        # third build → SET 3: the shape-variable "one unknown" crossings of 20
+        types3 = set(p[0] for p in s3)
+        assert types3 <= {consts["TVA"], consts["TVS"]} and len(s3) == 15, \
+            f"third build → the unknowns set (15 TVA/TVS), got {s3}"
+        assert s4 == exp1, "next restart wraps back to set 1"
 
     def test_b20_set2_exact_order_and_crosses_gently(self, page):
         """Set 2 (bigger jumps) serves its exact order; all 15 still cross 20 by ≤3
@@ -2723,6 +2737,44 @@ class TestBridge20:
             else:
                 assert 21 <= a <= 23 and (a - b) < 20, \
                     f"subtraction {a}-{b} must cross 20 from a low-20s minuend"
+
+
+# ─────────────────────────────────────────────────────────
+# Shape-variable ONE-UNKNOWN add/sub (TVA / TVS): ⃝ = N, then a ± ⃝ = ?
+# ─────────────────────────────────────────────────────────
+class TestVarOneUnknown:
+    def _force(self, page, prob):
+        page.evaluate(f"mode='br'; problems=[{prob}]; idx=0; loadProblem()")
+        page.wait_for_selector("#ans:not([disabled])", timeout=TIMEOUT)
+        page.wait_for_timeout(80)
+
+    def test_sub_with_shape_unknown(self, page):
+        """⃝ = 20, then 30 − ⃝ = ?  →  10 (substitute the shape's value)."""
+        self._force(page, "{t:TVS,a:30,b:20,sym:'circle'}")
+        assert page.locator("#eq svg").count() >= 2, "shape drawn in the def line AND the equation"
+        assert page.evaluate("report[0].correct") == 10, "30 − 20 must be 10"
+        page.fill("#ans", "10"); page.click("#chk-btn"); page.wait_for_timeout(200)
+        assert "fb-ok" in page.locator("#fb").get_attribute("class"), "10 is correct"
+
+    def test_add_with_shape_unknown(self, page):
+        """⃝ = 20, then 30 + ⃝ = ?  →  50."""
+        self._force(page, "{t:TVA,a:30,b:20,sym:'square'}")
+        assert page.evaluate("report[0].correct") == 50, "30 + 20 must be 50"
+        page.fill("#ans", "50"); page.click("#chk-btn"); page.wait_for_timeout(200)
+        assert "fb-ok" in page.locator("#fb").get_attribute("class"), "50 is correct"
+
+    def test_wrong_answer_rejected(self, page):
+        self._force(page, "{t:TVS,a:30,b:20,sym:'triangle'}")
+        page.fill("#ans", "50"); page.click("#chk-btn"); page.wait_for_timeout(200)
+        assert "fb-ok" not in page.locator("#fb").get_attribute("class"), "50 is wrong for 30−20"
+
+    def test_queen_mixes_in_unknown(self, page):
+        """Queen (mx) mixes the unknown type into its curated pool."""
+        page.evaluate("setMode('mx')")
+        page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        n = page.evaluate("[...problems].filter(p=>p.t===TVA||p.t===TVS).length")
+        assert n >= 1, f"Queen pool must include the ⃝-unknown type, got {n}"
 
 
 # ─────────────────────────────────────────────────────────
@@ -2762,7 +2814,7 @@ class TestDynamicExercises:
     def test_every_mode_builds_correct_pool_size(self, page):
         """Each mode's recipe produces its expected session length."""
         expected = {"5": 12, "10": 12, "20": 12, "'br'": 25, "'b20'": 15,
-                    "'mx'": 19, "'sup'": 18, "'big'": 12}
+                    "'mx'": 21, "'sup'": 18, "'big'": 12}
         for arg, size in expected.items():
             page.evaluate(f"setMode({arg})")
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)
@@ -2915,37 +2967,35 @@ class TestSupermanColumnAdd:
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
 
-    def test_sup_pool_reaches_58(self, page):
-        """Column addition now reaches up to 58: the top addend is 11-39 and the
-        bottom 2-19 (raised by 10 as the child progressed). Every generated problem
-        stays a valid two-column sum — a∈[11,39], b∈[2,19], result ≤ 58 with the
-        result's tens digit still one digit, and never a double carry."""
+    def test_sup_pool_reaches_99(self, page):
+        """Column addition now reaches up to 99: BOTH operands are two-digit and
+        the sum stays ≤99 (the result's tens digit is still one digit, never a
+        double carry). a∈[13,86], b∈[10, 99−a (≤86)], result ≤ 99."""
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
         stats = page.evaluate("""(() => {
-            let maxA = 0, minA = 99, maxSum = 0, sawAbove48 = false, bad = null;
-            for (let k = 0; k < 60; k++) {
+            let maxA = 0, minA = 99, maxSum = 0, sawAbove70 = false, bad = null;
+            for (let k = 0; k < 80; k++) {
                 const ps = EXERCISES.types.column_add.make('sup');
                 if (ps.length !== 3) bad = {reason: 'len', len: ps.length};
                 for (const p of ps) {
                     if (p.t !== TCA) bad = {reason: 't', p};
-                    if (p.a < 11 || p.a > 39 || p.b < 2 || p.b > 19) bad = {reason: 'range', p};
-                    if (p.a + p.b > 58) bad = {reason: 'sum', p};
+                    if (p.a < 13 || p.a > 86 || p.b < 10 || p.b > 86) bad = {reason: 'range', p};
+                    if (p.a + p.b > 99) bad = {reason: 'sum', p};
                     if (Math.floor((p.a + p.b) / 10) > 9) bad = {reason: 'tens', p};
                     maxA = Math.max(maxA, p.a); minA = Math.min(minA, p.a);
                     maxSum = Math.max(maxSum, p.a + p.b);
-                    if (p.a + p.b > 48) sawAbove48 = true;
+                    if (p.a + p.b > 70) sawAbove70 = true;
                 }
             }
-            return {maxA, minA, maxSum, sawAbove48, bad};
+            return {maxA, minA, maxSum, sawAbove70, bad};
         })()""")
         assert stats["bad"] is None, f"invalid column-add problem generated: {stats['bad']}"
-        assert stats["minA"] >= 11, f"a fell below 11: {stats}"
-        assert stats["maxA"] == 39, f"top addend must reach 39 (raised from 29): {stats}"
-        assert stats["maxSum"] <= 58, f"result must not exceed 58: {stats}"
-        assert stats["sawAbove48"], \
-            "the raised ceiling must produce results above the old 48 max"
+        assert stats["minA"] >= 13, f"a fell below 13: {stats}"
+        assert stats["maxSum"] <= 99, f"result must not exceed 99: {stats}"
+        assert stats["sawAbove70"], \
+            "the raised ceiling must produce results above 70 (two-digit + two-digit)"
 
     def test_sup_nl_visible_from_start(self, page):
         """aidsReveal:'always' — the skinned NL shows before any mistake,
@@ -3214,39 +3264,39 @@ class TestColumnSubtraction:
         assert page.evaluate("ptype === TCS")
 
     def test_sup_column_sub_range_valid(self, page):
-        """Superman's column subtraction (make('sup')) yields 6 valid problems
-        (a∈[11,39], b∈[2,19], a>b); BOTH with-borrow and no-borrow occur, and the
-        no-borrow ones reach the 20s+ (e.g. 37-13) — the ceiling was raised by 10
-        as the child progressed."""
+        """Superman's column subtraction (make('sup')) yields 6 valid problems:
+        BOTH operands two-digit, minuend up to 98 (a∈[23,98], b∈[11,a), a>b);
+        BOTH with-borrow and no-borrow occur, and the minuends reach the high
+        two-digits — the ceiling was raised to "up to 99" as the child progressed."""
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
         stats = page.evaluate("""(() => {
             let maxA=0, minA=99, sawBorrow=false, sawNoBorrow=false,
-                sawNoBorrowOver20=false, bad=null;
+                sawHigh=false, bad=null;
             for (let k=0; k<80; k++) {
                 const ps = EXERCISES.types.column_sub.make('sup');
                 if (ps.length !== 6) bad = {reason:'len', len:ps.length};
                 for (const p of ps) {
                     if (p.t !== TCS) bad = {reason:'t', p};
-                    if (p.a < 11 || p.a > 39 || p.b < 2 || p.b > 19) bad = {reason:'range', p};
+                    if (p.a < 23 || p.a > 98 || p.b < 11 || p.b >= p.a) bad = {reason:'range', p};
                     if (p.a <= p.b) bad = {reason:'order', p};
                     const noBorrow = (p.a % 10) > (p.b % 10);
                     if ((p.a % 10) < (p.b % 10)) sawBorrow = true;
                     if (noBorrow) sawNoBorrow = true;
-                    if (noBorrow && p.a >= 20) sawNoBorrowOver20 = true;
+                    if (p.a >= 70) sawHigh = true;
                     maxA = Math.max(maxA, p.a); minA = Math.min(minA, p.a);
                 }
             }
-            return {maxA, minA, sawBorrow, sawNoBorrow, sawNoBorrowOver20, bad};
+            return {maxA, minA, sawBorrow, sawNoBorrow, sawHigh, bad};
         })()""")
         assert stats["bad"] is None, f"invalid column-sub problem: {stats['bad']}"
-        assert stats["minA"] >= 11, f"a fell below 11: {stats}"
-        assert stats["maxA"] == 39, f"a must reach 39 (raised from 29): {stats}"
+        assert stats["minA"] >= 23, f"a fell below 23: {stats}"
+        assert stats["maxA"] <= 98, f"a must stay ≤98: {stats}"
         assert stats["sawBorrow"], "with-borrow problems must occur"
         assert stats["sawNoBorrow"], "no-borrow problems must occur"
-        assert stats["sawNoBorrowOver20"], \
-            "no-borrow problems must reach the 20s (e.g. 27-13), not be capped at ≤20"
+        assert stats["sawHigh"], \
+            "minuends must reach the high two-digits (e.g. 87-23), up to 98"
 
     def test_sub_no_borrow_flow_solves_and_scores(self, page):
         """27-13 (no borrow): units 7-3=4 → tens 2-1=1 → solved, full 15 points."""
@@ -3435,7 +3485,7 @@ class TestColumnSubtraction:
         seen_any = False
         for _ in range(6):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "mx must contain ≥1 column-subtraction problem"
@@ -3450,8 +3500,8 @@ class TestColumnSubtraction:
     def test_sup_includes_noborrow_column_sub(self, page):
         """Superman weaves in column subtraction (alongside column-add / big-step
         / coin-multiply). Every session has ≥1 NO-borrow one (top units > bottom
-        units); these now span the full a∈[11,39] range (raised by 10 as the child
-        progressed). All stay positive (a > b)."""
+        units); both operands are two-digit and the minuend reaches up to 98
+        (raised to "up to 99" as the child progressed). All stay positive (a > b)."""
         seen_noborrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")
@@ -3463,14 +3513,14 @@ class TestColumnSubtraction:
                 assert p["a"] > p["b"], f"sup column-sub must be positive: {p}"
                 if (p["a"] % 10) > (p["b"] % 10):           # a NO-borrow one
                     seen_noborrow = True
-                    assert 11 <= p["a"] <= 39 and 2 <= p["b"] <= 19, \
-                        f"no-borrow sup operands must be valid (a∈[11,39], b∈[2,19]): {p}"
+                    assert 23 <= p["a"] <= 98 and 11 <= p["b"] < p["a"], \
+                        f"no-borrow sup operands must be two-digit, up to 98 (a∈[23,98], b∈[11,a)): {p}"
         assert seen_noborrow, "Superman must weave in ≥1 NO-borrow column subtraction"
 
     def test_sup_includes_borrow_column_sub(self, page):
         """Superman ALSO weaves in a WITH-borrow column subtraction (top units <
         bottom units → regrouping needed) every session — taught alongside the
-        no-borrow one. Uses the full a∈[11,39] range (proper two-digit borrow)."""
+        no-borrow one. Two-digit operands, minuend up to 98 (proper two-digit borrow)."""
         seen_borrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")

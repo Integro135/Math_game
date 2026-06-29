@@ -131,6 +131,10 @@ function preloadAll(){
     const warm = () => {
       const mod = window.BACKGROUNDS[n];
       if(!mod) return;
+      // a background that composes external modules (e.g. dinosaurs → volcano +
+      // walkers + rumi) warms them here, so they load during the intro splash
+      // instead of on first theme-select.
+      if(typeof mod.preload === 'function') mod.preload();
       if(mod.aids && !window.AIDS.variants[mod.aids])
         _injectScript('aids/' + mod.aids + '.aids.js');
       const skin = mod.skin || n;

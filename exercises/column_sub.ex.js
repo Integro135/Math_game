@@ -50,22 +50,25 @@ window.EXERCISES.types.column_sub=(()=>{
 
   // Superman (sup): EQUAL representation of both column-subtraction kinds —
   // 3 NO-BORROW and 3 WITH-BORROW (top units < bottom units → regrouping). BOTH
-  // span the full a∈[11,39] range (e.g. 37−13 no-borrow, 35−17 with borrow) —
-  // the ceiling was raised by 10 as the child progressed.
+  // operands are now two-digit and the minuend reaches up to 98 (e.g. 87−23
+  // no-borrow, 82−37 with borrow) — the ceiling was raised to "up to 99" as the
+  // child progressed (was 11–39).
   function makeSup(){
     const ri=(lo,hi)=>lo+(Math.random()*(hi-lo+1)|0);
-    const out=[...makeNoBorrow(3,39,19)];           // 3 no-borrow (full 11–39 range)
-    const seen=new Set(out.map(p=>p.a+'_'+p.b));
-    for(let n=0;n<3;n++){                             // 3 WITH borrow
-      for(let t=0;t<400;t++){
-        const a=ri(11,39),b=ri(2,19);
-        if(a<=b)continue;
-        if((a%10)>=(b%10))continue;                  // MUST need a borrow
+    const out=[],seen=new Set();
+    const add=(borrow)=>{
+      for(let t=0;t<500;t++){
+        const a=ri(23,98);                   // two-digit minuend, up to 98
+        const b=ri(11,a-1);                  // two-digit subtrahend, < a
+        const au=a%10,bu=b%10;
+        if(borrow?(au>=bu):(au<=bu))continue;  // borrow: top units < bottom; no-borrow: top units > bottom
         const key=a+'_'+b;
         if(seen.has(key))continue;
-        seen.add(key);out.push({t:TCS,a,b});break;
+        seen.add(key);out.push({t:TCS,a,b});return;
       }
-    }
+    };
+    for(let i=0;i<3;i++)add(false);   // 3 NO-borrow (top units > bottom units)
+    for(let i=0;i<3;i++)add(true);    // 3 WITH borrow  (top units < bottom units)
     for(let i=out.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[out[i],out[j]]=[out[j],out[i]];}
     return out;
   }

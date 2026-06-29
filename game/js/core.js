@@ -225,7 +225,7 @@ function loadProblem(){
   if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
-  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TCM?num1/(num2||5):ptype===TBC?num1*(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TCM?num1/(num2||5):ptype===TBC?num1*(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -240,6 +240,7 @@ function loadProblem(){
    :ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
    :ptype===TDA?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'
    :ptype===TDS?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁהַהֶפְרֵשׁ בֵּינֵיהֶם שָׁוֶה לַתְּשׁוּבָה!'
+   :ptype===TVA||ptype===TVS?'🔷 הַצּוּרָה שָׁוָה לַמִּסְפָּר שֶׁלְּמַעְלָה — הַצִּיבִי אוֹתוֹ וְחַשְּׁבִי!'
    :ptype===TX?'🧮 חַשֵּׁב בְּשָׁלָבִים: תְּחִלָּה חַסֵּר, אַחַר כָּךְ הוֹסֵף!'
    :ptype===TW?'🧮 חַשֵּׁב בְּשָׁלָבִים: חַסֵּר פַּעֲמַיִם בְּזֶה אַחַר זֶה!'
    :ptype===TZ?'🧮 חַשֵּׁב בְּשָׁלָבִים: קוֹדֶם חַבֵּר שְׁנַיִם, אַחַר כָּךְ הוֹסֵף שְׁלִישִׁי!'
@@ -302,7 +303,7 @@ function loadProblem(){
   // kangaroo line spans 0..20 by default; for missing-subtrahend (e.g. 18−x=11)
   // and plain subtraction it must never be shorter than the minuend on screen.
   // גָּשֵׁר 20 crosses the SECOND ten (sums/minuends up to 23) → widen to 0..24 there.
-  const _nlMax=Math.max(20,mode==='b20'?24:0,(ptype===TM||ptype===TS)?num1:0);
+  const _nlMax=Math.max(20,mode==='b20'?24:0,(ptype===TM||ptype===TS||ptype===TVS)?num1:0);
   if(nlp){nlp.style.display=useKang?'':'none';if(useKang){NL.configure(_nlMax,1);NL.init(0);}}
   if(useNL){
     pgmTensMode=false;chainGnMode=false;
@@ -334,6 +335,19 @@ function loadProblem(){
     }else{_dhBtn.style.display='none';}
   }}
   _lockAids();
+}
+
+/* a gold filled shape (circle / triangle / square) used as the "unknown" token
+   in TVA/TVS — sized ~3rem to sit beside the 3.4rem equation digits. */
+function _varShapeSVG(kind){
+  const F='#FFD166',S='#7a571a',W=4;
+  let inner;
+  if(kind==='square')        inner='<rect x="6" y="6" width="44" height="44" rx="9" fill="'+F+'" stroke="'+S+'" stroke-width="'+W+'" stroke-linejoin="round"/>';
+  else if(kind==='triangle') inner='<polygon points="28,5 53,51 3,51" fill="'+F+'" stroke="'+S+'" stroke-width="'+W+'" stroke-linejoin="round"/>';
+  else                       inner='<circle cx="28" cy="28" r="22" fill="'+F+'" stroke="'+S+'" stroke-width="'+W+'"/>';
+  // pointer-events:none → hovering the shape reports the wrapping eq-n span as
+  // the target, so the number-objects tooltip fires (the shape acts like a number).
+  return '<svg viewBox="0 0 56 56" style="width:3rem;height:3rem;vertical-align:middle;flex:0 0 auto;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">'+inner+'</svg>';
 }
 
 /* ── Equation ── */
@@ -412,10 +426,29 @@ function renderEq(){
     // the FIRST addend input previews its value as objects while typing
     // (`_nttInput`); plain count, no make-ten split. Hidden on blur.
     const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="30"`+
-      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this)':''}"`+
+      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this);tdaJarSync(this)':''}"`+
       (id==='ans1'?` onblur="_nttHide()"`:'')+
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
+  }
+  else if(ptype===TVA||ptype===TVS){
+    // ONE UNKNOWN as a shape: a definition line "⃝ = num2" above the sum
+    // "num1 ± ⃝ = ___". The shape BEHAVES LIKE the number it stands for on hover —
+    // it carries data-num (num2) + the make-ten data-split, so hovering it shows
+    // num2's objects with the same split as the second operand would. The first
+    // operand is suppressed (eq-noobj) like every ≥2-number equation.
+    const op2=ptype===TVA?'add':'sub';
+    const sp=_bridgeSplit(num1,op2,num2);
+    const splitAttr=sp?` data-split="${sp.left},${sp.right}"`:'';
+    const shp=_varShapeSVG((problems[idx]||{}).sym);
+    const shapeTok=`<span class="eq-n vone-sym" data-num="${num2}"${splitAttr}>${shp}</span>`;
+    const defVal=`<span class="eq-res" data-num="${num2}"${splitAttr}>${num2}</span>`;
+    const firstN=`<span class="eq-n eq-noobj" data-num="${num1}">${num1}</span>`;
+    const opc=ptype===TVA?op('+','op-p'):op('-','op-m');
+    h='<div style="display:flex;flex-direction:column;align-items:center;gap:10px">'+
+        '<div style="display:flex;align-items:center;gap:10px">'+shapeTok+op('=','op-e')+defVal+'</div>'+
+        '<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">'+firstN+opc+shapeTok+op('=','op-e')+inp+'</div>'+
+      '</div>';
   }
   else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)h='<div id="colx-root" class="colx-root"></div>';
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
@@ -425,7 +458,9 @@ function renderEq(){
   // equation shows ≥2 numbers, suppress the FIRST number's tooltip + hover cue
   // (class eq-noobj) so the child must visualise the second number (with its
   // make-ten split) rather than reading the first number's objects.
-  {const _eq=document.getElementById('eq');
+  // (TVA/TVS set their own eq-noobj on the first operand in-branch — the shape
+  // tokens must stay hoverable, so skip the generic "suppress the first" here.)
+  if(ptype!==TVA&&ptype!==TVS){const _eq=document.getElementById('eq');
    const _nums=_eq.querySelectorAll('.eq-n[data-num],.eq-res[data-num]');
    if(_nums.length>=2)_nums[0].classList.add('eq-noobj');}
   if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)_colxMount();
@@ -538,7 +573,7 @@ function checkAns(){
   const inp=document.getElementById('ans');
   const v=inp?parseInt(inp.value,10):NaN;
   if(!inp||inp.value===''||isNaN(v)){setFb('נָא לְהַזִּין מִסְפָּר בָּרִיבּוּעַ 💗','fb-err');return}
-  const correct=ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const correct=ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TVA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   _markAns(inp,v===correct);
   done=true;if(inp)inp.disabled=true;
   document.getElementById('btns').innerHTML='';
@@ -620,6 +655,17 @@ function tzSubJarSync(id){
     pgmCV=newCV;pgmCk=Array.from({length:newCV},(_,i)=>i%5);pgmArcs=[];
     pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
   }
+}
+/* TWO-UNKNOWNS addition (TDA, __+__=r): while the child types the FIRST addend,
+   fill the cookie jar to that amount (only when the jar is the active aid —
+   aidMode==='nl' → #chain-tools visible). Empty/invalid clears it back to 0. */
+function tdaJarSync(inp){
+  if(ptype!==TDA)return;
+  if(document.getElementById('chain-tools')?.style.display==='none')return; // jar not the active aid
+  const raw=(inp&&inp.value!=='')?parseInt(inp.value,10):NaN;
+  const newCV=isNaN(raw)?0:Math.min(Math.max(0,raw),PGM_NL);
+  pgmCV=newCV;pgmCk=Array.from({length:newCV},(_,i)=>i%5);pgmArcs=[];
+  pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
 }
 /* For chain problems: is the current active step an addition step?
    TZ is always add; TX step1(sub1 empty)=subtract, step2(sub1 filled)=add */
@@ -842,6 +888,7 @@ function _reportRows(){
     else if(r.ptype===TCS)eq=`${r.num1} − ${r.num2} = ${r.correct}`;
     else if(r.ptype===TCM)eq=`🪙 ${r.correct} × ${r.num2||5} = ${r.num1}`;
     else if(r.ptype===TBC)eq=`🥨 ${r.num1} × ${r.num2||5} = ${r.correct}`;
+    else if(r.ptype===TVA||r.ptype===TVS){const e={circle:'🔵',triangle:'🔺',square:'🟦'}[p.sym]||'🔷';eq=`${e}=${r.num2} · ${r.num1} ${r.ptype===TVA?'+':'−'} ${e} = ${r.correct}`;}
     else                  eq=`${r.num1} + ${r.num2} = ${r.correct}`;   // TA, TCA (column add)
     return {eq,ok:(r.wrongs||[]).length===0,wrongs:(r.wrongs||[]).slice(),correct:r.correct,skipped:!!r.skipped};
   });
@@ -1017,6 +1064,9 @@ function _nttShow(el){
 // Two-addends preview: while typing in the first input of a ? + ? = n exercise,
 // show that number's objects (plain — no make-ten split).
 function _nttInput(inp){
+  // in cookie-jar aid mode the jar itself previews the count (tdaJarSync), so
+  // don't also pop the hover tooltip — the kangaroo mode keeps the tooltip.
+  if(typeof aidMode!=='undefined'&&aidMode==='nl'){_nttHide();return;}
   const v=parseInt(inp.value,10);
   if(isNaN(v)||v<=0||v>100){_nttHide();return;}
   _nttRender(v,null,inp);

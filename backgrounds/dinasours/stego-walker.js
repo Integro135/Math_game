@@ -86,22 +86,66 @@
   var SVG_MARKUP =
 '<svg class="stego-svg" viewBox="20 20 780 350" xmlns="http://www.w3.org/2000/svg">' +
 
-  /* FAR legs (offside pair) — behind the body, a touch darker.
-     gaitA = far-back, gaitB = far-front. */
-  '<g class="leg gaitA"><path d="M255 250 C253 288,254 322,256 335 C256 343,263.5 346,272 346 C280.5 346,289 343,289 335 C291 322,292 288,290 250 Z" fill="#6ea653" stroke="#3f6e2c" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></path><path d="M266 338 L266 345" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path><path d="M278 338 L278 345" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path></g>' +
-  '<g class="leg gaitB"><path d="M430 250 C428 288,429 322,431 335 C431 343,438.5 346,447 346 C455.5 346,464 343,464 335 C466 322,467 288,465 250 Z" fill="#6ea653" stroke="#3f6e2c" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></path><path d="M441 338 L441 345" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path><path d="M453 338 L453 345" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path></g>' +
+  /* defs: scales tile, form gradient, plate gradient, body clip */
+  '<defs>' +
+    '<pattern id="stegoScales" patternUnits="userSpaceOnUse" width="22" height="11">' +
+      '<path d="M0 11 A11 8 0 0 1 22 11" fill="none" stroke="#5f9447" stroke-width="1.4" opacity="0.45"></path>' +
+      '<path d="M-11 5.5 A11 8 0 0 1 11 5.5" fill="none" stroke="#5f9447" stroke-width="1.4" opacity="0.45"></path>' +
+      '<path d="M11 5.5 A11 8 0 0 1 33 5.5" fill="none" stroke="#5f9447" stroke-width="1.4" opacity="0.45"></path>' +
+      '<path d="M0 9.6 A11 8 0 0 1 22 9.6" fill="none" stroke="#c4e6a3" stroke-width="1" opacity="0.55"></path>' +
+      '<path d="M-11 4.1 A11 8 0 0 1 11 4.1" fill="none" stroke="#c4e6a3" stroke-width="1" opacity="0.55"></path>' +
+      '<path d="M11 4.1 A11 8 0 0 1 33 4.1" fill="none" stroke="#c4e6a3" stroke-width="1" opacity="0.55"></path>' +
+    '</pattern>' +
+    '<linearGradient id="stegoForm" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0.05" stop-color="#eef4e0" stop-opacity="0.42"></stop>' +
+      '<stop offset="0.30" stop-color="#eef4e0" stop-opacity="0"></stop>' +
+      '<stop offset="0.56" stop-color="#3f6e2c" stop-opacity="0"></stop>' +
+      '<stop offset="0.78" stop-color="#3f6e2c" stop-opacity="0.30"></stop>' +
+    '</linearGradient>' +
+    '<linearGradient id="stegoPlateGrad" x1="0" y1="1" x2="0" y2="0" gradientUnits="objectBoundingBox">' +
+      '<stop offset="0" stop-color="#c8892e"></stop>' +
+      '<stop offset="0.45" stop-color="#ecb24f"></stop>' +
+      '<stop offset="1" stop-color="#f9e07a"></stop>' +
+    '</linearGradient>' +
+    '<clipPath id="stegoBodyClip">' +
+      '<path d="M70 200 C120 192,185 175,250 150 C300 122,345 100,400 95 C465 89,520 100,560 120 C598 138,612 150,640 152 C652 132,664 112,690 106 C720 102,746 112,763 132 C773 144,773 160,762 170 C747 181,728 183,713 180 C700 194,684 202,660 207 C620 214,590 236,560 246 C460 263,360 266,265 258 C205 252,150 250,110 244 C86 240,66 232,60 216 C57 208,64 202,70 200 Z"></path>' +
+    '</clipPath>' +
+  '</defs>' +
 
-  /* BODY — arched-back silhouette with a CHUNKY, rounded, lifted tail (left)
-     in the style of the triceratops's tail; leg dips replaced by a smooth
-     belly, green. */
+  /* FAR legs — behind the body; 3 rounded toe nubs per foot */
+  '<g class="leg gaitA"><path d="M255 250 C253 288,254 322,256 335 C256 343,263.5 346,272 346 C280.5 346,289 343,289 335 C291 322,292 288,290 250 Z" fill="#6ea653" stroke="#3f6e2c" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="261" cy="346" r="4.5" fill="#6ea653" stroke="#3f6e2c" stroke-width="2"></circle><circle cx="272" cy="349" r="4.5" fill="#6ea653" stroke="#3f6e2c" stroke-width="2"></circle><circle cx="283" cy="346" r="4.5" fill="#6ea653" stroke="#3f6e2c" stroke-width="2"></circle></g>' +
+  '<g class="leg gaitB"><path d="M430 250 C428 288,429 322,431 335 C431 343,438.5 346,447 346 C455.5 346,464 343,464 335 C466 322,467 288,465 250 Z" fill="#6ea653" stroke="#3f6e2c" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="436" cy="346" r="4.5" fill="#6ea653" stroke="#3f6e2c" stroke-width="2"></circle><circle cx="447" cy="349" r="4.5" fill="#6ea653" stroke="#3f6e2c" stroke-width="2"></circle><circle cx="458" cy="346" r="4.5" fill="#6ea653" stroke="#3f6e2c" stroke-width="2"></circle></g>' +
+
+  /* BODY — arched-back silhouette */
   '<path d="M70 200 C120 192,185 175,250 150 C300 122,345 100,400 95 C465 89,520 100,560 120 C598 138,612 150,640 152 C652 132,664 112,690 106 C720 102,746 112,763 132 C773 144,773 160,762 170 C747 181,728 183,713 180 C700 194,684 202,660 207 C620 214,590 236,560 246 C460 263,360 266,265 258 C205 252,150 250,110 244 C86 240,66 232,60 216 C57 208,64 202,70 200 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></path>' +
   /* soft belly shading */
   '<path d="M120 234 C300 262,470 262,575 246 C560 270,420 276,300 274 C210 272,150 252,120 234 Z" fill="#c4e6a3" stroke="none" opacity="0.4"></path>' +
 
-  /* BACK PLATES — the signature row. Each plate base sits EXACTLY on the back
-     contour (its two base corners are placed on the silhouette curve and dipped
-     ~5px into the body) so the plates hug the back with no gaps. */
-  '<g fill="#ecb24f" stroke="#3f6e2c" stroke-width="3" stroke-linejoin="round">' +
+  /* scales texture clipped to body */
+  '<rect x="20" y="20" width="780" height="350" fill="url(#stegoScales)" clip-path="url(#stegoBodyClip)"></rect>' +
+
+  /* big COW-STYLE PATCHES — 3 large irregular blobs, replaces 6 small ellipses */
+  '<g clip-path="url(#stegoBodyClip)" fill="#6ea653" stroke="#3f6e2c" stroke-width="1.5" stroke-opacity="0.25" opacity="0.88">' +
+    '<path d="M148,185 C176,168 218,172 232,198 C244,218 228,244 200,248 C172,252 146,232 145,208 C144,196 145,190 148,185 Z"></path>' +
+    '<path d="M282,158 C318,143 360,150 372,178 C383,202 364,228 334,230 C306,232 280,212 279,188 C278,174 280,164 282,158 Z"></path>' +
+    '<path d="M418,164 C455,148 500,158 510,185 C520,208 498,228 464,226 C432,224 408,204 407,181 C406,168 410,168 418,164 Z"></path>' +
+  '</g>' +
+
+  /* form gradient — top-light / underside-shadow */
+  '<rect x="20" y="20" width="780" height="350" fill="url(#stegoForm)" clip-path="url(#stegoBodyClip)"></rect>' +
+
+  /* AO contact shadows at leg roots + rim light along lit back edge */
+  '<g clip-path="url(#stegoBodyClip)" fill="#3f6e2c">' +
+    '<ellipse cx="337" cy="255" rx="30" ry="13" opacity="0.13"></ellipse>' +
+    '<ellipse cx="500" cy="255" rx="30" ry="13" opacity="0.13"></ellipse>' +
+  '</g>' +
+  '<g clip-path="url(#stegoBodyClip)">' +
+    '<path d="M115,196 C200,158 310,112 420,100 C455,97 445,112 400,120 C295,134 190,168 130,200 C122,198 117,197 115,196 Z" fill="#eef4e0" opacity="0.48"></path>' +
+    '<path d="M130,248 C310,268 470,268 570,248 C562,268 420,276 290,274 C218,272 162,258 130,248 Z" fill="#c4e6a3" opacity="0.4"></path>' +
+  '</g>' +
+
+  /* BACK PLATES — gradient fill: dark amber base → bright gold tip */
+  '<g fill="url(#stegoPlateGrad)" stroke="#3f6e2c" stroke-width="3" stroke-linejoin="round">' +
     '<path d="M129 193 C138.5 161.2,143 140,150 140 C157 140,161.6 156.6,171 181.5 Z"></path>' +
     '<path d="M204 171 C213.5 135,218 111,225 111 C232 111,236.6 129.2,246 156.5 Z"></path>' +
     '<path d="M278 140 C287.9 99.2,293 72,300 72 C307 72,312.1 91,322 119.6 Z"></path>' +
@@ -109,25 +153,29 @@
     '<path d="M416 99.2 C425.5 65.5,430 43,437 43 C444 43,448.6 65.4,458 99.1 Z"></path>' +
     '<path d="M480 101.3 C489 74.1,493 56,500 56 C507 56,511 77.6,520 110.1 Z"></path>' +
   '</g>' +
-  /* warm tip highlights on the three tall middle plates */
+  /* warm tip highlights on the three tallest plates */
   '<g fill="#f6d28a" stroke="none">' +
     '<ellipse cx="300" cy="80" rx="5" ry="8"></ellipse>' +
     '<ellipse cx="370" cy="55" rx="5" ry="8"></ellipse>' +
     '<ellipse cx="437" cy="51" rx="5" ry="8"></ellipse>' +
   '</g>' +
 
-  /* NEAR legs (this-side pair) — over the body, body colour.
-     gaitB = near-back, gaitA = near-front (diagonal with the far legs). */
-  '<g class="leg gaitB"><path d="M320 250 C318 288,319 324,321 337 C321 345,328.5 348,337 348 C345.5 348,353 345,353 337 C355 324,356 288,354 250 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></path><path d="M331 340 L331 347" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path><path d="M343 340 L343 347" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path></g>' +
-  '<g class="leg gaitA"><path d="M500 250 C498 288,499 324,501 337 C501 345,508.5 348,517 348 C525.5 348,533 345,533 337 C535 324,536 288,534 250 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></path><path d="M511 340 L511 347" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path><path d="M523 340 L523 347" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round" fill="none"></path></g>' +
+  /* NEAR legs — over the body; 3 rounded toe nubs */
+  '<g class="leg gaitB"><path d="M320 250 C318 288,319 324,321 337 C321 345,328.5 348,337 348 C345.5 348,353 345,353 337 C355 324,356 288,354 250 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="326" cy="348" r="4.5" fill="#8cc777" stroke="#3f6e2c" stroke-width="2"></circle><circle cx="337" cy="351" r="4.5" fill="#8cc777" stroke="#3f6e2c" stroke-width="2"></circle><circle cx="348" cy="348" r="4.5" fill="#8cc777" stroke="#3f6e2c" stroke-width="2"></circle></g>' +
+  '<g class="leg gaitA"><path d="M500 250 C498 288,499 324,501 337 C501 345,508.5 348,517 348 C525.5 348,533 345,533 337 C535 324,536 288,534 250 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="506" cy="348" r="4.5" fill="#8cc777" stroke="#3f6e2c" stroke-width="2"></circle><circle cx="517" cy="351" r="4.5" fill="#8cc777" stroke="#3f6e2c" stroke-width="2"></circle><circle cx="528" cy="348" r="4.5" fill="#8cc777" stroke="#3f6e2c" stroke-width="2"></circle></g>' +
 
-  /* FACE — blush, big blinking eye, brow, nostril, smile (clustered on the head) */
+  /* FACE — blush, big eye with eyelashes, brow, nostril, smile */
   '<g>' +
     '<ellipse cx="702" cy="172" rx="13" ry="8" fill="#f1a0ab" opacity="0.8" stroke="none"></ellipse>' +
     '<g class="stego-eyes">' +
       '<ellipse cx="716" cy="150" rx="21" ry="23" fill="#ffffff" stroke="#3f6e2c" stroke-width="3.5"></ellipse>' +
       '<circle cx="722" cy="155" r="11" fill="#22331a" stroke="none"></circle>' +
       '<circle cx="711" cy="145" r="4.5" fill="#ffffff" stroke="none"></circle>' +
+    '</g>' +
+    '<g stroke="#3f6e2c" stroke-width="3" stroke-linecap="round" fill="none">' +
+      '<line x1="703" y1="128" x2="699" y2="119"></line>' +
+      '<line x1="716" y1="125" x2="714" y2="115"></line>' +
+      '<line x1="729" y1="128" x2="731" y2="119"></line>' +
     '</g>' +
     '<path d="M698 126 C710 119,728 119,740 127" fill="none" stroke="#3f6e2c" stroke-width="4" stroke-linecap="round"></path>' +
     '<circle cx="757" cy="158" r="3.2" fill="#3f6e2c" stroke="none"></circle>' +
@@ -187,13 +235,15 @@
     '.stego-walker.stego-flip .stego-svg{transform:scaleX(-1);}' +
     /* the 4 legs swing about their hip (top-centre of each leg) */
     '.stego-svg .leg{transform-box:fill-box;transform-origin:50% 5%;}' +
-    '.stego-svg .leg.gaitA{animation:stegoGaitA 1s ease-in-out infinite;}' +
-    '.stego-svg .leg.gaitB{animation:stegoGaitB 1s ease-in-out infinite;}' +
+    /* gait period scales with a per-instance --gait multiplier so two identical
+       stegosauruses never step in perfect lockstep (set in walk()). */
+    '.stego-svg .leg.gaitA{animation:stegoGaitA calc(1s * var(--gait,1)) ease-in-out infinite;}' +
+    '.stego-svg .leg.gaitB{animation:stegoGaitB calc(1s * var(--gait,1)) ease-in-out infinite;}' +
     '@keyframes stegoGaitA{0%,100%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}}' +
     '@keyframes stegoGaitB{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}' +
     /* blink: the eye group squashes shut briefly every few seconds */
-    '.stego-svg .stego-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:stegoBlink 4.2s ease-in-out infinite;}' +
-    '@keyframes stegoBlink{0%,93%,100%{transform:scaleY(1)}96.5%{transform:scaleY(.08)}}' +
+    '.stego-svg .stego-eyes{transform-box:fill-box;transform-origin:50% 50%;animation:stegoBlink 3.5s ease-in-out infinite;}' +
+    '@keyframes stegoBlink{0%,85%,100%{transform:scaleY(1)}88%{transform:scaleY(.07)}90.5%{transform:scaleY(.9)}93%{transform:scaleY(.07)}95.5%{transform:scaleY(1)}}' +
     /* ground shadow under the feet — sits on the wrapper, so it stays
        grounded while the dino (action layer) hops */
     '.stego-shadow{position:absolute;left:50%;bottom:-1%;width:80%;height:9%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,0,0,.28),rgba(0,0,0,0) 72%);pointer-events:none;}' +
@@ -437,6 +487,7 @@
       flip: o.flip,
       loop: !!o.loop,
       palette: o.palette || 'green',
+      gait: o.gait != null ? o.gait : (0.82 + Math.random() * 0.4),  // 0.82–1.22× leg cadence
       onDone: o.onDone || null
     };
     if (!container) return null;
@@ -448,6 +499,7 @@
     var flip = opts.faceWalkDir ? faceLeft : !!opts.flip;
 
     var wrap = buildElement({ height: opts.height, bottom: opts.bottom, zIndex: opts.zIndex, flip: flip, palette: opts.palette });
+    wrap.style.setProperty('--gait', opts.gait.toFixed(3));   // this dino's own leg rhythm
     container.appendChild(wrap);
 
     var cw = container.clientWidth || (global.innerWidth || 800);
