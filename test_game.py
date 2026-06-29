@@ -2380,10 +2380,12 @@ class TestBridgingMode:
         assert page.locator("#lbmx.active").count() == 0
 
     def test_br_fixed_sequence_in_exact_order(self, page):
-        """The br session equals the prescribed 25-problem list, in order."""
-        consts = page.evaluate("({TA, TS})")
+        """The br session equals the prescribed 25-problem list, in order. Every
+        4th problem is re-rendered as its shape-unknown form (TVA/TVS); we
+        normalise it back to its base add/sub type to verify the curriculum."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         self._switch_br(page)
-        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ]
         assert probs == expected, (
             f"br problems deviate from the prescribed order.\n"
@@ -2391,25 +2393,42 @@ class TestBridgingMode:
         )
 
     def test_br_restart_alternates_sets(self, page):
-        """Every rebuild advances the set, so restart() cycles through the five
-        sets: set 1 → 2 → 3 → 4 → 5(unknowns) → set 1 (deterministic)."""
+        """Every rebuild advances the set, so restart() cycles through the four
+        sets: set 1 → 2 → 3 → 4 → set 1 (deterministic). The shape-unknown type is
+        woven into every set (see test_br_weaves_unknown_every_fourth); normalise
+        TVA/TVS back to their base add/sub type for the order check."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
                (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3, self.EXPECTED_SEQ_4)]
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])"
         self._switch_br(page)
-        seen = [page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")]
-        for _ in range(5):
+        seen = [page.evaluate(NORM)]
+        for _ in range(4):
             page.evaluate("restart()"); page.wait_for_timeout(120)
-            seen.append(page.evaluate("[...problems].map(p => [p.t, p.a, p.b])"))
+            seen.append(page.evaluate(NORM))
         assert seen[0] == exp[0], "first build serves set 1"
         assert seen[1] == exp[1], "restart → set 2"
         assert seen[2] == exp[2], "restart → set 3"
         assert seen[3] == exp[3], "restart → set 4"
-        # set 5 → the shape-variable "one unknown" set (all TVA/TVS)
-        types5 = set(p[0] for p in seen[4])
-        assert types5 <= {consts["TVA"], consts["TVS"]} and len(seen[4]) == 15, \
-            f"restart → set 5 (unknowns, 15 TVA/TVS), got {seen[4]}"
-        assert seen[5] == exp[0], "the following restart wraps back to set 1"
+        assert seen[4] == exp[0], "the following restart wraps back to set 1"
+
+    def test_br_weaves_unknown_every_fourth(self, page):
+        """The one-unknown (TVA/TVS) type is woven into EVERY set — every 4th
+        problem (slots 4, 8, 12 …) is rendered as a shape-unknown, drawn from the
+        set's own exercises (so its a/b/answer is unchanged)."""
+        consts = page.evaluate("({TVA, TVS})")
+        TVA, TVS = consts["TVA"], consts["TVS"]
+        self._switch_br(page)
+        for _ in range(4):                                  # check all four sets
+            probs = page.evaluate("[...problems].map(p => p.t)")
+            n = len(probs)
+            unk = [i for i, t in enumerate(probs) if t in (TVA, TVS)]
+            assert unk, f"every set must contain shape-unknowns, got none in {probs}"
+            # the unknown lands on EVERY 4th slot (idx 3,7,11…) → exactly one per four
+            assert all((i + 1) % 4 == 0 for i in unk), f"unknowns must sit on 4th slots, got idx {unk}"
+            assert len(unk) == n // 4, \
+                f"expected exactly one unknown per 4 (n={n} → {n//4}), got {len(unk)} at {unk}"
+            self._reenter_br(page)
 
     def test_br_no_coin_or_tens_problems(self, page):
         """Bridging mode is pure arithmetic — no TC or TT injected."""
@@ -2447,9 +2466,9 @@ class TestBridgingMode:
     def test_br_wrong_answer_penalizes_score_67_percent(self, page):
         """br mode: one wrong → next correct awards round(15 * 0.67) = 10."""
         self._switch_br(page)
-        # br pools (_bridgeSet1/2) are pure TA/TS, but force a deterministic
-        # single-answer (TS) problem at idx 0 so the single-input flow always
-        # applies regardless of which set is served. modePts() in br is 15.
+        # force a deterministic single-answer (TS) problem at idx 0 so the
+        # single-input flow always applies regardless of which set is served
+        # (the woven shape-unknowns sit on 4th slots, never idx 0). modePts() in br is 15.
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_selector("#ans:not([disabled])", timeout=TIMEOUT)
         page.wait_for_timeout(120)
@@ -2492,10 +2511,10 @@ class TestBridgingMode:
 
     def test_br_set2_exact_order(self, page):
         """The second selection serves SET 2 in its exact prescribed order."""
-        consts = page.evaluate("({TA, TS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         self._switch_br(page)            # set 1
         self._reenter_br(page)           # set 2
-        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_2]
         assert probs == expected, (
             f"br set 2 deviates from the prescribed order.\n"
@@ -2512,11 +2531,11 @@ class TestBridgingMode:
 
     def test_br_set3_exact_order(self, page):
         """The third selection serves SET 3 (big bridges) in its exact prescribed order."""
-        consts = page.evaluate("({TA, TS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         self._switch_br(page)            # set 1
         self._reenter_br(page)           # set 2
         self._reenter_br(page)           # set 3
-        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_3]
         assert probs == expected, (
             f"br set 3 deviates from the prescribed order.\n"
@@ -2525,10 +2544,10 @@ class TestBridgingMode:
 
     def test_br_set3_all_cross_ten(self, page):
         """Every set-3 problem genuinely bridges 10 (it IS a crossing-ten curriculum)."""
-        consts = page.evaluate("({TA, TS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch_br(page); self._reenter_br(page); self._reenter_br(page)   # set 3
-        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
         assert len(probs) == 15
         for t, a, b in probs:
             if t == TA:
@@ -2547,11 +2566,11 @@ class TestBridgingMode:
 
     def test_br_set4_exact_order(self, page):
         """The fourth selection serves SET 4 (gentle crossings) in its exact prescribed order."""
-        consts = page.evaluate("({TA, TS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         self._switch_br(page)
         for _ in range(3):
             self._reenter_br(page)       # set 4
-        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_4]
         assert probs == expected, (
             f"br set 4 deviates from the prescribed order.\n"
@@ -2561,12 +2580,12 @@ class TestBridgingMode:
     def test_br_set4_crosses_ten_only_gently(self, page):
         """Every set-4 problem bridges 10 BUT only by a little — each sum / minuend
         stays in 11–13 (10 is crossed by at most 3)."""
-        consts = page.evaluate("({TA, TS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch_br(page)
         for _ in range(3):
             self._reenter_br(page)       # set 4
-        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
         assert len(probs) == 15
         for t, a, b in probs:
             if t == TA:
@@ -2577,34 +2596,33 @@ class TestBridgingMode:
                     f"subtraction {a}-{b} must cross 10 from a low teen (minuend 11–13)"
 
     def test_br_alternates_sets_in_turns(self, page):
-        """Each menu selection advances: set1 → 2 → 3 → 4 → 5(unknowns) → set1."""
+        """Each menu selection advances: set1 → 2 → 3 → 4 → set1 (unknowns woven
+        into every set; normalised back to base types for the order check)."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
                (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3, self.EXPECTED_SEQ_4)]
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])"
         self._switch_br(page)
-        seen = [page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")]
-        for _ in range(5):
+        seen = [page.evaluate(NORM)]
+        for _ in range(4):
             self._reenter_br(page)
-            seen.append(page.evaluate("[...problems].map(p => [p.t, p.a, p.b])"))
+            seen.append(page.evaluate(NORM))
         assert seen[0] == exp[0], "1st selection → set 1"
         assert seen[1] == exp[1], "2nd selection → set 2"
         assert seen[2] == exp[2], "3rd selection → set 3"
         assert seen[3] == exp[3], "4th selection → set 4"
-        # 5th selection → SET 5: the shape-variable "one unknown" set (all TVA/TVS)
-        types5 = set(p[0] for p in seen[4])
-        assert types5 <= {consts["TVA"], consts["TVS"]} and len(seen[4]) == 15, \
-            f"5th selection → the unknowns set (15 TVA/TVS), got {seen[4]}"
-        assert seen[5] == exp[0], "6th selection wraps back to set 1"
+        assert seen[4] == exp[0], "5th selection wraps back to set 1"
 
     def test_br_restart_size_alternates(self, page):
-        """The five sets have lengths 25, 18, 15, 15, 15; restarts cycle through them
-        (25 → 18 → 15 → 15 → 15 → 25). Set 5 is the shape-variable 'one unknown' set."""
+        """The four sets have lengths 25, 18, 15, 15; restarts cycle through them
+        (25 → 18 → 15 → 15 → 25). Weaving the unknowns in re-renders problems but
+        never adds/removes any, so the lengths are unchanged."""
         self._switch_br(page)
         lens = [page.evaluate("problems.length")]
-        for _ in range(5):
+        for _ in range(4):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             lens.append(page.evaluate("problems.length"))
-        assert lens == [25, 18, 15, 15, 15, 25], f"sizes must cycle on restart, got {lens}"
+        assert lens == [25, 18, 15, 15, 25], f"sizes must cycle on restart, got {lens}"
 
     def test_br_reclick_while_active_rotates_set(self, page):
         """Re-selecting גָּשֵׁר 10 while ALREADY in it starts a fresh game with
@@ -2669,18 +2687,20 @@ class TestBridge20:
         assert page.evaluate("problems.length") == 15
 
     def test_b20_exact_order(self, page):
-        consts = page.evaluate("({TA, TS})")
+        # every 4th problem is re-rendered as a shape-unknown (TVA/TVS); normalise
+        # back to its base add/sub type to verify the curriculum order.
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         self._switch(page)
-        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.B20_SEQ]
         assert probs == expected, f"b20 order deviated.\nexpected={expected}\ngot={probs}"
 
     def test_b20_crosses_twenty_only_gently(self, page):
         """Every b20 problem bridges 20 by ≤3 — sums 21–23 / minuends 21–23, results 17–19."""
-        consts = page.evaluate("({TA, TS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch(page)
-        for t, a, b in page.evaluate("[...problems].map(p => [p.t, p.a, p.b])"):
+        for t, a, b in page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])"):
             if t == TA:
                 assert a < 20 and b < 10 and 21 <= a + b <= 23, \
                     f"addition {a}+{b} must cross 20 by ≤3 (sum 21–23)"
@@ -2700,34 +2720,35 @@ class TestBridge20:
         assert page.locator("#lbbr.active").count() == 0
 
     def test_b20_alternates_two_sets(self, page):
-        """Every rebuild advances the set: set 1 → set 2 → set 3(unknowns) → set 1."""
+        """Every rebuild advances the set: set 1 → set 2 → set 1 (the shape-unknown
+        type is woven into BOTH sets, every 4th problem; normalised back to base
+        types for the order check)."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp1 = [[consts[t], a, b] for t, a, b in self.B20_SEQ]
         exp2 = [[consts[t], a, b] for t, a, b in self.B20_SEQ_2]
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])"
         self._switch(page)
-        s1 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        s1 = page.evaluate(NORM)
         page.evaluate("restart()"); page.wait_for_timeout(120)
-        s2 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        s2 = page.evaluate(NORM)
         page.evaluate("restart()"); page.wait_for_timeout(120)
-        s3 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
-        page.evaluate("restart()"); page.wait_for_timeout(120)
-        s4 = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        s3 = page.evaluate(NORM)
         assert s1 == exp1, "first build serves set 1"
         assert s2 == exp2, "restart advances to set 2"
-        # third build → SET 3: the shape-variable "one unknown" crossings of 20
-        types3 = set(p[0] for p in s3)
-        assert types3 <= {consts["TVA"], consts["TVS"]} and len(s3) == 15, \
-            f"third build → the unknowns set (15 TVA/TVS), got {s3}"
-        assert s4 == exp1, "next restart wraps back to set 1"
+        assert s3 == exp1, "next restart wraps back to set 1"
+        # the unknown type is present in each set, on 4th slots
+        unk = page.evaluate("[...problems].map((p,i)=>({i,u:p.t===TVA||p.t===TVS})).filter(o=>o.u).map(o=>o.i)")
+        assert unk and all((i + 1) % 4 == 0 for i in unk), \
+            f"b20 must weave shape-unknowns onto 4th slots, got idx {unk}"
 
     def test_b20_set2_exact_order_and_crosses_gently(self, page):
         """Set 2 (bigger jumps) serves its exact order; all 15 still cross 20 by ≤3
         (sums/minuends 21–23) — only the decomposition is larger."""
-        consts = page.evaluate("({TA, TS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch(page)                          # set 1
         page.evaluate("restart()"); page.wait_for_timeout(120)   # → set 2
-        probs = page.evaluate("[...problems].map(p => [p.t, p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.B20_SEQ_2]
         assert probs == expected, f"b20 set 2 order deviated.\nexpected={expected}\ngot={probs}"
         for t, a, b in probs:
