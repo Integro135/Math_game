@@ -218,6 +218,39 @@ function _introDone(){
   if(_introCleanup){try{_introCleanup();}catch(e){}_introCleanup=null;}
   if(_introRoot){_introRoot.remove();_introRoot=null;}
 }
+/* the live version string, read from the game-title h1's title attr ("v8.25") */
+function _introVersion(){
+  const gt=document.getElementById('game-title');
+  const v=gt&&gt.getAttribute('title');
+  return (v&&/^v?\d/i.test(v.trim()))?v.trim():'';
+}
+/* put the version number on the line BELOW the splash title: every success
+   screen renders its praise via textContent on one DOM element, so we find that
+   element and append a small version label as a CHILD — it then rides the
+   title's own scale/opacity animation and always sits directly under it,
+   whichever of the 36 screens is playing. */
+function _introAddVersion(title){
+  const ver=_introVersion();
+  if(!ver||!_introRoot)return;
+  const attach=()=>{
+    if(!_introOn||!_introRoot)return false;
+    const els=_introRoot.querySelectorAll('div,span,h1,h2,p');
+    for(let i=0;i<els.length;i++){
+      const el=els[i];
+      if(el.children.length===0&&el.textContent===title){   // the praise text leaf
+        const v=document.createElement('div');
+        v.className='intro-ver';v.dir='ltr';v.textContent=ver;
+        v.style.cssText='display:block;width:100%;text-align:center;margin-top:.55em;'+
+          'font-size:.34em;font-weight:800;letter-spacing:.06em;opacity:.82;'+
+          'text-shadow:0 1px 4px rgba(0,0,0,.55)';
+        el.appendChild(v);
+        return true;
+      }
+    }
+    return false;
+  };
+  if(!attach())requestAnimationFrame(attach);   // a screen that builds praise a tick late
+}
 function showIntroSplash(){
   const styles=(window.SUCCESS&&SUCCESS.styles)||[];
   if(!styles.length||_introOn)return;
@@ -238,10 +271,12 @@ function showIntroSplash(){
   document.body.appendChild(_introRoot);
   requestAnimationFrame(()=>{_bd.style.opacity='1';});
   _introBdTO=setTimeout(()=>{_bd.style.transition='opacity .34s ease';_bd.style.opacity='0';},Math.max(0,DUR-300));
+  const INTRO_TITLE='מִשְׂחֲקֵי חֶשְׁבּוֹן 2';
   _introCleanup=style.show({
     root:_introRoot,isSuper:true,durationMs:DUR,
-    palette:_skinPalette(),praise:'מִשְׂחֲקֵי חֶשְׁבּוֹן 2',
+    palette:_skinPalette(),praise:INTRO_TITLE,
   })||null;
+  _introAddVersion(INTRO_TITLE);   // hang the version number on the line below the title
   _introKey=e=>{if(e.key==='Enter'||e.key===' '||e.key==='Escape')_introDone();};
   document.addEventListener('keydown',_introKey);
   _introTO=setTimeout(_introDone,DUR+150);

@@ -140,8 +140,6 @@
   /* frill fan accent + warm spots */
   '<path d="M676 116 C712 100,752 104,780 112 C752 126,712 130,686 126 C681 122,678 119,676 116 Z" fill="#76b65d" stroke="none" opacity="0.5"></path>' +
   '<circle cx="702" cy="110" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle><circle cx="728" cy="107" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle><circle cx="752" cy="109" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle><circle cx="715" cy="120" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle><circle cx="740" cy="118" r="4.6" fill="#eab94d" stroke="none" opacity="0.9"></circle>' +
-  /* brow-horn fill — white, outer edge from body path C420→460→565, inner return below */
-  '<path d="M420 55 C420 55,460 30,565 95 C540 88,480 65,420 55 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="3" stroke-linejoin="round"></path>' +
   /* lower nose-horn highlight — aligned to actual horn tip (768,183) */
   '<path d="M735 194 C748 188,762 184,768 183 C766 190,757 200,745 210 C741 205,737 199,735 194 Z" fill="#eef4e0" stroke="none" opacity="0.7"></path>' +
 

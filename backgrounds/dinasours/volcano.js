@@ -67,6 +67,10 @@
      (backgrounds/dinasours/meteor.js) — loaded by the dinosaurs background; if
      absent (e.g. the bare volcano demo) the shower simply doesn't fire. */
   var METEOR_EVERY_CLICKS = 10, METEOR_EVERY_MS = 600000;
+  /* once a shower is triggered, the volcano IGNORES clicks for this long (covers
+     the host's dino run-off ~2.1s + the ~14s shower + buffer) so rapid clicking
+     past the 10th can't re-fire it or keep erupting. Self-clears when it lapses. */
+  var METEOR_LOCKOUT_MS = 18000;
 
   /* one knob (~2cm in viewBox units): the grass band, the mountain ranges AND the
      volcano are all lifted up by this much, together, so the world stays consistent. */
@@ -552,6 +556,11 @@
      prior one first so showers never stack. */
   function meteorShower(st) {
     if (st.stopped) return;
+    // LOCK OUT volcano clicks for the whole meteor event (run-off + shower), so
+    // clicking past the 10th can't re-trigger it or keep erupting. Self-clears.
+    st.meteorActive = true;
+    clearTimeout(st._meteorLockT);
+    st._meteorLockT = setTimeout(function () { st.meteorActive = false; }, METEOR_LOCKOUT_MS);
     // if the host wired an onMeteor hook, let IT orchestrate (e.g. the dinosaurs
     // scene runs the dinos off first, then starts the shower). Otherwise fire it
     // directly over our own container (the bare volcano demo).
@@ -566,6 +575,7 @@
   /* a CLICK on the volcano: a BIG bubble eruption + bump the on-cone counter; on
      every 10th click a meteor shower (the 10-min timer fires it too — see place()). */
   function volcanoClick(st) {
+    if (st.meteorActive) return;          // a meteor event is in progress → clicks do nothing
     st.clicks = (st.clicks || 0) + 1;
     // counter counts DOWN to the meteor shower: 9,8,…,1,0 (0 = this click fired it).
     if (st.counter) {
@@ -589,7 +599,7 @@
   function ensureClickHandler() {
     if (clickBound || typeof document === 'undefined') return;
     clickBound = true;
-    document.addEventListener('click', function (e) {
+    document.addEventListener('pointerdown', function (e) {
       // elementsFromPoint (not elementFromPoint): the scene stage can sit at
       // z-index:-1 behind the page (the math game), so the TOP element is the
       // body — but the volcano's own painted SVG shapes (pointer-events:auto)
@@ -739,6 +749,7 @@
         if (st.eruptTimer) clearTimeout(st.eruptTimer);
         if (st.meteorTimer) clearInterval(st.meteorTimer);
         if (st._counterT) clearTimeout(st._counterT);
+        if (st._meteorLockT) clearTimeout(st._meteorLockT);
         if (st._meteor && st._meteor.stop) { try { st._meteor.stop(); } catch (e) {} }
         var all = st.bubbleAnims.concat(st.cloudAnims);
         for (var k = 0; k < all.length; k++) { try { all[k].cancel(); } catch (e) {} }

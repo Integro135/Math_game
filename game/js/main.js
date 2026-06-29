@@ -78,14 +78,14 @@ document.addEventListener('keydown',e=>{
   // Kangaroo NL (kang mode): spacebar moves kangaroo forward (add) or backward (sub)
   if(aidMode==='kang'&&document.getElementById('nl-panel')?.style.display!=='none'){
     e.preventDefault();
-    if(!done){const _add=ptype===TA||ptype===TCA||ptype===TZ||(ptype===TX&&tzAddMode());NL.step(_add?1:-1);}
+    if(!done){const _add=ptype===TA||ptype===TCA||ptype===TZ||ptype===TVA||(ptype===TX&&tzAddMode());NL.step(_add?1:-1);}
     return;
   }
   if(done)return;
   // Cookie jar (nl mode): spacebar adds/removes a cookie per problem direction
   if(aidMode==='nl'&&document.getElementById('chain-tools')?.style.display!=='none'){
     e.preventDefault();
-    const isAdd=ptype===TDA||ptype===TA||ptype===TZ||(ptype===TX&&tzAddMode());
+    const isAdd=ptype===TDA||ptype===TA||ptype===TZ||ptype===TVA||(ptype===TX&&tzAddMode());
     if(isAdd)pgmPlus();else pgmMinus();
   }
 });
