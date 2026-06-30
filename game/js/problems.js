@@ -31,10 +31,18 @@ function sampleWithTD(pool,k){
 // order/length are untouched. (b≥1 guard only skips a ⃝=0 slot — defining a shape
 // as zero reads oddly; ⃝=1 is fine — so the unknown lands on every 4th slot.)
 const _VSHAPES=['circle','triangle','square'];
+const _vshape=()=>_VSHAPES[(Math.random()*3)|0];
 function _sprinkleUnknowns(set){
+  // alternate the converted slots: ONE-unknown, then TWO-unknown (both operands
+  // shapes, each value written small above), so both kinds recur across the set.
+  let c=0;
   for(let i=3;i<set.length;i+=4){
     const p=set[i];
-    if((p.t===TA||p.t===TS)&&p.b>=1){p.t=(p.t===TA)?TVA:TVS;p.sym=_VSHAPES[(Math.random()*3)|0];}
+    if((p.t===TA||p.t===TS)&&p.b>=1){
+      p.t=(p.t===TA)?TVA:TVS;p.sym=_vshape();
+      if(c%2===1)p.symA=_vshape();      // every other unknown is a TWO-unknown
+      c++;
+    }
   }
   return set;
 }

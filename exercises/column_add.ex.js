@@ -349,7 +349,9 @@ window.EXERCISES.types.column_add=(()=>{
   return{
     t:TCA,
     modes:['sup'],
-    aidsReveal:'always',   // the skinned number line shows from the start
+    // try-first like Queen: the skinned number line stays HIDDEN until the first
+    // mistake (then it's revealed and scoring drops to partial via _tfPts).
+    aidsReveal:'afterMistake',
     // Superman weaves in an EQUAL share of each exercise type, so column
     // addition contributes just 3 (2 with a carry, 1 without).
     make(mode){return mode==='sup'?makePool(2,1):[];},

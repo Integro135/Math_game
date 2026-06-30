@@ -513,7 +513,10 @@ window.EXERCISES.types.column_sub=(()=>{
   return{
     t:TCS,
     modes:['mx','sup'],
-    aidsReveal:'always',   // the skinned number line shows from the start
+    // Superman: try-first like Queen — the skinned number line stays HIDDEN until
+    // the first mistake (then revealed; scoring drops to partial via _tfPts).
+    // Queen (mx) keeps the line shown from the start (its 2 no-borrow ≤20 subs).
+    aidsReveal:{mx:'always',sup:'afterMistake'},
     // 'mx' (Queen) gets a couple of NO-BORROW column subtractions (≤20); 'sup'
     // (Superman) gets makeSup() = 3 no-borrow + 3 with-borrow, full 11–29 range.
     make(mode){return mode==='mx'?makeNoBorrow(2):mode==='sup'?makeSup():[];},

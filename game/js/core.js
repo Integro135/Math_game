@@ -240,7 +240,9 @@ function loadProblem(){
    :ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
    :ptype===TDA?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'
    :ptype===TDS?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁהַהֶפְרֵשׁ בֵּינֵיהֶם שָׁוֶה לַתְּשׁוּבָה!'
-   :ptype===TVA||ptype===TVS?'🔷 הַצּוּרָה שָׁוָה לַמִּסְפָּר שֶׁלְּמַעְלָה — הַצִּיבִי אוֹתוֹ וְחַשְּׁבִי!'
+   :ptype===TVA||ptype===TVS?((problems[idx]||{}).symA
+       ?'🔷 הַצּוּרוֹת שָׁווֹת לַמִּסְפָּרִים שֶׁלְּמַעְלָה — הַצִּיבִי וְחַשְּׁבִי!'
+       :'🔷 הַצּוּרָה שָׁוָה לַמִּסְפָּר שֶׁלְּמַעְלָה — הַצִּיבִי אוֹתוֹ וְחַשְּׁבִי!')
    :ptype===TX?'🧮 חַשֵּׁב בְּשָׁלָבִים: תְּחִלָּה חַסֵּר, אַחַר כָּךְ הוֹסֵף!'
    :ptype===TW?'🧮 חַשֵּׁב בְּשָׁלָבִים: חַסֵּר פַּעֲמַיִם בְּזֶה אַחַר זֶה!'
    :ptype===TZ?'🧮 חַשֵּׁב בְּשָׁלָבִים: קוֹדֶם חַבֵּר שְׁנַיִם, אַחַר כָּךְ הוֹסֵף שְׁלִישִׁי!'
@@ -339,7 +341,8 @@ function loadProblem(){
 
 /* a gold filled shape (circle / triangle / square) used as the "unknown" token
    in TVA/TVS — sized ~3rem to sit beside the 3.4rem equation digits. */
-function _varShapeSVG(kind){
+function _varShapeSVG(kind,size){
+  size=size||'3rem';
   const F='#FFD166',S='#7a571a',W=4;
   let inner;
   if(kind==='square')        inner='<rect x="6" y="6" width="44" height="44" rx="9" fill="'+F+'" stroke="'+S+'" stroke-width="'+W+'" stroke-linejoin="round"/>';
@@ -347,7 +350,7 @@ function _varShapeSVG(kind){
   else                       inner='<circle cx="28" cy="28" r="22" fill="'+F+'" stroke="'+S+'" stroke-width="'+W+'"/>';
   // pointer-events:none → hovering the shape reports the wrapping eq-n span as
   // the target, so the number-objects tooltip fires (the shape acts like a number).
-  return '<svg viewBox="0 0 56 56" style="width:3rem;height:3rem;vertical-align:middle;flex:0 0 auto;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">'+inner+'</svg>';
+  return '<svg viewBox="0 0 56 56" style="width:'+size+';height:'+size+';vertical-align:middle;flex:0 0 auto;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">'+inner+'</svg>';
 }
 
 /* ── Equation ── */
@@ -432,23 +435,39 @@ function renderEq(){
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
   }
   else if(ptype===TVA||ptype===TVS){
-    // ONE UNKNOWN as a shape: a definition line "⃝ = num2" above the sum
-    // "num1 ± ⃝ = ___". The shape BEHAVES LIKE the number it stands for on hover —
-    // it carries data-num (num2) + the make-ten data-split, so hovering it shows
-    // num2's objects with the same split as the second operand would. The first
-    // operand is suppressed (eq-noobj) like every ≥2-number equation.
+    // UNKNOWN(S) as shapes. Each shape BEHAVES LIKE the number it stands for on
+    // hover — it carries data-num (+ the make-ten data-split on the 2nd operand),
+    // so hovering shows that number's objects, exactly like a plain number.
+    const P=problems[idx]||{};
     const op2=ptype===TVA?'add':'sub';
     const sp=_bridgeSplit(num1,op2,num2);
     const splitAttr=sp?` data-split="${sp.left},${sp.right}"`:'';
-    const shp=_varShapeSVG((problems[idx]||{}).sym);
+    const shp=_varShapeSVG(P.sym);
     const shapeTok=`<span class="eq-n vone-sym" data-num="${num2}"${splitAttr}>${shp}</span>`;
-    const defVal=`<span class="eq-res" data-num="${num2}"${splitAttr}>${num2}</span>`;
-    const firstN=`<span class="eq-n eq-noobj" data-num="${num1}">${num1}</span>`;
     const opc=ptype===TVA?op('+','op-p'):op('-','op-m');
-    h='<div style="display:flex;flex-direction:column;align-items:center;gap:10px">'+
-        '<div style="display:flex;align-items:center;gap:10px">'+shapeTok+op('=','op-e')+defVal+'</div>'+
-        '<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">'+firstN+opc+shapeTok+op('=','op-e')+inp+'</div>'+
-      '</div>';
+    if(P.symA){
+      // TWO UNKNOWNS: BOTH operands are shapes. A small definition row above
+      // ("△ = num1  ○ = num2") gives each shape's value; the equation below is
+      // "△ ± ○ = ___". Both equation shapes stay hoverable (objects on hover).
+      const shpA=_varShapeSVG(P.symA);
+      const symAtok=`<span class="eq-n vone-sym" data-num="${num1}">${shpA}</span>`;
+      const dShpA=_varShapeSVG(P.symA,'1.5rem'),dShpB=_varShapeSVG(P.sym,'1.5rem');
+      const defOne=(s,v)=>`<span style="display:inline-flex;align-items:center;gap:4px">${s}<span class="eq-op op-e" style="font-size:.8em">=</span><span style="font-family:'Fredoka One',cursive">${v}</span></span>`;
+      h='<div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+
+          '<div class="vone-defs" style="display:flex;align-items:center;gap:20px;font-size:1.15rem;opacity:.95">'+
+            defOne(dShpA,num1)+defOne(dShpB,num2)+'</div>'+
+          '<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">'+symAtok+opc+shapeTok+op('=','op-e')+inp+'</div>'+
+        '</div>';
+    }else{
+      // ONE UNKNOWN: a definition line "⃝ = num2" above "num1 ± ⃝ = ___". The
+      // first operand is suppressed (eq-noobj) like every ≥2-number equation.
+      const defVal=`<span class="eq-res" data-num="${num2}"${splitAttr}>${num2}</span>`;
+      const firstN=`<span class="eq-n eq-noobj" data-num="${num1}">${num1}</span>`;
+      h='<div style="display:flex;flex-direction:column;align-items:center;gap:10px">'+
+          '<div style="display:flex;align-items:center;gap:10px">'+shapeTok+op('=','op-e')+defVal+'</div>'+
+          '<div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap">'+firstN+opc+shapeTok+op('=','op-e')+inp+'</div>'+
+        '</div>';
+    }
   }
   else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)h='<div id="colx-root" class="colx-root"></div>';
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
@@ -684,12 +703,20 @@ let _aidHidden={nl:'none',ct:'none'};   // aid-panel displays to restore on unlo
      aidsReveal: 'always' | 'afterMistake'   (default 'afterMistake')
    'always' shows the aids (number line / counting jar) from the very first
    attempt; 'afterMistake' keeps the try-first lock: fully hidden until the
-   first wrong answer. One field, shared by every aid. */
+   first wrong answer. One field, shared by every aid.
+   It may also be PER-MODE: a function (mode)→policy, or an object keyed by mode
+   (e.g. {mx:'always', sup:'afterMistake'}) — so the same type can show the line
+   from the start in one game and gate it (try-first) in another. */
 function _aidRevealPolicy(){
   const ts=window.EXERCISES&&EXERCISES.types;
   if(ts)for(const k in ts){
     const t=ts[k].t;
-    if(t===ptype||(Array.isArray(t)&&t.includes(ptype)))return ts[k].aidsReveal||'afterMistake';
+    if(t===ptype||(Array.isArray(t)&&t.includes(ptype))){
+      let r=ts[k].aidsReveal;
+      if(typeof r==='function')r=r(mode);
+      else if(r&&typeof r==='object')r=r[mode];
+      return r||'afterMistake';
+    }
   }
   return 'afterMistake';
 }
@@ -888,7 +915,8 @@ function _reportRows(){
     else if(r.ptype===TCS)eq=`${r.num1} − ${r.num2} = ${r.correct}`;
     else if(r.ptype===TCM)eq=`🪙 ${r.correct} × ${r.num2||5} = ${r.num1}`;
     else if(r.ptype===TBC)eq=`🥨 ${r.num1} × ${r.num2||5} = ${r.correct}`;
-    else if(r.ptype===TVA||r.ptype===TVS){const e={circle:'🔵',triangle:'🔺',square:'🟦'}[p.sym]||'🔷';eq=`${e}=${r.num2} · ${r.num1} ${r.ptype===TVA?'+':'−'} ${e} = ${r.correct}`;}
+    else if(r.ptype===TVA||r.ptype===TVS){const E=s=>({circle:'🔵',triangle:'🔺',square:'🟦'}[s]||'🔷');const e=E(p.sym),opc=r.ptype===TVA?'+':'−';
+      eq=p.symA?`${E(p.symA)}=${r.num1} ${e}=${r.num2} · ${E(p.symA)} ${opc} ${e} = ${r.correct}`:`${e}=${r.num2} · ${r.num1} ${opc} ${e} = ${r.correct}`;}
     else                  eq=`${r.num1} + ${r.num2} = ${r.correct}`;   // TA, TCA (column add)
     return {eq,ok:(r.wrongs||[]).length===0,wrongs:(r.wrongs||[]).slice(),correct:r.correct,skipped:!!r.skipped};
   });

@@ -2797,6 +2797,51 @@ class TestVarOneUnknown:
         n = page.evaluate("[...problems].filter(p=>p.t===TVA||p.t===TVS).length")
         assert n >= 1, f"Queen pool must include the ⃝-unknown type, got {n}"
 
+    # ── TWO-unknown variant: BOTH operands are shapes (symA + sym) ──
+    def test_two_unknown_renders_both_operands_as_shapes(self, page):
+        """△=7 ○=5, then △+○=___: BOTH equation operands are shapes carrying their
+        values (7,5), with a small definition row (△=7 ○=5) above; 7+5=12."""
+        self._force(page, "{t:TVA,a:7,b:5,sym:'circle',symA:'triangle'}")
+        nums = page.evaluate(
+            "[...document.querySelectorAll('#eq .vone-sym')].map(s=>+s.getAttribute('data-num'))")
+        assert nums == [7, 5], f"both equation operands must be shapes carrying 7 and 5, got {nums}"
+        assert page.evaluate("!!document.querySelector('#eq .vone-defs')"), \
+            "a definition row (△=7 ○=5) must show above the equation"
+        assert page.evaluate("document.querySelectorAll('#eq .vone-defs svg').length") == 2, \
+            "the def row shows BOTH shapes (small)"
+        assert page.evaluate("report[0].correct") == 12, "7 + 5 must be 12"
+
+    def test_two_unknown_both_shapes_hoverable(self, page):
+        """On hover EACH shape shows its objects — the first plain (=7, no split),
+        the second with the make-ten split (=5 → 3|2, since 7+5 crosses 10)."""
+        self._force(page, "{t:TVA,a:7,b:5,sym:'circle',symA:'triangle'}")
+        page.evaluate(
+            "document.querySelectorAll('#eq .vone-sym')[0].dispatchEvent(new MouseEvent('mouseover',{bubbles:true}))")
+        page.wait_for_function(
+            "document.getElementById('num-tt').style.display==='block'", timeout=TIMEOUT)
+        assert page.evaluate("document.querySelectorAll('#num-tt .ntt-part').length") == 0, \
+            "first shape (=7) shows a plain count, no make-ten split"
+        page.evaluate(
+            "document.querySelectorAll('#eq .vone-sym')[1].dispatchEvent(new MouseEvent('mouseover',{bubbles:true}))")
+        page.wait_for_function(
+            "[...document.querySelectorAll('#num-tt .ntt-part')].map(p=>p.textContent).join(',')==='3,2'",
+            timeout=TIMEOUT)
+
+    def test_two_unknown_scores_and_appears_in_pools(self, page):
+        """A two-unknown subtraction answers correctly (□−○: 14−6=8), and the
+        variant (a problem carrying symA) appears in BOTH Queen and the bridges."""
+        self._force(page, "{t:TVS,a:14,b:6,sym:'circle',symA:'square'}")
+        page.fill("#ans", "8"); page.click("#chk-btn"); page.wait_for_timeout(200)
+        assert "fb-ok" in page.locator("#fb").get_attribute("class"), "14 − 6 = 8 is correct"
+        page.evaluate("setMode('mx')")
+        page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
+        mx = page.evaluate("(()=>{for(var k=0;k<20;k++){if(makeMxPool().some(p=>p.symA))return true;}return false;})()")
+        assert mx, "Queen must include the TWO-unknown variant (a problem with symA)"
+        page.evaluate("setMode('br')")
+        page.wait_for_function("problems.length>0", timeout=TIMEOUT)
+        br = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridgePool().some(p=>p.symA))return true;}return false;})()")
+        assert br, "the bridges must weave in the TWO-unknown variant (symA)"
+
 
 # ─────────────────────────────────────────────────────────
 # Dynamic exercise-type loading (one file per type)
@@ -3018,46 +3063,61 @@ class TestSupermanColumnAdd:
         assert stats["sawAbove70"], \
             "the raised ceiling must produce results above 70 (two-digit + two-digit)"
 
-    def test_sup_nl_visible_from_start(self, page):
-        """aidsReveal:'always' — the skinned NL shows before any mistake,
-        with its numbers already rendered (not blank until a mistake)."""
+    def test_sup_nl_hidden_until_mistake(self, page):
+        """Try-first like Queen: the skinned NL is HIDDEN on load (with the
+        'נסי לבד' message) and appears only after the FIRST mistake — then its
+        numbers render and the ± buttons enable."""
         self._enter_sup(page)
         assert page.evaluate(
-            "document.getElementById('nl-panel').style.display") != "none"
-        assert page.evaluate("!document.getElementById('nl-btn-plus').disabled")
+            "document.getElementById('nl-panel').style.display") == "none", \
+            "NL must be hidden before any mistake (try-first gate)"
+        assert page.evaluate("!!document.getElementById('tf-msg')"), \
+            "the try-first 'נסי לבד' message shows while the aid is gated"
+        assert page.evaluate("tryFirst") == 0
+        # a committed wrong units answer reveals the line (7+5=12, so 13 is wrong)
+        page.fill("#colx-iU", "13"); page.keyboard.press("Enter")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+        assert page.evaluate(
+            "document.getElementById('nl-panel').style.display") != "none", \
+            "NL must be revealed after the first mistake"
         assert page.evaluate("!document.getElementById('tf-msg')"), \
-            "no try-first lock message for an aidsReveal:'always' type"
-        assert page.evaluate("tryFirst") == 0, "shown WITHOUT any mistake"
+            "the try-first message clears once the aid is revealed"
+        assert page.evaluate("!document.getElementById('nl-btn-plus').disabled")
         nums = page.evaluate(
             "[...document.querySelectorAll('#nl-panel .nl-num')].map(n=>+n.textContent)")
-        assert len(nums) >= 1, "the number line must render its numbers from the start"
+        assert len(nums) >= 1, "the revealed number line renders its numbers"
 
-    def test_sup_nl_numbers_visible_after_switch_from_locked_mode(self, page):
-        """Regression: entering Superman from a normal mode (whose fresh problem
-        left `tf-locked-nl` on <body>) used to leave that lock sticky, so the
-        number-line NUMBERS were CSS-hidden until a page refresh. The always-on
-        reveal must actively clear the stale lock — numbers visible, no refresh."""
+    def test_sup_nl_numbers_visible_after_mistake_from_locked_mode(self, page):
+        """Entering Superman from a normal mode (whose fresh problem leaves
+        `tf-locked-nl` on <body>), the column is GATED on load (try-first). The
+        first mistake must reveal the line with its NUMBERS visible (not CSS-hidden
+        by a stale lock) and the ± buttons enabled — no page refresh needed."""
         page.evaluate("setMode(10)")
         page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(120)
-        assert page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
-            "precondition: normal mode locks the aids on a fresh problem"
         page.evaluate("setMode('sup')")
         page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 13, b: 18}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
+        assert page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
+            "Superman column gates the aid on load (try-first)"
+        # first mistake reveals the line (3+8=11 → 9 is wrong)
+        page.fill("#colx-iU", "9"); page.keyboard.press("Enter")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
         assert not page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
-            "the stale try-first lock must be cleared for an always-on type"
+            "the lock clears once the aid is revealed"
         visible = page.evaluate("""
             [...document.querySelectorAll('#nl-panel .nl-num')]
               .filter(n => getComputedStyle(n).visibility !== 'hidden').length
         """)
         assert visible >= 1, \
-            "number-line numbers must be VISIBLE without a refresh (not CSS-hidden)"
+            "number-line numbers must be VISIBLE after the reveal (not CSS-hidden)"
         assert page.evaluate("!document.getElementById('nl-btn-plus').disabled"), \
-            "± buttons must be enabled (not left tf-locked)"
+            "± buttons must be enabled after the reveal"
 
     def test_sup_nl_anchored_to_top_units_digit(self, page):
         """The rider parks on the TOP number's units digit from the start —
@@ -3070,14 +3130,21 @@ class TestSupermanColumnAdd:
         assert abs(left - 15) < 0.5, \
             f"rider must sit on top units digit 3 (15%), got {left}%"
 
-    def test_sup_arrow_keys_move_rider_from_start(self, page):
-        """Regression: in the column exercise the left/right arrows must move
-        the rider FROM THE START (always-on line, tryFirst 0) — even while a
-        column digit box (type='text') holds focus. They used to be inert
-        because the handler was gated on tryFirst>0 AND ignored non-number
-        inputs."""
+    def test_sup_arrow_keys_gated_then_move_rider(self, page):
+        """The left/right arrows are INERT while the aid is gated (hidden), and
+        move the rider once the FIRST mistake reveals it — even while a column
+        digit box (type='text') holds focus."""
         self._enter_sup(page, 13, 18)
         assert page.evaluate("tryFirst") == 0
+        page.focus("#colx-iU")
+        base = page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)||0")
+        page.keyboard.press("ArrowRight"); page.wait_for_timeout(150)
+        assert (page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)||0")) == base, \
+            "arrows must be inert while the aid is gated (hidden)"
+        # reveal the line via a mistake (3+8=11 → 9 is wrong)
+        page.fill("#colx-iU", "9"); page.keyboard.press("Enter")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        page.wait_for_timeout(200)
         page.focus("#colx-iU")
         before = page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)")
         page.keyboard.press("ArrowRight")
@@ -3090,12 +3157,18 @@ class TestSupermanColumnAdd:
             f"parseFloat(document.getElementById('nl-dot').style.left) < {mid}",
             timeout=TIMEOUT)
 
-    def test_sup_space_advances_number_line_in_add_direction(self, page):
-        """In column addition, pressing SPACE hops the kangaroo forward (add
-        direction) — even while a digit box is focused — and is NOT typed in."""
+    def test_sup_space_advances_number_line_after_mistake(self, page):
+        """Once the FIRST mistake reveals the line, pressing SPACE hops the rider
+        forward (add direction) — even while a digit box is focused — and is NOT
+        typed in. (While gated, the hidden line ignores it.)"""
         self._enter_sup(page, 17, 15)
+        # reveal the line via a mistake (7+5=12 → 13 is wrong), then wait past the
+        # 1s input-reset so the units box is clear and refocused
+        page.fill("#colx-iU", "13"); page.keyboard.press("Enter")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        page.wait_for_timeout(1200)
         page.evaluate("NL.init(0)")          # known baseline at 0%
-        page.wait_for_timeout(350)
+        page.wait_for_timeout(300)
         page.click("#colx-iU")               # focus the units digit box
         page.wait_for_timeout(100)
         before = page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)||0")

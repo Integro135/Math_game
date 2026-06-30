@@ -17,6 +17,10 @@ window.EXERCISES.types.var_one=(()=>{
   const sh=()=>SHAPES[(Math.random()*SHAPES.length)|0];
   const A=(a,b)=>({t:TVA,a,b,sym:sh()});   // a + ⃝(=b)  → a+b
   const S=(a,b)=>({t:TVS,a,b,sym:sh()});   // a − ⃝(=b)  → a−b
+  // TWO-unknown variants: BOTH operands are shapes (symA = first ⃝(=a), sym =
+  // second ⃝(=b)), each value written small above — e.g. △=a ○=b, then △±○=?
+  const A2=(a,b)=>({t:TVA,a,b,sym:sh(),symA:sh()});
+  const S2=(a,b)=>({t:TVS,a,b,sym:sh(),symA:sh()});
   const rnd=(lo,hi)=>lo+((Math.random()*(hi-lo+1))|0);
 
   return{
@@ -33,11 +37,13 @@ window.EXERCISES.types.var_one=(()=>{
         A(19,3),S(21,3),A(18,4),S(22,4),A(17,5),S(23,5),A(16,6),S(21,6),
         A(19,4),S(22,7),A(18,5),S(23,8),A(15,7),S(22,9),A(14,8),
       ];
-      // Queen (mx): one addition + one subtraction, ≤20 (so the aid line fits)
+      // Queen (mx): one addition + one subtraction, ≤20 (so the aid line fits).
+      // ONE of the two is a TWO-unknown (both operands shapes) and the other a
+      // ONE-unknown — random which operation is which — so BOTH kinds appear.
       if(mode==='mx'){
         const av=rnd(3,9),bv=rnd(3,9);                  // add: sum ≤ 18
         const m=rnd(11,18),sb=rnd(2,Math.min(9,m-1));   // sub: minuend 11-18
-        return[A(av,bv),S(m,sb)];
+        return Math.random()<0.5?[A(av,bv),S2(m,sb)]:[S(m,sb),A2(av,bv)];
       }
       return[];
     },
