@@ -145,10 +145,18 @@ window.EXERCISES.types.column_sub=(()=>{
   .colxs-hand{position:absolute;font-size:2.5rem;transform:translate(-50%,-50%);
     filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));z-index:8;
     transition:left .4s cubic-bezier(.4,1.25,.5,1),top .4s cubic-bezier(.4,1.25,.5,1)}
-  .colxs-minus10{position:absolute;font-family:'Fredoka One',cursive;font-size:1.5rem;color:#FF4D6D;
-    text-shadow:0 0 12px rgba(255,77,109,.9);transform:translate(-50%,-50%) scale(.4);opacity:0;line-height:1;
+  /* the regroup pair, shown briefly during a borrow: a RED "−10" badge by the
+     tens (it loses ten) + a GREEN "+10" badge by the units (it gains ten). */
+  .colxs-minus10{position:absolute;font-family:'Fredoka One',cursive;font-size:1.15rem;color:#fff;
+    background:#e53935;padding:4px 11px;border-radius:13px;box-shadow:0 2px 10px rgba(229,57,53,.6);
+    white-space:nowrap;transform:translate(-50%,-50%) scale(.4);opacity:0;line-height:1;
     transition:opacity .3s,transform .35s cubic-bezier(.34,1.56,.64,1)}
   .colxs-minus10.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .colxs-plus10{position:absolute;font-family:'Fredoka One',cursive;font-size:1.15rem;color:#fff;
+    background:#22a54a;padding:4px 11px;border-radius:13px;box-shadow:0 2px 10px rgba(34,165,74,.6);
+    white-space:nowrap;transform:translate(-50%,-50%) scale(.4);opacity:0;line-height:1;
+    transition:opacity .3s,transform .35s cubic-bezier(.34,1.56,.64,1)}
+  .colxs-plus10.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
   .colxs-moveone{position:absolute;font-family:'Fredoka One',cursive;font-size:2.2rem;color:#FF6B9D;
     text-shadow:0 0 14px rgba(255,107,157,.9);line-height:1;z-index:8;
     transition:left .62s cubic-bezier(.3,1.2,.5,1),top .62s cubic-bezier(.3,1.2,.5,1),transform .62s cubic-bezier(.3,1.2,.5,1)}
@@ -307,12 +315,19 @@ window.EXERCISES.types.column_sub=(()=>{
       later(()=>{
         one.remove();
         const bw=$('colx-borrow');bw.textContent='1';bw.classList.add('show');   // the ¹ by the units
+        // GREEN "+10" badge by the units — it GAINED ten (mirrors the red −10),
+        // so the child sees the conservation: 10 left the tens, 10 joined the units
+        const p10=document.createElement('div');p10.className='colxs-teach colxs-plus10';p10.textContent='+10';
+        p10.style.left=(aU.x+aU.w*0.5)+'px';p10.style.top=aU.y+'px';wrap.appendChild(p10);
+        void p10.offsetWidth;p10.classList.add('show');
+        later(()=>{if(p10.parentNode)p10.classList.remove('show');},1500);      // fades with the −10
+        later(()=>{if(p10.parentNode)p10.remove();},1900);
         fb(`יוֹפִי! עָבַר 10 לָאֲחָדוֹת — עַכְשָׁו יֵשׁ ${P.aU+10}. חַסְּרִי! 💪`);
         unitsHint=false;borrowHint=false;
         anchorNL();drawLines();iU.focus();
         if(then)then();
       },720);
-      later(()=>{if(m10.parentNode)m10.classList.remove('show');},2000);  // the −10 cue fades
+      later(()=>{if(m10.parentNode)m10.classList.remove('show');},2200);  // the −10 cue fades
     }
 
     /* start-of-exercise borrow demo: a hand cursor moves to the top tens digit
@@ -358,7 +373,7 @@ window.EXERCISES.types.column_sub=(()=>{
       const fg=document.createElement('div');fg.className='colxs-teach colxs-finger';fg.textContent='👆';
       fg.style.left=(aT.x+aT.w*0.30)+'px';fg.style.top=(aT.bot+2)+'px';wrap.appendChild(fg);
       const lbl=document.createElement('div');lbl.className='colxs-teach colxs-teach-lbl';
-      lbl.textContent='לַחֲצִי לִשְׁאֹל 10!';lbl.style.left=aT.x+'px';lbl.style.top=(aT.bot+48)+'px';wrap.appendChild(lbl);
+      lbl.textContent='לַחֲצִי לִשְׁאֹל 10';lbl.style.left=aT.x+'px';lbl.style.top=(aT.bot+48)+'px';wrap.appendChild(lbl);
       later(()=>lbl.classList.add('show'),60);
       borrowHint=true;drawLines();
       fb('אֵין מַסְפִּיק אֲחָדוֹת — לַחֲצִי עַל הָעֲשָׂרוֹת לָקַחַת 10! 👆');

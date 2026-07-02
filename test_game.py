@@ -3487,6 +3487,31 @@ class TestColumnSubtraction:
         assert page.evaluate(
             "document.getElementById('colx-aT').classList.contains('struck')")
 
+    def test_sub_borrow_shows_minus10_and_plus10_cues(self, page):
+        """The borrow briefly shows a RED −10 badge by the tens (it loses ten) and
+        a GREEN +10 badge by the units (it gains ten) — the conservation made
+        visible."""
+        self._enter_sub(page, 82, 37)
+        page.click("#colx-aT")                   # trigger the borrow
+        page.wait_for_function(
+            "document.querySelector('.colxs-plus10') && "
+            "document.querySelector('.colxs-plus10').classList.contains('show')", timeout=TIMEOUT)
+        info = page.evaluate("""(() => {
+            const m=document.querySelector('.colxs-minus10'), p=document.querySelector('.colxs-plus10');
+            const aT=document.getElementById('colx-aT').getBoundingClientRect();
+            const aU=document.getElementById('colx-aU').getBoundingClientRect();
+            const cx=e=>{const r=e.getBoundingClientRect();return r.left+r.width/2;};
+            return {mTxt:m.textContent, pTxt:p.textContent,
+                    mColor:getComputedStyle(m).backgroundColor, pColor:getComputedStyle(p).backgroundColor,
+                    mShown:m.classList.contains('show'),
+                    mLeftOfTens: cx(m) < aT.left+aT.width/2,
+                    pRightOfUnits: cx(p) > aU.left+aU.width/2};})()""")
+        assert info["mShown"] and info["mTxt"] in ("−10", "-10") and info["pTxt"] == "+10", info
+        assert info["mColor"] == "rgb(229, 57, 53)", f"−10 must be red, got {info['mColor']}"
+        assert info["pColor"] == "rgb(34, 165, 74)", f"+10 must be green, got {info['pColor']}"
+        assert info["mLeftOfTens"], "the −10 sits by the tens (its left)"
+        assert info["pRightOfUnits"], "the +10 sits by the units (its right)"
+
     def test_sub_wrong_units_penalized(self, page):
         """A committed wrong units answer is a real mistake (penalty+report)."""
         self._enter_sub(page, 25, 17)
