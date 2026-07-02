@@ -24,25 +24,28 @@ function sampleWithTD(pool,k){
   return out;
 }
 
-// Weave the shape-UNKNOWN (⃝ = N, then a ± ⃝) into a curriculum set: EVERY 4th
-// problem (slots 4, 8, 12 … → index 3, 7, 11 …) is re-rendered as its unknown
-// form — same numbers and answer, only the shape variable shown. So the unknown
-// type recurs once-per-4 across EVERY set, drawn from that set's OWN exercises;
-// order/length are untouched. (b≥1 guard only skips a ⃝=0 slot — defining a shape
-// as zero reads oddly; ⃝=1 is fine — so the unknown lands on every 4th slot.)
+// Weave "unknown" exercises into a curriculum set: EVERY 4th problem (slots 4, 8,
+// 12 … → index 3, 7, 11 …) is re-rendered as one, cycling through THREE kinds so
+// each recurs across the bridges:
+//   0 → ONE unknown   (⃝ = N, then a ± ⃝)
+//   1 → TWO unknowns  (△ + ○, each value small above)
+//   2 → THREE unknowns (__ + __ + __ = R, R = this slot's own answer) — the x+x+x
+// The a/b are kept so the underlying add/sub curriculum is unchanged; only the
+// render differs. (b≥1 skips a ⃝=0 slot; r≥6 keeps a three-sum decomposable.)
 const _VSHAPES=['circle','triangle','square'];
 const _vshape=()=>_VSHAPES[(Math.random()*3)|0];
 function _sprinkleUnknowns(set){
-  // alternate the converted slots: ONE-unknown, then TWO-unknown (both operands
-  // shapes, each value written small above), so both kinds recur across the set.
   let c=0;
   for(let i=3;i<set.length;i+=4){
     const p=set[i];
-    if((p.t===TA||p.t===TS)&&p.b>=1){
-      p.t=(p.t===TA)?TVA:TVS;p.sym=_vshape();
-      if(c%2===1)p.symA=_vshape();      // every other unknown is a TWO-unknown
-      c++;
+    if(!(p.t===TA||p.t===TS)||p.b<1)continue;
+    const kind=c%3;c++;
+    if(kind===2){
+      const r=(p.t===TA)?p.a+p.b:p.a-p.b;   // the crossing result becomes the sum target
+      if(r>=6){p.r=r;p.t=TRA;continue;}      // __+__+__ = r (a,b kept for the order-check)
     }
+    p.t=(p.t===TA)?TVA:TVS;p.sym=_vshape();
+    if(kind===1)p.symA=_vshape();            // two-unknown
   }
   return set;
 }
@@ -84,6 +87,7 @@ function makeMxPool(){
     ...EX('big_step').make('mx'),
     ...EX('column_sub').make('mx'),
     ...(EX('var_one')?EX('var_one').make('mx'):[]),   // one ⃝-unknown add + one sub
+    ...(EX('tri_unknown')?EX('tri_unknown').make('mx'):[]),  // one __+__+__ = R (three unknowns)
   ]);
   // The column-subtraction module renders its OWN staged UI (not the #ans box),
   // so never let it sit at slot 0 — the first card always shows a normal input.

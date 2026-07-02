@@ -222,10 +222,10 @@ function loadProblem(){
   if(idx>=problems.length){endGame();return}
   ({t:ptype,a:num1,b:num2,c:num3,d:num4}=problems[idx]);num3=num3||0;num4=num4||0;
   if(ptype===TC){tcCoins=[...(problems[idx].coins||[])].sort((a,b)=>b-a);num1=problems[idx].correct||0;num2=0;num3=0;num4=0;}
-  if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
+  if(ptype===TDA||ptype===TDS||ptype===TRA){num1=problems[idx].r||0;num2=0;}
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
-  const _cor=ptype===TDA||ptype===TDS?num1:ptype===TC?num1:ptype===TCM?num1/(num2||5):ptype===TBC?num1*(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TCM?num1/(num2||5):ptype===TBC?num1*(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -240,6 +240,7 @@ function loadProblem(){
    :ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
    :ptype===TDA?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'
    :ptype===TDS?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁהַהֶפְרֵשׁ בֵּינֵיהֶם שָׁוֶה לַתְּשׁוּבָה!'
+   :ptype===TRA?'🔢 מְצָא שְׁלוֹשָׁה מִסְפָּרִים שֶׁסְּכוּמָם שָׁוֶה לַתְּשׁוּבָה!'
    :ptype===TVA||ptype===TVS?((problems[idx]||{}).symA
        ?'🔷 הַצּוּרוֹת שָׁווֹת לַמִּסְפָּרִים שֶׁלְּמַעְלָה — הַצִּיבִי וְחַשְּׁבִי!'
        :'🔷 הַצּוּרָה שָׁוָה לַמִּסְפָּר שֶׁלְּמַעְלָה — הַצִּיבִי אוֹתוֹ וְחַשְּׁבִי!')
@@ -297,7 +298,7 @@ function loadProblem(){
     chainGnMode=false;tdaJarMode=false;}
   // Aid display — kangaroo NL or the cookie jar, per aidMode
   if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TBG){
-  const isTD=ptype===TDA||ptype===TDS;
+  const isTD=ptype===TDA||ptype===TDS||ptype===TRA;
   const useNL=aidMode==='nl';
   const useKang=aidMode==='kang';
   const ct=document.getElementById('chain-tools');if(ct)ct.style.display=useNL?'block':'none';
@@ -309,7 +310,7 @@ function loadProblem(){
   if(nlp){nlp.style.display=useKang?'':'none';if(useKang){NL.configure(_nlMax,1);NL.init(0);}}
   if(useNL){
     pgmTensMode=false;chainGnMode=false;
-    const _cv=isTD?(ptype===TDA?0:num1):num1;
+    const _cv=isTD?((ptype===TDA||ptype===TRA)?0:num1):num1;
     pgmCV=_cv;pgmCk=Array.from({length:_cv},(_,i)=>i%5);pgmArcs=[];
     const _jar=document.getElementById('pgm-ck-jar');if(_jar)_jar.style.display='';
     const _gnd=document.getElementById('pgm-gn-display');if(_gnd)_gnd.style.display='none';
@@ -318,7 +319,7 @@ function loadProblem(){
   tdaJarMode=false;}
   setTimeout(()=>{
     const first=(ptype===TX||ptype===TZ)?document.getElementById('tx-sub1')
-               :(ptype===TDA||ptype===TDS)?document.getElementById('ans1'):null;
+               :(ptype===TDA||ptype===TDS||ptype===TRA)?document.getElementById('ans1'):null;
     (first||document.getElementById('ans'))?.focus();
   },60);
   buildGamesMenu();
@@ -433,6 +434,14 @@ function renderEq(){
       (id==='ans1'?` onblur="_nttHide()"`:'')+
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
+  }
+  else if(ptype===TRA){
+    // THREE unknowns: __ + __ + __ = num1 (the child fills three addends)
+    const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="20"`+
+      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this);tdaJarSync(this)':''}"`+
+      (id==='ans1'?` onblur="_nttHide()"`:'')+
+      ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
+    h=mkI('ans1','ans2')+op('+','op-p')+mkI('ans2','ans3')+op('+','op-p')+mkI('ans3',null)+op('=','op-e')+n(num1);
   }
   else if(ptype===TVA||ptype===TVS){
     // UNKNOWN(S) as shapes. Each shape BEHAVES LIKE the number it stands for on
@@ -557,33 +566,49 @@ document.addEventListener('input',e=>{
 function checkAns(){
   if(done)return;
   if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)return;   // the exercise module checks itself
-  // ── Double-unknown problems (TDA/TDS) ──
-  if(ptype===TDA||ptype===TDS){
-    const i1=document.getElementById('ans1'),i2=document.getElementById('ans2');
-    const v1=i1?parseInt(i1.value,10):NaN,v2=i2?parseInt(i2.value,10):NaN;
-    if(isNaN(v1)||i1.value===''||isNaN(v2)||i2.value===''){
-      setFb('נָא לְהַזִּין מִסְפָּרִים בִּשְׁנֵי הָרִיבּוּעִים 💗','fb-err');return;
+  // ── Multi-unknown problems: two (TDA/TDS) or three (TRA) empty boxes ──
+  if(ptype===TDA||ptype===TDS||ptype===TRA){
+    const i1=document.getElementById('ans1'),i2=document.getElementById('ans2'),
+          i3=ptype===TRA?document.getElementById('ans3'):null;
+    const v1=i1?parseInt(i1.value,10):NaN,v2=i2?parseInt(i2.value,10):NaN,
+          v3=i3?parseInt(i3.value,10):0;
+    const missing=isNaN(v1)||i1.value===''||isNaN(v2)||i2.value===''||(ptype===TRA&&(isNaN(v3)||i3.value===''));
+    if(missing){
+      setFb(ptype===TRA?'נָא לְהַזִּין מִסְפָּרִים בִּשְׁלוֹשֶׁת הָרִיבּוּעִים 💗'
+                       :'נָא לְהַזִּין מִסְפָּרִים בִּשְׁנֵי הָרִיבּוּעִים 💗','fb-err');return;
     }
-    const valid=ptype===TDA?v1+v2===num1:v1-v2===num1&&v1>=0&&v2>=0;
+    const valid=ptype===TDA?v1+v2===num1
+               :ptype===TRA?(v1+v2+v3===num1&&v1>=0&&v2>=0&&v3>=0)
+               :v1-v2===num1&&v1>=0&&v2>=0;
+    // x−x: block the lazy "target − 0" (e.g. 10 − 0) — the computation is right,
+    // but subtracting nothing is too easy. Ask for a real subtraction with a
+    // non-zero number, WITHOUT a penalty (it isn't a mistake).
+    if(ptype===TDS&&valid&&v2===0){
+      setFb(`נָכוֹן, אֲבָל ${num1} פָּחוֹת 0 קַל מִדַּי — בְּלִי לְחַסֵּר 0, תְּנִי מִסְפָּר אַחֵר 💪`,'fb-err');
+      if(i1)i1.value='';if(i2)i2.value='';
+      setTimeout(()=>document.getElementById('ans1')?.focus(),150);
+      return;
+    }
     done=true;
-    _markAns(i1,valid);_markAns(i2,valid);
-    if(i1)i1.disabled=true;if(i2)i2.disabled=true;
+    _markAns(i1,valid);_markAns(i2,valid);if(i3)_markAns(i3,valid);
+    if(i1)i1.disabled=true;if(i2)i2.disabled=true;if(i3)i3.disabled=true;
     document.getElementById('btns').innerHTML='';
     const _cb=document.getElementById('chk-btn');if(_cb)_cb.style.display='none';
     if(valid){
       addScore(_tfPts());
-      if(report[idx]){report[idx].gotCorrect=true;report[idx].userPair=[v1,v2];}
+      if(report[idx]){report[idx].gotCorrect=true;report[idx].userPair=ptype===TRA?[v1,v2,v3]:[v1,v2];}
       const _ic=['🎉','⭐','🌟','💫','🦄','🌈','💗','✨','🎊','🍭','🎀','💜'];
       const _ico=_ic[0|Math.random()*_ic.length];
       setFb(`${_ico} כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה! ${_ico}`,'fb-ok');
       setTimeout(showFw,300);
     }else{
-      if(report[idx])report[idx].wrongs.push(`${v1}${ptype===TDA?'+':'-'}${v2}`);
+      if(report[idx])report[idx].wrongs.push(ptype===TRA?`${v1}+${v2}+${v3}`:`${v1}${ptype===TDA?'+':'-'}${v2}`);
       if(tryFirst===0)_unlockAids();tryFirst++;
       showSadModal();
       done=false;
       if(i1){i1.disabled=false;i1.value='';}
       if(i2){i2.disabled=false;i2.value='';}
+      if(i3){i3.disabled=false;i3.value='';}
       const _cb2=document.getElementById('chk-btn');if(_cb2)_cb2.style.display='flex';
       setTimeout(()=>document.getElementById('ans1')?.focus(),150);
     }
@@ -679,7 +704,7 @@ function tzSubJarSync(id){
    fill the cookie jar to that amount (only when the jar is the active aid —
    aidMode==='nl' → #chain-tools visible). Empty/invalid clears it back to 0. */
 function tdaJarSync(inp){
-  if(ptype!==TDA)return;
+  if(ptype!==TDA&&ptype!==TRA)return;
   if(document.getElementById('chain-tools')?.style.display==='none')return; // jar not the active aid
   const raw=(inp&&inp.value!=='')?parseInt(inp.value,10):NaN;
   const newCV=isNaN(raw)?0:Math.min(Math.max(0,raw),PGM_NL);
@@ -793,7 +818,7 @@ function resetCur(){
   if(ptype===TT){NL.configure(100,10);NL.init(num1);}
   setTimeout(()=>{
     const first=(ptype===TX||ptype===TZ)?document.getElementById('tx-sub1')
-               :(ptype===TDA||ptype===TDS)?document.getElementById('ans1'):null;
+               :(ptype===TDA||ptype===TDS||ptype===TRA)?document.getElementById('ans1'):null;
     (first||document.getElementById('ans'))?.focus();
   },60);
 }
@@ -908,6 +933,7 @@ function _reportRows(){
     else if(r.ptype===TW) eq=`${r.num1} − ${r.num2} − ${r.num3} = ${r.correct}`;
     else if(r.ptype===TZ) eq=r.num4>0?`${r.num1} + ${r.num2} + ${r.num3} + ${r.num4} = ${r.correct}`:`${r.num1} + ${r.num2} + ${r.num3} = ${r.correct}`;
     else if(r.ptype===TDA){const pr=r.userPair;eq=pr?`${pr[0]} + ${pr[1]} = ${r.correct}`:`___ + ___ = ${r.correct}`;}
+    else if(r.ptype===TRA){const pr=r.userPair;eq=pr?`${pr[0]} + ${pr[1]} + ${pr[2]} = ${r.correct}`:`___ + ___ + ___ = ${r.correct}`;}
     else if(r.ptype===TDS){const pr=r.userPair;eq=pr?`${pr[0]} − ${pr[1]} = ${r.correct}`:`___ − ___ = ${r.correct}`;}
     else if(r.ptype===TC) eq=`🪙 ${(p.coins||[]).join(' + ')} = ${r.correct}`;
     else if(r.ptype===TT) eq=`${r.num1} ${(r.num1+r.num2===r.correct)?'+':'−'} ${r.num2} = ${r.correct}`;

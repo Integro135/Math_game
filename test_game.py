@@ -388,7 +388,8 @@ def correct_answer(state: dict) -> tuple:
     if p == state.get("TDA"):
         return ("td", 0, n1)          # 0 + n1 = n1
     if p == state.get("TDS"):
-        return ("td", n1, 0)          # n1 - 0 = n1
+        return ("td", n1 + 1, 1)      # (n1+1) − 1 = n1 (a real subtraction; the
+        #                               game rejects the lazy 'n1 − 0')
     if p == state.get("TC"):
         return ("single", n1)         # coin-counting: num1 holds the correct sum
     if p == state.get("TZ"):
@@ -913,6 +914,59 @@ class TestDoubleUnknown:
         assert consts["TDS"] in seen, \
             "TDS (x-x=R) exercise type never appeared across 4 game sessions"
 
+    def test_xx_sub_rejects_target_minus_zero_without_penalty(self, page):
+        """x−x=10: the lazy 'target − 0' (10 − 0) is CORRECT but not accepted — the
+        child must give a real subtraction. It costs no penalty (tryFirst/score
+        unchanged) and clears the boxes; a real pair (15 − 5) is then accepted for
+        full points."""
+        page.evaluate("mode='mx'; score=0; problems=[{t:TDS,r:10}]; idx=0; loadProblem()")
+        page.wait_for_selector("#ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        lazy = page.evaluate("""(() => {
+            document.getElementById('ans1').value='10';
+            document.getElementById('ans2').value='0'; checkAns();
+            return {done:done, tryFirst:tryFirst, score:score,
+                    fbErr:document.getElementById('fb').className.includes('fb-err'),
+                    cleared:document.getElementById('ans1').value===''};})()""")
+        assert lazy["done"] is False, f"'10 − 0' must not be accepted: {lazy}"
+        assert lazy["tryFirst"] == 0 and lazy["score"] == 0, f"no penalty for the lazy try: {lazy}"
+        assert lazy["fbErr"] and lazy["cleared"], f"feedback shown + boxes cleared: {lazy}"
+        # a real subtraction is accepted for FULL points (the lazy try wasn't a mistake)
+        real = page.evaluate("""(() => {
+            document.getElementById('ans1').value='15';
+            document.getElementById('ans2').value='5'; checkAns();
+            return {done:done, score:score, got:(report[0]||{}).gotCorrect||false};})()""")
+        assert real["done"] is True and real["got"] is True and real["score"] > 0, \
+            f"a real pair (15 − 5) must be accepted for points: {real}"
+
+    def test_tri_unknown_three_boxes_sum_to_target(self, page):
+        """x+x+x=R (TRA): three boxes __+__+__ = R. A wrong triple (5+5+3) is a
+        mistake; a right one (5+5+5=15) is accepted and the report stores the three
+        addends; the type appears in the Queen pool."""
+        page.evaluate("mode='mx'; score=0; problems=[{t:TRA,r:15}]; idx=0; loadProblem()")
+        page.wait_for_selector("#ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        for bid in ("ans1", "ans2", "ans3"):
+            assert page.locator("#" + bid).count() == 1, f"expected #{bid} box"
+        wrong = page.evaluate("""(() => {
+            document.getElementById('ans1').value='5';
+            document.getElementById('ans2').value='5';
+            document.getElementById('ans3').value='3'; checkAns();
+            return {done:done, tryFirst:tryFirst};})()""")
+        assert wrong["done"] is False and wrong["tryFirst"] == 1, f"5+5+3≠15 is a mistake: {wrong}"
+        page.wait_for_timeout(250)
+        right = page.evaluate("""(() => {
+            document.getElementById('ans1').value='5';
+            document.getElementById('ans2').value='5';
+            document.getElementById('ans3').value='5'; checkAns();
+            return {done:done, score:score, pair:(report[0]||{}).userPair||null};})()""")
+        assert right["done"] is True and right["score"] > 0, f"5+5+5=15 must be accepted: {right}"
+        assert right["pair"] == [5, 5, 5], f"report must store the three addends: {right}"
+        page.evaluate("setMode('mx')")
+        page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
+        inq = page.evaluate("(()=>{for(var k=0;k<10;k++){if(makeMxPool().some(p=>p.t===TRA))return true;}return false;})()")
+        assert inq, "the three-unknown (TRA) must appear in the Queen pool"
+
 
 # ─────────────────────────────────────────────────────────
 # Score and mode tests
@@ -990,10 +1044,10 @@ class TestGameFlow:
         # 5 fresh Queen sessions — each must satisfy the rule
         for session in range(5):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
             n = page.evaluate("problems.length")
-            assert n == 21, \
-                f"Session {session+1}: expected 21 mx problems, got {n}"
+            assert n == 22, \
+                f"Session {session+1}: expected 22 mx problems, got {n}"
             types = page.evaluate("[...problems].map(p => p.t)")
             for name, code in consts.items():
                 count = sum(1 for t in types if t == code)
@@ -1287,11 +1341,11 @@ class TestChainAndCoinAids:
         any_early_above_10 = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, b:p.b, c:p.c, r:p.r}))")
-            assert len(problems) == 21, \
-                f"makeMxPool must yield 21 problems (flat shuffle), got {len(problems)}"
+            assert len(problems) == 22, \
+                f"makeMxPool must yield 22 problems (flat shuffle), got {len(problems)}"
             consts = page.evaluate("({TA,TS,TM,TX,TZ,TW})")
             for p in problems[:5]:               # the former "phase 1" slots
                 ans = None
@@ -1314,9 +1368,9 @@ class TestChainAndCoinAids:
         Queen pool (chain TX/TZ/TW, TM, TS, TA, TDA/TDS, TT, TC, TBG)."""
         consts = page.evaluate("({TM,TS,TA,TX,TZ,TW,TDA,TDS,TC,TT,TBG})")
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
         types = page.evaluate("[...problems].map(p => p.t)")
-        assert len(types) == 21
+        assert len(types) == 22
         # chain family (TX/TZ/TW) must appear; each other type must appear ≥1
         chain = {consts["TX"], consts["TZ"], consts["TW"]}
         assert any(t in chain for t in types), "Chain problems must be present in mx"
@@ -1339,7 +1393,7 @@ class TestChainAndCoinAids:
         seen_small_first = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, r:p.r}))")
             for p in problems[-4:]:
@@ -1508,7 +1562,7 @@ class TestTensProblems:
 
         # TT now lives in 'mx' (מלכה) instead.
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
         ptypes = page.evaluate("[...problems].map(p => p.t)")
         assert sum(1 for t in ptypes if t == consts["TT"]) >= 1, \
             "Round-tens (TT) must now appear in the Queen (mx) game"
@@ -1530,7 +1584,7 @@ class TestTensProblems:
         # TT is wired only into 'mx' (data.js EXERCISE_INDEX), where tens.ex.js
         # make('mx') always emits exactly 2 TT problems -> _find_tt always hits.
         page.evaluate("setMode('mx')")
-        page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -1554,7 +1608,7 @@ class TestTensProblems:
         """TT problem: submitting the correct tens answer marks the problem done."""
         # TT lives only in 'mx'; tens.ex.js make('mx') always emits 2 TT problems.
         page.evaluate("setMode('mx')")
-        page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -1735,7 +1789,7 @@ class TestTryFirstScoring:
 
         for _ in range(10):                # 10 fresh Queen sessions
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
             problems = page.evaluate("problems")
             for i, p in enumerate(problems):
                 t = p["t"]
@@ -2385,7 +2439,7 @@ class TestBridgingMode:
         normalise it back to its base add/sub type to verify the curriculum."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         self._switch_br(page)
-        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ]
         assert probs == expected, (
             f"br problems deviate from the prescribed order.\n"
@@ -2400,7 +2454,7 @@ class TestBridgingMode:
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
                (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3, self.EXPECTED_SEQ_4)]
-        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])"
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch_br(page)
         seen = [page.evaluate(NORM)]
         for _ in range(4):
@@ -2413,18 +2467,19 @@ class TestBridgingMode:
         assert seen[4] == exp[0], "the following restart wraps back to set 1"
 
     def test_br_weaves_unknown_every_fourth(self, page):
-        """The one-unknown (TVA/TVS) type is woven into EVERY set — every 4th
-        problem (slots 4, 8, 12 …) is rendered as a shape-unknown, drawn from the
-        set's own exercises (so its a/b/answer is unchanged)."""
-        consts = page.evaluate("({TVA, TVS})")
-        TVA, TVS = consts["TVA"], consts["TVS"]
+        """An "unknown" exercise is woven into EVERY set at every 4th problem
+        (slots 4, 8, 12 …), cycling through the three kinds — one-unknown (TVA/TVS),
+        two-unknown, and the three-unknown sum (TRA). Drawn from the set's own
+        problems, so a/b/answer are unchanged; exactly one per four slots."""
+        consts = page.evaluate("({TVA, TVS, TRA})")
+        kinds = {consts["TVA"], consts["TVS"], consts["TRA"]}
         self._switch_br(page)
         for _ in range(4):                                  # check all four sets
             probs = page.evaluate("[...problems].map(p => p.t)")
             n = len(probs)
-            unk = [i for i, t in enumerate(probs) if t in (TVA, TVS)]
-            assert unk, f"every set must contain shape-unknowns, got none in {probs}"
-            # the unknown lands on EVERY 4th slot (idx 3,7,11…) → exactly one per four
+            unk = [i for i, t in enumerate(probs) if t in kinds]
+            assert unk, f"every set must contain woven-in unknowns, got none in {probs}"
+            # they land on EVERY 4th slot (idx 3,7,11…) → exactly one per four
             assert all((i + 1) % 4 == 0 for i in unk), f"unknowns must sit on 4th slots, got idx {unk}"
             assert len(unk) == n // 4, \
                 f"expected exactly one unknown per 4 (n={n} → {n//4}), got {len(unk)} at {unk}"
@@ -2514,7 +2569,7 @@ class TestBridgingMode:
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         self._switch_br(page)            # set 1
         self._reenter_br(page)           # set 2
-        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_2]
         assert probs == expected, (
             f"br set 2 deviates from the prescribed order.\n"
@@ -2535,7 +2590,7 @@ class TestBridgingMode:
         self._switch_br(page)            # set 1
         self._reenter_br(page)           # set 2
         self._reenter_br(page)           # set 3
-        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_3]
         assert probs == expected, (
             f"br set 3 deviates from the prescribed order.\n"
@@ -2547,7 +2602,7 @@ class TestBridgingMode:
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch_br(page); self._reenter_br(page); self._reenter_br(page)   # set 3
-        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         assert len(probs) == 15
         for t, a, b in probs:
             if t == TA:
@@ -2570,7 +2625,7 @@ class TestBridgingMode:
         self._switch_br(page)
         for _ in range(3):
             self._reenter_br(page)       # set 4
-        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_4]
         assert probs == expected, (
             f"br set 4 deviates from the prescribed order.\n"
@@ -2585,7 +2640,7 @@ class TestBridgingMode:
         self._switch_br(page)
         for _ in range(3):
             self._reenter_br(page)       # set 4
-        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         assert len(probs) == 15
         for t, a, b in probs:
             if t == TA:
@@ -2601,7 +2656,7 @@ class TestBridgingMode:
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
                (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3, self.EXPECTED_SEQ_4)]
-        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])"
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch_br(page)
         seen = [page.evaluate(NORM)]
         for _ in range(4):
@@ -2691,7 +2746,7 @@ class TestBridge20:
         # back to its base add/sub type to verify the curriculum order.
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         self._switch(page)
-        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.B20_SEQ]
         assert probs == expected, f"b20 order deviated.\nexpected={expected}\ngot={probs}"
 
@@ -2700,7 +2755,7 @@ class TestBridge20:
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch(page)
-        for t, a, b in page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])"):
+        for t, a, b in page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"):
             if t == TA:
                 assert a < 20 and b < 10 and 21 <= a + b <= 23, \
                     f"addition {a}+{b} must cross 20 by ≤3 (sum 21–23)"
@@ -2726,7 +2781,7 @@ class TestBridge20:
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp1 = [[consts[t], a, b] for t, a, b in self.B20_SEQ]
         exp2 = [[consts[t], a, b] for t, a, b in self.B20_SEQ_2]
-        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])"
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch(page)
         s1 = page.evaluate(NORM)
         page.evaluate("restart()"); page.wait_for_timeout(120)
@@ -2748,7 +2803,7 @@ class TestBridge20:
         TA, TS = consts["TA"], consts["TS"]
         self._switch(page)                          # set 1
         page.evaluate("restart()"); page.wait_for_timeout(120)   # → set 2
-        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t), p.a, p.b])")
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         expected = [[consts[t], a, b] for t, a, b in self.B20_SEQ_2]
         assert probs == expected, f"b20 set 2 order deviated.\nexpected={expected}\ngot={probs}"
         for t, a, b in probs:
@@ -2842,6 +2897,18 @@ class TestVarOneUnknown:
         br = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridgePool().some(p=>p.symA))return true;}return false;})()")
         assert br, "the bridges must weave in the TWO-unknown variant (symA)"
 
+    def test_bridges_weave_in_three_unknown(self, page):
+        """The three-unknown sum (TRA, __+__+__ = R) is woven into bridge-10 AND
+        bridge-20 as well (≈ once per set)."""
+        page.evaluate("setMode('br')")
+        page.wait_for_function("problems.length>0", timeout=TIMEOUT)
+        br = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridgePool().some(p=>p.t===TRA))return true;}return false;})()")
+        assert br, "bridge-10 must weave in the three-unknown (TRA)"
+        page.evaluate("setMode('b20')")
+        page.wait_for_function("problems.length>0", timeout=TIMEOUT)
+        b20 = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridge20Pool().some(p=>p.t===TRA))return true;}return false;})()")
+        assert b20, "bridge-20 must weave in the three-unknown (TRA)"
+
 
 # ─────────────────────────────────────────────────────────
 # Dynamic exercise-type loading (one file per type)
@@ -2880,7 +2947,7 @@ class TestDynamicExercises:
     def test_every_mode_builds_correct_pool_size(self, page):
         """Each mode's recipe produces its expected session length."""
         expected = {"5": 12, "10": 12, "20": 12, "'br'": 25, "'b20'": 15,
-                    "'mx'": 21, "'sup'": 18, "'big'": 12}
+                    "'mx'": 22, "'sup'": 18, "'big'": 12}
         for arg, size in expected.items():
             page.evaluate(f"setMode({arg})")
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)
@@ -3604,7 +3671,7 @@ class TestColumnSubtraction:
         seen_any = False
         for _ in range(6):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 21", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "mx must contain ≥1 column-subtraction problem"
