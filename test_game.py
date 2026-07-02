@@ -388,8 +388,12 @@ def correct_answer(state: dict) -> tuple:
     if p == state.get("TDA"):
         return ("td", 0, n1)          # 0 + n1 = n1
     if p == state.get("TDS"):
-        return ("td", n1 + 1, 1)      # (n1+1) − 1 = n1 (a real subtraction; the
-        #                               game rejects the lazy 'n1 − 0')
+        # a real subtraction the game accepts: subtrahend ≥ 1 and minuend ≠ 10
+        # (the game rejects a minuend of 10 or a subtrahend of 0)
+        sub = 2
+        while n1 + sub == 10:
+            sub += 1
+        return ("td", n1 + sub, sub)  # (n1+sub) − sub = n1
     if p == state.get("TC"):
         return ("single", n1)         # coin-counting: num1 holds the correct sum
     if p == state.get("TZ"):
@@ -652,7 +656,10 @@ class TestReport:
         if state["ptype"] == state["TDA"]:
             v1, v2 = (r - 1 if r >= 1 else 0), (1 if r >= 1 else 0)
         else:
-            v1, v2 = r + 1, 1          # (r+1) − 1 = r
+            sub = 2                     # (r+sub) − sub = r; avoid a minuend of 10
+            while r + sub == 10:
+                sub += 1
+            v1, v2 = r + sub, sub
 
         page.fill("#ans1", str(v1))
         page.fill("#ans2", str(v2))
@@ -966,6 +973,29 @@ class TestDoubleUnknown:
         page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
         inq = page.evaluate("(()=>{for(var k=0;k<10;k++){if(makeMxPool().some(p=>p.t===TRA))return true;}return false;})()")
         assert inq, "the three-unknown (TRA) must appear in the Queen pool"
+
+    def test_xx_sub_rejects_minuend_of_ten(self, page):
+        """x−x=9: the rote '10 − 1' (a minuend of 10) is correct but NOT accepted —
+        the child must use a different minuend. No penalty; a real pair (13 − 4)
+        then passes for points."""
+        page.evaluate("mode='mx'; score=0; problems=[{t:TDS,r:9}]; idx=0; loadProblem()")
+        page.wait_for_selector("#ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        lazy = page.evaluate("""(() => {
+            document.getElementById('ans1').value='10';
+            document.getElementById('ans2').value='1'; checkAns();
+            return {done:done, tryFirst:tryFirst, score:score,
+                    fbErr:document.getElementById('fb').className.includes('fb-err'),
+                    cleared:document.getElementById('ans1').value===''};})()""")
+        assert lazy["done"] is False, f"'10 − 1' (minuend 10) must not be accepted: {lazy}"
+        assert lazy["tryFirst"] == 0 and lazy["score"] == 0, f"no penalty for the rote try: {lazy}"
+        assert lazy["fbErr"] and lazy["cleared"], f"feedback shown + boxes cleared: {lazy}"
+        real = page.evaluate("""(() => {
+            document.getElementById('ans1').value='13';
+            document.getElementById('ans2').value='4'; checkAns();
+            return {done:done, score:score, got:(report[0]||{}).gotCorrect||false};})()""")
+        assert real["done"] is True and real["got"] is True and real["score"] > 0, \
+            f"a real pair (13 − 4 = 9) must be accepted for points: {real}"
 
 
 # ─────────────────────────────────────────────────────────

@@ -580,11 +580,12 @@ function checkAns(){
     const valid=ptype===TDA?v1+v2===num1
                :ptype===TRA?(v1+v2+v3===num1&&v1>=0&&v2>=0&&v3>=0)
                :v1-v2===num1&&v1>=0&&v2>=0;
-    // x−x: block the lazy "target − 0" (e.g. 10 − 0) — the computation is right,
-    // but subtracting nothing is too easy. Ask for a real subtraction with a
-    // non-zero number, WITHOUT a penalty (it isn't a mistake).
-    if(ptype===TDS&&valid&&v2===0){
-      setFb(`נָכוֹן, אֲבָל ${num1} פָּחוֹת 0 קַל מִדַּי — בְּלִי לְחַסֵּר 0, תְּנִי מִסְפָּר אַחֵר 💪`,'fb-err');
+    // x−x: block the lazy shortcuts — starting from a MINUEND of 10 ("10 − …", the
+    // rote pattern the child overuses) OR subtracting 0. The computation is right,
+    // but it isn't real practice, so ask for other numbers WITHOUT a penalty.
+    if(ptype===TDS&&valid&&(v1===10||v2===0)){
+      const why=v1===10?'בְּלִי לְהַתְחִיל מ-10':'בְּלִי לְחַסֵּר 0';
+      setFb(`נָכוֹן! אֲבָל ${why} — תְּנִי מִסְפָּרִים אֲחֵרִים כְּדֵי לְתַרְגֵּל 💪`,'fb-err');
       if(i1)i1.value='';if(i2)i2.value='';
       setTimeout(()=>document.getElementById('ans1')?.focus(),150);
       return;
