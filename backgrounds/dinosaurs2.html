@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosaurs v2 — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the DINOSAURS v2 background module.
+     The actual scene lives in dinosaurs2.bg.js — the SAME file the game
+     would load dynamically (single source of truth, no copy-porting).
+     Open this file directly to iterate on the background in isolation.
+     Add ?gallery to the URL (or click Gallery) for a static art line-up.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #2a1a3d; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  .hbtn {
+    position: fixed; bottom: 24px; z-index: 10;
+    padding: 9px 22px;
+    background: rgba(48, 24, 14, 0.5);
+    color: rgba(255, 226, 180, 0.92);
+    border: 1px solid rgba(255, 185, 105, 0.35);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(20, 5, 4, 0.45);
+    transition: background .25s, box-shadow .25s, transform .15s;
+  }
+  .hbtn:hover {
+    background: rgba(110, 60, 25, 0.6);
+    box-shadow: 0 4px 24px rgba(255, 170, 90, 0.25);
+    transform: translateY(-1px);
+  }
+  #toggle { right: 24px; }
+  #gallery { right: 140px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="toggle" class="hbtn">Restart</button>
+<button id="gallery" class="hbtn">Gallery</button>
+<script src="dinosaurs2.bg.js"></script>
+<script>
+let cleanup = null;
+function start() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.dinosaurs2.init({ stage: document.getElementById('stage') });
+}
+function gallery() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.dinosaurs2.gallery({ stage: document.getElementById('stage') });
+}
+document.getElementById('toggle').addEventListener('click', start);
+document.getElementById('gallery').addEventListener('click', gallery);
+if (location.search.indexOf('gallery') >= 0) gallery(); else start();
+</script>
+</body>
+</html>

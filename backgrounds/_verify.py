@@ -15,14 +15,19 @@ from playwright.sync_api import sync_playwright
 THEME    = "girls"
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False                   # hide the .wrap game card (background-only shots)
-STANDALONE = r""   # '' = load the game; else load this page raw (skip theme)
-VIEW     = {"width": 900, "height": 700}   # viewport
-EVAL      = "try{setMode(10);problems=[{t:TDA,r:10}];idx=0;loadProblem();if(typeof toggleAidMode==='function'&&aidMode!=='nl'){toggleAidMode('nl');}'setup aid='+aidMode+' ptype='+ptype+' num1='+num1;}catch(e){'ERR '+e.message;}"
-POST_EVAL = "try{var a=document.getElementById('ans1');a.value='6';a.dispatchEvent(new Event('input',{bubbles:true}));'aid='+aidMode+' pgmCV='+pgmCV+' ans1='+a.value+' jarKids='+(document.getElementById('pgm-ck-jar')||{}).childElementCount;}catch(e){'ERR '+e.message;}"
+STANDALONE = r"c:\tmp\rumi_hair\gallery.html"
+VIEW     = {"width": 2100, "height": 880}   # viewport
+EVAL      = ""
+POST_EVAL = ""
 CLICKS   = []                      # list of [xFrac, yFrac] doc clicks, e.g. [[0.5,0.9]]
-WAIT_MS  = 900
+WAIT_MS  = 1500
 SHOTS    = [
-    {"path": r"c:\tmp\dino_game.png", "clip": None},
+    {"path": r"c:\tmp\rumi_hair\gallery.png", "clip": None},
+    {"path": r"c:\tmp\rumi_hair\close_base.png", "clip": {"x": 48,   "y": 60, "width": 330, "height": 520}},
+    {"path": r"c:\tmp\rumi_hair\close_A.png",    "clip": {"x": 466,  "y": 60, "width": 330, "height": 520}},
+    {"path": r"c:\tmp\rumi_hair\close_B.png",    "clip": {"x": 884,  "y": 60, "width": 330, "height": 520}},
+    {"path": r"c:\tmp\rumi_hair\close_C.png",    "clip": {"x": 1302, "y": 60, "width": 330, "height": 520}},
+    {"path": r"c:\tmp\rumi_hair\close_D.png",    "clip": {"x": 1720, "y": 60, "width": 330, "height": 520}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

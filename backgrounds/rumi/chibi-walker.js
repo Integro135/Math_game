@@ -71,156 +71,160 @@
   'use strict';
 
   /* ---- the character art: ONE copy (hearts & opaque background removed,
-         viewBox tightened around the figure so positioning is exact) ---- */
+         viewBox tightened around the figure so positioning is exact).
+         2026-07 redesign (see rumi.html): purple bubble ponytail + swirled updo,
+         purple-iris eyes, yellow bomber jacket with patches over a white tee +
+         pendant, baggy purple pants, white sneakers with pink soles. ---- */
   var SVG_MARKUP =
-'<svg class="chibi-svg" viewBox="150 170 300 900" xmlns="http://www.w3.org/2000/svg">' +
+'<svg class="chibi-svg" viewBox="150 140 300 930" xmlns="http://www.w3.org/2000/svg">' +
 '<g transform="translate(300,540) scale(1.10) translate(-300,-540) translate(0,18)" stroke="#000000" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round" fill="none">' +
 
-  /* HAIR behind face — side frame locks */
-  '<path fill="#a83fce" d="M222 300 C198,316 186,352 192,398 C195,424 206,446 222,456 C216,422 212,366 230,322 Z"/>' +
-  '<path fill="#a83fce" d="M378 300 C402,316 414,352 408,398 C405,424 394,446 378,456 C384,422 388,366 370,322 Z"/>' +
+  /* PONYTAIL TOP BUBBLE (behind the head — the chain gathers from the updo) */
+  '<ellipse cx="210" cy="326" rx="40" ry="46" fill="#ad5fd6"/>' +
+  '<path d="M232 296 C242,312 243,340 233,356" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
 
-  /* BRAID on viewer-left (drawn first so head + arm occlude the middle) */
-  '<g>' +
-    '<path fill="#a83fce" d="M232 300 C198,312 172,350 172,402 C172,456 190,502 210,538 C234,582 250,620 252,668 C254,712 252,752 248,786 C245,812 240,830 236,846 L266,852 C270,828 274,800 276,762 C279,712 277,660 270,612 C262,560 248,520 234,486 C218,452 210,418 214,386 C217,358 230,334 246,318 C242,310 237,304 232,300 Z"/>' +
-    '<path d="M180 425 C192,432 206,430 212,420" stroke-width="2.6"/>' +
-    '<path d="M210 510 C222,518 234,516 240,506" stroke-width="2.6"/>' +
-    '<path d="M242 585 C254,593 264,591 268,581" stroke-width="2.8"/>' +
-    '<path d="M250 655 C262,663 270,661 274,651" stroke-width="2.8"/>' +
-    '<path d="M250 722 C260,730 268,728 273,718" stroke-width="2.8"/>' +
-    '<path d="M247 786 C257,793 265,791 271,781" stroke-width="2.8"/>' +
-    '<path fill="#efc14b" d="M236 846 L266 852 L261 870 L241 864 Z"/>' +
-    '<path fill="#efc14b" d="M241 864 C235,883 241,901 250,904 C260,901 265,883 261,870 Z"/>' +
-    '<path d="M247 875 C246,887 248,898 250,903" stroke="#c79a2e" stroke-width="1.8" fill="none"/>' +
-    '<path d="M254 875 C255,887 253,898 250,903" stroke="#c79a2e" stroke-width="1.8" fill="none"/>' +
-  '</g>' +
+  /* HAIR behind face — side frame locks */
+  '<path fill="#ad5fd6" d="M222 300 C198,316 186,352 192,398 C195,424 206,446 222,456 C216,422 212,366 230,322 Z"/>' +
+  '<path fill="#ad5fd6" d="M378 300 C402,316 414,352 408,398 C405,424 394,446 378,456 C384,422 388,366 370,322 Z"/>' +
 
   /* FACE */
-  '<path fill="#f7c9c1" stroke-width="3.6" d="M300 250 C246,250 214,286 214,346 C214,402 234,444 268,460 C282,467 318,467 332,460 C366,444 386,402 386,346 C386,286 354,250 300,250 Z"/>' +
+  '<path fill="#f8d5c2" stroke-width="3.6" d="M300 250 C246,250 214,286 214,346 C214,402 234,444 268,460 C282,467 318,467 332,460 C366,444 386,402 386,346 C386,286 354,250 300,250 Z"/>' +
 
-  /* HAIRLINE — side locks + central band */
-  '<path fill="#a83fce" d="M224 316 C210,322 202,360 208,402 C212,430 220,452 232,462 C226,428 222,372 234,332 C230,326 226,322 224,316 Z"/>' +
-  '<path fill="#a83fce" d="M376 316 C390,322 398,360 392,400 C388,426 380,446 370,454 C376,422 380,372 368,332 C370,326 374,322 376,316 Z"/>' +
-  '<path fill="#a83fce" d="M226 312 C248,288 268,279 288,279 C293,290 307,290 312,279 C332,279 352,288 374,312 C348,300 324,296 300,300 C276,296 252,300 226,312 Z"/>' +
+  /* HAIRLINE — pointed sideburn locks in front of the ears */
+  '<path fill="#ad5fd6" d="M224 316 C210,322 202,360 208,402 C212,430 220,452 232,462 C226,428 222,372 234,332 C230,326 226,322 224,316 Z"/>' +
+  '<path fill="#ad5fd6" d="M376 316 C390,322 398,360 392,400 C388,426 380,446 370,454 C376,422 380,372 368,332 C370,326 374,322 376,316 Z"/>' +
 
-  /* TOP BUN — lowered pompadour + seams */
-  '<path fill="#a83fce" d="M236 311 C210,300 196,272 204,244 C211,219 232,204 256,202 C274,202 286,211 292,222 C295,218 297,215 300,215 C303,215 305,218 308,222 C314,211 326,202 344,202 C368,204 392,220 398,246 C405,274 392,302 366,313 C340,304 320,300 300,300 C278,300 260,304 236,311 Z"/>' +
-  '<path fill="#a83fce" d="M300 296 C293,282 280,269 273,255 C264,239 262,218 277,206 C286,199 297,201 300,211 C303,201 314,199 323,206 C338,218 336,239 327,255 C320,269 307,282 300,296 Z"/>' +
-  '<path d="M300 211 C296,233 297,264 300,288" stroke="#7d2ea8" stroke-width="3" fill="none"/>' +
-  '<path d="M283 218 C277,237 280,265 293,288" stroke="#7d2ea8" stroke-width="2.2" fill="none"/>' +
-  '<path d="M317 218 C323,237 320,265 307,288" stroke="#7d2ea8" stroke-width="2.2" fill="none"/>' +
-  '<path d="M242 227 C226,250 224,278 240,304" stroke="#7d2ea8" stroke-width="2.4" fill="none"/>' +
-  '<path d="M264 218 C250,240 250,269 264,299" stroke="#7d2ea8" stroke-width="2" fill="none"/>' +
-  '<path d="M358 226 C374,250 376,278 360,306" stroke="#7d2ea8" stroke-width="2.4" fill="none"/>' +
-  '<path d="M336 218 C350,240 350,269 336,299" stroke="#7d2ea8" stroke-width="2" fill="none"/>' +
+  /* UPDO — swirled quiff dome (bottom edge dips to a widow\'s peak at 300,312) + flick + swirl seams */
+  '<path fill="#ad5fd6" d="M236 311 C204,298 190,268 198,238 C206,206 234,184 270,178 C290,175 310,176 326,181 C356,190 384,212 394,240 C403,268 394,298 366,313 C342,302 318,300 300,312 C282,300 258,302 236,311 Z"/>' +
+  '<path fill="#ad5fd6" d="M278 182 C262,164 234,158 216,172 C236,170 254,178 264,194 C268,188 273,184 278,182 Z"/>' +
+  '<path d="M240 302 C228,268 244,230 278,218" stroke="#8138ad" stroke-width="2.6" fill="none"/>' +
+  '<path d="M304 298 C300,260 318,228 350,220" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
+  '<path d="M368 306 C380,274 372,238 342,214" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+  '<path d="M262 214 C268,200 282,192 296,194" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
 
-  /* EARS + earrings */
-  '<ellipse cx="215" cy="402" rx="9" ry="13" fill="#f7c9c1"/>' +
-  '<path d="M212 396 C208,400 208,408 211,412" stroke-width="2" fill="none"/>' +
-  '<ellipse cx="385" cy="402" rx="9" ry="13" fill="#f7c9c1"/>' +
-  '<path d="M388 396 C392,400 392,408 389,412" stroke-width="2" fill="none"/>' +
-  '<ellipse cx="214" cy="423" rx="8" ry="12" fill="none" stroke="#efc14b" stroke-width="5"/>' +
-  '<ellipse cx="386" cy="423" rx="8" ry="12" fill="none" stroke="#efc14b" stroke-width="5"/>' +
+  /* EYEBROWS — dark purple, filled + tapered, confident arch */
+  '<path fill="#5a2382" stroke="none" d="M227 343 C235,331 252,326 274,332 C275,335 274,338 272,337 C253,332 240,336 231,345 C229,346 227,345 227,343 Z"/>' +
+  '<path fill="#5a2382" stroke="none" d="M373 343 C365,331 348,326 326,332 C325,335 326,338 328,337 C347,332 360,336 369,345 C371,346 373,345 373,343 Z"/>' +
 
-  /* EYEBROWS */
-  '<path d="M224 335 C236,325 256,325 270,331" stroke-width="3.4"/>' +
-  '<path d="M330 331 C344,325 364,325 376,335" stroke-width="3.4"/>' +
-
-  /* EYES + highlights + lashes (animated: blink) */
+  /* EYES (animated: blink) — anime style: big two-tone purple iris nearly filling the
+     eye, inner glow, deep pupil, big highlight + sparkle, HEAVY top lid clipping the
+     iris top (the confident look) + outer lash flicks */
   '<g class="chibi-eyes">' +
-    '<ellipse cx="252" cy="378" rx="29" ry="30" fill="#1a1a1a" stroke-width="2.5"/>' +
-    '<ellipse cx="348" cy="378" rx="29" ry="30" fill="#1a1a1a" stroke-width="2.5"/>' +
-    '<circle cx="245" cy="367" r="11" fill="#ffffff" stroke="none"/>' +
-    '<circle cx="260" cy="392" r="5.5" fill="#ffffff" stroke="none"/>' +
-    '<circle cx="341" cy="367" r="11" fill="#ffffff" stroke="none"/>' +
-    '<circle cx="356" cy="392" r="5.5" fill="#ffffff" stroke="none"/>' +
-    '<path d="M226 356 C222,349 218,346 214,346" stroke-width="2.6" fill="none"/>' +
-    '<path d="M236 351 C233,344 229,341 225,341" stroke-width="2.4" fill="none"/>' +
-    '<path d="M246 349 C244,343 241,340 238,340" stroke-width="2.2" fill="none"/>' +
-    '<path d="M374 356 C378,349 382,346 386,346" stroke-width="2.6" fill="none"/>' +
-    '<path d="M364 351 C367,344 371,341 375,341" stroke-width="2.4" fill="none"/>' +
-    '<path d="M354 349 C356,343 359,340 362,340" stroke-width="2.2" fill="none"/>' +
+    '<ellipse cx="252" cy="383" rx="30" ry="28" fill="#ffffff" stroke-width="2.2"/>' +
+    '<ellipse cx="348" cy="383" rx="30" ry="28" fill="#ffffff" stroke-width="2.2"/>' +
+    '<circle cx="253" cy="385" r="23" fill="#7a44b4" stroke="#46216e" stroke-width="2.2"/>' +
+    '<circle cx="347" cy="385" r="23" fill="#7a44b4" stroke="#46216e" stroke-width="2.2"/>' +
+    '<circle cx="253" cy="392" r="15" fill="#b183e6" stroke="none"/>' +
+    '<circle cx="347" cy="392" r="15" fill="#b183e6" stroke="none"/>' +
+    '<circle cx="253" cy="385" r="9.5" fill="#2b1246" stroke="none"/>' +
+    '<circle cx="347" cy="385" r="9.5" fill="#2b1246" stroke="none"/>' +
+    '<circle cx="245" cy="374" r="7" fill="#ffffff" stroke="none"/>' +
+    '<circle cx="263" cy="397" r="3.4" fill="#ffffff" stroke="none"/>' +
+    '<circle cx="339" cy="374" r="7" fill="#ffffff" stroke="none"/>' +
+    '<circle cx="357" cy="397" r="3.4" fill="#ffffff" stroke="none"/>' +
+    '<path d="M222 372 C232,359 272,358 282,369" stroke-width="7" fill="none"/>' +
+    '<path d="M318 369 C328,358 368,359 378,372" stroke-width="7" fill="none"/>' +
+    '<path d="M223 370 C217,365 213,359 211,352" stroke-width="2.8" fill="none"/>' +
+    '<path d="M229 363 C225,358 223,353 222,348" stroke-width="2.4" fill="none"/>' +
+    '<path d="M377 370 C383,365 387,359 389,352" stroke-width="2.8" fill="none"/>' +
+    '<path d="M371 363 C375,358 377,353 378,348" stroke-width="2.4" fill="none"/>' +
   '</g>' +
 
-  /* BLUSH */
-  '<ellipse cx="250" cy="424" rx="15" ry="9" fill="#f3a3ad" opacity="0.85" stroke="none"/>' +
-  '<ellipse cx="350" cy="424" rx="15" ry="9" fill="#f3a3ad" opacity="0.85" stroke="none"/>' +
-
-  /* MOUTH */
-  '<path d="M283 420 C291,434 309,434 317,420" stroke-width="3" fill="none"/>' +
+  /* MOUTH — small smirk */
+  '<path d="M287 422 C296,431 309,430 315,419" stroke-width="3" fill="none"/>' +
 
   /* NECK */
-  '<path fill="#f7c9c1" d="M280 458 C280,474 279,486 276,496 L324,496 C321,486 320,474 320,458 Z"/>' +
+  '<path fill="#f8d5c2" d="M280 458 C280,474 279,486 276,496 L324,496 C321,486 320,474 320,458 Z"/>' +
 
-  /* ARMS (animated at the shoulder) */
-  '<g class="arm-l"><path fill="#f7c9c1" d="M262 505 C246,506 234,518 229,540 C224,562 222,588 222,614 C222,632 223,646 225,656 C219,662 215,672 216,682 C217,694 226,700 236,698 C245,696 251,690 251,680 C254,684 259,682 260,675 C261,667 257,659 251,658 C252,640 253,612 254,588 C255,560 256,532 258,514 C259,508 268,504 262,505 Z"/></g>' +
-  '<g class="arm-r"><path fill="#f7c9c1" d="M338 505 C354,506 366,518 371,540 C376,562 378,588 378,614 C378,632 377,646 375,656 C381,662 385,672 384,682 C383,694 374,700 364,698 C355,696 349,690 349,680 C346,684 341,682 340,675 C339,667 343,659 349,658 C348,640 347,612 346,588 C345,560 344,532 342,514 C341,508 332,504 338,505 Z"/>' +
+  /* ARMS (animated at the shoulder): yellow bomber sleeve + dark cuff + skin mitten hand */
+  '<g class="arm-l">' +
+    '<path fill="#f4c142" d="M262 500 C236,500 216,516 211,542 C206,566 204,595 205,620 C205,632 206,641 208,648 L246,650 C246,626 248,560 252,512 C254,504 264,498 262,500 Z"/>' +
+    '<path d="M224 560 C221,580 220,600 221,618" stroke="#d99e2b" stroke-width="2.2" fill="none"/>' +
+    '<path fill="#423a45" d="M207 646 L247 648 L245 668 L210 666 Z"/>' +
+    '<path fill="#f8d5c2" d="M213 666 C206,671 202,680 203,690 C204,701 213,707 223,705 C232,703 238,697 238,688 C241,692 246,690 247,683 C248,675 244,668 239,667 Z"/>' +
+  '</g>' +
+  '<g class="arm-r">' +
+    '<path fill="#f4c142" d="M338 500 C364,500 384,516 389,542 C394,566 396,595 395,620 C395,632 394,641 392,648 L354,650 C354,626 352,560 348,512 C346,504 336,498 338,500 Z"/>' +
+    '<path d="M376 560 C379,580 380,600 379,618" stroke="#d99e2b" stroke-width="2.2" fill="none"/>' +
+    '<path fill="#423a45" d="M393 646 L353 648 L355 668 L390 666 Z"/>' +
+    '<path fill="#f8d5c2" d="M387 666 C394,671 398,680 397,690 C396,701 387,707 377,705 C368,703 362,697 362,688 C359,692 354,690 353,683 C352,675 356,668 361,667 Z"/>' +
   '</g>' +
 
-  /* TOP — white halter crop + gem */
-  '<path fill="#ffffff" d="M300 496 C284,496 271,501 263,511 C256,521 252,539 251,561 C250,585 252,614 257,636 L343,636 C348,614 350,585 349,561 C348,539 344,521 337,511 C329,501 316,496 300,496 Z"/>' +
-  '<path d="M285 495 C292,487 308,487 315,495" stroke-width="3" fill="none"/>' +
-  '<path fill="#efc14b" d="M300 500 L308 511 L300 522 L292 511 Z"/>' +
-  '<path d="M300 522 L300 530" stroke-width="2.2" fill="none"/>' +
+  /* TEE (white-pink strip in the jacket opening) + NECKLACE + pendant */
+  '<path fill="#f7edf0" d="M300 494 C288,494 279,498 273,505 L272,676 L328,676 L327,505 C321,498 312,494 300,494 Z"/>' +
+  '<path d="M285 502 C292,509 308,509 315,502" stroke-width="2.6" fill="none"/>' +
+  '<path d="M286 504 C292,522 296,534 300,540" stroke-width="2" fill="none"/>' +
+  '<path d="M314 504 C308,522 304,534 300,540" stroke-width="2" fill="none"/>' +
+  '<circle cx="300" cy="548" r="9.5" fill="#eef2f6" stroke-width="2.5"/>' +
+  '<circle cx="300" cy="548" r="5" fill="none" stroke="#8e98a4" stroke-width="2"/>' +
 
-  /* MIDRIFF */
-  '<path fill="#f7c9c1" stroke="none" d="M256 654 L344 654 L344 636 L256 636 Z"/>' +
-  '<path d="M256 636 L256 656" stroke-width="3.6" fill="none"/>' +
-  '<path d="M344 636 L344 656" stroke-width="3.6" fill="none"/>' +
+  /* JACKET — yellow bomber panels (open front) + dark collar + chest patches */
+  '<path fill="#f4c142" d="M291 496 C268,495 250,501 243,512 C237,521 234,538 233,558 C232,588 236,624 242,652 C244,663 249,669 257,670 L283,670 C280,644 278,598 279,556 C280,528 283,508 291,496 Z"/>' +
+  '<path fill="#f4c142" d="M309 496 C332,495 350,501 357,512 C363,521 366,538 367,558 C368,588 364,624 358,652 C356,663 351,669 343,670 L317,670 C320,644 322,598 321,556 C320,528 317,508 309,496 Z"/>' +
+  '<path fill="#423a45" d="M279 500 C288,483 312,483 321,500 L313,509 C306,498 294,498 287,509 Z"/>' +
+  '<path fill="#2e2a33" stroke-width="2.5" d="M250 546 L279 542 L281 562 L252 566 Z"/>' +
+  '<path d="M256 552 L274 549" stroke="#e34b4b" stroke-width="2.6" fill="none"/>' +
+  '<path d="M257 559 L272 556" stroke="#e34b4b" stroke-width="2.6" fill="none"/>' +
+  '<path fill="#23262e" stroke-width="2.5" d="M328 538 C341,531 354,538 357,551 C360,565 352,578 339,579 C328,580 321,570 322,557 C323,547 324,542 328,538 Z"/>' +
+  '<path d="M330 552 C335,545 342,545 346,551" stroke="#e34b4b" stroke-width="3" fill="none"/>' +
+  '<path d="M332 563 C338,569 346,568 350,561" stroke="#35b8c9" stroke-width="3" fill="none"/>' +
+  '<path d="M340 546 C344,552 344,560 340,566" stroke="#3a6ff0" stroke-width="2.6" fill="none"/>' +
 
-  /* SHORTS — white + gold belt + sash */
-  '<path fill="#ffffff" d="M254 654 C252,684 252,712 258,730 C262,740 274,742 290,740 L300 712 L310 740 C326,742 338,740 342,730 C348,712 348,684 346,654 Z"/>' +
-  '<path fill="#efc14b" d="M254 652 L346 652 L346 670 L254 670 Z"/>' +
-  '<rect x="292" y="654" width="16" height="14" fill="#efc14b" stroke="#000000" stroke-width="2.5"/>' +
-  '<path fill="#efc14b" d="M258 678 L346 710 L346 724 L258 692 Z"/>' +
-  '<path fill="#efc14b" d="M336 704 L348 709 L344 730 L332 724 Z"/>' +
+  /* PONYTAIL FRONT — bubbles 2-5 + rounded tail tip, IN FRONT of the sleeve (like the reference) */
+  '<g>' +
+    '<ellipse cx="196" cy="412" rx="31" ry="40" fill="#ad5fd6"/>' +
+    '<ellipse cx="198" cy="488" rx="29" ry="36" fill="#ad5fd6"/>' +
+    '<ellipse cx="203" cy="556" rx="26" ry="31" fill="#ad5fd6"/>' +
+    '<ellipse cx="209" cy="614" rx="22" ry="26" fill="#ad5fd6"/>' +
+    '<path fill="#ad5fd6" d="M195 620 C186,660 194,702 220,740 C228,748 236,740 233,726 C227,690 222,654 214,626 Z"/>' +
+    '<path d="M215 386 C223,400 224,424 216,438" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
+    '<path d="M217 466 C224,478 225,500 218,514" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path d="M222 536 C228,546 229,564 223,576" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path d="M224 598 C229,606 229,620 224,630" stroke="#8138ad" stroke-width="2" fill="none"/>' +
+    '<path d="M216 652 C222,676 224,700 220,720" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+  '</g>' +
 
-  /* LEGS (animated at the hip): thigh + boot + sole + cuff + laces + eyelets */
+  /* EARS (after the ponytail: viewer-left ear + silver hoop sit in front of the braid) */
+  '<ellipse cx="215" cy="402" rx="9" ry="13" fill="#f8d5c2"/>' +
+  '<path d="M212 396 C208,400 208,408 211,412" stroke-width="2" fill="none"/>' +
+  '<ellipse cx="385" cy="402" rx="9" ry="13" fill="#f8d5c2"/>' +
+  '<path d="M388 396 C392,400 392,408 389,412" stroke-width="2" fill="none"/>' +
+  '<ellipse cx="214" cy="421" rx="6.5" ry="9.5" fill="none" stroke="#9aa3b0" stroke-width="4.5"/>' +
+
+  /* PANTS — baggy light-purple hip block + waistband + pocket seams */
+  '<path fill="#b18ad8" d="M246 670 C242,698 242,722 247,746 L353,746 C358,722 358,698 354,670 Z"/>' +
+  '<path fill="#bfa0e4" stroke-width="3" d="M246 668 L354 668 L353 681 L247 681 Z"/>' +
+  '<path d="M258 692 C266,708 275,718 286,724" stroke="#8659b8" stroke-width="2.6" fill="none"/>' +
+  '<path d="M342 692 C334,708 325,718 314,724" stroke="#8659b8" stroke-width="2.6" fill="none"/>' +
+
+  /* LEGS (animated at the hip): baggy pant leg + ankle cuff + white sneaker + pink sole */
   '<g class="leg-l">' +
-    '<path fill="#f7c9c1" d="M268 738 C266,762 266,788 270,806 L300 806 L300 738 Z"/>' +
-    '<path fill="#ffffff" d="M268 802 C265,846 263,930 265,962 C266,977 273,985 287,985 C301,985 307,977 307,962 C307,918 306,846 304,802 Z"/>' +
-    '<path fill="#efc14b" d="M263 966 C265,981 273,989 287,989 C301,989 307,980 307,966 C300,975 272,975 263,966 Z"/>' +
-    '<path d="M266 812 C280,817 292,817 306,812" stroke-width="3" fill="none"/>' +
-    '<g stroke="#efc14b" stroke-width="3.2" fill="none">' +
-      '<line x1="272" y1="820" x2="300" y2="820"/><line x1="271" y1="838" x2="301" y2="838"/>' +
-      '<line x1="270" y1="858" x2="302" y2="858"/><line x1="269" y1="878" x2="302" y2="878"/>' +
-      '<line x1="268" y1="898" x2="303" y2="898"/><line x1="268" y1="916" x2="303" y2="916"/>' +
-    '</g>' +
-    '<g fill="#efc14b" stroke="none">' +
-      '<circle cx="271" cy="820" r="2.3"/><circle cx="301" cy="820" r="2.3"/>' +
-      '<circle cx="270" cy="838" r="2.3"/><circle cx="302" cy="838" r="2.3"/>' +
-      '<circle cx="269" cy="858" r="2.3"/><circle cx="303" cy="858" r="2.3"/>' +
-      '<circle cx="269" cy="878" r="2.3"/><circle cx="303" cy="878" r="2.3"/>' +
-      '<circle cx="268" cy="898" r="2.3"/><circle cx="304" cy="898" r="2.3"/>' +
-      '<circle cx="268" cy="916" r="2.3"/><circle cx="304" cy="916" r="2.3"/>' +
-    '</g>' +
+    '<path fill="#b18ad8" d="M248 740 C241,780 239,828 244,878 C246,902 250,916 254,926 L306,926 C307,906 308,868 307,824 C306,790 306,762 305,740 Z"/>' +
+    '<path d="M266 782 C263,822 263,864 265,906" stroke="#8659b8" stroke-width="2.2" fill="none"/>' +
+    '<path fill="#a37fd0" stroke-width="3" d="M258 924 L304 924 L301 944 L262 944 Z"/>' +
+    '<path fill="#ffffff" d="M261 940 C254,951 253,963 257,971 L307,971 C311,963 310,951 305,941 C291,934 273,934 261,940 Z"/>' +
+    '<path d="M294 946 C302,950 307,957 308,964" stroke-width="2.2" fill="none"/>' +
+    '<path d="M269 948 L297 948" stroke="#d7dce2" stroke-width="3" fill="none"/>' +
+    '<path d="M268 958 L298 958" stroke="#d7dce2" stroke-width="3" fill="none"/>' +
+    '<path fill="#f2a9c0" d="M253 966 C253,980 261,989 282,989 C302,989 312,980 312,966 C300,976 264,976 253,966 Z"/>' +
   '</g>' +
   '<g class="leg-r">' +
-    '<path fill="#f7c9c1" d="M332 738 C334,762 334,788 330,806 L300 806 L300 738 Z"/>' +
-    '<path fill="#ffffff" d="M296 802 C294,846 293,918 293,962 C293,977 299,985 313,985 C327,985 334,977 335,962 C337,930 335,846 332,802 Z"/>' +
-    '<path fill="#efc14b" d="M293 966 C293,980 299,989 313,989 C327,989 335,981 337,966 C328,975 300,975 293,966 Z"/>' +
-    '<path d="M294 812 C308,817 320,817 334,812" stroke-width="3" fill="none"/>' +
-    '<g stroke="#efc14b" stroke-width="3.2" fill="none">' +
-      '<line x1="300" y1="820" x2="328" y2="820"/><line x1="299" y1="838" x2="329" y2="838"/>' +
-      '<line x1="298" y1="858" x2="330" y2="858"/><line x1="298" y1="878" x2="331" y2="878"/>' +
-      '<line x1="297" y1="898" x2="332" y2="898"/><line x1="297" y1="916" x2="332" y2="916"/>' +
-    '</g>' +
-    '<g fill="#efc14b" stroke="none">' +
-      '<circle cx="299" cy="820" r="2.3"/><circle cx="329" cy="820" r="2.3"/>' +
-      '<circle cx="298" cy="838" r="2.3"/><circle cx="330" cy="838" r="2.3"/>' +
-      '<circle cx="297" cy="858" r="2.3"/><circle cx="331" cy="858" r="2.3"/>' +
-      '<circle cx="297" cy="878" r="2.3"/><circle cx="331" cy="878" r="2.3"/>' +
-      '<circle cx="296" cy="898" r="2.3"/><circle cx="332" cy="898" r="2.3"/>' +
-      '<circle cx="296" cy="916" r="2.3"/><circle cx="332" cy="916" r="2.3"/>' +
-    '</g>' +
+    '<path fill="#b18ad8" d="M352 740 C359,780 361,828 356,878 C354,902 350,916 346,926 L294,926 C293,906 292,868 293,824 C294,790 294,762 295,740 Z"/>' +
+    '<path d="M334 782 C337,822 337,864 335,906" stroke="#8659b8" stroke-width="2.2" fill="none"/>' +
+    '<path fill="#a37fd0" stroke-width="3" d="M342 924 L296 924 L299 944 L338 944 Z"/>' +
+    '<path fill="#ffffff" d="M339 940 C346,951 347,963 343,971 L293,971 C289,963 290,951 295,941 C309,934 327,934 339,940 Z"/>' +
+    '<path d="M306 946 C298,950 293,957 292,964" stroke-width="2.2" fill="none"/>' +
+    '<path d="M303 948 L331 948" stroke="#d7dce2" stroke-width="3" fill="none"/>' +
+    '<path d="M302 958 L332 958" stroke="#d7dce2" stroke-width="3" fill="none"/>' +
+    '<path fill="#f2a9c0" d="M347 966 C347,980 339,989 318,989 C298,989 288,980 288,966 C300,976 336,976 347,966 Z"/>' +
   '</g>' +
 
   /* water ripples at the LEADING edge — drawn on top, shown only in FLY mode
      (after the 90° rotation this sits ahead of her, so she parts the water) */
   '<g class="chibi-water">' +
-    '<circle cx="306" cy="190" r="13" fill="none" stroke="#ffffff" stroke-width="3.6"/>' +
-    '<circle cx="306" cy="190" r="13" fill="none" stroke="#cdeefb" stroke-width="3.2"/>' +
-    '<circle cx="306" cy="190" r="13" fill="none" stroke="#ffffff" stroke-width="3.4"/>' +
+    '<circle cx="306" cy="166" r="13" fill="none" stroke="#ffffff" stroke-width="3.6"/>' +
+    '<circle cx="306" cy="166" r="13" fill="none" stroke="#cdeefb" stroke-width="3.2"/>' +
+    '<circle cx="306" cy="166" r="13" fill="none" stroke="#ffffff" stroke-width="3.4"/>' +
   '</g>' +
 
 '</g></svg>';
@@ -235,8 +239,9 @@
     '.chibi-svg .arm-r{transform-origin:50% 6%;animation:chibiArmB 1.5s ease-in-out infinite;}' +
     '.chibi-svg .leg-l{transform-origin:50% 2%;animation:chibiLegA 1.5s ease-in-out infinite;}' +
     '.chibi-svg .leg-r{transform-origin:50% 2%;animation:chibiLegB 1.5s ease-in-out infinite;}' +
-    '@keyframes chibiArmA{0%,100%{transform:rotate(12deg)}50%{transform:rotate(-12deg)}}' +
-    '@keyframes chibiArmB{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}' +
+    /* bomber sleeves swing a touch less than the old bare arms did (9deg) */
+    '@keyframes chibiArmA{0%,100%{transform:rotate(9deg)}50%{transform:rotate(-9deg)}}' +
+    '@keyframes chibiArmB{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}' +
     '@keyframes chibiLegA{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}' +
     '@keyframes chibiLegB{0%,100%{transform:rotate(7deg)}50%{transform:rotate(-7deg)}}' +
     /* blink: the whole eyes group squashes shut briefly every few seconds */
@@ -359,7 +364,7 @@
     var n = 3 + (Math.random() * 2 | 0);                  // 3-4 hearts
     for (var i = 0; i < n; i++) {
       var cx = 300 + (Math.random() - 0.5) * 120;
-      var cy = 178 + (Math.random() - 0.5) * 38;
+      var cy = 140 + (Math.random() - 0.5) * 38;          // above the (taller) updo
       var s = 22 + Math.random() * 9;                     // BIG hearts
       var p = document.createElementNS(NS, 'path');
       p.setAttribute('d', heartD(cx, cy, s));
