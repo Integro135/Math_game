@@ -54,20 +54,22 @@ function _sprinkleUnknowns(set){
   return set;
 }
 
-// Weave the polygon (side-counting) exercise into the Queen (mx) pool so a shape
-// shows up about ONCE EVERY 9 problems (the 9th, 18th … slot). It INSERTS (never
-// at slot 0 — the first card must keep a normal #ans input for boot), so every
-// existing problem is preserved. Used by Queen ONLY — the fixed bridge curricula
-// must keep their exact order. No-op when the polygon type isn't loaded.
-function _weavePolygons(pool){
-  const ex=EX('polygon'); if(!ex)return pool;
-  const polys=shuffle(ex.make('poly'));   // a bank of shuffled polygon problems
-  let at=8,k=0;                           // 0-indexed 9th slot (never slot 0)
-  while(at<=pool.length&&k<polys.length){
-    pool.splice(at,0,polys[k]);           // this becomes the (at+1)-th problem
-    k++;at+=9;                            // next shape ~9 slots later
-  }
-  return pool;
+// Cap an arithmetic pool to `target` AND fold in polygon side-counting shapes so
+// a shape shows up about ONCE EVERY 9 problems (the 9th, 18th … slot), while the
+// run still holds EXACTLY `target` exercises. Room is made by capping the
+// arithmetic FIRST (so no type gets wiped out), then the shapes are INSERTED at
+// slots 9, 18 … (never slot 0 — the first card must keep a normal #ans input).
+// Used by Queen (mx) + Superman (sup); target 20 → 2 shapes at slots 9 & 18.
+// Falls back to a plain cap when the polygon type isn't loaded.
+function _withPolygons(pool,target,minKeep){
+  const ex=EX('polygon');
+  if(!ex)return _capPool(pool,target,minKeep);
+  let nPoly=0;for(let at=8;at<target;at+=9)nPoly++;   // how many shapes fit at the 9-cadence
+  const base=_capPool(pool,target-nPoly,minKeep);     // leave room for the shapes
+  const polys=shuffle(ex.make('poly'));
+  let k=0;
+  for(let at=8;at<=base.length&&k<nPoly;at+=9)base.splice(at,0,polys[k++]);
+  return base;
 }
 
 // Queen (mx) & Superman (sup) always present EXACTLY this many exercises per run.
@@ -94,13 +96,13 @@ function _capPool(pool,n,minKeep){
 
 function makePool(m){
   if(m===0)return EX('add').make(0);                 // the full 1+1 ladder
-  if(m==='mx')return _capPool(makeMxPool(),QUEEN_SUPER_COUNT,{[TT]:2});   // Queen — curated mix, 20 shown (keep ≥2 round-tens)
+  if(m==='mx')return _withPolygons(makeMxPool(),QUEEN_SUPER_COUNT,{[TT]:2});   // Queen — curated mix + shapes, 20 shown (keep ≥2 round-tens)
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
   if(m==='b20')return makeBridge20Pool();            // bridge-20 curriculum (two alternating sets)
   // Superman — an EQUAL 3-per-type mix: column addition + big-number subtraction
   // + coin-multiplication + bagel-cost (×5 in shekels) + column subtraction
   // + whole-hundreds + multiplication chains, shuffled then capped to 20 shown
-  if(m==='sup')return _capPool(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[])]),QUEEN_SUPER_COUNT);
+  if(m==='sup')return _withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[])]),QUEEN_SUPER_COUNT);
   if(m==='big')return EX('big_step').make('big');    // big number ± step game
   if(m==='poly')return EX('polygon')?EX('polygon').make('poly'):[];   // count-the-sides shapes game
   if(m==='mul')return EX('mult_chain')?EX('mult_chain').make('mul'):[];// multiplication as repeated addition (2×3 → 2+2+2)
@@ -142,8 +144,9 @@ function makeMxPool(){
   if(pool.length&&_noAns(pool[0])){
     for(let j=1;j<pool.length;j++){if(!_noAns(pool[j])){const t=pool[0];pool[0]=pool[j];pool[j]=t;break;}}
   }
-  // fold in a polygon side-counting shape ~once every 9 (inserted at slot 9, 18…)
-  return _weavePolygons(pool);
+  // polygons are folded in AFTER capping (makePool → _withPolygons), so they land
+  // at the exact 9-cadence without being trimmed away by the cap
+  return pool;
 }
 
 // ── bridging-10 ("גָּשֵׁר 10") — FOUR fixed pedagogical sets, served ALTERNATELY.

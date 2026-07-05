@@ -4,12 +4,12 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space.bg.js`, `unicorns.bg.js`, `dubai.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs.bg.js` | Loaded by the game at runtime |
-| **Thin dev harness** (`<name>.html`) | `space.html`, `unicorns.html`, `dubai_skyline.html`, `underwater_happy_reef.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
-| **Reusable scene parts** (`dinasours/*.js`) | `volcano.js`, `tricera-walker.js`, `stego-walker.js`, `trex-walker.js`, `baby-trex-egg.js` | Loaded on demand by `dinosaurs.bg.js`; this subfolder holds ONLY these 5 runtime modules (dev previews/demos/verify scripts were removed) |
+| **Game-ready module** (`<name>.bg.js`) | `space.bg.js`, `unicorns.bg.js`, `dubai.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs2.bg.js` | Loaded by the game at runtime |
+| **Thin dev harness** (`<name>.html`) | `space.html`, `unicorns.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs2.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Reusable scene parts** (`dinasours/*.js`) | `baby-trex-egg.js` | The rolling/hatching egg, loaded on demand by `dinosaurs2.bg.js`. (The old `volcano.js`/`meteor.js`/`*-walker.js` modules were removed when the self-contained `dinosaurs2.bg.js` replaced the composed `dinosaurs.bg.js`.) |
 
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns`,
-`galaxy→space`, `reef→reef`, `dubai→dubai`, `savanna→savanna`, `dinosaurs→dinosaurs`
+`galaxy→space`, `reef→reef`, `dubai→dubai`, `savanna→savanna`, `dinosaurs→dinosaurs2`
 (🏙️, 🦁 and 🦕 are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
 #stars-layer {display:block}` rule in themes.css, or the stage stays hidden.
@@ -596,51 +596,37 @@ release) and `lapExtra(o,t)`.
 
 ---
 
-## dinosaurs.bg.js — volcano valley at dusk (already integrated)
+## dinosaurs2.bg.js — volcano valley at dusk (the 🦕 theme, integrated)
 
-The 🦕 theme, and the sibling of savanna (one species crosses at a time as a
-small mixed-size herd, then a gap, then a fresh pack — alternating direction). It
-**re-draws none of its art**: it composes the existing reusable modules in
-`backgrounds/dinasours/`, exactly like the dev harnesses did. That subfolder now
-holds **only the 5 runtime modules** it loads on demand — the standalone
-previews/demos/verify scripts were deleted (the art + all behaviour live inside
-the modules, which are the single source of truth):
+The 🦕 theme is served by **`dinosaurs2.bg.js`** — a single self-contained module
+that draws its OWN art (SVG/WAAPI, ES5, file://-safe, all classes/keyframes
+`d2`-namespaced). It replaced the older `dinosaurs.bg.js` (which composed separate
+`dinasours/volcano.js` + `*-walker.js` modules); those building-block modules were
+removed. The one external dependency it still loads on demand is
+`dinasours/baby-trex-egg.js` (the rolling egg), warmed during the intro splash via
+`mod.preload()`.
 
-| Module | Global | Role |
-|---|---|---|
-| `volcano.js` | `Volcano.place(stage,…)` | the whole valley backdrop: sunset sky + twinkling stars + drifting clouds + snow-capped ranges + an **erupting volcano** (lava plume + lightning) + foreground grass |
-| `tricera-walker.js` | `TriceraWalker.walk/patrol` | a cute walking triceratops (SVG) |
-| `stego-walker.js` | `StegoWalker.walk/patrol` | a cute walking stegosaurus (SVG) |
-| `trex-walker.js` | `TrexWalker.walk/patrol` | a running T-Rex (CSS-shape art) |
-| `baby-trex-egg.js` | `BabyTrexEgg.place(stage,…)` | a static hatching egg on the grass |
+**Scene:** sunset sky with a slow day-cycle + twinkling stars, drifting clouds,
+snow-capped mountain ranges, and a plum **volcano on the RIGHT** (click → erupt +
+countdown; every 10th click → a meteor storm). Foreground grass with lush plants.
 
-**Roaming packs:** `spawnPack` sends 2–4 members of one species across the grass
-in decreasing sizes (a grown leader → smaller young), trailing each other in one
-direction; the next pack alternates direction. Species are served **round-robin**
-(Fisher–Yates shuffled each cycle) so the T-Rex, stego and triceratops all come up
-regularly. A T-Rex pack **roars** mid-crossing (~60%) — `TrexWalker.trigger('roar')`
-sets off the volcano-style lightning. Two stationary **baby-T-Rex eggs** hatch at
-centre (≈47% / 63%), clear of the card (left) and the volcano (right).
+**Dinosaurs:** from-scratch SVG walkers (bronto, stego, trex, + the two original
+quadrupeds trikec/stegoc) plus a flying **pterodactyl**. Every species appears in
+several palettes (green/pink/teal; the ptero in coral/violet/sky/sun) and 2 sizes.
+**Clicking a dino recolours it** (and plays its reaction). The scene is kept calm:
+**max 2 ground dinos + 1 pterodactyl + ~1 egg** at a time.
 
-**Colour packs:** every dino species supports three packs — `green` (default),
-`pink`, `green2` (teal for stego/tricera, warm grass for the T-Rex). The scene
-spawns a **mixed colour per member** (`pickPal()`), savanna-style. Apply via the
-`{palette:'pink'|'green2'}` option on `walk()`/`patrol()` (or `svgMarkupFor()` for
-the SVG dinos; the CSS T-Rex adds a `pal-pink`/`pal-green2` class to `.dinosaur`).
+**Eggs arrive, never fixed:** the pterodactyl LAYS an egg mid-flight — usually a
+**hatching** egg (falls, cracks open, a baby peeks out, then fades) or a rolling
+egg; one legacy `BabyTrexEgg` also rolls across occasionally. Shooting stars use
+the Dubai look (white head + icy-blue gradient tail).
 
-**T-Rex open mouth = a true transparent hole.** In `trex-walker.js` the head is
-split into a masked `.head-fill` (an SVG `<mask>`, `#trexMouthMask`, cuts the
-mouth opening) with the teeth + eye kept as siblings **above** the mask, so the
-open mouth shows the scene behind on ANY background (not a fixed bg-colour fill),
-while the teeth stay drawn. (`background:transparent` can't cut a hole, and
-`destination-out` is not a valid CSS `mix-blend-mode` — only `mask` works.)
-
-**Game position — the card hugs the LEFT so the volcano stays clear.** The
-erupting summit + plume sit on the RIGHT, so `game/skins/dinosaurs.skin.css` pins
-`.wrap` to the LEFT at a **full game-card size** (`max-width:700px`, like the
-other themes; narrowed to 600px on ≤1120px windows so the summit stays clear);
-it re-centres only on small (≤840px) screens.
+**Game position — the card hugs the LEFT so the volcano stays clear.** The volcano
+sits on the RIGHT, so `game/skins/dinosaurs.skin.css` pins `.wrap` to the LEFT
+(`max-width:700px`, nudged right of the left edge; narrowed to 600px on ≤1120px
+windows; re-centres on ≤840px screens).
 Skin: `dinosaurs.skin.css` (warm dusk glass, sunset-gold / grass-green accents).
-Aids: `classic`. Theme wiring: `_BG_THEMES.dinosaurs`, `THEMES.dinosaurs`,
-`body.theme-dinosaurs`, the 🦕 menu button + toggle-cycle entry (themes.js,
-index.html), and `dinosaurs.skin.css`.
+Aids: `dinosaurs`. Theme wiring: `_BG_THEMES.dinosaurs → dinosaurs2`,
+`THEMES.dinosaurs`, `body.theme-dinosaurs`, the 🦕 menu button + toggle-cycle
+entry (themes.js, index.html), and `dinosaurs.skin.css`. Dev harness:
+`dinosaurs2.html` (Restart / Gallery); verify via `_verify_dino2.py`.

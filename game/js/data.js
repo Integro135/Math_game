@@ -35,7 +35,7 @@ const EXERCISE_INDEX=[
   {file:'var_one',   modes:['br','b20','mx']},   // shape-variable add/sub with one unknown (⃝ = N, then a ± ⃝ = ?)
   {file:'tri_unknown',modes:['mx']},             // three unknowns adding to a target (__+__+__ = R, R ≤ 20)
   {file:'hundreds',  modes:['mx','sup']},        // whole-hundreds addition (200+60, 300+300 …), result ≤ 900
-  {file:'polygon',   modes:['poly','mx','b20']}, // count polygon SIDES; woven into Queen (mx) + bridge-20 (b20) ~1 per 9. 'poly' is an INTERNAL handle only (tester / direct setMode) — no picker tile.
+  {file:'polygon',   modes:['poly','mx','sup']}, // count polygon SIDES; woven into Queen (mx) + Superman (sup) ~1 per 9. 'poly' is an INTERNAL handle only (tester / direct setMode) — no picker tile.
   {file:'mult_chain',modes:['mul','mx','sup']},  // multiplication as repeated addition (2×3 → 2+2+2 chain, ≤20). 'mul' is an INTERNAL handle only (no picker tile); mixed into Queen (mx) + Superman (sup).
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */

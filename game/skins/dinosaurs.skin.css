@@ -1,5 +1,5 @@
 /* ── Dinosaurs skin — "Volcano valley at dusk" ──────────────────────────────
-   The game's look over the dinosaurs background (backgrounds/dinosaurs.bg.js:
+   The game's look over the dinosaurs background (backgrounds/dinosaurs2.bg.js:
    sunset sky + stars + clouds + snow-capped ranges + an erupting volcano on the
    RIGHT + foreground grass with roaming dinosaurs). Warm dusk glass that lets
    the sky, the volcano and the herd glow through. The game column hugs the LEFT
@@ -18,15 +18,17 @@
   --skin-text:   #FFF3E0;   /* warm cream           */
 }
 
-/* ── 4. POSITION — full-size board, nudged 4cm to the RIGHT of the left edge
-   (per request) while still leaving the erupting volcano visible on the far
-   right. On mid-size windows the card narrows; on small screens it re-centres. ── */
+/* ── 4. POSITION — the board hugs the LEFT so the volcano (dinosaurs2 scene,
+   crater ≈ x970/1280, left flank ≈ x715/1280 ≈ 56%) stays in full view on the
+   RIGHT. The card width is capped to ~half the viewport, so its right edge scales
+   DOWN with the window and never crosses into the volcano (a fixed px width would
+   overlap on narrower desktops). Full 700px only once the window is wide enough;
+   re-centres on small screens. ── */
 body.theme-dinosaurs .wrap{
-  max-width:700px;
-  margin:0 auto 0 calc(8px + 0.5cm + 4cm);
+  max-width:min(700px, calc(50vw - 0.5cm));
+  margin:0 auto 0 calc(8px + 0.5cm);
 }
-@media(max-width:1120px){body.theme-dinosaurs .wrap{max-width:600px;margin:0 auto 0 calc(8px + 4cm)}}
-@media(max-width:840px){body.theme-dinosaurs .wrap{margin:8px auto 0}}
+@media(max-width:840px){body.theme-dinosaurs .wrap{max-width:600px;margin:8px auto 0}}
 
 /* ── 3. GLASS — warm smoked dusk, a soft blur so the valley glows through ── */
 body.theme-dinosaurs .glass{

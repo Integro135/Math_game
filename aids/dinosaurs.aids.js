@@ -1,6 +1,6 @@
 /* ── Dinosaurs aid variant — kangaroo number line + a JAR OF BONES ──────────
    Loaded dynamically by game/js/bg-loader.js when the 🦕 dinosaurs background
-   is active (backgrounds/dinosaurs.bg.js → aids:'dinosaurs').
+   is active (backgrounds/dinosaurs2.bg.js → aids:'dinosaurs').
 
    It REUSES the classic aid art (the kangaroo number-line rider, the glass jar
    container, the flower garden-upgrade) and changes ONLY the counted item to a

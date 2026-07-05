@@ -1576,7 +1576,9 @@
   w.BACKGROUNDS.dinosaurs2 = {
     skin: 'dinosaurs',
     aids: 'dinosaurs',
-    preload: function () { /* single file — nothing to warm */ },
+    // warm the one external dependency (the legacy rolling egg) during the intro
+    // splash, so switching to the dinosaurs theme is seamless
+    preload: function () { needScript('BabyTrexEgg', 'baby-trex-egg.js', function () {}); },
 
     init: function (ctx) {
       var stage = ctx && ctx.stage;
