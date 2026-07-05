@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -34,9 +34,12 @@ const EXERCISE_INDEX=[
   {file:'big_step',  modes:['big','mx','sup']},
   {file:'var_one',   modes:['br','b20','mx']},   // shape-variable add/sub with one unknown (⃝ = N, then a ± ⃝ = ?)
   {file:'tri_unknown',modes:['mx']},             // three unknowns adding to a target (__+__+__ = R, R ≤ 20)
+  {file:'hundreds',  modes:['mx','sup']},        // whole-hundreds addition (200+60, 300+300 …), result ≤ 900
+  {file:'polygon',   modes:['poly','mx','b20']}, // count polygon SIDES; woven into Queen (mx) + bridge-20 (b20) ~1 per 9. 'poly' is an INTERNAL handle only (tester / direct setMode) — no picker tile.
+  {file:'mult_chain',modes:['mul','mx','sup']},  // multiplication as repeated addition (2×3 → 2+2+2 chain, ≤20). 'mul' is an INTERNAL handle only (no picker tile); mixed into Queen (mx) + Superman (sup).
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost'};
+const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config

@@ -62,6 +62,20 @@ window.EXERCISES.types.column_add=(()=>{
     transition:left .6s cubic-bezier(.3,1.3,.5,1),top .6s cubic-bezier(.3,1.3,.5,1),
       transform .6s cubic-bezier(.3,1.3,.5,1);
     pointer-events:none;z-index:6}
+  /* GREEN "+10" cue above the tens — a ten was carried up from the units
+     (mirrors the column-subtraction borrow's green +10) */
+  .colx-plus10{position:absolute;font-family:'Fredoka One',cursive;font-size:1.15rem;color:#fff;
+    background:#22a54a;padding:4px 11px;border-radius:13px;box-shadow:0 2px 10px rgba(34,165,74,.6);
+    white-space:nowrap;transform:translate(-50%,-50%) scale(.4);opacity:0;line-height:1;pointer-events:none;
+    z-index:7;transition:opacity .3s,transform .35s cubic-bezier(.34,1.56,.64,1)}
+  .colx-plus10.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  /* RED "−10" cue by the units — ten LEAVES the units (only the ones digit
+     stays) as it is carried up; mirrors the green +10 on the tens */
+  .colx-minus10{position:absolute;font-family:'Fredoka One',cursive;font-size:1.15rem;color:#fff;
+    background:#e53935;padding:4px 11px;border-radius:13px;box-shadow:0 2px 10px rgba(229,57,53,.6);
+    white-space:nowrap;transform:translate(-50%,-50%) scale(.4);opacity:0;line-height:1;pointer-events:none;
+    z-index:7;transition:opacity .3s,transform .35s cubic-bezier(.34,1.56,.64,1)}
+  .colx-minus10.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
   .colx-digit{height:74px;display:flex;align-items:center;justify-content:center;
     font-family:'Fredoka One',cursive;font-size:3.9rem;color:var(--skin-text,#fff);
     text-shadow:0 0 18px rgba(160,190,255,.35);line-height:1}
@@ -81,12 +95,29 @@ window.EXERCISES.types.column_add=(()=>{
   .colx-connectors line.pulse{animation:colxPulse 1.5s ease-in-out infinite}
   .colx-connectors .hint-fade{animation:colxHintFade .45s ease both}
   @keyframes colxHintFade{from{opacity:0}to{opacity:1}}
+  /* intro: the original one-line equation + a "show in column" button */
+  .colx-intro{display:flex;flex-direction:column;align-items:center;gap:22px;padding:14px 0}
+  .colx-intro-eq{direction:ltr;font-family:'Fredoka One',cursive;font-size:3.2rem;
+    color:var(--skin-text,#fff);text-shadow:0 0 18px rgba(160,190,255,.35);letter-spacing:3px}
+  .colx-show-btn{display:inline-flex;align-items:center;gap:12px;font-family:'Fredoka One',cursive;
+    font-size:1.4rem;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,var(--skin-glow,#7dc4ff),var(--skin-primary,#c77dff) 58%,var(--skin-accent,#ffd27d));
+    border:none;border-radius:999px;padding:12px 26px 12px 18px;
+    box-shadow:0 6px 20px rgba(120,90,200,.5),inset 0 1px 0 rgba(255,255,255,.45);
+    animation:colxBtnPulse 1.9s ease-in-out infinite;
+    transition:transform .15s,box-shadow .2s,filter .2s}
+  .colx-show-btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 10px 28px rgba(120,90,200,.6);filter:brightness(1.06)}
+  .colx-show-btn:active{transform:translateY(0) scale(.99)}
+  .colx-show-ico{width:36px;height:38px;flex:0 0 auto;background:rgba(255,255,255,.22);border-radius:12px;padding:4px}
+  @keyframes colxBtnPulse{0%,100%{box-shadow:0 6px 20px rgba(120,90,200,.5),inset 0 1px 0 rgba(255,255,255,.45)}
+    50%{box-shadow:0 6px 27px rgba(255,210,125,.65),inset 0 1px 0 rgba(255,255,255,.55)}}
   @media(max-width:480px){
     .colx-grid{grid-template-columns:64px 64px}
     .colx-digit{height:56px;font-size:2.9rem}
     #colx-root .ans-inp.colx-inp{width:58px;height:56px;font-size:2rem}
     .colx-wrap{padding-left:48px}
     .colx-plus{font-size:2.2rem}
+    .colx-intro-eq{font-size:2.4rem}
   }`;
 
   function injectStyle(){
@@ -96,7 +127,37 @@ window.EXERCISES.types.column_add=(()=>{
     document.head.appendChild(st);
   }
 
-  function mount({root,a,b,api}){
+  /* mount shows the ORIGINAL one-line equation + a "show in column" button;
+     the column board (build) appears only when the child taps it, so they
+     first read what problem they're solving. */
+  function mount(ctx){
+    injectStyle();
+    const {root,a,b}=ctx;
+    let live=null;
+    root.innerHTML=`
+      <div class="colx-intro">
+        <div class="colx-intro-eq">${a} + ${b} =</div>
+        <button type="button" class="colx-show-btn" id="colx-showcol">
+          <svg class="colx-show-ico" viewBox="0 0 26 28" aria-hidden="true">
+            <rect x="9" y="3" width="14" height="3.4" rx="1.7" fill="#fff"/>
+            <g stroke="#fff" stroke-width="2.6" stroke-linecap="round">
+              <line x1="3" y1="11" x2="7.4" y2="11"/><line x1="5.2" y1="8.8" x2="5.2" y2="13.2"/></g>
+            <rect x="9" y="9.3" width="14" height="3.4" rx="1.7" fill="#fff"/>
+            <rect x="2" y="16.4" width="21" height="2.6" rx="1.3" fill="#ffe28a"/>
+            <rect x="11" y="22" width="12" height="3.4" rx="1.7" fill="#fff"/>
+          </svg>
+          <span>הַצֵּג בְּטוּר</span>
+        </button>
+      </div>`;
+    const h=document.getElementById('hint');if(h)h.textContent='🦸 לַחֲצִי "הַצֵּג בְּטוּר" כְּדֵי לִפְתֹּר';
+    const btn=root.querySelector('#colx-showcol');
+    function reveal(){ if(live)return; root.innerHTML=''; live=build(ctx); }
+    btn.addEventListener('click',reveal);
+    if(window.__colxAutoReveal)reveal();   // test hook: skip the intro
+    return function cleanup(){ if(live){live();live=null;} else root.innerHTML=''; };
+  }
+
+  function build({root,a,b,api}){
     injectStyle();
     const P={
       a,b,
@@ -208,6 +269,26 @@ window.EXERCISES.types.column_add=(()=>{
         fl.remove();
         const ce=$('colx-carry');
         ce.textContent='1';ce.classList.add('show','pop');
+        // GREEN "+10" badge pops above the tens for a couple of seconds — the
+        // units overflowed ten, so a whole ten is carried up to the tens column
+        const wr2=wrap.getBoundingClientRect();
+        const ct=$('colx-ccell').getBoundingClientRect();
+        const p10=document.createElement('div');p10.className='colx-plus10';p10.textContent='+10';
+        p10.style.left=(ct.left-wr2.left+ct.width/2)+'px';
+        p10.style.top=(ct.top-wr2.top-10)+'px';
+        wrap.appendChild(p10);
+        void p10.offsetWidth;p10.classList.add('show');
+        later(()=>{if(p10.parentNode)p10.classList.remove('show');},2000);
+        later(()=>{if(p10.parentNode)p10.remove();},2400);
+        // RED "−10" badge by the units — ten left the units to become the carried 1
+        const fu=iU.getBoundingClientRect();
+        const m10=document.createElement('div');m10.className='colx-minus10';m10.textContent='−10';
+        m10.style.left=(fu.left-wr2.left+fu.width+2)+'px';
+        m10.style.top=(fu.top-wr2.top+fu.height*0.32)+'px';
+        wrap.appendChild(m10);
+        void m10.offsetWidth;m10.classList.add('show');
+        later(()=>{if(m10.parentNode)m10.classList.remove('show');},2000);
+        later(()=>{if(m10.parentNode)m10.remove();},2400);
         drawLines();
         if(then)then();
       },620);

@@ -15,19 +15,17 @@ from playwright.sync_api import sync_playwright
 THEME    = "girls"
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False                   # hide the .wrap game card (background-only shots)
-STANDALONE = r"c:\tmp\rumi_hair\gallery.html"
-VIEW     = {"width": 2100, "height": 880}   # viewport
-EVAL      = ""
+STANDALONE = ""                     # load the REAL game (index.html)
+VIEW     = {"width": 1000, "height": 760}   # viewport
+EVAL      = ("(async()=>{try{"
+             "await new Promise(function(res){loadExercisesFor('mul',res);});"
+             "mode='mul';problems=[{t:TMC,a:2,b:6}];idx=0;score=0;done=false;tryFirst=0;loadProblem();"
+             "return 'ok 2x6';}catch(e){return 'ERR '+e.message;}})()")
 POST_EVAL = ""
 CLICKS   = []                      # list of [xFrac, yFrac] doc clicks, e.g. [[0.5,0.9]]
-WAIT_MS  = 1500
+WAIT_MS   = 500
 SHOTS    = [
-    {"path": r"c:\tmp\rumi_hair\gallery.png", "clip": None},
-    {"path": r"c:\tmp\rumi_hair\close_base.png", "clip": {"x": 48,   "y": 60, "width": 330, "height": 520}},
-    {"path": r"c:\tmp\rumi_hair\close_A.png",    "clip": {"x": 466,  "y": 60, "width": 330, "height": 520}},
-    {"path": r"c:\tmp\rumi_hair\close_B.png",    "clip": {"x": 884,  "y": 60, "width": 330, "height": 520}},
-    {"path": r"c:\tmp\rumi_hair\close_C.png",    "clip": {"x": 1302, "y": 60, "width": 330, "height": 520}},
-    {"path": r"c:\tmp\rumi_hair\close_D.png",    "clip": {"x": 1720, "y": 60, "width": 330, "height": 520}},
+    {"path": r"c:\tmp\mul_final.png", "clip": {"x": 270, "y": 150, "width": 470, "height": 230}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -41,7 +39,7 @@ with sync_playwright() as pw:
     page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
     page.on("pageerror", lambda e: errors.append(str(e)))
     if STANDALONE:
-        page.goto(Path(STANDALONE).as_uri())
+        page.goto(STANDALONE if STANDALONE.startswith("http") else Path(STANDALONE).as_uri())
         eval_result = page.evaluate(EVAL) if EVAL else None
         page.wait_for_timeout(WAIT_MS)
         post_result = page.evaluate(POST_EVAL) if POST_EVAL else None

@@ -340,6 +340,10 @@ def page(browser_instance):
     ctx = browser_instance.new_context()
     p = ctx.new_page()
     p.add_init_script("localStorage.setItem('introSplash','0')")
+    # column exercises now open on a one-line "show in column" intro; auto-reveal
+    # it so the existing column tests reach the board directly (a dedicated test
+    # covers the intro→reveal flow with the flag off).
+    p.add_init_script("window.__colxAutoReveal=true")
     p.goto(GAME_URL)
     p.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
     yield p
@@ -1074,10 +1078,10 @@ class TestGameFlow:
         # 5 fresh Queen sessions — each must satisfy the rule
         for session in range(5):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
             n = page.evaluate("problems.length")
-            assert n == 22, \
-                f"Session {session+1}: expected 22 mx problems, got {n}"
+            assert n == 20, \
+                f"Session {session+1}: expected 20 mx problems, got {n}"
             types = page.evaluate("[...problems].map(p => p.t)")
             for name, code in consts.items():
                 count = sum(1 for t in types if t == code)
@@ -1371,11 +1375,11 @@ class TestChainAndCoinAids:
         any_early_above_10 = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, b:p.b, c:p.c, r:p.r}))")
-            assert len(problems) == 22, \
-                f"makeMxPool must yield 22 problems (flat shuffle), got {len(problems)}"
+            assert len(problems) == 20, \
+                f"Queen (mx) must present 20 problems (shuffle + coverage-preserving cap), got {len(problems)}"
             consts = page.evaluate("({TA,TS,TM,TX,TZ,TW})")
             for p in problems[:5]:               # the former "phase 1" slots
                 ans = None
@@ -1398,9 +1402,9 @@ class TestChainAndCoinAids:
         Queen pool (chain TX/TZ/TW, TM, TS, TA, TDA/TDS, TT, TC, TBG)."""
         consts = page.evaluate("({TM,TS,TA,TX,TZ,TW,TDA,TDS,TC,TT,TBG})")
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         types = page.evaluate("[...problems].map(p => p.t)")
-        assert len(types) == 22
+        assert len(types) == 20
         # chain family (TX/TZ/TW) must appear; each other type must appear ≥1
         chain = {consts["TX"], consts["TZ"], consts["TW"]}
         assert any(t in chain for t in types), "Chain problems must be present in mx"
@@ -1410,6 +1414,21 @@ class TestChainAndCoinAids:
         # the double-unknown family contributes one add + one sub
         assert consts["TDA"] in types and consts["TDS"] in types, \
             "makeMxPool must include both TDA and TDS"
+
+    def test_chain_third_number_can_exceed_six(self, page):
+        """The chain THIRD number c now reaches up to 9 (was capped at 6) while
+        results stay valid (TZ/TX sums ≤ 20, TW result ≥ 2)."""
+        consts = page.evaluate("({TZ,TX,TW})")
+        page.wait_for_function("window.EXERCISES && EXERCISES.types.chain", timeout=TIMEOUT)
+        res = page.evaluate("""(()=>{let maxC=0,invalid=0;
+          for(let k=0;k<400;k++){EXERCISES.types.chain.make('mx').forEach(p=>{
+            if(p.c>maxC)maxC=p.c;
+            if(p.t===TZ&&p.a+p.b+p.c>20)invalid++;
+            if(p.t===TX&&p.a-p.b+p.c>20)invalid++;
+            if(p.t===TW&&p.a-p.b-p.c<2)invalid++;});}
+          return {maxC,invalid};})()""")
+        assert res["maxC"] >= 8, f"chain third number should now reach at least 8, got {res['maxC']}"
+        assert res["invalid"] == 0, f"all chain results must stay valid, {res['invalid']} invalid"
 
     # ── Chain last 4 have first operand > 10 ─────────────
 
@@ -1423,7 +1442,7 @@ class TestChainAndCoinAids:
         seen_small_first = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, r:p.r}))")
             for p in problems[-4:]:
@@ -1592,7 +1611,7 @@ class TestTensProblems:
 
         # TT now lives in 'mx' (מלכה) instead.
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         ptypes = page.evaluate("[...problems].map(p => p.t)")
         assert sum(1 for t in ptypes if t == consts["TT"]) >= 1, \
             "Round-tens (TT) must now appear in the Queen (mx) game"
@@ -1614,7 +1633,7 @@ class TestTensProblems:
         # TT is wired only into 'mx' (data.js EXERCISE_INDEX), where tens.ex.js
         # make('mx') always emits exactly 2 TT problems -> _find_tt always hits.
         page.evaluate("setMode('mx')")
-        page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -1638,7 +1657,7 @@ class TestTensProblems:
         """TT problem: submitting the correct tens answer marks the problem done."""
         # TT lives only in 'mx'; tens.ex.js make('mx') always emits 2 TT problems.
         page.evaluate("setMode('mx')")
-        page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -1810,16 +1829,17 @@ class TestTryFirstScoring:
     def test_mx_no_operand_above_20_unless_round_tens(self, page):
         """In Queen (mx) mode, no operand may exceed 20 — except round-tens (TT,
         multiples of 10) and the big ±1/2 steps (TBG, big number minus 1/2)."""
-        consts = page.evaluate("({TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TBG})")
+        consts = page.evaluate("({TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TBG, TH})")
         TT = consts["TT"]
         TC = consts["TC"]
         TDA = consts["TDA"]
         TDS = consts["TDS"]
         TBG = consts["TBG"]
+        TH = consts["TH"]
 
         for _ in range(10):                # 10 fresh Queen sessions
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
             problems = page.evaluate("problems")
             for i, p in enumerate(problems):
                 t = p["t"]
@@ -1838,6 +1858,12 @@ class TestTryFirstScoring:
                     else:
                         assert p["b"] in (1, 2) and p["a"] % 10 + p["b"] <= 9, \
                             f"TBG add step must be 1-2 with no carry at idx {i}: {p}"
+                    continue
+                if t == TH:
+                    # whole-hundreds addition: a is a whole hundred, b whole
+                    # tens/hundreds, sum ≤ 900 (values intentionally past 20)
+                    assert p["a"] % 100 == 0 and p["b"] % 10 == 0 and p["a"] + p["b"] <= 900, \
+                        f"TH problem at idx {i} not whole hundreds ≤900: {p}"
                     continue
                 if t in (TC, TDA, TDS):
                     # TC: coins; TDA/TDS: only `r` matters and is ≤20
@@ -2939,6 +2965,31 @@ class TestVarOneUnknown:
         b20 = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridge20Pool().some(p=>p.t===TRA))return true;}return false;})()")
         assert b20, "bridge-20 must weave in the three-unknown (TRA)"
 
+    def test_two_unknown_shapes_differ_when_values_differ(self, page):
+        """Two unknowns with DIFFERENT values must be DIFFERENT shapes (a shape
+        can't stand for two values); equal values may share one. Sampled across
+        var_one Queen pools AND the sprinkled bridges."""
+        page.evaluate("setMode('mx')")
+        page.wait_for_function("window.EXERCISES && EXERCISES.types.var_one", timeout=TIMEOUT)
+        res = page.evaluate("""(()=>{let bad=[],checked=0;
+          const scan=p=>{if((p.t===TVA||p.t===TVS)&&p.symA){checked++;
+            if(p.sym===p.symA&&p.a!==p.b)bad.push([p.a,p.b,p.sym]);}};
+          for(let k=0;k<200;k++)EXERCISES.types.var_one.make('mx').forEach(scan);
+          for(let k=0;k<80;k++)makeBridgePool().concat(makeBridge20Pool()).forEach(scan);
+          return {checked,badCount:bad.length,sample:bad.slice(0,3)};})()""")
+        assert res["checked"] > 50, f"expected many two-unknowns sampled, got {res['checked']}"
+        assert res["badCount"] == 0, f"same shape with different values found: {res['sample']}"
+
+    def test_tri_unknown_result_shows_complete_to_ten(self, page):
+        """__+__+__ = 15: the RESULT carries data-split '10,5' so hovering it
+        shows the ten-and-ones bond (complete-to-ten)."""
+        page.evaluate("mode='mx'; problems=[{t:TRA,r:15}]; idx=0; loadProblem();")
+        page.wait_for_selector("#ans1", timeout=TIMEOUT)
+        split = page.evaluate(
+            """(()=>{const r=document.querySelector('#eq .eq-n[data-num="15"]');
+               return r?r.getAttribute('data-split'):null;})()""")
+        assert split == "10,5", f"TRA result 15 must split 10,5 on hover, got {split}"
+
 
 # ─────────────────────────────────────────────────────────
 # Dynamic exercise-type loading (one file per type)
@@ -2970,14 +3021,110 @@ class TestDynamicExercises:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 17, b: 15}; idx = 0; loadProblem()")
+        page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
+
+    def test_hundreds_exercise_in_queen_and_superman(self, page):
+        """Whole-hundreds addition (TH): appears in BOTH Queen (mx) and Superman
+        (sup) pools; operands are whole hundreds + (hundreds|tens), sum ≤ 900;
+        200 + 60 = 260 is accepted and a 3-digit answer fits."""
+        page.evaluate("setMode('mx')")
+        page.wait_for_function(
+            "window.EXERCISES && typeof EXERCISES.types.hundreds === 'object'", timeout=TIMEOUT)
+        stats = page.evaluate("""(()=>{
+          let mx=false,bad=null;
+          for(let k=0;k<40;k++){if(makeMxPool().some(p=>p.t===TH))mx=true;}
+          for(let k=0;k<200;k++){EXERCISES.types.hundreds.make('mx').forEach(p=>{
+            if(p.t!==TH||p.a%100!==0||p.b%10!==0||p.a+p.b>900)bad={a:p.a,b:p.b};});}
+          return {mx,bad};})()""")
+        assert stats["mx"], "Queen (mx) must include the hundreds type"
+        assert stats["bad"] is None, f"invalid hundreds problem: {stats['bad']}"
+        # sup pool includes it too
+        page.evaluate("setMode('sup')")
+        page.wait_for_function(
+            "window.EXERCISES && typeof EXERCISES.types.hundreds === 'object'", timeout=TIMEOUT)
+        sup = page.evaluate("(()=>{let s=false;for(let k=0;k<40;k++){if(makePool('sup').some(p=>p.t===TH))s=true;}return s;})()")
+        assert sup, "Superman (sup) must include the hundreds type"
+        # render + solve 200 + 60 = 260
+        page.evaluate("mode='mx'; problems=[{t:TH,a:200,b:60}]; idx=0; report=[]; done=false; loadProblem();")
+        page.wait_for_selector("#ans", timeout=TIMEOUT)
+        assert page.evaluate("report[0].correct") == 260, "200 + 60 must be 260"
+        page.fill("#ans", "260"); page.click("#chk-btn"); page.wait_for_timeout(200)
+        assert "fb-ok" in page.locator("#fb").get_attribute("class"), "260 is correct for 200+60"
+
+    def test_hundreds_number_line_after_mistake(self, page):
+        """The hundreds number line (revealed after a mistake) starts at the
+        FIRST operand and steps by 10 (hundreds+tens) or 100 (hundreds+hundreds),
+        with ≤10 ticks so the 3-digit labels fit; the sum sits on the line."""
+        page.evaluate("setMode('mx')")
+        page.wait_for_function("window.EXERCISES && EXERCISES.types.hundreds", timeout=TIMEOUT)
+        def line_for(a, b, wrong):
+            page.evaluate(f"mode='mx';problems=[{{t:TH,a:{a},b:{b}}}];idx=0;report=[];done=false;loadProblem();")
+            page.wait_for_selector("#ans", timeout=TIMEOUT); page.wait_for_timeout(120)
+            assert page.evaluate("document.body.classList.contains('tf-locked-nl')"), \
+                "hundreds number line must be hidden before the first mistake"
+            page.fill("#ans", str(wrong)); page.click("#chk-btn"); page.wait_for_timeout(400)
+            return page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(n=>+n.textContent)")
+        tens = line_for(200, 50, 210)     # hundreds + tens → step 10 from 200
+        assert tens[0] == 200 and len(tens) >= 2 and tens[1] - tens[0] == 10 and len(tens) <= 10, \
+            f"200+50 line must start at 200, step 10, ≤10 ticks: {tens}"
+        assert 250 in tens, f"the sum 250 must sit on the 200+50 line: {tens}"
+        hund = line_for(300, 300, 500)    # hundreds + hundreds → step 100 from 300
+        assert hund[0] == 300 and len(hund) >= 2 and hund[1] - hund[0] == 100 and len(hund) <= 10, \
+            f"300+300 line must start at 300, step 100, ≤10 ticks: {hund}"
+        assert 600 in hund, f"the sum 600 must sit on the 300+300 line: {hund}"
+
+    def test_hundreds_space_steps_forward(self, page):
+        """In the hundreds (addition) exercise, SPACE hops the number line
+        FORWARD (right) — it previously defaulted backward."""
+        page.evaluate("setMode('mx')")
+        page.wait_for_function("window.EXERCISES && EXERCISES.types.hundreds", timeout=TIMEOUT)
+        page.evaluate("mode='mx';problems=[{t:TH,a:200,b:50}];idx=0;report=[];done=false;loadProblem();")
+        page.wait_for_selector("#ans", timeout=TIMEOUT); page.wait_for_timeout(120)
+        # a wrong answer reveals the line (and pops the sad modal — wait it out,
+        # since space is intentionally owned by the modal while it shows)
+        page.fill("#ans", "999"); page.click("#chk-btn")
+        page.wait_for_function(
+            "(()=>{const s=document.getElementById('sad-ov');return !s||getComputedStyle(s).display==='none';})()",
+            timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+        page.evaluate("document.getElementById('ans') && document.getElementById('ans').blur()")
+        before = page.evaluate("parseFloat(document.getElementById('nl-dot').style.left)||0")
+        page.keyboard.press(" ")
+        page.wait_for_function(
+            f"(parseFloat(document.getElementById('nl-dot').style.left)||0) > {before} + 2",
+            timeout=TIMEOUT)   # rider moved RIGHT (forward)
+
+    def test_column_shows_one_line_intro_then_reveals(self, page):
+        """Column add/sub first show the ORIGINAL one-line equation + a
+        "show in column" button; the board (and its inputs) appears only after
+        the child taps it. Runs with the auto-reveal test hook OFF."""
+        page.evaluate("window.__colxAutoReveal = false")
+        page.evaluate("setMode('sup')")
+        page.wait_for_function(
+            "typeof EXERCISES.types.column_add === 'object' && "
+            "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
+        # ── addition: 47 + 38 ──
+        page.evaluate("problems[0] = {t: TCA, a: 47, b: 38}; idx = 0; loadProblem()")
+        page.wait_for_selector(".colx-intro", timeout=TIMEOUT)
+        assert "47" in page.inner_text(".colx-intro-eq") and "+" in page.inner_text(".colx-intro-eq")
+        assert page.query_selector("#colx-iU") is None, "board must be hidden before reveal"
+        page.click("#colx-showcol")
+        page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
+        assert page.query_selector(".colx-intro") is None, "intro must be gone after reveal"
+        # ── subtraction: 52 − 37 ──
+        page.evaluate("problems[0] = {t: TCS, a: 52, b: 37}; idx = 0; loadProblem()")
+        page.wait_for_selector(".colxs-intro", timeout=TIMEOUT)
+        assert "52" in page.inner_text(".colxs-intro-eq")
+        assert page.query_selector("#colx-iU") is None
+        page.click("#colxs-showcol")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
 
     def test_every_mode_builds_correct_pool_size(self, page):
         """Each mode's recipe produces its expected session length."""
         expected = {"5": 12, "10": 12, "20": 12, "'br'": 25, "'b20'": 15,
-                    "'mx'": 22, "'sup'": 18, "'big'": 12}
+                    "'mx'": 20, "'sup'": 20, "'big'": 12}
         for arg, size in expected.items():
             page.evaluate(f"setMode({arg})")
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)
@@ -3124,7 +3271,7 @@ class TestSupermanColumnAdd:
         # the sup pool mixes column-add with big ±1/2 and coin-multiplication
         # problems, so wait for the pool to build, then force a TCA problem
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCA, a: {a}, b: {b}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
@@ -3195,7 +3342,7 @@ class TestSupermanColumnAdd:
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(120)
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 13, b: 18}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
@@ -3296,6 +3443,17 @@ class TestSupermanColumnAdd:
         page.wait_for_function("score === 15", timeout=TIMEOUT)
         assert page.evaluate("report[0].gotCorrect") is True
 
+    def test_sup_carry_shows_plus10_cue(self, page):
+        """47+38: units 15 ≥ 10 → a GREEN +10 cue pops above the tens AND a RED
+        −10 cue by the units (mirrors the column-subtraction −10/+10 borrow)."""
+        self._enter_sup(page, 47, 38)
+        page.fill("#colx-iU", "15")
+        page.keyboard.press("Enter")
+        page.wait_for_selector(".colx-plus10.show", timeout=TIMEOUT)
+        assert page.locator(".colx-plus10").inner_text().strip() == "+10"
+        page.wait_for_selector(".colx-minus10.show", timeout=TIMEOUT)
+        assert page.locator(".colx-minus10").inner_text().strip() in ("−10", "-10")
+
     def test_sup_wrong_units_penalized(self, page):
         """A committed wrong units answer is a real mistake (penalty+report)."""
         self._enter_sup(page, 17, 15)
@@ -3349,7 +3507,7 @@ class TestSupermanDigitPreview:
 
     def _enter(self, page, a, b):
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(f"problems[0]={{t:TCA,a:{a},b:{b}}}; idx=0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(200)
@@ -3436,7 +3594,7 @@ class TestColumnSubtraction:
         # column subtraction now lives inside Superman — build that pool, then
         # force a TCS problem so the column UI mounts.
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCS, a: {a}, b: {b}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
@@ -3449,7 +3607,7 @@ class TestColumnSubtraction:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCS, a: 25, b: 17}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         assert page.evaluate("ptype === TCS")
@@ -3701,7 +3859,7 @@ class TestColumnSubtraction:
         seen_any = False
         for _ in range(6):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 22", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "mx must contain ≥1 column-subtraction problem"
@@ -3721,7 +3879,7 @@ class TestColumnSubtraction:
         seen_noborrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")
-            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "Superman must contain ≥1 column-subtraction problem"
@@ -3740,7 +3898,7 @@ class TestColumnSubtraction:
         seen_borrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")
-            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             for p in tcs:
@@ -3800,7 +3958,7 @@ class TestCoinMul:
     def _enter_cm(self, page, target=20):
         # coin_mul rides the Superman pool, so build it then force a TCM problem
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(f"problems[0] = {{t: TCM, a: {target}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         page.wait_for_timeout(150)
@@ -3834,7 +3992,7 @@ class TestCoinMul:
         assert res["bad"] is None, f"invalid coin_mul problem: {res['bad']}"
         assert res["saw"]["2"] and res["saw"]["5"] and res["saw"]["10"], \
             f"each coin value (₪2/₪5/₪10) must appear every session: {res['saw']}"
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         assert page.evaluate("[...problems].some(p => p.t === TCM)"), \
             "the Superman session must contain coin-multiplication problems"
 
@@ -3842,7 +4000,7 @@ class TestCoinMul:
         """A ₪2 problem (6 → 3 coins of ₪2): the answer is a/b = 3 (not a/5), the
         title shows the ₪2 coin, and entering 3 solves it."""
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 6, b: 2}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("report[0].correct") == 3, "6 ÷ ₪2 must be 3 coins (not 6/5)"
@@ -3858,7 +4016,7 @@ class TestCoinMul:
         ₪10 coin, ＋ stays enabled at 9 (cap need+3, so the answer is never given
         away), and entering 9 solves it."""
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 90, b: 10}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("report[0].correct") == 9, "90 ÷ ₪10 must be 9 coins"
@@ -3879,7 +4037,7 @@ class TestCoinMul:
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 20}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("ptype === TCM")
@@ -3989,7 +4147,7 @@ class TestBagelCost:
     def _enter_bagel(self, page, bagels=4):
         # bagel_cost rides the Superman pool, so build it then force a TBC problem
         page.evaluate("setMode('sup')")
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(f"problems[0] = {{t: TBC, a: {bagels}, b: 5}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         page.wait_for_timeout(150)
@@ -4016,7 +4174,7 @@ class TestBagelCost:
             return { bad };
         })()""")
         assert res["bad"] is None, f"invalid bagel_cost problem: {res['bad']}"
-        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         assert page.evaluate("[...problems].some(p => p.t === TBC)"), \
             "the Superman session must contain bagel-cost problems"
 
@@ -4330,7 +4488,7 @@ class TestModePersistence:
         page.reload()
         self._ready(page)
         assert page.evaluate("mode === 'sup'")
-        assert page.evaluate("problems.length === 18")
+        assert page.evaluate("problems.length === 20")
 
     def test_default_is_mx_when_nothing_saved(self, page):
         """A fresh context (no saved game) boots into Queen (mx)."""

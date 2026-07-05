@@ -225,7 +225,7 @@ function loadProblem(){
   if(ptype===TDA||ptype===TDS||ptype===TRA){num1=problems[idx].r||0;num2=0;}
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
-  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TCM?num1/(num2||5):ptype===TBC?num1*(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TPG?num1:ptype===TMC?num1*num2:ptype===TCM?num1/(num2||5):ptype===TBC?num1*(num2||5):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -234,6 +234,8 @@ function loadProblem(){
   document.getElementById('hint').textContent=
     ptype===TCA?'🦸 חַבְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
    :ptype===TCS?'🦸 חַסְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
+   :ptype===TPG?'🔷 לַחֲצִי עַל כָּל צֵלַע, סְפְרִי כַּמָּה יֵשׁ — וְכִתְבִי אֶת הַמִּסְפָּר!'
+   :ptype===TMC?'✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! אֶפְשָׁר לְמַלֵּא אֶת הַבֵּינַיִם — אוֹ לִכְתֹּב אֶת הַתְּשׁוּבָה בַּסּוֹף!'
    :ptype===TCM?('🪙 כַּמָּה מַטְבְּעוֹת שֶׁל '+(num2||5)+' צְרִיכִים? הוֹסִיפִי וְסִפְרִי!')
    :ptype===TBC?'🥨 כַּמָּה זֶה עוֹלֶה? הוֹסִיפִי מַטְבְּעוֹת שֶׁל 5 וְסַכְּמִי!'
    :ptype===TBG?'💯 רַק סִפְרַת הָאֲחָדוֹת מִשְׁתַּנָּה — הָעֲשָׂרוֹת נִשְׁאָרוֹת!'
@@ -248,6 +250,7 @@ function loadProblem(){
    :ptype===TW?'🧮 חַשֵּׁב בְּשָׁלָבִים: חַסֵּר פַּעֲמַיִם בְּזֶה אַחַר זֶה!'
    :ptype===TZ?'🧮 חַשֵּׁב בְּשָׁלָבִים: קוֹדֶם חַבֵּר שְׁנַיִם, אַחַר כָּךְ הוֹסֵף שְׁלִישִׁי!'
    :ptype===TT?(ttOp==='add'?'🔟 קְפַץ קָדִימָה בַּעֲשָׂרוֹת עַל הַיָּשָׁר!':'🔟 קְפַץ אָחוֹר בַּעֲשָׂרוֹת עַל הַיָּשָׁר!')
+   :ptype===TH?'💯 חַבְּרִי מֵאוֹת שְׁלֵמוֹת — סְפֹר אֶת הַמֵּאוֹת (וְהָעֲשָׂרוֹת)!'
    :ptype===TA?(aidMode==='kang'?aidHint('nl','add'):aidHint('jar','add'))
       :(aidMode==='kang'?aidHint('nl','sub'):aidHint('jar','sub'));
   renderEq();showBtns('check');resetAidUsed();
@@ -281,8 +284,9 @@ function loadProblem(){
     const nlp=document.getElementById('nl-panel');
     if(nlp){nlp.style.display='';NL.configure(20,1);NL.init(0);}
     chainGnMode=false;tdaJarMode=false;}
-  // TCM (coin multiplication) / TBC (bagel cost): the module owns the coin tray; no number-line aid
-  if(ptype===TCM||ptype===TBC){
+  // TCM (coin multiplication) / TBC (bagel cost) / TPG (polygon sides) / TMC
+  // (multiplication chain): the module owns its own scaffold; no number-line aid
+  if(ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC){
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
     const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='none';
     chainGnMode=false;tdaJarMode=false;}
@@ -296,8 +300,18 @@ function loadProblem(){
     let base=num1-10;if(base<0)base=0;
     if(nlp){nlp.style.display='';NL.configure(base+20,1,base);NL.init(num1);}
     chainGnMode=false;tdaJarMode=false;}
+  // TH (whole hundreds): the line STARTS at the first operand and steps by 10s
+  // (hundreds+tens, e.g. 200+50 → 200,210…) or 100s (hundreds+hundreds, e.g.
+  // 300+300 → 300,400…). Range ends one step past the sum → only ~5-8 ticks, so
+  // the 3-digit labels have room. Revealed on the first mistake (try-first).
+  if(ptype===TH){
+    const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
+    const nlp=document.getElementById('nl-panel');
+    const _thStep=(num2%100===0)?100:10;
+    if(nlp){nlp.style.display='';NL.configure(num1+num2+_thStep,_thStep,num1);NL.init(num1);}
+    chainGnMode=false;tdaJarMode=false;}
   // Aid display — kangaroo NL or the cookie jar, per aidMode
-  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TBG){
+  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TBG&&ptype!==TH){
   const isTD=ptype===TDA||ptype===TDS||ptype===TRA;
   const useNL=aidMode==='nl';
   const useKang=aidMode==='kang';
@@ -324,7 +338,7 @@ function loadProblem(){
   },60);
   buildGamesMenu();
   // the aid-toggle menu is meaningless inside a self-contained exercise
-  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TBG)?'hidden':'';}
+  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TBG)?'hidden':'';}
   // Digit hint button — shown for TT, TBG, and for TS/TM where both nums > 10
   {const _dhBtn=document.getElementById('digit-hint-btn');
   if(_dhBtn){
@@ -357,7 +371,7 @@ function _varShapeSVG(kind,size){
 /* ── Equation ── */
 function renderEq(){
   // leaving a module-owned exercise (TCA) → release its listeners/timers
-  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC){_colxCleanup();_colxCleanup=null;}
+  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC){_colxCleanup();_colxCleanup=null;}
   // restore hint visibility (TC hides it and embeds it inline)
   if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
   const n=t=>`<span class="eq-n" data-num="${t}">${t}</span>`;
@@ -426,6 +440,15 @@ function renderEq(){
     h=`<div class="tt-eq-wrap">${n(num1)}${op(ttOp==='add'?'+':'-',ttOp==='add'?'op-p':'op-m')}${n(num2)}${op('=','op-e')}${ttInp}`+
       `</div>`;
   }
+  else if(ptype===TH){
+    // whole-hundreds addition — a 3-digit answer (≤ 900). Big round numbers are
+    // NOT hoverable (no data-num) — a hundreds count of dots is meaningless.
+    const nh=t=>`<span class="eq-n">${t}</span>`;
+    const hInp=`<input id="ans" class="ans-inp ans-inp-3d" type="number" min="0" max="999"`+
+      ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,3)"`+
+      ` onkeydown="if(event.key==='Enter')checkAns()">`;
+    h=`<div class="tt-eq-wrap">${nh(num1)}${op('+','op-p')}${nh(num2)}${op('=','op-e')}${hInp}</div>`;
+  }
   else if(ptype===TDA||ptype===TDS){
     // the FIRST addend input previews its value as objects while typing
     // (`_nttInput`); plain count, no make-ten split. Hidden on blur.
@@ -441,7 +464,11 @@ function renderEq(){
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this);tdaJarSync(this)':''}"`+
       (id==='ans1'?` onblur="_nttHide()"`:'')+
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
-    h=mkI('ans1','ans2')+op('+','op-p')+mkI('ans2','ans3')+op('+','op-p')+mkI('ans3',null)+op('=','op-e')+n(num1);
+    // the RESULT carries a complete-to-ten split so hovering it shows the
+    // ten-and-ones bond (e.g. 20 → 10 | 10, 15 → 10 | 5) — helps the child
+    // pick three addends that build to the target.
+    const resTok=`<span class="eq-n" data-num="${num1}"${num1>10?` data-split="10,${num1-10}"`:''}>${num1}</span>`;
+    h=mkI('ans1','ans2')+op('+','op-p')+mkI('ans2','ans3')+op('+','op-p')+mkI('ans3',null)+op('=','op-e')+resTok;
   }
   else if(ptype===TVA||ptype===TVS){
     // UNKNOWN(S) as shapes. Each shape BEHAVES LIKE the number it stands for on
@@ -478,7 +505,7 @@ function renderEq(){
         '</div>';
     }
   }
-  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)h='<div id="colx-root" class="colx-root"></div>';
+  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC)h='<div id="colx-root" class="colx-root"></div>';
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
   else               h=n(num1)+op('+','op-p')+nB(num2,num1,'add')+op('=','op-e')+inp;
   document.getElementById('eq').innerHTML=h;
@@ -491,7 +518,7 @@ function renderEq(){
   if(ptype!==TVA&&ptype!==TVS){const _eq=document.getElementById('eq');
    const _nums=_eq.querySelectorAll('.eq-n[data-num],.eq-res[data-num]');
    if(_nums.length>=2)_nums[0].classList.add('eq-noobj');}
-  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)_colxMount();
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC)_colxMount();
 }
 
 /* ── self-contained exercise host (TCA → column_add, TCS → column_sub) ──
@@ -506,7 +533,7 @@ function _colxMount(){
   loadExercise(exName,()=>{
     // problem changed while loading (idx moved, left colx, or now a DIFFERENT
     // colx type) → a stale async module-load must NOT clobber the live mount
-    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
+    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
     const root=document.getElementById('colx-root');
     const ex=window.EXERCISES&&EXERCISES.types[exName];
     if(!root||!ex)return;
@@ -540,8 +567,8 @@ function showBtns(s){
   if(s==='check'){
     btns.innerHTML='';
     btns.className='btn-row';
-    // exercise modules (TCA/TCS/TCM/TBC) check themselves — no host check button
-    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)?'none':'flex';
+    // exercise modules (TCA/TCS/TCM/TBC/TPG/TMC) check themselves — no host check button
+    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC)?'none':'flex';
   }else{
     if(cb)cb.style.display='none';
     btns.innerHTML=
@@ -565,7 +592,7 @@ document.addEventListener('input',e=>{
 });
 function checkAns(){
   if(done)return;
-  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC)return;   // the exercise module checks itself
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC)return;   // the exercise module checks itself
   // ── Multi-unknown problems: two (TDA/TDS) or three (TRA) empty boxes ──
   if(ptype===TDA||ptype===TDS||ptype===TRA){
     const i1=document.getElementById('ans1'),i2=document.getElementById('ans2'),
@@ -618,7 +645,7 @@ function checkAns(){
   const inp=document.getElementById('ans');
   const v=inp?parseInt(inp.value,10):NaN;
   if(!inp||inp.value===''||isNaN(v)){setFb('נָא לְהַזִּין מִסְפָּר בָּרִיבּוּעַ 💗','fb-err');return}
-  const correct=ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TVA?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const correct=ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   _markAns(inp,v===correct);
   done=true;if(inp)inp.disabled=true;
   document.getElementById('btns').innerHTML='';
@@ -817,6 +844,7 @@ function resetCur(){
   done=false;
   renderEq();setFb('','');showBtns('check');resetAidUsed();
   if(ptype===TT){NL.configure(100,10);NL.init(num1);}
+  if(ptype===TH){const _s=(num2%100===0)?100:10;NL.configure(num1+num2+_s,_s,num1);NL.init(num1);}
   setTimeout(()=>{
     const first=(ptype===TX||ptype===TZ)?document.getElementById('tx-sub1')
                :(ptype===TDA||ptype===TDS||ptype===TRA)?document.getElementById('ans1'):null;
@@ -942,6 +970,8 @@ function _reportRows(){
     else if(r.ptype===TCS)eq=`${r.num1} − ${r.num2} = ${r.correct}`;
     else if(r.ptype===TCM)eq=`🪙 ${r.correct} × ${r.num2||5} = ${r.num1}`;
     else if(r.ptype===TBC)eq=`🥨 ${r.num1} × ${r.num2||5} = ${r.correct}`;
+    else if(r.ptype===TPG)eq=`🔷 ${({3:'מְשֻׁלָּשׁ',4:'מְרֻבָּע',5:'מְחֻמָּשׁ',6:'מְשֻׁשֶּׁה',7:'מְשֻׁבָּע',8:'מְתֻמָּן'}[r.correct]||'צוּרָה')} — ${r.correct} צְלָעוֹת`;
+    else if(r.ptype===TMC)eq=`✖️ ${r.num1} × ${r.num2} = ${r.correct}`;
     else if(r.ptype===TVA||r.ptype===TVS){const E=s=>({circle:'🔵',triangle:'🔺',square:'🟦'}[s]||'🔷');const e=E(p.sym),opc=r.ptype===TVA?'+':'−';
       eq=p.symA?`${E(p.symA)}=${r.num1} ${e}=${r.num2} · ${E(p.symA)} ${opc} ${e} = ${r.correct}`:`${e}=${r.num2} · ${r.num1} ${opc} ${e} = ${r.correct}`;}
     else                  eq=`${r.num1} + ${r.num2} = ${r.correct}`;   // TA, TCA (column add)

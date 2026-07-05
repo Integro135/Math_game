@@ -34,6 +34,9 @@ function sampleWithTD(pool,k){
 // render differs. (b≥1 skips a ⃝=0 slot; r≥6 keeps a three-sum decomposable.)
 const _VSHAPES=['circle','triangle','square'];
 const _vshape=()=>_VSHAPES[(Math.random()*3)|0];
+// pick a shape distinct from `first` (used so two unknowns with DIFFERENT
+// values never share the same shape — a shape can't stand for two values)
+const _vshape2=(first,distinct)=>{if(!distinct)return _vshape();let s;do{s=_vshape();}while(s===first);return s;};
 function _sprinkleUnknowns(set){
   let c=0;
   for(let i=3;i<set.length;i+=4){
@@ -44,22 +47,63 @@ function _sprinkleUnknowns(set){
       const r=(p.t===TA)?p.a+p.b:p.a-p.b;   // the crossing result becomes the sum target
       if(r>=6){p.r=r;p.t=TRA;continue;}      // __+__+__ = r (a,b kept for the order-check)
     }
-    p.t=(p.t===TA)?TVA:TVS;p.sym=_vshape();
-    if(kind===1)p.symA=_vshape();            // two-unknown
+    p.t=(p.t===TA)?TVA:TVS;
+    if(kind===1){p.symA=_vshape();p.sym=_vshape2(p.symA,p.a!==p.b);}  // two-unknown: distinct shapes when values differ
+    else p.sym=_vshape();
   }
   return set;
 }
 
+// Weave the polygon (side-counting) exercise into the Queen (mx) pool so a shape
+// shows up about ONCE EVERY 9 problems (the 9th, 18th … slot). It INSERTS (never
+// at slot 0 — the first card must keep a normal #ans input for boot), so every
+// existing problem is preserved. Used by Queen ONLY — the fixed bridge curricula
+// must keep their exact order. No-op when the polygon type isn't loaded.
+function _weavePolygons(pool){
+  const ex=EX('polygon'); if(!ex)return pool;
+  const polys=shuffle(ex.make('poly'));   // a bank of shuffled polygon problems
+  let at=8,k=0;                           // 0-indexed 9th slot (never slot 0)
+  while(at<=pool.length&&k<polys.length){
+    pool.splice(at,0,polys[k]);           // this becomes the (at+1)-th problem
+    k++;at+=9;                            // next shape ~9 slots later
+  }
+  return pool;
+}
+
+// Queen (mx) & Superman (sup) always present EXACTLY this many exercises per run.
+const QUEEN_SUPER_COUNT=20;
+// Cap an already-shuffled pool to n problems while PRESERVING TYPE COVERAGE:
+// surplus is removed from over-represented types first (walking from the end),
+// so every type that appears keeps ≥1 instance and slot 0 stays put. `minKeep`
+// (type→floor, default 1) protects curriculum minimums — e.g. Queen keeps ≥2 TT
+// (round-tens). Falls back to a plain trim only if there are more distinct types
+// than n (never the case for mx/sup).
+function _capPool(pool,n,minKeep){
+  if(pool.length<=n)return pool;
+  minKeep=minKeep||{};
+  let excess=pool.length-n;
+  const count={};pool.forEach(p=>{count[p.t]=(count[p.t]||0)+1;});
+  const drop=new Array(pool.length).fill(false);
+  for(let i=pool.length-1;i>=0&&excess>0;i--){
+    const floor=minKeep[pool[i].t]||1;
+    if(count[pool[i].t]>floor){drop[i]=true;count[pool[i].t]--;excess--;}
+  }
+  let out=pool.filter((_,i)=>!drop[i]);
+  return out.length>n?out.slice(0,n):out;
+}
+
 function makePool(m){
   if(m===0)return EX('add').make(0);                 // the full 1+1 ladder
-  if(m==='mx')return makeMxPool();                   // Queen — curated mix
+  if(m==='mx')return _capPool(makeMxPool(),QUEEN_SUPER_COUNT,{[TT]:2});   // Queen — curated mix, 20 shown (keep ≥2 round-tens)
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
   if(m==='b20')return makeBridge20Pool();            // bridge-20 curriculum (two alternating sets)
   // Superman — an EQUAL 3-per-type mix: column addition + big-number subtraction
   // + coin-multiplication + bagel-cost (×5 in shekels) + column subtraction
-  // (3 no-borrow + 3 with-borrow)  → 18 problems
-  if(m==='sup')return shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup')]);
+  // + whole-hundreds + multiplication chains, shuffled then capped to 20 shown
+  if(m==='sup')return _capPool(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[])]),QUEEN_SUPER_COUNT);
   if(m==='big')return EX('big_step').make('big');    // big number ± step game
+  if(m==='poly')return EX('polygon')?EX('polygon').make('poly'):[];   // count-the-sides shapes game
+  if(m==='mul')return EX('mult_chain')?EX('mult_chain').make('mul'):[];// multiplication as repeated addition (2×3 → 2+2+2)
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
   // then the coins type seeds 1-2 coin problems
   const pool=[
@@ -88,13 +132,18 @@ function makeMxPool(){
     ...EX('column_sub').make('mx'),
     ...(EX('var_one')?EX('var_one').make('mx'):[]),   // one ⃝-unknown add + one sub
     ...(EX('tri_unknown')?EX('tri_unknown').make('mx'):[]),  // one __+__+__ = R (three unknowns)
+    ...(EX('hundreds')?EX('hundreds').make('mx'):[]),       // whole-hundreds addition (200+60, 300+300)
+    ...(EX('mult_chain')?EX('mult_chain').make('mx'):[]),   // 2 multiplication-as-repeated-addition chains (2×/3×, ≤20)
   ]);
-  // The column-subtraction module renders its OWN staged UI (not the #ans box),
-  // so never let it sit at slot 0 — the first card always shows a normal input.
-  if(pool.length&&pool[0].t===TCS){
-    for(let j=1;j<pool.length;j++){if(pool[j].t!==TCS){const t=pool[0];pool[0]=pool[j];pool[j]=t;break;}}
+  // Self-mounting modules render their OWN UI (not the #ans box), so never let one
+  // sit at slot 0 — the first card must show a normal input. Covers column
+  // subtraction (TCS) and the multiplication chain (TMC).
+  const _noAns=p=>p.t===TCS||p.t===TMC||p.t===TPG;
+  if(pool.length&&_noAns(pool[0])){
+    for(let j=1;j<pool.length;j++){if(!_noAns(pool[j])){const t=pool[0];pool[0]=pool[j];pool[j]=t;break;}}
   }
-  return pool;
+  // fold in a polygon side-counting shape ~once every 9 (inserted at slot 9, 18…)
+  return _weavePolygons(pool);
 }
 
 // ── bridging-10 ("גָּשֵׁר 10") — FOUR fixed pedagogical sets, served ALTERNATELY.
@@ -190,7 +239,9 @@ function makeBridge20Pool(){
   const set=_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length]());
   _b20Turn=(_b20Turn+1)%_BRIDGE20_SETS.length;
   try{localStorage.setItem('b20Turn',String(_b20Turn));}catch(e){}
+  // NOTE: no polygon weaving here — the bridge-20 curriculum order MUST stay
+  // fixed (see the set comments). Polygons live in Queen (mx) + the poly game.
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode||5;}

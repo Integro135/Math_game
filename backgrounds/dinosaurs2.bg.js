@@ -17,6 +17,25 @@
   var doc = w.document;
   var NS = 'http://www.w3.org/2000/svg';
 
+  /* where this file lives → resolve the sibling dinasours/ modules (the old
+     rolling egg is loaded from there, "exactly as it was") */
+  var BASE = (function () {
+    var s = doc.currentScript;
+    return s && s.src ? s.src.replace(/[^/]*$/, '') : 'backgrounds/';
+  })();
+  var DINO = BASE + 'dinasours/';
+  /* inject a dinasours/ module once; call cb when its global is ready (degrades
+     gracefully — cb still runs on error so the scene isn't blocked) */
+  function needScript(globalName, file, cb) {
+    if (w[globalName]) { cb(); return; }
+    var sel = 'script[data-d2dep="' + globalName + '"]', ex = doc.querySelector(sel);
+    if (ex) { ex.addEventListener('load', cb); ex.addEventListener('error', cb); return; }
+    var s = doc.createElement('script');
+    s.src = DINO + file; s.setAttribute('data-d2dep', globalName);
+    s.onload = cb; s.onerror = cb;
+    doc.head.appendChild(s);
+  }
+
   /* ── helpers ─────────────────────────────────────────────────────────── */
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function irnd(a, b) { return Math.floor(rnd(a, b + 1)); }
@@ -69,6 +88,36 @@
     return markup;
   }
 
+  /* ── pterodactyl palettes — the flyer owns its own coral hex family, so it
+        needs a separate swap table (the same closed-set rule as PAL). Each
+        variant recolours body/wings/crest/belly/outline; the eye pupil shifts
+        to a matching dark tone. `coral` = null = the original art. ── */
+  var PTERO_PAL = {
+    coral: null,
+    violet: {
+      '#f4b183': '#b6a4e6', '#e78a5f': '#9b83d9', '#d97c50': '#8670c9',
+      '#ffd9b8': '#e9dffb', '#e6647a': '#c86bd4', '#8a4b2c': '#5b3f8a',
+      '#3a2417': '#241a3a'
+    },
+    sky: {
+      '#f4b183': '#8fc4ee', '#e78a5f': '#6aa9e0', '#d97c50': '#4f92d1',
+      '#ffd9b8': '#dcecfb', '#e6647a': '#54cad9', '#8a4b2c': '#2f5a8a',
+      '#3a2417': '#17293a'
+    },
+    sun: {
+      '#f4b183': '#ffd76b', '#e78a5f': '#f6b23f', '#d97c50': '#e39421',
+      '#ffd9b8': '#fff2c4', '#e6647a': '#ff8f5e', '#8a4b2c': '#9a5a1e',
+      '#3a2417': '#3a2610'
+    }
+  };
+  function applyPteroPal(markup, name) {
+    var map = PTERO_PAL[name], k;
+    if (!map) return markup;
+    for (k in map) if (map.hasOwnProperty(k)) markup = markup.split(k).join(map[k]);
+    return markup;
+  }
+  var PTERO_PAL_NAMES = ['coral', 'violet', 'sky', 'sun'];
+
   /* ══ SPECIES ART — every figure drawn from scratch, faces RIGHT,
         feet on the viewBox bottom edge so the ground shadow lines up.
         Shared anatomy: one closed silhouette path with the thick round
@@ -119,60 +168,9 @@
     '</svg>'
   ].join('');
 
-  /* ── TRICERATOPS — new drawing: petal-scalloped frill, two white brow
-        horns + snub nose horn, chunky round body. ── */
-  /* ── TRICERATOPS — new drawing: petal-scalloped frill, two white brow
-        horns + snub nose horn, chunky round body. ── */
-  var TRIKE_SVG = [
-    '<svg class="d2svg" viewBox="55 30 705 336">',
-    '<defs>',
-    '<linearGradient id="d2tkForm" x1="0" y1="0" x2="0" y2="1">',
-    '<stop offset="0" stop-color="#eef4e0" stop-opacity=".4"/>',
-    '<stop offset=".32" stop-color="#eef4e0" stop-opacity="0"/>',
-    '<stop offset=".78" stop-color="#3f6e2c" stop-opacity="0"/>',
-    '<stop offset="1" stop-color="#3f6e2c" stop-opacity=".26"/>',
-    '</linearGradient>',
-    '<clipPath id="d2tkClip"><path d="M92,238 C110,222 132,216 152,220 C182,174 252,150 342,152 C424,154 492,178 532,214 C556,234 566,260 558,284 C544,308 500,320 448,324 C380,330 300,326 250,314 C215,304 190,290 176,274 C150,280 112,262 92,238 Z"/></clipPath>',
-    '</defs>',
-    '<g class="leg lgA"><path d="M244,278 L240,336 Q239,354 258,356 L270,356 Q286,356 284,338 L280,278 Z" fill="#6ea653" stroke="#3f6e2c" stroke-width="4"/></g>',
-    '<g class="leg lgB"><path d="M428,282 L424,338 Q423,356 442,358 L454,358 Q470,358 468,340 L464,282 Z" fill="#6ea653" stroke="#3f6e2c" stroke-width="4"/></g>',
-    '<path d="M92,238 C110,222 132,216 152,220 C182,174 252,150 342,152 C424,154 492,178 532,214 C556,234 566,260 558,284 C544,308 500,320 448,324 C380,330 300,326 250,314 C215,304 190,290 176,274 C150,280 112,262 92,238 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>',
-    '<g clip-path="url(#d2tkClip)">',
-    '<path d="M180,286 C260,326 430,328 530,282 L530,364 L170,364 Z" fill="#c4e6a3" opacity=".45"/>',
-    '<ellipse cx="262" cy="284" rx="28" ry="12" fill="#3f6e2c" opacity=".13"/>',
-    '<ellipse cx="446" cy="288" rx="28" ry="12" fill="#3f6e2c" opacity=".13"/>',
-    '<path d="M250,200 C270,224 320,228 350,212 C342,248 280,252 250,200 Z" fill="#6ea653" opacity=".85"/>',
-    '<path d="M400,238 C420,232 444,240 448,260 C432,274 406,268 400,238 Z" fill="#6ea653" opacity=".85"/>',
-    '<path d="M158,252 C174,244 194,250 196,266 C184,278 162,272 158,252 Z" fill="#6ea653" opacity=".85"/>',
-    '<rect x="55" y="30" width="705" height="336" fill="url(#d2tkForm)"/>',
-    '<path d="M170,210 C250,180 350,170 480,194 C370,178 250,192 170,210 Z" fill="#eef4e0" opacity=".55"/>',
-    '</g>',
-    '<g class="leg lgB"><path d="M292,282 L288,340 Q288,360 308,360 L324,360 Q342,360 340,342 L336,282 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5"/><path d="M296,352 Q302,346 308,352 M314,352 Q320,346 326,352" fill="none" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round"/></g>',
-    '<g class="leg lgA"><path d="M476,284 L472,342 Q472,360 492,362 L508,362 Q526,362 524,344 L520,284 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5"/><path d="M480,354 Q486,348 492,354 M498,354 Q504,348 510,354" fill="none" stroke="#3f6e2c" stroke-width="2.4" stroke-linecap="round"/></g>',
-    '<g>',
-    '<circle cx="562" cy="76" r="19" fill="#76b65d" stroke="#3f6e2c" stroke-width="4"/>',
-    '<circle cx="516" cy="92" r="19" fill="#76b65d" stroke="#3f6e2c" stroke-width="4"/>',
-    '<circle cx="486" cy="130" r="19" fill="#76b65d" stroke="#3f6e2c" stroke-width="4"/>',
-    '<circle cx="478" cy="176" r="19" fill="#76b65d" stroke="#3f6e2c" stroke-width="4"/>',
-    '<circle cx="608" cy="70" r="19" fill="#76b65d" stroke="#3f6e2c" stroke-width="4"/>',
-    '<circle cx="576" cy="150" r="86" fill="#76b65d" stroke="#3f6e2c" stroke-width="4.5"/>',
-    '<circle cx="580" cy="152" r="64" fill="#8cc777"/>',
-    '<circle cx="530" cy="106" r="4.6" fill="#eab94d"/>',
-    '<circle cx="512" cy="146" r="4.6" fill="#eab94d"/>',
-    '<circle cx="518" cy="188" r="4.6" fill="#eab94d"/>',
-    '<circle cx="556" cy="84" r="4.6" fill="#eab94d"/>',
-    '<circle cx="602" cy="80" r="4.6" fill="#eab94d"/>',
-    '</g>',
-    '<path d="M586,120 C640,104 692,120 712,158 C730,192 726,228 700,248 C676,266 636,268 606,254 C572,238 560,196 570,160 C574,144 578,128 586,120 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round"/>',
-    '<path d="M712,196 C730,198 742,208 742,220 C742,232 728,240 712,238 C706,226 706,208 712,196 Z" fill="#eab94d" stroke="#3f6e2c" stroke-width="3.5" stroke-linejoin="round"/>',
-    '<path d="M604,124 C596,96 602,70 620,58 C630,72 630,102 622,126 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="3"/>',
-    '<path d="M646,116 C642,92 650,70 666,62 C674,76 672,102 662,122 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="3"/>',
-    '<path d="M690,142 C696,126 710,120 722,126 C722,140 712,152 698,156 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="3"/>',
-    '<g class="eye"><circle cx="652" cy="182" r="13.5" fill="#ffffff" stroke="#3f6e2c" stroke-width="3"/><circle cx="655" cy="181" r="7.2" fill="#22331a"/><circle cx="658.5" cy="177" r="2.9" fill="#ffffff"/><circle cx="651" cy="185.5" r="1.3" fill="#ffffff"/></g>',
-    '<path d="M678,224 Q688,231 698,224" fill="none" stroke="#3f6e2c" stroke-width="3" stroke-linecap="round"/>',
-    '<ellipse cx="638" cy="218" rx="8" ry="5" fill="#f1a0ab" opacity=".6"/>',
-    '</svg>'
-  ].join('');
+  /* ── TRICERATOPS (new flat-style drawing) — REMOVED 2026-07 at the user's
+        request: the flat-style redesign didn't read well next to the others, so
+        only the ORIGINAL walker art (TRIKEC_SVG, below) ships as the trike. ── */
 
   /* ── TRICERATOPS — the ORIGINAL walker art (backgrounds/dinasours/tricera-walker.js),
         ported to the d2 engine: gait/blink classes renamed, defs ids d2-prefixed
@@ -330,6 +328,20 @@
     '</svg>'
   ].join('');
 
+  /* ── ROLLING egg — a spotted egg that tumbles across the grass (ported in
+        spirit from the old bg's BabyTrexEgg.roll). Centered viewBox so the
+        spin layer rotates it about its middle = looks like it rolls. ── */
+  var ROLLEGG_SVG = [
+    '<svg class="d2rollsvg" viewBox="-60 -74 120 148">',
+    '<ellipse cx="0" cy="4" rx="42" ry="52" fill="#fdf3e3" stroke="#b98f68" stroke-width="4"/>',
+    '<ellipse cx="-15" cy="-10" rx="9" ry="7" fill="#e3cfae"/>',
+    '<ellipse cx="13" cy="12" rx="7" ry="5.5" fill="#e3cfae"/>',
+    '<ellipse cx="4" cy="-30" rx="6" ry="4.6" fill="#e3cfae"/>',
+    '<ellipse cx="-10" cy="26" rx="6.5" ry="5" fill="#e3cfae"/>',
+    '<ellipse cx="-17" cy="-30" rx="11" ry="6.5" fill="#ffffff" opacity=".5"/>',
+    '</svg>'
+  ].join('');
+
   /* ── CSS — injected once, everything namespaced d2 ───────────────────── */
   var CSS = [
     '.d2w{position:absolute;left:0;bottom:0;pointer-events:none;will-change:transform}',
@@ -359,8 +371,14 @@
     '.d2egg .d2baby{transform-box:view-box;opacity:0}',
     '.d2egg.d2wob{animation:d2Wobble .9s ease-in-out}',
     '@keyframes d2Wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg)}55%{transform:rotate(4deg)}80%{transform:rotate(-2deg)}}',
-    /* scene svg fills the stage */
-    '.d2scene{position:absolute;inset:0;overflow:hidden}',
+    /* rolling egg — wrapper translates across, inner spin layer tumbles */
+    '.d2roll{position:absolute;bottom:0;pointer-events:none;will-change:transform}',
+    '.d2roll .d2rollspin{height:100%;transform-box:border-box;transform-origin:50% 50%}',
+    '.d2roll svg{display:block;height:100%;width:auto;overflow:visible}',
+    '.d2rheart{position:absolute;pointer-events:none;z-index:9;opacity:0;transform:translate(-50%,-50%)}',
+    /* scene svg fills the stage — nothing in the decorative backdrop should be
+       text-selectable (the volcano countdown must not turn blue on drag) */
+    '.d2scene{position:absolute;inset:0;overflow:hidden;user-select:none;-webkit-user-select:none;-moz-user-select:none}',
     '.d2scene svg{display:block;width:100%;height:100%}',
     '.d2scene .d2tw{transform-box:fill-box;transform-origin:50% 50%}',
     '.d2scene .d2blade{transform-box:fill-box;transform-origin:50% 100%}',
@@ -388,9 +406,8 @@
   /* ── species table ───────────────────────────────────────────────────── */
   var SPECIES = {
     bronto: { svg: BRONTO_SVG, h: 30, b: 2.5, bob: 5 },
-    trike:  { svg: TRIKE_SVG,  h: 22, b: 2.8, bob: 6 },
     stego:  { svg: STEGO_SVG,  h: 23, b: 2.6, bob: 5 },
-    trikec: { svg: TRIKEC_SVG, h: 23, b: 2.8, bob: 6 },   // the ORIGINAL walkers, improved
+    trikec: { svg: TRIKEC_SVG, h: 23, b: 2.8, bob: 6 },   // the ORIGINAL walker (the only triceratops)
     stegoc: { svg: STEGOC_SVG, h: 22, b: 2.6, bob: 5 },
     trex:   { svg: TREX_SVG,   h: 27, b: 2.2, bob: 7 }
   };
@@ -398,6 +415,20 @@
   /* ── walker engine — WAAPI crossing with a sine bob, exactly the proven
         recipe: measure after append, park off-screen, flip for rtl. ── */
   var liveWalkers = [];   // every on-stage walker (for clicks + meteor flee)
+
+  /* keep the scene calm: at most MAX_GROUND_DINOS ground dinos + 1 pterodactyl
+     on stage at once (the flyer is the egg-layer, so it's counted separately) */
+  var MAX_GROUND_DINOS = 2;
+  function groundCount() {
+    var n = 0, i;
+    for (i = 0; i < liveWalkers.length; i++) if (liveWalkers[i].species !== 'ptero') n++;
+    return n;
+  }
+  function pteroCount() {
+    var n = 0, i;
+    for (i = 0; i < liveWalkers.length; i++) if (liveWalkers[i].species === 'ptero') n++;
+    return n;
+  }
 
   var UID = 0;   // per-instance defs-id suffix — two same-species walkers with
                  // different palettes must NOT share gradient ids (url(#…) is
@@ -421,7 +452,37 @@
     wrap.appendChild(act);
     wrap._act = act;
     wrap._species = species;
+    wrap._uid = uid;                              // needed to rebuild markup on recolor
+    wrap._palette = opts.palette || 'green';
     return wrap;
+  }
+
+  /* walker palette cycle for click-recolour (ptero uses PTERO_PAL_NAMES) */
+  var WALKER_PALS = ['green', 'pink', 'teal'];
+  /* ── recolour on click — rebuild the SVG markup in a DIFFERENT palette and
+        swap it in. Cheap: the crossing (wrap) and reaction (act) animations are
+        untouched — only the inner <svg> is replaced, so motion keeps playing. ── */
+  function recolor(inst) {
+    var wrap = inst && inst.element;
+    if (!wrap || !wrap._act) return;
+    var isPtero = wrap._species === 'ptero';
+    var names = isPtero ? PTERO_PAL_NAMES : WALKER_PALS;
+    var cur = wrap._palette || names[0];
+    var others = [], i;
+    for (i = 0; i < names.length; i++) if (names[i] !== cur) others.push(names[i]);
+    var next = others.length ? others[irnd(0, others.length - 1)] : cur;
+    var markup;
+    if (isPtero) {
+      markup = applyPteroPal(PTERO_SVG, next);
+    } else {
+      markup = applyPal(SPECIES[wrap._species].svg, next)
+        .replace(/d2(?:br|tk|sg|tx|tc|sc)(?:Form|Clip|Plate|Scales)/g, function (m) { return m + '_' + wrap._uid; });
+    }
+    var oldSvg = wrap._act.querySelector('svg.d2svg');
+    var newSvg = parseSVG(markup);
+    if (oldSvg && oldSvg.parentNode) oldSvg.parentNode.replaceChild(newSvg, oldSvg);
+    else wrap._act.appendChild(newSvg);
+    wrap._palette = next;
   }
 
   function walk(container, species, opts) {
@@ -487,11 +548,12 @@
     wrap.style.setProperty('--gait', String(rnd(0.85, 1.2)));
     wrap.style.transform = 'translateX(-99999px)';
     var act = el('div', 'd2act');
-    act.appendChild(parseSVG(PTERO_SVG));
+    act.appendChild(parseSVG(applyPteroPal(PTERO_SVG, opts.palette || 'coral')));
     act.style.transformOrigin = '50% 50%';   // flyer pops from its centre
     wrap.appendChild(act);
     wrap._act = act;
     wrap._species = 'ptero';
+    wrap._palette = opts.palette || 'coral';
     container.appendChild(wrap);
     var ew = wrap.offsetWidth || 260;
     var cw = container.clientWidth || 800;
@@ -533,7 +595,7 @@
     /* long-neck bob — dips forward and springs back */
     bronto: [[{ transform: 'translateY(0) rotate(0)' }, { transform: 'translateY(-9px) rotate(-3deg)', offset: 0.4 }, { transform: 'translateY(0) rotate(0)' }], 640],
     /* triceratops head-butt — a quick downward horn lunge */
-    trike: [[{ transform: 'rotate(0) translateY(0)' }, { transform: 'rotate(-6deg) translateY(3px)', offset: 0.32 }, { transform: 'rotate(1deg)', offset: 0.6 }, { transform: 'rotate(0)' }], 520],
+    trikec: [[{ transform: 'rotate(0) translateY(0)' }, { transform: 'rotate(-6deg) translateY(3px)', offset: 0.32 }, { transform: 'rotate(1deg)', offset: 0.6 }, { transform: 'rotate(0)' }], 520],
     /* stegosaurus shimmy — plates/tail wag side to side */
     stego: [[{ transform: 'rotate(0)' }, { transform: 'rotate(-2.6deg)', offset: 0.25 }, { transform: 'rotate(2.6deg)', offset: 0.6 }, { transform: 'rotate(-1.4deg)', offset: 0.82 }, { transform: 'rotate(0)' }], 660],
     /* T-Rex chomp + mini-roar — squash then a proud pop */
@@ -541,7 +603,6 @@
     /* pterodactyl flap-dash — pops upward with a wing surge */
     ptero: [[{ transform: 'translateY(0) scale(1)' }, { transform: 'translateY(-16px) scale(1.07)', offset: 0.4 }, { transform: 'translateY(0) scale(1)' }], 560]
   };
-  REACTIONS.trikec = REACTIONS.trike;
   REACTIONS.stegoc = REACTIONS.stego;
 
   function reactHop(inst) {
@@ -552,7 +613,8 @@
     var a = act.animate(r[0], { duration: r[1], easing: 'ease-out' });
     a.onfinish = function () { inst.element._busy = false; };
     setTimeout(function () { inst.element._busy = false; }, r[1] + 160);
-    if (inst.element._species === 'ptero') flapBurst(inst.element);  // wings surge
+    recolor(inst);            // every click also shifts it to a new colour
+    if (inst.element._species === 'ptero') flapBurst(inst.element);  // wings surge (on the new SVG)
     fireHearts(inst.element);
   }
   /* briefly speed the pterodactyl's wing-flap CSS animation for a click dash */
@@ -650,6 +712,189 @@
     return st;
   }
 
+  /* ── rolling egg — tumbles across the grass one crossing at a time, then
+        removes itself; a tap sends up a little heart burst. Tracked in
+        st.rolls so the click router and cleanup can reach it. ── */
+  /* A rolling egg. Two modes:
+       • DROP  (opts.dropX px given): the egg is dropped by a pterodactyl — it
+         appears in the sky at dropX/opts.fromTop, FALLS to the ground, then
+         rolls off toward the farther edge, tumbling the whole way.
+       • (legacy edge-to-edge crossing — kept for _test/reuse).
+     Both register in st.rolls (tap → hearts) and self-remove off-screen. */
+  function rollEgg(container, st, opts) {
+    if (!container) return null;
+    opts = opts || {};
+    injectCSS();
+    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    var wrap = el('div', 'd2roll');
+    wrap.style.height = opts.height || '11%';
+    wrap.style.bottom = opts.bottom || '3.5%';
+    wrap.style.zIndex = opts.zIndex != null ? opts.zIndex : 6;
+    wrap.style.transform = 'translateX(-99999px)';
+    var spin = el('div', 'd2rollspin');
+    spin.appendChild(parseSVG(ROLLEGG_SVG));
+    wrap.appendChild(spin);
+    container.appendChild(wrap);
+    var ew = wrap.offsetWidth || 90, cw = container.clientWidth || 800, ch = container.clientHeight || 600;
+    var margin = Math.max(40, ew * 0.5);
+    var inst = { element: wrap, spin: spin, stopped: false };
+    function end() {
+      if (inst.stopped) return;
+      inst.stopped = true;
+      var i = st.rolls.indexOf(inst); if (i >= 0) st.rolls.splice(i, 1);
+      try { if (inst._rot) inst._rot.cancel(); } catch (e) {}
+      if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+      if (opts.onDone) opts.onDone();
+    }
+
+    if (opts.dropX != null) {
+      /* ── dropped from the sky, then rolls off ── */
+      var dropX = opts.dropX;
+      var ltrD = dropX < cw / 2;                                   // roll toward the farther edge
+      var rollTo = ltrD ? (cw + margin - dropX) : -(dropX + ew + margin);
+      wrap.style.left = dropX + 'px';
+      var wrapH = wrap.offsetHeight || ch * 0.11;
+      var restTop = ch - (ch * 0.035) - wrapH;                     // top of the egg at rest on the grass
+      var fromTop = Math.min(opts.fromTop != null ? opts.fromTop : restTop - ch * 0.5, restTop - 40);
+      var fallDist = Math.max(60, restTop - fromTop);
+      wrap.style.transform = 'translate(0px,' + (-fallDist).toFixed(0) + 'px)';
+      inst._rot = animate(spin, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + (ltrD ? 360 : -360) + 'deg)' }],
+        { duration: rnd(1400, 1900), iterations: Infinity, easing: 'linear' });
+      var rollDur = Math.max(6000, Math.abs(rollTo) / (cw + ew) * rnd(20000, 26000));
+      function startRoll() {
+        if (inst.stopped) return;
+        var roll = animate(wrap, [{ transform: 'translate(0px,0px)' }, { transform: 'translate(' + rollTo.toFixed(0) + 'px,0px)' }],
+          { duration: rollDur, easing: 'linear', fill: 'forwards' });
+        inst._roll = roll;
+        if (roll) roll.onfinish = end; else setTimeout(end, rollDur);
+      }
+      var fall = animate(wrap, [
+        { transform: 'translate(0px,' + (-fallDist).toFixed(0) + 'px)' },
+        { transform: 'translate(0px,0px)' }
+      ], { duration: 640, easing: 'cubic-bezier(.45,0,.9,1)', fill: 'forwards' });
+      inst._fall = fall;
+      if (fall) fall.onfinish = startRoll; else { wrap.style.transform = 'translate(0px,0px)'; startRoll(); }
+      inst.stop = function () {
+        try { if (inst._fall) inst._fall.cancel(); } catch (e) {}
+        try { if (inst._roll) inst._roll.cancel(); } catch (e) {}
+        end();
+      };
+      st.rolls.push(inst);
+      return inst;
+    }
+
+    /* ── legacy edge-to-edge crossing ── */
+    var ltr = (opts.direction || 'ltr') === 'ltr';
+    var x0 = ltr ? -ew - margin : cw + margin, x1 = ltr ? cw + margin : -ew - margin;
+    var dur = opts.duration || rnd(24000, 31000);
+    var a = animate(wrap, [{ transform: 'translateX(' + x0 + 'px)' }, { transform: 'translateX(' + x1 + 'px)' }],
+      { duration: dur, easing: 'linear', fill: 'forwards' });
+    inst._rot = animate(spin, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + (ltr ? 360 : -360) + 'deg)' }],
+      { duration: rnd(1400, 1900), iterations: Infinity, easing: 'linear' });
+    if (a) a.onfinish = end; else { wrap.style.transform = 'translateX(' + x1 + 'px)'; setTimeout(end, dur); }
+    inst.stop = function () { try { if (a) a.cancel(); } catch (e) {} end(); };
+    st.rolls.push(inst);
+    return inst;
+  }
+  /* drop a rolling egg from the pterodactyl's current spot */
+  function dropRollEgg(stage, st, dropX, fromTop) {
+    return rollEgg(stage, st, { dropX: dropX, fromTop: fromTop, zIndex: 6 });
+  }
+
+  /* ── HATCHING egg the pterodactyl LAYS in flight — it falls from the sky,
+        lands with a squash-bounce, wobbles, the lid cracks open and the baby
+        peeks out (the same baby the old static nest egg showed). Then the whole
+        thing fades away — nothing stays fixed on the grass. Registered in
+        st.eggs so a tap can re-trigger it and cleanup reaches it; it splices
+        itself out when it fades. ── */
+  function dropHatchEgg(stage, st, dropX, fromTop) {
+    if (!stage) return null;
+    injectCSS();
+    if (getComputedStyle(stage).position === 'static') stage.style.position = 'relative';
+    var ch = stage.clientHeight || 600, cw = stage.clientWidth || 800;
+    var wrap = el('div', 'd2egg');
+    wrap.style.height = '12%';
+    wrap.style.bottom = '3%';
+    wrap.style.zIndex = 6;
+    wrap.style.left = Math.max(cw * 0.04, Math.min(dropX, cw * 0.9)) + 'px';
+    wrap.appendChild(parseSVG(EGG_SVG));
+    stage.appendChild(wrap);
+    var lid = wrap.querySelector('.d2eggLid');
+    var baby = wrap.querySelector('.d2baby');
+    var wrapH = wrap.offsetHeight || ch * 0.12;
+    var restTop = ch - ch * 0.03 - wrapH;
+    var fromTopPx = Math.min(fromTop != null ? fromTop : ch * 0.16, restTop - 60);
+    var fallDist = Math.max(80, restTop - fromTopPx);
+    var rec = { wrap: wrap, hatching: false, timers: [] };
+    function done() {
+      rec.timers.forEach(clearTimeout);
+      var i = st.eggs.indexOf(rec); if (i >= 0) st.eggs.splice(i, 1);
+      if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+    }
+    rec.remove = done;
+    function crack() {
+      if (rec.hatching || !lid || !lid.animate) { rec.timers.push(setTimeout(done, 3800)); return; }
+      rec.hatching = true;
+      /* little pre-hatch wobble (WAAPI on the wrap — the fall left it holding a
+         transform, so a CSS-class wobble would be overridden) */
+      wrap.animate(
+        [{ transform: 'rotate(0)' }, { transform: 'rotate(-6deg)', offset: 0.25 },
+         { transform: 'rotate(5deg)', offset: 0.6 }, { transform: 'rotate(-2deg)', offset: 0.82 },
+         { transform: 'rotate(0)' }], { duration: 820, easing: 'ease-in-out', fill: 'forwards' });
+      rec.timers.push(setTimeout(function () {
+        lid.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-40deg) translateY(-7px)' }],
+          { duration: 440, easing: 'cubic-bezier(.34,1.4,.64,1)', fill: 'forwards' });
+        baby.animate([
+          { transform: 'translateY(34px)', opacity: 0 },
+          { transform: 'translateY(30px)', opacity: 1, offset: 0.2 },
+          { transform: 'translateY(0)', opacity: 1 }
+        ], { duration: 720, easing: 'cubic-bezier(.34,1.3,.64,1)', fill: 'forwards' });
+        fireHearts(wrap);
+      }, 520));
+      /* fade the whole thing away once the baby has said hi */
+      rec.timers.push(setTimeout(function () {
+        var f = animate(wrap, [{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'ease-in', fill: 'forwards' });
+        if (f) f.onfinish = done; else done();
+      }, 3600));
+      rec.timers.push(setTimeout(done, 4800));   // safety net
+    }
+    /* fall from the sky with a squash-bounce on landing */
+    wrap.style.transform = 'translateY(' + (-fallDist).toFixed(0) + 'px)';
+    var fall = animate(wrap, [
+      { transform: 'translateY(' + (-fallDist).toFixed(0) + 'px)', offset: 0 },
+      { transform: 'translateY(0px)', offset: 0.72 },
+      { transform: 'translateY(-14px)', offset: 0.85 },
+      { transform: 'translateY(0px)', offset: 1 }
+    ], { duration: 900, easing: 'cubic-bezier(.4,0,.7,1)', fill: 'forwards' });
+    if (fall) fall.onfinish = crack; else { wrap.style.transform = 'translateY(0)'; crack(); }
+    st.eggs.push(rec);
+    return rec;
+  }
+  /* tap on a rolling egg → a little pink heart burst (on the stage, so the
+     hearts don't inherit the egg's spin) */
+  function rollBounce(inst, st) {
+    var wrap = inst.element, stage = wrap.parentNode; if (!stage) return;
+    var r = wrap.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    var cx = r.left - sr.left + r.width / 2, cy = r.top - sr.top + r.height * 0.3, i;
+    for (i = 0; i < 3; i++) {
+      var h = el('div', 'd2rheart');
+      h.textContent = '💗';
+      h.style.left = (cx + rnd(-16, 16)) + 'px';
+      h.style.top = cy + 'px';
+      h.style.fontSize = rnd(16, 24).toFixed(0) + 'px';
+      stage.appendChild(h);
+      (function (node, d) {
+        var ha = animate(node, [
+          { transform: 'translate(-50%,-50%) scale(.5)', opacity: 0 },
+          { transform: 'translate(-50%,-90px) scale(1.1)', opacity: 1, offset: 0.4 },
+          { transform: 'translate(-50%,-140px) scale(1)', opacity: 0 }
+        ], { duration: rnd(1000, 1400), delay: d, easing: 'ease-out' });
+        if (ha) ha.onfinish = function () { if (node.parentNode) node.remove(); };
+        setTimeout(function () { if (node.parentNode) node.remove(); }, 1900);
+      })(h, i * 120);
+    }
+  }
+
   /* ══ SCENE BACKDROP — one full-frame SVG: sunset sky, sun, stars, clouds,
         mountain ridges, the volcano (right side — the game card is pinned
         left by the skin), grass bands, ferns, trees. ══ */
@@ -694,17 +939,19 @@
       /* distant mountain ranges (built in JS: domed, snow-capped) */
       '<g id="d2mtnFar"></g>',
       '<g id="d2mtnMid"></g>',
-      /* volcano — right of frame */
+      /* volcano — right of frame. The ORIGINAL straight-sided cone silhouette,
+         uniformly enlarged about its base (×1.34) so the crater still sits
+         ~7cm below the top — a pure scale keeps the exact shape (no bulge). */
       '<g id="d2volc">',
-      '<path id="d2cone" d="M780,700 C820,560 865,440 905,378 L1035,378 C1075,440 1120,560 1160,700 Z" fill="url(#d2coneL)"/>',
-      '<path d="M1000,378 L1035,378 C1075,440 1120,560 1160,700 L1042,700 C1032,560 1016,440 1000,378 Z" fill="#46387a" opacity=".5"/>',
-      '<path d="M934,446 C948,506 940,576 952,646 M1002,436 C1016,506 1008,586 1022,666" fill="none" stroke="#46387a" stroke-width="7" stroke-linecap="round" opacity=".45"/>',
-      '<ellipse cx="970" cy="378" rx="66" ry="15" fill="#382f63"/>',
-      '<ellipse id="d2glow" cx="970" cy="378" rx="44" ry="10" fill="#ff9a4d"/>',
-      '<path d="M918,388 C914,412 920,432 914,452" fill="none" stroke="#ff7a3d" stroke-width="8" stroke-linecap="round" opacity=".85"/>',
-      '<path d="M921,390 C918,410 922,426 918,444" fill="none" stroke="#ffd27d" stroke-width="3.5" stroke-linecap="round" opacity=".9"/>',
-      '<path d="M1014,390 C1020,416 1016,436 1024,462" fill="none" stroke="#ff7a3d" stroke-width="7" stroke-linecap="round" opacity=".75"/>',
-      '<path d="M968,392 C966,404 969,412 966,422" fill="none" stroke="#ffd27d" stroke-width="5" stroke-linecap="round" opacity=".8"/>',
+      '<path id="d2cone" d="M715,700 C769,512 829,351 883,268 L1057,268 C1111,351 1171,512 1225,700 Z" fill="url(#d2coneL)"/>',
+      '<path d="M1010,268 L1057,268 C1111,351 1171,512 1225,700 L1067,700 C1053,512 1032,351 1010,268 Z" fill="#46387a" opacity=".5"/>',
+      '<path d="M922,359 C940,440 930,534 946,628 M1013,346 C1032,440 1021,547 1040,654" fill="none" stroke="#46387a" stroke-width="7" stroke-linecap="round" opacity=".4"/>',
+      '<ellipse cx="970" cy="268" rx="87" ry="20" fill="#382f63"/>',
+      '<ellipse id="d2glow" cx="970" cy="268" rx="59" ry="13" fill="#ff9a4d"/>',
+      '<path d="M916,278 C912,306 918,330 912,354" fill="none" stroke="#ff7a3d" stroke-width="8" stroke-linecap="round" opacity=".85"/>',
+      '<path d="M919,280 C916,304 920,324 916,346" fill="none" stroke="#ffd27d" stroke-width="3.5" stroke-linecap="round" opacity=".9"/>',
+      '<path d="M1016,280 C1022,310 1018,334 1026,366" fill="none" stroke="#ff7a3d" stroke-width="7" stroke-linecap="round" opacity=".75"/>',
+      '<path d="M968,282 C966,296 969,306 966,318" fill="none" stroke="#ffd27d" stroke-width="5" stroke-linecap="round" opacity=".8"/>',
       '</g>',
       /* FRONT range — drawn AFTER the volcano so its rise hides the lower cone
          (only the summit + plume show above the ridgeline, like the old bg) */
@@ -713,7 +960,7 @@
       '<g id="d2lava"></g>',
       /* countdown — above the smoke/lava layers; dark fill + light stroke so it
          reads over both the pale sky and the eruption puffs */
-      '<text id="d2count" x="970" y="348" text-anchor="middle" font-family="system-ui,sans-serif" font-size="42" font-weight="800" fill="#3b2c72" stroke="#fff3d6" stroke-width="5" paint-order="stroke" opacity="0" style="transition:opacity .3s ease">10</text>',
+      '<text id="d2count" x="970" y="238" text-anchor="middle" font-family="system-ui,sans-serif" font-size="42" font-weight="800" fill="#3b2c72" stroke="#fff3d6" stroke-width="5" paint-order="stroke" opacity="0" style="user-select:none;-webkit-user-select:none;pointer-events:none;transition:opacity .3s ease">10</text>',
       /* grass bands */
       /* grass hexes deliberately differ from every dino body/leg hex so
          walkers never melt into the bands */
@@ -747,9 +994,9 @@
   /* ── mountain ranges — DOMED ridges (rounded peaks via quadratic segments),
         filled to the ground, with white snow caps on the high points. Data is
         [x,y] tops; the front range's tall rise sits in front of the volcano. ── */
-  var MTN_FAR   = [[-40, 648], [140, 560], [320, 628], [520, 558], [720, 620], [940, 560], [1140, 618], [1320, 578]];
-  var MTN_MID   = [[-40, 692], [180, 600], [400, 672], [620, 600], [860, 666], [1080, 602], [1320, 660]];
-  var MTN_FRONT = [[-40, 724], [150, 648], [360, 706], [560, 636], [740, 690], [900, 548], [1010, 566], [1180, 664], [1320, 706]];
+  var MTN_FAR   = [[-40, 606], [140, 352], [320, 508], [520, 344], [720, 504], [940, 352], [1140, 506], [1320, 414]];
+  var MTN_MID   = [[-40, 664], [180, 432], [400, 566], [620, 426], [860, 560], [1080, 432], [1320, 524]];
+  var MTN_FRONT = [[-40, 704], [150, 548], [360, 656], [560, 524], [760, 612], [905, 505], [1015, 524], [1190, 606], [1320, 680]];
 
   function buildMountains(g, pts, fill, caps) {
     var GY = 800, i;
@@ -767,17 +1014,32 @@
       if (pts[i][1] < pts[i - 1][1] && pts[i][1] < pts[i + 1][1]) g.appendChild(snowCap(pts[i - 1], pts[i], pts[i + 1]));
     }
   }
+  /* the ridge around peak vertex P is the quadratic (M0 → control P → M1) where
+     M0/M1 are the midpoints to the neighbours — so the VISIBLE apex is BELOW P.
+     Sample the real curve so the snow sits ON the ridge (its top edge IS the
+     ridge line) and drapes to a scalloped snow-line below — never floating. */
+  function _qAt(M0, P, M1, t) {
+    var u = 1 - t;
+    return [u * u * M0[0] + 2 * u * t * P[0] + t * t * M1[0],
+            u * u * M0[1] + 2 * u * t * P[1] + t * t * M1[1]];
+  }
   function snowCap(L, P, R) {
-    var px = P[0], py = P[1], capH = 34;
-    var lf = Math.min(0.8, capH / Math.max(24, L[1] - py));
-    var rf = Math.min(0.8, capH / Math.max(24, R[1] - py));
-    var lx = px + (L[0] - px) * lf, ly = py + (L[1] - py) * lf;
-    var rx = px + (R[0] - px) * rf, ry = py + (R[1] - py) * rf;
-    return svgEl('path', {
-      fill: '#ffffff', opacity: 0.92,
-      d: 'M' + px + ',' + (py - 1) + ' L' + rx + ',' + ry + ' L' + (px + (rx - px) * 0.5) + ',' + (ry + 7) +
-        ' L' + px + ',' + ((ly + ry) / 2) + ' L' + (px + (lx - px) * 0.5) + ',' + (ly + 8) + ' L' + lx + ',' + ly + ' Z'
-    });
+    var M0 = [(L[0] + P[0]) / 2, (L[1] + P[1]) / 2], M1 = [(P[0] + R[0]) / 2, (P[1] + R[1]) / 2];
+    var tL = 0.24, tR = 0.76, N = 8, i, top = [];
+    for (i = 0; i <= N; i++) top.push(_qAt(M0, P, M1, tL + (tR - tL) * i / N));
+    var apexY = _qAt(M0, P, M1, 0.5)[1];
+    var lp = top[0], rp = top[top.length - 1];
+    var drop = Math.max(16, (Math.min(lp[1], rp[1]) - apexY) + 20);   // snow depth below the apex
+    var lowY = apexY + drop, midX = (lp[0] + rp[0]) / 2;
+    // top edge: polyline riding ON the ridge (left→right)
+    var d = 'M' + lp[0].toFixed(1) + ',' + lp[1].toFixed(1);
+    for (i = 1; i < top.length; i++) d += ' L' + top[i][0].toFixed(1) + ',' + top[i][1].toFixed(1);
+    // bottom edge: a soft scalloped snow-line back (right→left), dipping below
+    d += ' L' + rp[0].toFixed(1) + ',' + (rp[1] + 5).toFixed(1) +
+         ' Q' + ((rp[0] + midX) / 2).toFixed(1) + ',' + (lowY + 5).toFixed(1) + ' ' + midX.toFixed(1) + ',' + lowY.toFixed(1) +
+         ' Q' + ((lp[0] + midX) / 2).toFixed(1) + ',' + (lowY + 5).toFixed(1) + ' ' + lp[0].toFixed(1) + ',' + (lp[1] + 5).toFixed(1) +
+         ' Z';
+    return svgEl('path', { fill: '#ffffff', opacity: 0.95, d: d });
   }
 
   /* ── puffy multi-lobe clouds (old-bg style): overlapping rounded lobes on a
@@ -837,65 +1099,143 @@
     }
   }
 
-  function fernPath(x, y, s) {
-    /* a fern = 5 curved fronds fanning out of one base, tips curling out */
-    var d = '', k, dx, h;
-    for (k = 0; k < 5; k++) {
-      dx = (k - 2) * 15 * s;
-      h = (46 - Math.abs(k - 2) * 9) * s;
-      d += 'M' + x + ',' + y +
-        ' Q' + (x + dx * 0.5) + ',' + (y - h * 0.62) + ' ' + (x + dx * 1.5) + ',' + (y - h) + ' ';
-    }
-    return d;
+  /* ── one filled, tapered leaf blade (base at bx±w on baseY, curling to a tip
+        that leans by `lean` and rises by `h`). The building block for lush grass
+        tufts and arching ferns — filled shapes read far better than lone
+        strokes. ── */
+  function leafBlade(bx, baseY, lean, h, w, color) {
+    var tipx = bx + lean, tipy = baseY - h;
+    var c1x = bx + lean * 0.35, c1y = baseY - h * 0.62;
+    var c2x = bx + lean * 0.7 + w * 0.6, c2y = baseY - h * 0.45;
+    return '<path d="M' + (bx - w).toFixed(1) + ',' + baseY.toFixed(1) +
+      ' Q' + c1x.toFixed(1) + ',' + c1y.toFixed(1) + ' ' + tipx.toFixed(1) + ',' + tipy.toFixed(1) +
+      ' Q' + c2x.toFixed(1) + ',' + c2y.toFixed(1) + ' ' + (bx + w).toFixed(1) + ',' + baseY.toFixed(1) +
+      ' Z" fill="' + color + '"/>';
   }
-  function buildFlora(g, st) {
-    var i, x, b, a, f, tuft;
-    /* grass blades along the front band */
-    for (x = 24; x < 1280; x += rnd(38, 68)) {
-      b = svgEl('path', {
-        'class': 'd2blade',
-        d: 'M' + x + ',706 Q' + (x + rnd(-4, 4)) + ',' + (706 - rnd(22, 44)) + ' ' + (x + rnd(-8, 8)) + ',' + (706 - rnd(26, 48)),
-        stroke: Math.random() < 0.5 ? '#7fb85f' : '#4f8f3f', 'stroke-width': rnd(4, 7), fill: 'none', 'stroke-linecap': 'round'
-      });
-      g.appendChild(b);
-      a = animate(b, [{ transform: 'rotate(-3deg)' }, { transform: 'rotate(3deg)' }],
-        { duration: rnd(2200, 4200), direction: 'alternate', iterations: Infinity, easing: 'ease-in-out' });
-      if (a) st.anims.push(a);
+  var GRASS_GREENS = ['#4f8f3f', '#69ab4a', '#86c766'];
+  var FERN_GREENS = ['#3f7a30', '#57993f', '#74b855'];
+  var FLOWER_PALS = [['#f2a3c6', '#ffe08a'], ['#c9b4e8', '#ffe08a'], ['#ff9ab0', '#fff0a0'], ['#9ad0f5', '#ffe08a'], ['#ffc36b', '#fff0a0']];
+
+  function grassTuft(x, baseY, s) {
+    var g = svgEl('g', { 'class': 'd2blade' });
+    var n = 3 + (Math.random() < 0.55 ? 1 : 0), html = '', k;
+    for (k = 0; k < n; k++) {
+      var lean = (k - (n - 1) / 2) * 10 * s + rnd(-2, 2);
+      var h = (28 + rnd(4, 20)) * s, w = 4.4 * s;
+      var bx = x + (k - (n - 1) / 2) * 3.4 * s;
+      html += leafBlade(bx, baseY, lean, h, w, GRASS_GREENS[k % GRASS_GREENS.length]);
     }
-    /* ferns */
-    var spots = [[90, 700], [250, 712], [640, 706], [1190, 708], [1240, 700]];
+    g.innerHTML = html;
+    return g;
+  }
+
+  /* an arching fern — a dark back fan + a lighter front fan of filled fronds */
+  function fernTuft(x, baseY, s) {
+    var g = svgEl('g', { 'class': 'd2fern' }), html = '', k;
+    var n = 7;
+    for (k = 0; k < n; k++) {
+      var t = n === 1 ? 0.5 : k / (n - 1);
+      var lean = (t - 0.5) * 78 * s;                 // wide outward arch
+      var h = (52 + Math.sin(t * Math.PI) * 22) * s; // tallest in the middle
+      html += leafBlade(x, baseY, lean, h, 5 * s, FERN_GREENS[k % FERN_GREENS.length]);
+    }
+    g.innerHTML = html;
+    return g;
+  }
+
+  function flower(x, groundY, s, pal) {
+    var g = svgEl('g', { 'class': 'd2blade' });
+    var stemTop = groundY - 30 * s, html = '';
+    /* stem + a little leaf */
+    html += '<path d="M' + x + ',' + groundY + ' Q' + (x - 5 * s) + ',' + (groundY - 16 * s) + ' ' + x + ',' + stemTop + '" stroke="#57993f" stroke-width="' + (2.6 * s).toFixed(1) + '" fill="none" stroke-linecap="round"/>';
+    html += '<path d="M' + x + ',' + (groundY - 13 * s) + ' q' + (-10 * s) + ',' + (-3 * s) + ' ' + (-12 * s) + ',' + (5 * s) + ' q' + (9 * s) + ',' + (2 * s) + ' ' + (12 * s) + ',' + (-5 * s) + ' Z" fill="#69ab4a"/>';
+    /* petals fanned around the head */
+    var cx = x, cy = stemTop, petals = 6, p;
+    for (p = 0; p < petals; p++) {
+      var ang = p / petals * Math.PI * 2;
+      var px = cx + Math.cos(ang) * 7 * s, py = cy + Math.sin(ang) * 7 * s;
+      html += '<ellipse cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" rx="' + (4.8 * s).toFixed(1) + '" ry="' + (3 * s).toFixed(1) +
+        '" fill="' + pal[0] + '" transform="rotate(' + (ang * 180 / Math.PI).toFixed(1) + ' ' + px.toFixed(1) + ' ' + py.toFixed(1) + ')"/>';
+    }
+    html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (4.2 * s).toFixed(1) + '" fill="' + pal[1] + '"/>';
+    html += '<circle cx="' + (cx - 1.4 * s).toFixed(1) + '" cy="' + (cy - 1.4 * s).toFixed(1) + '" r="' + (1.5 * s).toFixed(1) + '" fill="#ffffff" opacity=".65"/>';
+    g.innerHTML = html;
+    return g;
+  }
+
+  /* a fuller prehistoric palm — segmented curved trunk + 7 drooping filled
+     fronds (2-tone) + a couple of coconuts at the crown */
+  function palmTree(tx, baseY, s) {
+    var g = svgEl('g', {});
+    var crownX = tx + 4 * s, crownY = baseY - 128 * s, html = '', seg, fr;
+    /* trunk silhouette */
+    html += '<path d="M' + (tx - 7 * s) + ',' + baseY + ' C' + (tx - 9 * s) + ',' + (baseY - 60 * s) + ' ' + (crownX + 6 * s) + ',' + (baseY - 95 * s) + ' ' + (crownX - 4 * s) + ',' + crownY +
+      ' L' + (crownX + 9 * s) + ',' + crownY + ' C' + (crownX + 14 * s) + ',' + (baseY - 95 * s) + ' ' + (tx + 11 * s) + ',' + (baseY - 60 * s) + ' ' + (tx + 9 * s) + ',' + baseY + ' Z" fill="#8a5f3a"/>';
+    /* segment ticks */
+    for (seg = 1; seg < 6; seg++) {
+      var sy = baseY - seg * 20 * s;
+      html += '<path d="M' + (tx - 5 * s) + ',' + sy + ' q' + (9 * s) + ',' + (4 * s) + ' ' + (18 * s) + ',0" stroke="#6f4a2a" stroke-width="' + (1.6 * s).toFixed(1) + '" fill="none" opacity=".5"/>';
+    }
+    /* drooping fronds */
+    var fronds = 7;
+    for (fr = 0; fr < fronds; fr++) {
+      var t = fr / (fronds - 1);
+      var ang = (-158 + t * 136) * Math.PI / 180;
+      var len = (58 + Math.sin(t * Math.PI) * 24) * s;
+      var ex = crownX + Math.cos(ang) * len;
+      var ey = crownY + Math.sin(ang) * len * 0.6 + 10 * s;   // pull tips down = droop
+      var mx = crownX + Math.cos(ang) * len * 0.5;
+      var my = crownY + Math.sin(ang) * len * 0.24;
+      var nx = Math.cos(ang + Math.PI / 2), ny = Math.sin(ang + Math.PI / 2), wp = 9 * s;
+      html += '<path d="M' + crownX.toFixed(1) + ',' + crownY.toFixed(1) +
+        ' Q' + mx.toFixed(1) + ',' + my.toFixed(1) + ' ' + ex.toFixed(1) + ',' + ey.toFixed(1) +
+        ' Q' + (mx + nx * wp).toFixed(1) + ',' + (my + ny * wp).toFixed(1) + ' ' + crownX.toFixed(1) + ',' + crownY.toFixed(1) +
+        ' Z" fill="' + (fr % 2 ? '#4f8f3f' : '#5fa347') + '"/>';
+      html += '<path d="M' + crownX.toFixed(1) + ',' + crownY.toFixed(1) + ' Q' + mx.toFixed(1) + ',' + my.toFixed(1) + ' ' + ex.toFixed(1) + ',' + ey.toFixed(1) +
+        '" stroke="#3f7a30" stroke-width="' + (1.4 * s).toFixed(1) + '" fill="none" opacity=".55"/>';
+    }
+    /* coconuts */
+    html += '<circle cx="' + (crownX - 3 * s).toFixed(1) + '" cy="' + (crownY + 5 * s).toFixed(1) + '" r="' + (5 * s).toFixed(1) + '" fill="#7a5230"/>';
+    html += '<circle cx="' + (crownX + 6 * s).toFixed(1) + '" cy="' + (crownY + 7 * s).toFixed(1) + '" r="' + (4.4 * s).toFixed(1) + '" fill="#9c6f42"/>';
+    g.innerHTML = html;
+    return g;
+  }
+
+  function buildFlora(g, st) {
+    var i, x, node, a;
+    function sway(el, deg, dmin, dmax) {
+      var an = animate(el, [{ transform: 'rotate(-' + deg + 'deg)' }, { transform: 'rotate(' + deg + 'deg)' }],
+        { duration: rnd(dmin, dmax), direction: 'alternate', iterations: Infinity, easing: 'ease-in-out' });
+      if (an) { an.currentTime = Math.random() * dmax; st.anims.push(an); }
+    }
+    /* lush grass tufts along the front band */
+    for (x = 24; x < 1280; x += rnd(52, 92)) {
+      node = grassTuft(x, 708, rnd(1.0, 1.6));
+      g.appendChild(node);
+      sway(node, 3, 2200, 4200);
+    }
+    /* arching ferns */
+    var spots = [[110, 702, 1.5], [250, 712, 1.15], [470, 708, 1.0], [660, 706, 1.35], [1160, 708, 1.2], [1245, 700, 1.4]];
     for (i = 0; i < spots.length; i++) {
-      f = svgEl('path', {
-        'class': 'd2fern', d: fernPath(spots[i][0], spots[i][1], rnd(1.1, 1.7)),
-        stroke: '#4f8f3f', 'stroke-width': 4, fill: 'none', 'stroke-linecap': 'round'
-      });
-      g.appendChild(f);
-      a = animate(f, [{ transform: 'rotate(-2deg)' }, { transform: 'rotate(2deg)' }],
-        { duration: rnd(2600, 4600), direction: 'alternate', iterations: Infinity, easing: 'ease-in-out' });
-      if (a) st.anims.push(a);
+      node = fernTuft(spots[i][0], spots[i][1], spots[i][2]);
+      g.appendChild(node);
+      sway(node, 2.2, 2600, 4600);
     }
     /* palm-ish prehistoric trees near the edges */
     var trees = [[70, 668, 1.15], [1215, 672, 1.0]];
     for (i = 0; i < trees.length; i++) {
-      tuft = svgEl('g', {});
-      var tx = trees[i][0], ty = trees[i][1], ts = trees[i][2];
-      tuft.innerHTML =
-        '<path d="M' + tx + ',' + ty + ' C' + (tx - 6 * ts) + ',' + (ty - 60 * ts) + ' ' + (tx + 10 * ts) + ',' + (ty - 100 * ts) + ' ' + (tx + 4 * ts) + ',' + (ty - 128 * ts) + '" stroke="#8a5f3a" stroke-width="' + 13 * ts + '" fill="none" stroke-linecap="round"/>' +
-        '<path d="M' + (tx + 4 * ts) + ',' + (ty - 126 * ts) + ' q-42,' + (-14 * ts) + ' -64,' + (10 * ts) + ' M' + (tx + 4 * ts) + ',' + (ty - 126 * ts) + ' q42,' + (-14 * ts) + ' 64,' + (10 * ts) + ' M' + (tx + 4 * ts) + ',' + (ty - 126 * ts) + ' q-28,' + (-30 * ts) + ' -52,' + (-22 * ts) + ' M' + (tx + 4 * ts) + ',' + (ty - 126 * ts) + ' q28,' + (-30 * ts) + ' 52,' + (-22 * ts) + ' M' + (tx + 4 * ts) + ',' + (ty - 126 * ts) + ' q2,' + (-34 * ts) + ' -6,' + (-40 * ts) + '" stroke="#4f8f3f" stroke-width="' + 8 * ts + '" fill="none" stroke-linecap="round"/>';
-      g.appendChild(tuft);
+      g.appendChild(palmTree(trees[i][0], trees[i][1], trees[i][2]));
     }
-    /* rocks + tiny flowers */
+    /* rocks (with a little highlight) */
     g.appendChild(svgEl('ellipse', { cx: 540, cy: 718, rx: 19, ry: 10, fill: '#a8a1bd' }));
     g.appendChild(svgEl('ellipse', { cx: 560, cy: 721, rx: 11, ry: 7, fill: '#948da9' }));
-    var fl = [[350, 710], [820, 712], [1000, 708]];
+    g.appendChild(svgEl('ellipse', { cx: 534, cy: 714, rx: 7, ry: 3, fill: '#c3bcd6', opacity: 0.7 }));
+    /* prettier daisies scattered on the grass */
+    var fl = [[330, 712, 1.2], [430, 716, 0.95], [820, 714, 1.15], [960, 710, 1.0], [1050, 716, 1.1]];
     for (i = 0; i < fl.length; i++) {
-      var fx = fl[i][0], fy = fl[i][1];
-      var fg = svgEl('g', {});
-      fg.innerHTML = '<circle cx="' + fx + '" cy="' + fy + '" r="4" fill="#ffd27d"/>' +
-        '<circle cx="' + (fx - 6) + '" cy="' + (fy - 4) + '" r="3.4" fill="#f2a3c6"/>' +
-        '<circle cx="' + (fx + 6) + '" cy="' + (fy - 4) + '" r="3.4" fill="#f2a3c6"/>' +
-        '<circle cx="' + fx + '" cy="' + (fy - 8) + '" r="3.4" fill="#f2a3c6"/>';
-      g.appendChild(fg);
+      node = flower(fl[i][0], fl[i][1], fl[i][2], FLOWER_PALS[i % FLOWER_PALS.length]);
+      g.appendChild(node);
+      sway(node, 2.4, 2600, 4400);
     }
   }
 
@@ -919,7 +1259,7 @@
     if (st.cancelled) return;
     var g = st.smokeG;
     var c = svgEl('circle', {
-      cx: 970 + rnd(-20, 20), cy: 370, r: rnd(10, 20),
+      cx: 970 + rnd(-20, 20), cy: 262, r: rnd(10, 20),
       fill: Math.random() < 0.5 ? '#d9c7f0' : '#c9b4e8', opacity: 0
     });
     c.style.transformBox = 'fill-box';
@@ -943,7 +1283,7 @@
     for (i = 0; i < n; i++) {
       var r = rnd(7, big ? 18 : 13);
       blob = svgEl('circle', {
-        cx: 970 + rnd(-26, 26), cy: 374, r: r,
+        cx: 970 + rnd(-26, 26), cy: 264, r: r,
         fill: Math.random() < 0.4 ? '#ffd27d' : '#ff7a3d'
       });
       blob.style.transformBox = 'fill-box';
@@ -966,7 +1306,7 @@
     var nr = big ? irnd(5, 7) : irnd(3, 4), k2, rock, ra;
     for (k2 = 0; k2 < nr; k2++) {
       var rs = rnd(0.8, 1.7);
-      rock = svgEl('g', { transform: 'translate(' + (970 + rnd(-24, 24)).toFixed(0) + ',372)' });
+      rock = svgEl('g', { transform: 'translate(' + (970 + rnd(-24, 24)).toFixed(0) + ',262)' });
       rock.innerHTML =
         '<g class="d2rockAnim"><g transform="scale(' + rs.toFixed(2) + ')">' +
         '<path d="M0,-10 L9,-5 L8,5 L0,10 L-8,6 L-9,-4 Z" fill="#4a3d80" stroke="#2e2660" stroke-width="2" stroke-linejoin="round"/>' +
@@ -1002,7 +1342,7 @@
     st.timers.push(setTimeout(function () { if (!st.cancelled) puffSmoke0(st); }, delay));
   }
   function puffSmoke0(st) {   // single burst puff (no self-reschedule)
-    var c = svgEl('circle', { cx: 970 + rnd(-22, 22), cy: 370, r: rnd(14, 24), fill: '#d9c7f0', opacity: 0 });
+    var c = svgEl('circle', { cx: 970 + rnd(-22, 22), cy: 262, r: rnd(14, 24), fill: '#d9c7f0', opacity: 0 });
     c.style.transformBox = 'fill-box'; c.style.transformOrigin = '50% 50%';
     st.smokeG.appendChild(c);
     var a = animate(c, [
@@ -1118,23 +1458,40 @@
     st.timers.push(setTimeout(done, dur + 400));
   }
 
-  /* ── ambient shooting star — a lone comet streaks across the dusk sky every
-        so often (reuses the meteor comet look, no night overlay). ── */
+  /* ── ambient shooting star — ported from the DUBAI background's look: a crisp
+        white head trailing a white→icy-blue gradient tail that fades to nothing,
+        streaking down across the upper sky. (Dubai draws it additively on canvas;
+        here the same white-core + soft halo reads as a glow on the dusk sky.) ── */
+  var SS_UID = 0;
   function shootingStar(st) {
     if (st.cancelled || !st.sceneSvg || st.meteorActive) return;
     var svg = st.sceneSvg;
+    var dir = Math.random() < 0.5 ? 1 : -1;
+    var ang = 0.15 + Math.random() * 0.5;                  // downward, as in Dubai
+    var vx = dir * Math.cos(ang), vy = Math.sin(ang);      // unit travel direction
+    var x = dir > 0 ? rnd(60, 560) : rnd(SCENE_W - 560, SCENE_W - 60);
+    var y = rnd(40, 250);
+    var len = rnd(90, 155);                                // tail length
+    var travel = rnd(360, 560);                            // distance across the sky
+    var tx = (-vx * len).toFixed(1), ty = (-vy * len).toFixed(1);
+    var gid = 'd2ss' + (++SS_UID);
     var g = svgEl('g', {});
-    var x = rnd(200, 1100), y = rnd(40, 180), len = rnd(120, 200);
     g.innerHTML =
-      '<path d="M0,0 L' + len.toFixed(0) + ',' + (len * 0.5).toFixed(0) + '" stroke="#ffd27d" stroke-width="3" stroke-linecap="round" opacity=".7"/>' +
-      '<circle cx="0" cy="0" r="5" fill="#fff3d6"/><circle cx="0" cy="0" r="9" fill="#ffd27d" opacity=".4"/>';
-    g.style.transformBox = 'fill-box';
+      '<defs><linearGradient id="' + gid + '" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="' + tx + '" y2="' + ty + '">' +
+        '<stop offset="0" stop-color="#ffffff" stop-opacity=".95"/>' +
+        '<stop offset=".4" stop-color="#c8e1ff" stop-opacity=".4"/>' +
+        '<stop offset="1" stop-color="#c8e1ff" stop-opacity="0"/>' +
+      '</linearGradient></defs>' +
+      '<line x1="0" y1="0" x2="' + tx + '" y2="' + ty + '" stroke="url(#' + gid + ')" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<circle cx="0" cy="0" r="5.5" fill="#ffffff" opacity=".35"/>' +
+      '<circle cx="0" cy="0" r="2" fill="#ffffff"/>';
     svg.appendChild(g);
     var a = animate(g, [
       { transform: 'translate(' + x.toFixed(0) + 'px,' + y.toFixed(0) + 'px)', opacity: 0 },
-      { opacity: 1, offset: 0.15 },
-      { transform: 'translate(' + (x + 320).toFixed(0) + 'px,' + (y + 170).toFixed(0) + 'px)', opacity: 0 }
-    ], { duration: rnd(900, 1300), easing: 'ease-in' });
+      { opacity: 1, offset: 0.18 },
+      { opacity: 1, offset: 0.7 },
+      { transform: 'translate(' + (x + vx * travel).toFixed(0) + 'px,' + (y + vy * travel).toFixed(0) + 'px)', opacity: 0 }
+    ], { duration: rnd(750, 1100), easing: 'linear' });
     function done() { if (g.parentNode) g.parentNode.removeChild(g); }
     if (a) a.onfinish = done; else done();
     setTimeout(done, 1500);
@@ -1155,9 +1512,9 @@
       '<circle cx="210" cy="120" r="36" fill="#fff3d6" opacity=".92"/>' +
       '<circle cx="228" cy="108" r="30" fill="#0b0524"/>' +
       '<path d="M0,640 L120,520 L330,505 L520,545 L760,530 L1010,540 L1280,555 L1280,800 L0,800 Z" fill="#2f2064"/>' +
-      '<path d="M780,700 C820,560 865,440 905,378 L1035,378 C1075,440 1120,560 1160,700 Z" fill="#3b2c72"/>' +
-      '<ellipse cx="970" cy="378" rx="52" ry="12" fill="#ff9a4d" opacity=".8"/>' +
-      '<ellipse cx="970" cy="378" rx="90" ry="26" fill="#ff9a4d" opacity=".18"/>' +
+      '<path d="M715,700 C769,512 829,351 883,268 L1057,268 C1111,351 1171,512 1225,700 Z" fill="#3b2c72"/>' +
+      '<ellipse cx="970" cy="268" rx="70" ry="15" fill="#ff9a4d" opacity=".8"/>' +
+      '<ellipse cx="970" cy="268" rx="118" ry="30" fill="#ff9a4d" opacity=".18"/>' +
       '<path d="M0,706 Q90,690 180,702 T360,698 T540,704 T720,696 T900,704 T1080,698 T1280,702 L1280,800 L0,800 Z" fill="#201345"/>';
     night.appendChild(svg);
     stage.appendChild(night);
@@ -1229,11 +1586,19 @@
       if (getComputedStyle(stage).position === 'static') stage.style.position = 'relative';
 
       var st = {
-        cancelled: false, timers: [], anims: [], eggs: [],
+        cancelled: false, timers: [], anims: [], eggs: [], rolls: [], oldEggs: [],
         clicks: 0, meteorActive: false, meteorBusy: false, meteor: null
       };
       buildScene(stage, st);
       puffSmoke(st);
+
+      /* the ORIGINAL rolling egg from the previous dinosaurs background, loaded
+         and used exactly as-is — just ONE now (calmer scene: ~1 egg at a time),
+         with a long gap so it only arrives occasionally */
+      needScript('BabyTrexEgg', 'baby-trex-egg.js', function () {
+        if (st.cancelled || !w.BabyTrexEgg) return;
+        st.oldEggs.push(w.BabyTrexEgg.roll(stage, { direction: 'ltr', duration: 27000, height: '13%', bottom: '4%', zIndex: 6, gapMin: 16000, gapMax: 30000 }));
+      });
 
       /* ── ambient self-eruptions ── */
       function scheduleErupt() {
@@ -1245,15 +1610,17 @@
       }
       scheduleErupt();
 
-      /* ── eggs ── */
-      st.eggs.push(placeEgg(stage, { left: '17%', bottom: '2.8%', height: '13%', zIndex: 5 }));
-      st.eggs.push(placeEgg(stage, { left: '58%', bottom: '2.2%', height: '11%', zIndex: 5, gapMin: 20000, gapMax: 40000 }));
+      /* ── eggs ── the old static nest eggs are gone; eggs now ARRIVE:
+            a pterodactyl LAYS a hatching egg mid-flight (dropHatchEgg) or drops
+            a rolling egg (dropRollEgg), and the legacy rolling eggs cross too. ── */
 
-      /* ── herd scheduler — packs of 2-3, species round-robin queue ── */
+      /* ── herd scheduler — small groups of 1-2, species round-robin queue.
+            Every spawn is gated on groundCount() so the ground never holds more
+            than MAX_GROUND_DINOS dinosaurs at once (calmer scene). ── */
       var packQueue = [], dir = Math.random() < 0.5 ? 'ltr' : 'rtl';
       function nextSpecies() {
         if (!packQueue.length) {
-          packQueue = ['bronto', 'trike', 'stego', 'trex', 'trikec', 'stegoc'];
+          packQueue = ['bronto', 'stego', 'trex', 'trikec', 'stegoc'];
           for (var i = packQueue.length - 1; i > 0; i--) {
             var j = 0 | (Math.random() * (i + 1)), t = packQueue[i];
             packQueue[i] = packQueue[j]; packQueue[j] = t;
@@ -1261,12 +1628,12 @@
         }
         return packQueue.shift();
       }
-      var sizes = [1.0, 0.74, 0.52];
+      var sizes = [1.0, 0.72];   // two size tiers (leader + one smaller follower)
       function spawnPack() {
         if (st.cancelled) return;
         var species = nextSpecies();
         var sp = SPECIES[species];
-        var n = irnd(2, 3);
+        var n = irnd(1, 2);
         var baseDur = rnd(15000, 19000);
         var d = dir;
         dir = dir === 'ltr' ? 'rtl' : 'ltr';
@@ -1274,6 +1641,7 @@
           (function (idx) {
             st.timers.push(setTimeout(function () {
               if (st.cancelled || st.meteorBusy) return;
+              if (groundCount() >= MAX_GROUND_DINOS) return;   // hard cap on ground dinos
               walk(stage, species, {
                 direction: d,
                 duration: baseDur * rnd(0.95, 1.08),
@@ -1282,24 +1650,43 @@
                 zIndex: 6 + idx,   // smaller trailing members in FRONT — their heads stay visible
                 palette: Math.random() < 0.5 ? 'green' : (Math.random() < 0.5 ? 'pink' : 'teal')
               });
-            }, idx * rnd(2400, 3400)));   // wide stagger so followers don't hide behind the leader
+            }, idx * rnd(3000, 4200)));   // wide stagger so followers don't hide behind the leader
           })(i);
         }
-        st.timers.push(setTimeout(spawnPack, (baseDur + n * 1900 + rnd(5000, 11000)) / 2));
+        /* longer gap between groups → fewer dinos over time */
+        st.timers.push(setTimeout(spawnPack, baseDur * 0.55 + n * 2200 + rnd(6000, 12000)));
       }
       st.timers.push(setTimeout(spawnPack, 600));
 
-      /* ── pterodactyl flights ── */
+      /* ── pterodactyl flights — most flights LAY an egg mid-air: usually a
+            HATCHING egg that falls, cracks open and a baby peeks out, sometimes
+            a rolling egg that tumbles off. Eggs only ARRIVE this way now. ── */
       function spawnPtero() {
         if (st.cancelled) return;
-        if (!st.meteorBusy) {
-          fly(stage, {
+        if (!st.meteorBusy && pteroCount() === 0) {   // only one flyer at a time
+          var dur = rnd(20000, 28000);
+          var big = Math.random() < 0.5;   // 2 discrete size tiers
+          var inst = fly(stage, {
             direction: Math.random() < 0.5 ? 'ltr' : 'rtl',
-            duration: rnd(20000, 28000),
-            height: rnd(12, 17) + '%',
-            top: rnd(5, 18) + '%',
-            zIndex: 4
+            duration: dur,
+            height: (big ? rnd(16, 18.5) : rnd(10.5, 12.5)) + '%',
+            top: (big ? rnd(5, 12) : rnd(11, 20)) + '%',   // the smaller one drifts higher/farther
+            zIndex: big ? 5 : 4,
+            palette: PTERO_PAL_NAMES[irnd(0, PTERO_PAL_NAMES.length - 1)]
           });
+          if (inst && Math.random() < 0.8) {
+            var layHatch = Math.random() < 0.6;   // 60% hatching, 40% rolling
+            st.timers.push(setTimeout(function () {
+              if (st.cancelled || inst.stopped || st.meteorBusy) return;
+              /* keep to ~one egg: don't lay if a d2 egg is already on the grass */
+              if (stage.querySelectorAll('.d2egg,.d2roll').length) return;
+              var r = inst.element.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+              if (!r.width) return;
+              var dx = r.left - sr.left + r.width * 0.42, dy = r.top - sr.top + r.height * 0.55;
+              if (layHatch) dropHatchEgg(stage, st, dx, dy);
+              else dropRollEgg(stage, st, dx, dy);
+            }, rnd(3500, Math.min(dur * 0.6, 13000))));
+          }
         }
         st.timers.push(setTimeout(spawnPtero, rnd(16000, 34000)));
       }
@@ -1321,6 +1708,8 @@
         st.timers.push(setTimeout(scheduleStar, rnd(18000, 40000)));
       }
       st.timers.push(setTimeout(scheduleStar, rnd(9000, 16000)));
+      /* (the plain rolling egg is no longer spawned on a timer — a pterodactyl
+         drops it, see spawnPtero above) */
 
       /* ── meteor event: sky darkens, dinos flee, comets fall ── */
       function meteorEvent() {
@@ -1377,6 +1766,15 @@
             return;
           }
         }
+        /* rolling eggs → heart burst */
+        for (i = 0; i < st.rolls.length; i++) {
+          r = st.rolls[i].element.getBoundingClientRect();
+          if (r.width && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+            rollBounce(st.rolls[i], st);
+            e.stopPropagation();
+            return;
+          }
+        }
         /* eggs */
         for (i = 0; i < st.eggs.length; i++) {
           r = st.eggs[i].wrap.getBoundingClientRect();
@@ -1398,10 +1796,12 @@
       w.BACKGROUNDS.dinosaurs2._test = {
         erupt: function () { erupt(st, true); },
         meteor: meteorEvent,
-        hatch: function (i) { if (st.eggs[i || 0]) st.eggs[i || 0].hatch(); },
+        hatch: function (i) { if (st.eggs[i || 0] && st.eggs[i || 0].hatch) st.eggs[i || 0].hatch(); },
+        drophatch: function () { return dropHatchEgg(stage, st, (stage.clientWidth || 800) * 0.5, (stage.clientHeight || 600) * 0.16); },
         react: function () { liveWalkers.slice().forEach(reactHop); return liveWalkers.length; },
         butterfly: function () { spawnButterfly(stage, st); },
         star: function () { shootingStar(st); },
+        rollegg: function () { return dropRollEgg(stage, st, (stage.clientWidth || 800) * 0.4, (stage.clientHeight || 600) * 0.18); },
         state: st
       };
 
@@ -1411,6 +1811,8 @@
         st.timers.forEach(clearTimeout);
         st.anims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
         st.eggs.forEach(function (eg) { try { eg.remove(); } catch (e) {} });
+        st.rolls.slice().forEach(function (inst) { try { inst.stop(); } catch (e) {} });
+        st.oldEggs.forEach(function (eg) { try { (eg.remove || eg.stop)(); } catch (e) {} });
         liveWalkers.slice().forEach(function (inst) { try { inst.stop(); } catch (e) {} });
         if (st.meteor) { try { st.meteor.stop(); } catch (e) {} }
         delete w.BACKGROUNDS.dinosaurs2._test;
@@ -1427,9 +1829,9 @@
       if (getComputedStyle(stage).position === 'static') stage.style.position = 'relative';
       stage.style.background = 'linear-gradient(#c98bd6,#ffd9a0 70%,#6ea653 70.5%)';
       var defs = [
-        ['bronto', '0.5%', '20%', 'green', '4%'], ['trike', '25%', '17%', 'green', '4%'],
+        ['bronto', '0.5%', '20%', 'green', '4%'], ['trikec', '25%', '18%', 'green', '4%'],
         ['stego', '47%', '17%', 'pink', '4%'], ['trex', '72%', '23%', 'teal', '4%'],
-        ['trikec', '10%', '18%', 'green', '44%'], ['stegoc', '46%', '18%', 'pink', '44%']
+        ['stegoc', '46%', '18%', 'pink', '44%']
       ];
       defs.forEach(function (d) {
         var wrapEl = buildWalker(d[0], { height: d[2], bottom: d[4], palette: d[3] });
@@ -1437,12 +1839,18 @@
         wrapEl.style.left = d[1];
         stage.appendChild(wrapEl);
       });
-      var pt = el('div', 'd2w');
-      pt.style.cssText = 'height:16%;top:4%;left:8%;bottom:auto;z-index:6';
-      var act = el('div', 'd2act');
-      act.appendChild(parseSVG(PTERO_SVG));
-      pt.appendChild(act);
-      stage.appendChild(pt);
+      /* pterodactyl line-up — every palette at a big + small size */
+      PTERO_PAL_NAMES.forEach(function (palName, pi) {
+        [16, 10.5].forEach(function (hPct, si) {
+          var pt = el('div', 'd2w');
+          pt.style.cssText = 'height:' + hPct + '%;top:' + (2 + si * 17) + '%;left:' +
+            (5 + pi * 23) + '%;bottom:auto;z-index:6';
+          var actP = el('div', 'd2act');
+          actP.appendChild(parseSVG(applyPteroPal(PTERO_SVG, palName)));
+          pt.appendChild(actP);
+          stage.appendChild(pt);
+        });
+      });
       var egg = placeEgg(stage, { left: '91%', bottom: '4%', height: '13%' });
       var t = setTimeout(function () { egg.hatch(); }, 1200);
       return function cleanup() {

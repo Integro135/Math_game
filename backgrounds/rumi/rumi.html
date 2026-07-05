@@ -66,15 +66,20 @@
    0. GROUND SHADOW .... a soft flat ellipse under the feet, drawn FIRST so it
                          sits behind everything (grounds her). In chibi-walker.js
                          it's a separate grounded layer, so it stays put on jumps.
-   1. PONYTAIL TOP ..... the FIRST (biggest) bubble of the ponytail, beside the
-                         head — drawn EARLY so the face + hair dome occlude it
-                         -> it reads as gathered from BEHIND the updo.
+   1. PONYTAIL TOP ..... the hair-tie WRAP (cinched gather, mostly hidden behind
+                         the dome — only its left edge peeks) + the FIRST (biggest)
+                         braid bubble, a pinched-waist blob beside the head. Drawn
+                         EARLY so the face + hair dome occlude their tops -> the
+                         chain reads as gathered from BEHIND the updo.
    2. HAIR behind face .. two side "frame locks" framing the cheeks.
    3. FACE ............. the rounded face silhouette.
    4. HAIRLINE ......... pointed sideburn locks in front of the ears (drawn over
                          the face edges).
-   5. UPDO ............. the big swirled quiff dome + a pointed swirl flick at
-                         the top-left + darker-purple (#8138ad) swirl seams.
+   5. UPDO ............. a twisted quiff dome whose silhouette shows soft LOBE
+                         BUMPS where the rope masses meet, twisting toward an apex
+                         slightly LEFT of centre (~294,171); a chunky two-prong
+                         AHOGE sprig escapes there; bold darker-purple (#8138ad)
+                         seam arcs rise through the saddles toward the apex.
                          The dome's BOTTOM edge is the hairline and dips to a
                          soft widow's peak at (300,312).
    6. EARS + EARRING ... small skin ears at cheek level; a SILVER hoop earring
@@ -94,9 +99,12 @@
                          dark collar band + chest patches: viewer-left a dark
                          name tag with red text bars, viewer-right a colourful
                          abstract logo patch.
-  14. PONYTAIL FRONT ... bubbles 2-5 + the pointed tail tip, drawn AFTER the arm
-                         and jacket so the chain hangs IN FRONT of the sleeve
-                         (like the reference). Seam arcs shade each bubble.
+  14. PONYTAIL FRONT ... braid segments 2-5 (pinched-waist blobs whose tops tuck
+                         into the segment above so outlines CROSS at each join =
+                         the bubble-braid cinch) + a two-strand curled tail (a
+                         short wisp + the main strand ending in a soft upward
+                         curl, NOT a blade). Drawn AFTER the arm and jacket so the
+                         chain hangs IN FRONT of the sleeve. Two seams per segment.
   15. PANTS (hips) ..... baggy light-purple hip block + lighter waistband +
                          curved front-pocket seams.
   16. LEGS ............ <g class="leg-l"> / <g class="leg-r"> — each = baggy
@@ -145,8 +153,11 @@
   -------------------
   • Hair colour  -> replace #ad5fd6 (and seam #8138ad) everywhere.
   • Jacket       -> #f4c142 body/sleeves; trim #423a45 (collar + cuffs).
-  • Ponytail     -> bubbles 1-5 are plain <ellipse>; tail tip is the last path
-                    of the PONYTAIL FRONT group. Keep bubble x >= 166 (clip!).
+  • Ponytail     -> segment 1 + hair-tie wrap are in PONYTAIL TOP (behind the
+                    head); segments 2-5 + the two-strand tail are pinched-waist
+                    <path> blobs in PONYTAIL FRONT. Each blob's TOP tucks into the
+                    one above so outlines cross = the cinch. Keep raw x >= 166
+                    (clip!) and, below y 430, the right edge <= 236 (name-tag).
   • Eye size     -> the sclera <ellipse rx ry> (30 x 28) + iris r=23, pupil 9.5;
                     the inner glow circle sits 7 lower than the iris centre.
   • Brow height  -> shift the EYEBROWS path y's (lower y = closer to the eyes).
@@ -205,9 +216,28 @@
     <!-- ===================== GROUND SHADOW (drawn first → behind everything, under the feet) ===================== -->
     <ellipse cx="300" cy="996" rx="120" ry="20" fill="#000000" opacity="0.18" stroke="none"/>
 
-    <!-- ===================== PONYTAIL TOP BUBBLE (behind the head — the chain gathers from the updo) ===================== -->
-    <ellipse cx="210" cy="326" rx="40" ry="46" fill="#ad5fd6"/>
-    <path d="M232 296 C242,312 243,340 233,356" stroke="#8138ad" stroke-width="2.4" fill="none"/>
+    <!-- ===================== PONYTAIL TOP BUBBLE (behind the head — hair-tie WRAP + biggest braid bubble; the chain gathers from the updo) ===================== -->
+    <!-- hair-tie WRAP: the cinched gather where the chain leaves the updo's upper-left.
+         Mostly occluded by the hair dome (drawn later) — its rounded left edge peeks out. -->
+    <path fill="#ad5fd6" d="M196 244
+      C184,248 175,258 173,271
+      C172,281 177,289 186,291
+      C196,293 206,288 210,278
+      C213,269 212,256 207,248
+      C204,244 200,242 196,244 Z"/>
+    <path d="M181 252 C176,260 174,270 177,280" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+    <path d="M190 248 C184,258 182,269 185,282" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+    <!-- braid bubble 1 (biggest, ~78 wide): a blob that narrows into a pinched
+         neck at the bottom; its outline crosses the wrap above -> visible cinch -->
+    <path fill="#ad5fd6" d="M196 278
+      C178,282 168,300 167,322
+      C166,342 174,358 190,366
+      C196,369 208,369 214,365
+      C230,356 242,342 245,322
+      C247,300 236,283 218,278
+      C211,275 202,275 196,278 Z"/>
+    <path d="M186 292 C177,304 173,322 175,342" stroke="#8138ad" stroke-width="2.4" fill="none"/>
+    <path d="M198 300 C190,312 186,330 189,350" stroke="#8138ad" stroke-width="2.2" fill="none"/>
 
     <!-- ===================== HAIR (behind face) — side frame locks sweeping up ===================== -->
     <path fill="#ad5fd6" d="M222 300
@@ -239,26 +269,35 @@
       C388,426 380,446 370,454
       C376,422 380,372 368,332
       C370,326 374,322 376,316 Z"/>
-    <!-- ===================== UPDO (big swirled quiff dome + pointed swirl flick) =====================
+    <!-- ===================== UPDO (twisted quiff dome with soft lobe bumps + two-prong ahoge sprig) =====================
+         The silhouette shows gentle lobe crests where the rope masses meet, with a
+         twist apex slightly LEFT of centre (294,171).
          The dome's BOTTOM edge is the hairline: it dips to a soft widow's peak at (300,312). -->
     <path fill="#ad5fd6" d="M236 311
       C204,298 190,268 198,238
-      C206,206 234,184 270,178
-      C290,175 310,176 326,181
-      C356,190 384,212 394,240
+      C203,210 220,195 244,190
+      C252,189 260,192 266,196
+      C274,183 283,173 294,171
+      C305,172 314,178 320,186
+      C328,190 340,191 350,197
+      C368,206 386,220 394,240
       C403,268 394,298 366,313
       C342,302 318,300 300,312
       C282,300 258,302 236,311 Z"/>
-    <!-- swirl flick: a pointed twist of hair escaping the top-left of the dome -->
-    <path fill="#ad5fd6" d="M278 182
-      C262,164 234,158 216,172
-      C236,170 254,178 264,194
-      C268,188 273,184 278,182 Z"/>
-    <!-- SWIRL SEAM ARCS (darker purple, sweep around toward the twist apex, upper-left) -->
-    <path d="M240 302 C228,268 244,230 278,218" stroke="#8138ad" stroke-width="2.6" fill="none"/>
-    <path d="M304 298 C300,260 318,228 350,220" stroke="#8138ad" stroke-width="2.4" fill="none"/>
-    <path d="M368 306 C380,274 372,238 342,214" stroke="#8138ad" stroke-width="2.2" fill="none"/>
-    <path d="M262 214 C268,200 282,192 296,194" stroke="#8138ad" stroke-width="2.4" fill="none"/>
+    <!-- ahoge sprig: a chunky two-prong flick escaping just left of the twist apex -->
+    <path fill="#ad5fd6" d="M302 174
+      C292,167 278,163 264,166
+      C252,169 244,176 242,184
+      C253,180 262,179 270,182
+      C268,175 269,169 273,164
+      C277,170 281,174 287,177
+      C292,179 297,178 302,174 Z"/>
+    <!-- SWIRL SEAM ARCS (darker purple — they rise into the saddles between the lobes,
+         toward the apex; boldened to make the twisted-mass structure read clearly) -->
+    <path d="M242 303 C230,268 240,228 264,203" stroke="#8138ad" stroke-width="3.2" fill="none"/>
+    <path d="M306 297 C304,258 310,222 318,192" stroke="#8138ad" stroke-width="3" fill="none"/>
+    <path d="M366 305 C378,272 372,240 346,212" stroke="#8138ad" stroke-width="2.8" fill="none"/>
+    <path d="M258 224 C266,206 280,196 294,192" stroke="#8138ad" stroke-width="2.6" fill="none"/>
 
     <!-- ===================== EYEBROWS (dark purple, filled + tapered, confident arch) ===================== -->
     <path fill="#5a2382" stroke="none" d="M227 343
@@ -392,23 +431,66 @@
     <path d="M332 563 C338,569 346,568 350,561" stroke="#35b8c9" stroke-width="3" fill="none"/>
     <path d="M340 546 C344,552 344,560 340,566" stroke="#3a6ff0" stroke-width="2.6" fill="none"/>
 
-    <!-- ===================== PONYTAIL FRONT (bubbles 2-5 + tail tip — hangs IN FRONT of the sleeve) ===================== -->
+    <!-- ===================== PONYTAIL FRONT (braid segments 2-5 + two-strand curled tail — hangs IN FRONT of the sleeve) ===================== -->
     <g>
-      <ellipse cx="196" cy="412" rx="31" ry="40" fill="#ad5fd6"/>
-      <ellipse cx="198" cy="488" rx="29" ry="36" fill="#ad5fd6"/>
-      <ellipse cx="203" cy="556" rx="26" ry="31" fill="#ad5fd6"/>
-      <ellipse cx="209" cy="614" rx="22" ry="26" fill="#ad5fd6"/>
-      <!-- tapering tail tip, deliberately ROUNDED at the end (not a blade) -->
-      <path fill="#ad5fd6" d="M195 620
-        C186,660 194,702 220,740
-        C228,748 236,740 233,726
-        C227,690 222,654 214,626 Z"/>
-      <!-- bubble seam shading -->
-      <path d="M215 386 C223,400 224,424 216,438" stroke="#8138ad" stroke-width="2.4" fill="none"/>
-      <path d="M217 466 C224,478 225,500 218,514" stroke="#8138ad" stroke-width="2.2" fill="none"/>
-      <path d="M222 536 C228,546 229,564 223,576" stroke="#8138ad" stroke-width="2.2" fill="none"/>
-      <path d="M224 598 C229,606 229,620 224,630" stroke="#8138ad" stroke-width="2" fill="none"/>
-      <path d="M216 652 C222,676 224,700 220,720" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+      <!-- each segment is a blob with an explicit pinched waist at both ends;
+           every top tucks into the segment above so the black outlines CROSS
+           at the joins (the bubble-braid cinch). Centres alternate a few units
+           left/right (206 / 200 / 206 / 198 / 207) so the chain hangs naturally. -->
+      <path fill="#ad5fd6" d="M192 360
+        C178,369 172,388 172,406
+        C172,423 178,437 190,444
+        C195,447 206,447 211,443
+        C222,436 228,422 228,405
+        C228,388 221,370 208,361
+        C203,357 196,357 192,360 Z"/>
+      <path fill="#ad5fd6" d="M197 438
+        C187,446 181,463 181,482
+        C181,499 187,512 197,518
+        C202,521 212,521 217,517
+        C226,510 231,498 231,481
+        C231,464 225,448 214,440
+        C209,436 202,435 197,438 Z"/>
+      <path fill="#ad5fd6" d="M190 512
+        C182,519 176,534 176,551
+        C176,567 181,578 190,584
+        C195,587 203,587 208,583
+        C216,577 220,565 220,550
+        C220,535 214,521 206,514
+        C201,510 194,509 190,512 Z"/>
+      <path fill="#ad5fd6" d="M200 578
+        C192,584 187,597 187,612
+        C187,626 192,637 200,642
+        C204,645 211,645 215,641
+        C223,635 227,625 227,613
+        C227,600 222,587 214,580
+        C210,576 204,575 200,578 Z"/>
+      <!-- two-strand tail below the hip: a short WISP strand flicking off to the right... -->
+      <path fill="#ad5fd6" d="M206 638
+        C212,656 219,674 224,690
+        C228,700 235,702 235,694
+        C235,686 230,672 224,658
+        C220,649 215,642 211,638
+        C208,634 205,635 206,638 Z"/>
+      <!-- ...and the MAIN strand, tapering and ending in a soft upward CURL (no blade) -->
+      <path fill="#ad5fd6" d="M198 636
+        C190,666 187,700 196,728
+        C200,741 209,750 221,752
+        C230,753 234,746 229,739
+        C223,735 218,728 215,718
+        C209,694 207,668 210,646
+        C210,641 205,638 198,636 Z"/>
+      <!-- strand seams: two per segment, one per tail strand -->
+      <path d="M184 380 C178,392 177,408 182,424" stroke="#8138ad" stroke-width="2.4" fill="none"/>
+      <path d="M199 372 C194,388 193,406 197,424" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+      <path d="M191 456 C185,468 184,484 188,500" stroke="#8138ad" stroke-width="2.4" fill="none"/>
+      <path d="M209 452 C216,464 218,484 212,504" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+      <path d="M184 528 C180,540 179,554 183,568" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+      <path d="M203 522 C208,534 209,550 204,566" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+      <path d="M196 592 C191,602 190,616 194,628" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+      <path d="M212 592 C217,602 218,616 213,628" stroke="#8138ad" stroke-width="2" fill="none"/>
+      <path d="M202 660 C196,690 197,716 205,736" stroke="#8138ad" stroke-width="2.2" fill="none"/>
+      <path d="M213 648 C218,660 222,672 225,682" stroke="#8138ad" stroke-width="2" fill="none"/>
     </g>
 
     <!-- ===================== EARS (drawn AFTER the ponytail so the viewer-left ear + hoop sit in front of the braid) ===================== -->

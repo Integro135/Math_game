@@ -15,16 +15,11 @@ from playwright.sync_api import sync_playwright
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 PAGE     = r"c:\Code\subtraction_game\backgrounds\dinosaurs2.html"
 VIEW     = {"width": 1600, "height": 900}   # viewport
-EVAL      = ("try{[500,1000,1500].forEach(function(t){setTimeout(function(){document.getElementById('toggle').click();},t);});"
-             "'restart x3';}catch(e){'ERR '+e.message;}")
-POST_EVAL = ("try{'scenes='+document.querySelectorAll('.d2scene').length"
-             "+' skyRects='+document.querySelectorAll('[id^=d2skyRect]').length"
-             "+' mtn='+document.querySelectorAll('#d2mtnFar *,#d2mtnMid *,#d2mtnFront *').length"
-             "+' clouds='+document.querySelectorAll('#d2clouds g').length"
-             "+' css='+document.querySelectorAll('#dino2-css').length;}catch(e){'ERR '+e.message;}")
-WAIT_MS  = 2600
+EVAL      = "try{var t=window.BACKGROUNDS.dinosaurs2._test;t.drophatch();t.star();t.star();'final scene: hatch egg + shooting stars';}catch(e){'ERR '+e.message;}"
+POST_EVAL = "(function(){var s=window.BACKGROUNDS.dinosaurs2._test.state;return 'walkers='+document.querySelectorAll('.d2w').length+' eggs(d2)='+document.querySelectorAll('.d2egg,.d2roll').length+' bte='+document.querySelectorAll('.bte').length+' stars='+document.querySelectorAll('linearGradient[id^=d2ss]').length;})()"
+WAIT_MS  = 2200
 SHOTS    = [
-    {"path": r"c:\tmp\dino2_scene.png", "clip": None},
+    {"path": r"c:\tmp\dino2_final.png", "clip": None},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

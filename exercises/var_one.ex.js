@@ -19,8 +19,11 @@ window.EXERCISES.types.var_one=(()=>{
   const S=(a,b)=>({t:TVS,a,b,sym:sh()});   // a − ⃝(=b)  → a−b
   // TWO-unknown variants: BOTH operands are shapes (symA = first ⃝(=a), sym =
   // second ⃝(=b)), each value written small above — e.g. △=a ○=b, then △±○=?
-  const A2=(a,b)=>({t:TVA,a,b,sym:sh(),symA:sh()});
-  const S2=(a,b)=>({t:TVS,a,b,sym:sh(),symA:sh()});
+  // RULE: two shapes with DIFFERENT values must be DIFFERENT shapes (a single
+  // shape may not stand for two values); equal values may share a shape.
+  const sh2=(first,distinct)=>{if(!distinct)return sh();let s;do{s=sh();}while(s===first);return s;};
+  const A2=(a,b)=>{const symA=sh();return{t:TVA,a,b,symA,sym:sh2(symA,a!==b)};};
+  const S2=(a,b)=>{const symA=sh();return{t:TVS,a,b,symA,sym:sh2(symA,a!==b)};};
   const rnd=(lo,hi)=>lo+((Math.random()*(hi-lo+1))|0);
 
   return{

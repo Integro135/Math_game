@@ -261,6 +261,9 @@ body{
   -moz-appearance:textfield
 }
 .ans-inp::-webkit-outer-spin-button,.ans-inp::-webkit-inner-spin-button{-webkit-appearance:none}
+/* 3-digit answer box (whole-hundreds addition) — wider, slightly smaller glyphs
+   and a touch of tracking so "600" / "260" sit comfortably centered */
+.ans-inp.ans-inp-3d{width:150px;font-size:2.9rem;letter-spacing:2px;padding:0 6px}
 .ans-inp:focus{border-color:#ffd700;box-shadow:0 0 22px rgba(255,215,0,.5);background:rgba(255,255,255,.25)}
 .ans-inp:disabled{opacity:.65;cursor:default}
 

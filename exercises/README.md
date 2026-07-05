@@ -37,8 +37,13 @@ exercises/
 ├─ big_step.ex.js     big ± small step   75−1, 85−4, 77+2 (no carry/borrow)
 ├─ column_add.ex.js   INTERACTIVE column addition (Superman)
 ├─ column_sub.ex.js   INTERACTIVE column subtraction, with BORROW (פְּרִיטָה)
-└─ coin_mul.ex.js     INTERACTIVE "how many ₪2/₪5/₪10 coins fit in X" (first ×)
+├─ coin_mul.ex.js     INTERACTIVE "how many ₪2/₪5/₪10 coins fit in X" (first ×)
+└─ mult_chain.ex.js   INTERACTIVE multiplication as repeated addition (2×3 → 2+2+2 chain, ≤20)
 ```
+
+(A few later type files — `bagel_cost`, `polygon`, `mult_chain`, and the
+`var_one`/`tri_unknown`/`hundreds` data types — are newer than some tables below;
+`mult_chain` is documented in §4d.)
 
 Every file opens with the same idempotent guard and self-registration:
 
@@ -107,11 +112,13 @@ A registered type is an object of this exact shape:
 | `column_add`| `{t:TCA, a, b}`                                    | column-addition problem (interactive)    |
 | `column_sub`| `{t:TCS, a, b}`  (always `a > b`)                 | column-subtraction problem (interactive) |
 | `coin_mul`  | `{t:TCM, a, b}`  (`a` = target, `b` = coin value 2/5) | "how many `b`-coins fit in `a`" (answer `a/b`, interactive) |
+| `mult_chain`| `{t:TMC, a, b}`  (`a` = base 2/3, `b` = count)     | `a × b` under a "זֶה כְּמוֹ" line as the chain `a+a+…+a =` with OPTIONAL running-sum helper boxes + a final answer box (answer `a·b` ≤ 20, interactive) |
 
 ptype constants (`game/js/data.js`):
 `TM='missing'`, `TS='sub'`, `TA='add'`, `TX='mixed'`, `TZ='triple'`,
 `TW='twin_sub'`, `TDA='dbl_add'`, `TDS='dbl_sub'`, `TC='coins'`, `TT='tens'`,
-`TCA='col_add'`, `TCS='col_sub'`, `TBG='big_step'`, `TCM='coin_mul'`.
+`TCA='col_add'`, `TCS='col_sub'`, `TBG='big_step'`, `TCM='coin_mul'`,
+`TMC='mult_chain'` (+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TVA`/`TVS`/`TRA`/`TH`).
 
 ---
 
@@ -348,6 +355,72 @@ of the input (`.colm-ans-row{direction:ltr}`).
   `api.solved()`.
 
 **Cleanup** clears timers and empties `root`.
+
+---
+
+## 4d. `mult_chain.ex.js` in depth
+
+Multiplication taught as **repeated addition**. The card is laid out like the
+chain exercise:
+
+```
+        base × count            ← title
+        ───────────────         ← separator line (.mc-sep)
+           זֶה כְּמוֹ            ← "this is like" (.mc-like)
+        base +base +base … = □  ← the repeated-addition CHAIN
+```
+
+`'mul'` is an **INTERNAL mode handle only** — there is NO dedicated picker tile
+(the standalone tab was removed; like `'big'`, the mode stays for tests / forced
+load / the manual tester). The type is **mixed into Queen (`'mx'`) + Superman
+(`'sup'`)** — `make('mul')` gives the full 12-problem session, `make('mx')` /
+`make('sup')` each give a **2-problem** quota.
+
+```js
+return { t:TMC, modes:['mul','mx','sup'], aidsReveal:'always', make(mode){…}, mount };
+```
+
+### Data side — `make(mode)`
+`makePool(n)` = `n` problems (default 12), a shuffled mix of `{t:TMC,a:base,b:count}`
+where `base ∈ {2,3}` (the number copied) and `base×count ≤ 20`:
+- `base 2` → `count 2..10` (products 4..20)
+- `base 3` → `count 2..6`  (products 6..18)
+
+`make('mul')` → `makePool(12)`; `make('mx')`/`make('sup')` → `makePool(2)`. In
+Queen the shared slot-0 guard keeps a `TMC`/`TCS` self-mounting card off slot 0
+(the first card must show a normal `#ans` input). In the manual tester the
+`✖️ כֶּפֶל שַׁרְשֶׁרֶת` pill forces one via `EXERCISES.types.mult_chain.make('mul')[0]`.
+
+The answer (`report.correct`) is `a·b`, computed by `core.js` (`_cor` includes
+`ptype===TMC?num1*num2`).
+
+### Interactive side — `mount({root,a,b,api})`
+`a` = base, `b` = count. It injects `#mc-style`, then builds the title, a
+separator line, the "זֶה כְּמוֹ" label, and one horizontal `.mc-row` (mirrors the
+chain's `.tz-inline`, `align-items:flex-start`): the first `base`; then the MIDDLE
+terms 2..count-1 as columns (`+base` over an OPTIONAL running-sum helper
+`input.tx-sub-inp.mc-box` = `data-exp=i·base`); then the FINAL `+base = □`
+(`input.ans-inp.mc-final` = `data-exp=product`) inline on the top line.
+**One-line guarantee:** after mount (and on resize) `fit()` measures the row vs its
+container and applies a `transform:scale()` down if it would overflow — so even the
+widest case (2 ×10) stays on a single line.
+
+**Diagonal guide.** Each helper's `.mc-sub-row::after` draws the same gold diagonal
+the chain uses (`.tz-sub-row.tz-live::after` — `rotate(-32deg)` from the box's right
+edge, pulsing) pointing UP-and-RIGHT toward the NEXT `+`, so the child sees which
+number to add next.
+
+**The final box is the answer; helpers are OPTIONAL.** Every box is enabled from
+the start — a child who knows the product can type it straight into the final box
+and skip the helpers. Helper boxes give gentle feedback only (green `.sub-ok` when
+the running sum is right, a soft red `.sub-err` on blur when wrong) and **carry NO
+penalty and are never required**. Only the FINAL box scores: a correct value is
+accepted live on input; a wrong one is judged on **Enter** → `api.wrong(v)` (sad +
+retry). Correct → `api.solved()`. No number-line/jar aid (`aidsReveal:'always'`);
+the games-menu toggle and check button are hidden for TMC like the other
+self-hosting types.
+
+**Cleanup** removes the resize listener, clears timers, empties `root`.
 
 ---
 

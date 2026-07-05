@@ -79,9 +79,14 @@
 '<svg class="chibi-svg" viewBox="150 140 300 930" xmlns="http://www.w3.org/2000/svg">' +
 '<g transform="translate(300,540) scale(1.10) translate(-300,-540) translate(0,18)" stroke="#000000" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round" fill="none">' +
 
-  /* PONYTAIL TOP BUBBLE (behind the head — the chain gathers from the updo) */
-  '<ellipse cx="210" cy="326" rx="40" ry="46" fill="#ad5fd6"/>' +
-  '<path d="M232 296 C242,312 243,340 233,356" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
+  /* PONYTAIL TOP (behind the head): hair-tie WRAP (cinched gather, mostly occluded)
+     + biggest braid bubble (pinched-waist blob); the chain gathers from the updo */
+  '<path fill="#ad5fd6" d="M196 244 C184,248 175,258 173,271 C172,281 177,289 186,291 C196,293 206,288 210,278 C213,269 212,256 207,248 C204,244 200,242 196,244 Z"/>' +
+  '<path d="M181 252 C176,260 174,270 177,280" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+  '<path d="M190 248 C184,258 182,269 185,282" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+  '<path fill="#ad5fd6" d="M196 278 C178,282 168,300 167,322 C166,342 174,358 190,366 C196,369 208,369 214,365 C230,356 242,342 245,322 C247,300 236,283 218,278 C211,275 202,275 196,278 Z"/>' +
+  '<path d="M186 292 C177,304 173,322 175,342" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
+  '<path d="M198 300 C190,312 186,330 189,350" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
 
   /* HAIR behind face — side frame locks */
   '<path fill="#ad5fd6" d="M222 300 C198,316 186,352 192,398 C195,424 206,446 222,456 C216,422 212,366 230,322 Z"/>' +
@@ -94,13 +99,14 @@
   '<path fill="#ad5fd6" d="M224 316 C210,322 202,360 208,402 C212,430 220,452 232,462 C226,428 222,372 234,332 C230,326 226,322 224,316 Z"/>' +
   '<path fill="#ad5fd6" d="M376 316 C390,322 398,360 392,400 C388,426 380,446 370,454 C376,422 380,372 368,332 C370,326 374,322 376,316 Z"/>' +
 
-  /* UPDO — swirled quiff dome (bottom edge dips to a widow\'s peak at 300,312) + flick + swirl seams */
-  '<path fill="#ad5fd6" d="M236 311 C204,298 190,268 198,238 C206,206 234,184 270,178 C290,175 310,176 326,181 C356,190 384,212 394,240 C403,268 394,298 366,313 C342,302 318,300 300,312 C282,300 258,302 236,311 Z"/>' +
-  '<path fill="#ad5fd6" d="M278 182 C262,164 234,158 216,172 C236,170 254,178 264,194 C268,188 273,184 278,182 Z"/>' +
-  '<path d="M240 302 C228,268 244,230 278,218" stroke="#8138ad" stroke-width="2.6" fill="none"/>' +
-  '<path d="M304 298 C300,260 318,228 350,220" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
-  '<path d="M368 306 C380,274 372,238 342,214" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
-  '<path d="M262 214 C268,200 282,192 296,194" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
+  /* UPDO — twisted quiff dome with soft lobe bumps (bottom edge dips to a widow\'s peak
+     at 300,312) + two-prong ahoge sprig + bold #8138ad twist seams rising to the apex */
+  '<path fill="#ad5fd6" d="M236 311 C204,298 190,268 198,238 C203,210 220,195 244,190 C252,189 260,192 266,196 C274,183 283,173 294,171 C305,172 314,178 320,186 C328,190 340,191 350,197 C368,206 386,220 394,240 C403,268 394,298 366,313 C342,302 318,300 300,312 C282,300 258,302 236,311 Z"/>' +
+  '<path fill="#ad5fd6" d="M302 174 C292,167 278,163 264,166 C252,169 244,176 242,184 C253,180 262,179 270,182 C268,175 269,169 273,164 C277,170 281,174 287,177 C292,179 297,178 302,174 Z"/>' +
+  '<path d="M242 303 C230,268 240,228 264,203" stroke="#8138ad" stroke-width="3.2" fill="none"/>' +
+  '<path d="M306 297 C304,258 310,222 318,192" stroke="#8138ad" stroke-width="3" fill="none"/>' +
+  '<path d="M366 305 C378,272 372,240 346,212" stroke="#8138ad" stroke-width="2.8" fill="none"/>' +
+  '<path d="M258 224 C266,206 280,196 294,192" stroke="#8138ad" stroke-width="2.6" fill="none"/>' +
 
   /* EYEBROWS — dark purple, filled + tapered, confident arch */
   '<path fill="#5a2382" stroke="none" d="M227 343 C235,331 252,326 274,332 C275,335 274,338 272,337 C253,332 240,336 231,345 C229,346 227,345 227,343 Z"/>' +
@@ -170,18 +176,26 @@
   '<path d="M332 563 C338,569 346,568 350,561" stroke="#35b8c9" stroke-width="3" fill="none"/>' +
   '<path d="M340 546 C344,552 344,560 340,566" stroke="#3a6ff0" stroke-width="2.6" fill="none"/>' +
 
-  /* PONYTAIL FRONT — bubbles 2-5 + rounded tail tip, IN FRONT of the sleeve (like the reference) */
+  /* PONYTAIL FRONT — braid segments 2-5 (pinched-waist blobs whose tops tuck into the
+     segment above so outlines cross = the cinch) + a two-strand curled tail, IN FRONT
+     of the sleeve; two #8138ad strand seams per segment */
   '<g>' +
-    '<ellipse cx="196" cy="412" rx="31" ry="40" fill="#ad5fd6"/>' +
-    '<ellipse cx="198" cy="488" rx="29" ry="36" fill="#ad5fd6"/>' +
-    '<ellipse cx="203" cy="556" rx="26" ry="31" fill="#ad5fd6"/>' +
-    '<ellipse cx="209" cy="614" rx="22" ry="26" fill="#ad5fd6"/>' +
-    '<path fill="#ad5fd6" d="M195 620 C186,660 194,702 220,740 C228,748 236,740 233,726 C227,690 222,654 214,626 Z"/>' +
-    '<path d="M215 386 C223,400 224,424 216,438" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
-    '<path d="M217 466 C224,478 225,500 218,514" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
-    '<path d="M222 536 C228,546 229,564 223,576" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
-    '<path d="M224 598 C229,606 229,620 224,630" stroke="#8138ad" stroke-width="2" fill="none"/>' +
-    '<path d="M216 652 C222,676 224,700 220,720" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path fill="#ad5fd6" d="M192 360 C178,369 172,388 172,406 C172,423 178,437 190,444 C195,447 206,447 211,443 C222,436 228,422 228,405 C228,388 221,370 208,361 C203,357 196,357 192,360 Z"/>' +
+    '<path fill="#ad5fd6" d="M197 438 C187,446 181,463 181,482 C181,499 187,512 197,518 C202,521 212,521 217,517 C226,510 231,498 231,481 C231,464 225,448 214,440 C209,436 202,435 197,438 Z"/>' +
+    '<path fill="#ad5fd6" d="M190 512 C182,519 176,534 176,551 C176,567 181,578 190,584 C195,587 203,587 208,583 C216,577 220,565 220,550 C220,535 214,521 206,514 C201,510 194,509 190,512 Z"/>' +
+    '<path fill="#ad5fd6" d="M200 578 C192,584 187,597 187,612 C187,626 192,637 200,642 C204,645 211,645 215,641 C223,635 227,625 227,613 C227,600 222,587 214,580 C210,576 204,575 200,578 Z"/>' +
+    '<path fill="#ad5fd6" d="M206 638 C212,656 219,674 224,690 C228,700 235,702 235,694 C235,686 230,672 224,658 C220,649 215,642 211,638 C208,634 205,635 206,638 Z"/>' +
+    '<path fill="#ad5fd6" d="M198 636 C190,666 187,700 196,728 C200,741 209,750 221,752 C230,753 234,746 229,739 C223,735 218,728 215,718 C209,694 207,668 210,646 C210,641 205,638 198,636 Z"/>' +
+    '<path d="M184 380 C178,392 177,408 182,424" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
+    '<path d="M199 372 C194,388 193,406 197,424" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path d="M191 456 C185,468 184,484 188,500" stroke="#8138ad" stroke-width="2.4" fill="none"/>' +
+    '<path d="M209 452 C216,464 218,484 212,504" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path d="M184 528 C180,540 179,554 183,568" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path d="M203 522 C208,534 209,550 204,566" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path d="M196 592 C191,602 190,616 194,628" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path d="M212 592 C217,602 218,616 213,628" stroke="#8138ad" stroke-width="2" fill="none"/>' +
+    '<path d="M202 660 C196,690 197,716 205,736" stroke="#8138ad" stroke-width="2.2" fill="none"/>' +
+    '<path d="M213 648 C218,660 222,672 225,682" stroke="#8138ad" stroke-width="2" fill="none"/>' +
   '</g>' +
 
   /* EARS (after the ponytail: viewer-left ear + silver hoop sit in front of the braid) */

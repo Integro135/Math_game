@@ -75,6 +75,8 @@ document.addEventListener('keydown',e=>{
   if(ptype===TT){e.preventDefault();if(!done){NL.step(ttOp==='add'?1:-1);}return;}
   // TBG (big ± small): spacebar steps the windowed NL in the problem direction
   if(ptype===TBG){e.preventDefault();if(!done){NL.step(bgOp==='add'?1:-1);}return;}
+  // TH (whole hundreds): always addition → spacebar hops the NL FORWARD (right)
+  if(ptype===TH){e.preventDefault();if(!done){NL.step(1);}return;}
   // Kangaroo NL (kang mode): spacebar moves kangaroo forward (add) or backward (sub)
   if(aidMode==='kang'&&document.getElementById('nl-panel')?.style.display!=='none'){
     e.preventDefault();

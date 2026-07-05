@@ -4,6 +4,7 @@
   .uni{font-size:2.2rem}
   .eq-n,.eq-op,.eq-res{font-size:2.9rem}
   .ans-inp{width:80px;height:64px;font-size:2.8rem}
+  .ans-inp.ans-inp-3d{width:132px;font-size:2.5rem}
   .lvl-btn{padding:6px 16px;font-size:.9rem}
   .btn{padding:12px 26px}
 }
@@ -33,6 +34,7 @@
   .eq-n{min-width:28px}
   .equation{gap:5px}
   .ans-inp{width:58px;height:50px;font-size:1.9rem;border-radius:12px}
+  .ans-inp.ans-inp-3d{width:96px;font-size:1.7rem;letter-spacing:1px}
   /* level buttons: 3+2 split — show break element */
   .lvl-break{display:block;flex-basis:100%;height:0}
   .lvl-lbl{display:none}

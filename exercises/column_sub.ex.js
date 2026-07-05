@@ -160,12 +160,29 @@ window.EXERCISES.types.column_sub=(()=>{
   .colxs-moveone{position:absolute;font-family:'Fredoka One',cursive;font-size:2.2rem;color:#FF6B9D;
     text-shadow:0 0 14px rgba(255,107,157,.9);line-height:1;z-index:8;
     transition:left .62s cubic-bezier(.3,1.2,.5,1),top .62s cubic-bezier(.3,1.2,.5,1),transform .62s cubic-bezier(.3,1.2,.5,1)}
+  /* intro: the original one-line equation + a "show in column" button */
+  .colxs-intro{display:flex;flex-direction:column;align-items:center;gap:22px;padding:14px 0}
+  .colxs-intro-eq{direction:ltr;font-family:'Fredoka One',cursive;font-size:3.2rem;
+    color:var(--skin-text,#fff);text-shadow:0 0 18px rgba(160,190,255,.35);letter-spacing:3px}
+  .colxs-show-btn{display:inline-flex;align-items:center;gap:12px;font-family:'Fredoka One',cursive;
+    font-size:1.4rem;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,var(--skin-glow,#7dc4ff),var(--skin-primary,#c77dff) 58%,var(--skin-accent,#ffd27d));
+    border:none;border-radius:999px;padding:12px 26px 12px 18px;
+    box-shadow:0 6px 20px rgba(120,90,200,.5),inset 0 1px 0 rgba(255,255,255,.45);
+    animation:colxsBtnPulse 1.9s ease-in-out infinite;
+    transition:transform .15s,box-shadow .2s,filter .2s}
+  .colxs-show-btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 10px 28px rgba(120,90,200,.6);filter:brightness(1.06)}
+  .colxs-show-btn:active{transform:translateY(0) scale(.99)}
+  .colxs-show-ico{width:36px;height:38px;flex:0 0 auto;background:rgba(255,255,255,.22);border-radius:12px;padding:4px}
+  @keyframes colxsBtnPulse{0%,100%{box-shadow:0 6px 20px rgba(120,90,200,.5),inset 0 1px 0 rgba(255,255,255,.45)}
+    50%{box-shadow:0 6px 27px rgba(255,210,125,.65),inset 0 1px 0 rgba(255,255,255,.55)}}
   @media(max-width:480px){
     .colxs-grid{grid-template-columns:64px 64px}
     .colxs-digit{height:56px;font-size:2.9rem}
     #colx-root .ans-inp.colxs-inp{width:58px;height:56px;font-size:2rem}
     .colxs-wrap{padding-left:48px}
     .colxs-plus{font-size:2.2rem}
+    .colxs-intro-eq{font-size:2.4rem}
   }`;
 
   function injectStyle(){
@@ -177,7 +194,36 @@ window.EXERCISES.types.column_sub=(()=>{
 
   let _borrowDemoShown=false;   // auto-demo the borrow only on the first borrow problem
 
-  function mount({root,a,b,api}){
+  /* mount shows the ORIGINAL one-line equation + a "show in column" button;
+     the column board (build) appears only when the child taps it. */
+  function mount(ctx){
+    injectStyle();
+    const {root,a,b}=ctx;
+    let live=null;
+    root.innerHTML=`
+      <div class="colxs-intro">
+        <div class="colxs-intro-eq">${a} − ${b} =</div>
+        <button type="button" class="colxs-show-btn" id="colxs-showcol">
+          <svg class="colxs-show-ico" viewBox="0 0 26 28" aria-hidden="true">
+            <rect x="9" y="3" width="14" height="3.4" rx="1.7" fill="#fff"/>
+            <g stroke="#fff" stroke-width="2.6" stroke-linecap="round">
+              <line x1="3" y1="11" x2="7.4" y2="11"/></g>
+            <rect x="9" y="9.3" width="14" height="3.4" rx="1.7" fill="#fff"/>
+            <rect x="2" y="16.4" width="21" height="2.6" rx="1.3" fill="#ffe28a"/>
+            <rect x="11" y="22" width="12" height="3.4" rx="1.7" fill="#fff"/>
+          </svg>
+          <span>הַצֵּג בְּטוּר</span>
+        </button>
+      </div>`;
+    const h=document.getElementById('hint');if(h)h.textContent='🦸 לַחֲצִי "הַצֵּג בְּטוּר" כְּדֵי לִפְתֹּר';
+    const btn=root.querySelector('#colxs-showcol');
+    function reveal(){ if(live)return; root.innerHTML=''; live=build(ctx); }
+    btn.addEventListener('click',reveal);
+    if(window.__colxAutoReveal)reveal();   // test hook: skip the intro
+    return function cleanup(){ if(live){live();live=null;} else root.innerHTML=''; };
+  }
+
+  function build({root,a,b,api}){
     injectStyle();
     const P={
       a,b,

@@ -13,10 +13,12 @@ window.EXERCISES.types.chain=(()=>{
       if(mode!=='mx')return[];
       const out=[];
       const countOf=t=>out.filter(p=>p.t===t).length;
-      // 2 of each chain shape, operands tuned for the Queen game
-      while(countOf(TZ)<2){const a=ri(4,9),b=ri(2,7),c=ri(1,6);if(a+b+c<=20&&a+b+c>=6)out.push({t:TZ,a,b,c});}
-      while(countOf(TX)<2){const a=ri(13,18),b=ri(10,14),c=ri(1,6);if(a>b&&a-b+c<=20&&a-b+c>=3)out.push({t:TX,a,b,c});}
-      while(countOf(TW)<2){const a=ri(15,20),b=ri(10,14),c=ri(1,6);if(a>b+c&&a-b-c>=2&&a-b-c<=14)out.push({t:TW,a,b,c});}
+      // 2 of each chain shape, operands tuned for the Queen game. The THIRD
+      // number c now reaches up to 9 (was 6); TW's minuend widened so a bigger
+      // c still leaves a valid (≥2) result.
+      while(countOf(TZ)<2){const a=ri(4,9),b=ri(2,7),c=ri(1,9);if(a+b+c<=20&&a+b+c>=6)out.push({t:TZ,a,b,c});}
+      while(countOf(TX)<2){const a=ri(13,18),b=ri(10,14),c=ri(1,9);if(a>b&&a-b+c<=20&&a-b+c>=3)out.push({t:TX,a,b,c});}
+      while(countOf(TW)<2){const a=ri(16,20),b=ri(10,13),c=ri(1,9);if(a>b+c&&a-b-c>=2&&a-b-c<=14)out.push({t:TW,a,b,c});}
       return out;
     },
   };
