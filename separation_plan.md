@@ -14,7 +14,7 @@
 > (`game/js/`, `exercises/`, `backgrounds/`, `game/skins/`), and
 > `success_screens_spec.md`. Where this plan and those docs disagree, the docs
 > (and the code) win. A few sections below have been trimmed to remove claims
-> the shipped code now contradicts.
+> the shipped code now contradicts. 
 
 **Goals (updated):**
 1. Drop all 12 mini-games — no longer in use. Of the auxiliary features, only
