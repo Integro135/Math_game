@@ -3,6 +3,17 @@
    city lights), giant ringed planet with orbiting gravel, the Sun's limb,
    black hole (accretion disk, gravity, jets), supernova, constellations and
    the click-to-learn discovery bubble.
+   The black hole is a GR-flavoured render: gravitational LENSING (stars &
+   travelers appear displaced outward, with a dark Einstein void and faint
+   secondary "ghost" images; trails curve past it), a DOPPLER-beamed clumpy
+   disk (approaching side brighter+bluer) with a lensed secondary image under
+   the shadow, an EHT-style photon ring, a PERMANENT light swirl + brightness
+   floors so the silhouette is never a bare black circle, an orbiting flaring
+   hot spot, gravitationally-redshifted infall, tidal streaks of swallowed
+   travelers, and layered M87-style jets (spine + sheath + polar footpoint +
+   helical filament + trailing shock knots, Doppler-asymmetric, precessing).
+   The Milky Way band is an 8-layer astro-photo render (core bulge, Great Rift,
+   star-clouds, HII specks). (Mirrors the FLOW login screen's black hole.)
    The Sun's limb is alive: boiling granulation, prominence loops that swell
    and sink, and a scheduled solar flare every ~½–1 minute.
    Click reactions (run alongside the fact bubble): black hole → feeding
@@ -42,7 +53,7 @@ window.BACKGROUNDS.space={
   function lg(c,x1,y1,x2,y2,st){const g=c.createLinearGradient(x1,y1,x2,y2);st.forEach(([t,col])=>g.addColorStop(t,col));return g;}
   function rg(c,x,y,r1,r2,st){const g=c.createRadialGradient(x,y,r1,x,y,r2);st.forEach(([t,col])=>g.addColorStop(t,col));return g;}
   function makeLayer(){const c=document.createElement('canvas');c.width=W*DPR;c.height=H*DPR;const x=c.getContext('2d');x.setTransform(DPR,0,0,DPR,0,0);return{cv:c,cx:x};}
-  let STARS_FAR,STARS_NEAR,GALAXIES,DISK_PARTICLES,INFALL,JETS,COMETS,PLANET,EARTH,TRAVELERS,BH,SUN;
+  let STARS_FAR,STARS_NEAR,GALAXIES,DISK_PARTICLES,INFALL,JETS,COMETS,PLANET,EARTH,TRAVELERS,BH,SUN,HOT,TIDAL,SWIRL;
   let spaceLayer,vigLayer,nova=null,nextNovaAt=25+Math.random()*35,lastT=0;
   let bhFrenzyT=null;   // click on the black hole → short feeding frenzy
   let ASTRO=null;       // click on the black hole → an astronaut spirals in
@@ -73,6 +84,7 @@ window.BACKGROUNDS.space={
   function buildScene(){
     // The black hole — tucked near the right border so the game form won't cover it
     BH={x:W*.90,y:H*.36,r:Math.min(W,H)*.075,tilt:.42};
+    BH.rE=BH.r*1.35;   // Einstein radius — nothing APPEARS inside it (gravitational-lens void)
     // The Sun — enormous next to Earth, parked just below the screen edge so
     // only a blazing limb rises from the bottom
     {const sunR=Math.min(W,H)*.95;SUN={x:W*.55,y:H+sunR-H*.11,r:sunR};}
@@ -92,12 +104,22 @@ window.BACKGROUNDS.space={
         return{d,theta,r:.5+Math.random()*1.1,a:.25+Math.random()*.6};
       });
     }
-    DISK_PARTICLES=Array.from({length:380},()=>{
+    DISK_PARTICLES=Array.from({length:520},()=>{
       const d=BH.r*(1.45+Math.pow(Math.random(),1.6)*2.6);
-      return{d,ang:Math.random()*TAU,spd:1.9*Math.pow(BH.r*2.2/d,1.5),size:.7+Math.random()*1.6,jitter:Math.random()*TAU};
+      // z = vertical scatter off the disk plane (the disk has THICKNESS, growing outward)
+      return{d,ang:Math.random()*TAU,spd:1.9*Math.pow(BH.r*2.2/d,1.5),size:.7+Math.random()*1.6,jitter:Math.random()*TAU,z:(Math.random()-.5)*d*.05};
     });
     INFALL=Array.from({length:26},()=>({d:BH.r*(1.5+Math.random()*2.8),ang:Math.random()*TAU,spd:2.4+Math.random()*1.8,decay:.10+Math.random()*.16}));
     JETS=Array.from({length:24},()=>({dir:Math.random()<.5?1:-1,t:Math.random(),spd:.35+Math.random()*.55,off:Math.random()*2-1,size:.8+Math.random()*1.5}));
+    // the orbiting HOT SPOT — a magnetic flare knot riding the inner disk (Sgr A* style)
+    HOT={ang:Math.random()*TAU,d:BH.r*1.75,spd:1.9*Math.pow(2.2/1.75,1.5),flareT0:null,nextFlareAt:3+Math.random()*6};
+    TIDAL=[];   // spaghettification streaks of swallowed travelers (drawTravelers pushes)
+    // PERMANENT LIGHT SWIRL — comet-like streaks forever circling the hole (Keplerian:
+    // inner ones race), so its silhouette is never a plain black circle
+    SWIRL=Array.from({length:14},()=>{
+      const d=BH.r*(1.12+Math.random()*.75);
+      return{d,ang:Math.random()*TAU,spd:(2.2+Math.random()*.9)*Math.pow(BH.r*1.4/d,1.5),len:.5+Math.random()*1.0,w:.8+Math.random()*1.5,tw:Math.random()*TAU,hue:Math.random()};
+    });
     COMETS=Array.from({length:3},()=>spawnComet(true));
     // The ringed planet — big at the top-left; its rings carry orbiting gravel
     PLANET={
@@ -179,6 +201,24 @@ window.BACKGROUNDS.space={
     if(e<0||e>dur)return 0;
     return e<.35?e/.35:1-(e-.35)/(dur-.35);
   }
+  // ── gravitational lensing (point-mass, weak-field) — light from a source at
+  // true offset d bends round the hole, so it APPEARS pushed outward to the
+  // primary image dP=(d+√(d²+4rE²))/2 (never inside rE → the dark void around
+  // the shadow); a fainter SECONDARY image sits mirrored across the hole at
+  // dS=(√(d²+4rE²)−d)/2, hugging the ring. Both magnify near the ring. Purely
+  // visual — gravity (bhPull) still acts on TRUE positions; the zone edge is
+  // eased so objects don't pop in. Returns apparent x/y, magnification + ghost.
+  function lensImage(ox,oy){
+    const dx=ox-BH.x,dy=oy-BH.y,d=Math.hypot(dx,dy);
+    if(d>=BH.r*7||d<.001)return{x:ox,y:oy,mag:1,gx:0,gy:0,ga:0};
+    const rE=BH.rE,root=Math.sqrt(d*d+4*rE*rE);
+    const w=Math.min(1,(BH.r*7-d)/(BH.r*2));       // ease-in at the zone edge
+    const s=1+((d+root)/(2*d)-1)*w;                // primary-image radial stretch
+    const mag=1+Math.min(1.6,(rE*rE)/(d*d))*w;     // brightening near the ring
+    const dS=(root-d)/2;                            // secondary image distance
+    const ga=dS>BH.r*1.05?Math.min(.55,(dS/((d+root)/2))*1.4)*w:0;
+    return{x:BH.x+dx*s,y:BH.y+dy*s,mag,gx:BH.x-dx*(dS/d),gy:BH.y-dy*(dS/d),ga};
+  }
   // One smooth extra orbit lap (a full TAU, so the schedule stays continuous)
   function lapExtra(o,t){
     if(o.lapT0==null)return 0;
@@ -199,25 +239,69 @@ window.BACKGROUNDS.space={
       c.fillStyle=rg(c,nx,ny,0,nr,[[0,`rgba(${hue}, ${a})`],[.6,`rgba(${hue}, ${a*.45})`],[1,`rgba(${hue}, 0)`]]);
       c.fillRect(0,0,W,H);
     }
-    // The Milky Way — a bright galactic band, painted once so it costs nothing per frame
+    // The Milky Way — painted ONCE (static, zero per-frame cost) as a layered,
+    // astro-photo band: outer haze → luminous star-clouds (warmer near the core)
+    // → golden CORE bulge → meandering dark GREAT RIFT → patchy dust → a star
+    // field thickening toward the plane+core → pink HII specks → soft glow stars.
     c.save();
     c.translate(W*.5,H*.5);c.rotate(-.5);
-    const bandH=Math.min(W,H)*.46;
-    c.fillStyle=lg(c,0,-bandH/2,0,bandH/2,[[0,'rgba(150, 160, 220, 0)'],[.5,'rgba(185, 192, 240, 0.10)'],[1,'rgba(150, 160, 220, 0)']]);
-    c.fillRect(-W,-bandH/2,W*2,bandH);
-    c.fillStyle=rg(c,0,0,0,bandH*.85,[[0,'rgba(255, 235, 205, 0.18)'],[.4,'rgba(230, 205, 235, 0.10)'],[1,'rgba(200, 180, 235, 0)']]);
-    c.beginPath();c.ellipse(0,0,bandH*1.5,bandH*.52,0,0,TAU);c.fill();
-    for(let i=0;i<14;i++){
-      const dx=-W+Math.random()*W*2,dy=(Math.random()-.5)*bandH*.30;
-      c.fillStyle=`rgba(8, 6, 18, ${.18+Math.random()*.16})`;
+    const bandH=Math.min(W,H)*.46,bandLen=Math.hypot(W,H),coreU=.06;
+    // 1) soft outer haze
+    c.fillStyle=lg(c,0,-bandH*.75,0,bandH*.75,[[0,'rgba(150, 160, 220, 0)'],[.5,'rgba(180, 188, 240, 0.07)'],[1,'rgba(150, 160, 220, 0)']]);
+    c.fillRect(-bandLen,-bandH*.75,bandLen*2,bandH*1.5);
+    // 2) luminous star-cloud patches (warmer toward the core)
+    for(let i=0;i<26;i++){
+      const u=Math.random()*2-1,px=u*bandLen*.55;
+      const py=(Math.random()-.5)*bandH*.34*(1-Math.abs(u)*.3);
+      const pr=(.10+Math.random()*.16)*bandH*(1.25-Math.abs(u)*.45);
+      const warm=Math.max(0,1-Math.abs(u-coreU)*1.6);
+      c.fillStyle=rg(c,px,py,0,pr,[[0,`rgba(${235+warm*20|0}, ${215+warm*10|0}, ${230-warm*40|0}, ${.05+Math.random()*.06+warm*.05})`],[1,'rgba(200, 190, 240, 0)']]);
+      c.beginPath();c.ellipse(px,py,pr*(1.6+Math.random()*.8),pr*.55,(Math.random()-.5)*.25,0,TAU);c.fill();
+    }
+    // 3) the galactic CORE bulge — warm golden heart + brighter kernel
+    c.fillStyle=rg(c,bandLen*coreU,0,0,bandH*.9,[[0,'rgba(255, 225, 180, 0.22)'],[.35,'rgba(240, 205, 190, 0.12)'],[1,'rgba(210, 180, 235, 0)']]);
+    c.beginPath();c.ellipse(bandLen*coreU,0,bandH*1.15,bandH*.42,0,0,TAU);c.fill();
+    c.fillStyle=rg(c,bandLen*coreU,0,0,bandH*.4,[[0,'rgba(255, 240, 215, 0.20)'],[1,'rgba(255, 225, 185, 0)']]);
+    c.beginPath();c.ellipse(bandLen*coreU,0,bandH*.55,bandH*.22,0,0,TAU);c.fill();
+    // 4) the GREAT RIFT — a continuous meandering dark dust ribbon along the band
+    for(let i=0;i<60;i++){
+      const u=i/59*2-1,px=u*bandLen*.55;
+      const py=Math.sin(u*4.2)*bandH*.07+Math.sin(u*9.1)*bandH*.03;
+      const pr=bandH*(.05+.03*Math.sin(u*5+1.2))*(1.15-Math.abs(u)*.3);
+      c.fillStyle=`rgba(8, 6, 18, ${.16+.10*Math.abs(Math.sin(u*3.3))})`;
+      c.beginPath();c.ellipse(px,py,pr*3.2,pr,Math.sin(u*2.5)*.12,0,TAU);c.fill();
+    }
+    // 5) patchy dark clouds off the rift
+    for(let i=0;i<16;i++){
+      const dx=(Math.random()*2-1)*bandLen*.55,dy=(Math.random()-.5)*bandH*.26;
+      c.fillStyle=`rgba(8, 6, 18, ${.14+Math.random()*.14})`;
       c.beginPath();c.ellipse(dx,dy,60+Math.random()*150,7+Math.random()*14,(Math.random()-.5)*.3,0,TAU);c.fill();
     }
-    for(let i=0;i<900;i++){
-      const bx=(Math.random()-.5)*W*2;
-      const by=(Math.random()-.5)*bandH*Math.pow(Math.random(),.8);
-      const warm=Math.random()<.25;
-      c.fillStyle=warm?`rgba(255, 230, 200, ${.05+Math.random()*.15})`:`rgba(210, 218, 255, ${.04+Math.random()*.14})`;
+    // 6) band stars — density thickens toward the PLANE and the CORE
+    for(let i=0;i<1500;i++){
+      const u=Math.random()*2-1,coreBoost=Math.max(0,1-Math.abs(u-coreU)*1.4);
+      if(Math.abs(u)>.3&&Math.random()<.25-coreBoost*.2)continue;
+      const bx=u*bandLen*.55;
+      const by=(Math.random()-.5)*bandH*Math.pow(Math.random(),1.5)*(1.1-Math.abs(u)*.25);
+      const warm=Math.random()<.25+coreBoost*.3;
+      c.fillStyle=warm?`rgba(255, 230, 200, ${.05+Math.random()*.16})`:`rgba(210, 218, 255, ${.04+Math.random()*.15})`;
       c.fillRect(bx,by,1,Math.random()<.15?2:1);
+    }
+    // 7) pink HII-region specks along the plane
+    for(let i=0;i<9;i++){
+      const u=(Math.random()*2-1)*.8,px=u*bandLen*.55,py=(Math.random()-.5)*bandH*.22;
+      const pr=bandH*(.02+Math.random()*.035);
+      c.fillStyle=rg(c,px,py,0,pr,[[0,'rgba(255, 120, 150, 0.16)'],[1,'rgba(255, 120, 150, 0)']]);
+      c.beginPath();c.arc(px,py,pr,0,TAU);c.fill();
+    }
+    // 8) a few soft glow stars for depth
+    for(let i=0;i<40;i++){
+      const u=Math.random()*2-1,px=u*bandLen*.55,py=(Math.random()-.5)*bandH*.5;
+      const pr=.8+Math.random()*1.4,a=.25+Math.random()*.4;
+      c.fillStyle=`rgba(230, 238, 255, ${a*.2})`;
+      c.beginPath();c.arc(px,py,pr*2.6,0,TAU);c.fill();
+      c.fillStyle=`rgba(240, 246, 255, ${a})`;
+      c.beginPath();c.arc(px,py,pr,0,TAU);c.fill();
     }
     c.restore();
     for(let i=0;i<260;i++){
@@ -253,26 +337,30 @@ window.BACKGROUNDS.space={
     for(const s of STARS_FAR){
       const g=bhPull(s,.5);
       if(g<0){s.x=Math.random()*W;s.y=Math.random()*H;continue;}
+      const L=lensImage(s.x,s.y);                  // apparent (lensed) position
       const tw=.5+.5*Math.sin(t*s.spd+s.tw);
-      ctx.fillStyle=starColor(s.hue,(.25+tw*.6)*g);
-      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,TAU);ctx.fill();
+      ctx.fillStyle=starColor(s.hue,Math.min(1,(.25+tw*.6)*g*L.mag));
+      ctx.beginPath();ctx.arc(L.x,L.y,s.r,0,TAU);ctx.fill();
+      if(L.ga>0){ctx.fillStyle=starColor(s.hue,(.25+tw*.6)*L.ga);ctx.beginPath();ctx.arc(L.gx,L.gy,s.r*.8,0,TAU);ctx.fill();}
     }
     for(const s of STARS_NEAR){
       const g=bhPull(s,.5);
       if(g<0){s.x=Math.random()*W;s.y=Math.random()*H;continue;}
+      const L=lensImage(s.x,s.y);
       const tw=.55+.45*Math.sin(t*s.spd+s.tw);
-      const a=(.4+tw*.6)*g;
+      const a=Math.min(1,(.4+tw*.6)*g*L.mag);
       ctx.fillStyle=starColor(s.hue,a*.18);
-      ctx.beginPath();ctx.arc(s.x,s.y,s.r*3.2,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(L.x,L.y,s.r*3.2,0,TAU);ctx.fill();
       ctx.fillStyle=starColor(s.hue,a);
-      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(L.x,L.y,s.r,0,TAU);ctx.fill();
+      if(L.ga>0){ctx.fillStyle=starColor(s.hue,a*L.ga);ctx.beginPath();ctx.arc(L.gx,L.gy,s.r*.8,0,TAU);ctx.fill();}
       if(s.spikes){
         const len=s.r*(4+tw*3);
         ctx.strokeStyle=starColor(s.hue,a*.5);
         ctx.lineWidth=.8;
         ctx.beginPath();
-        ctx.moveTo(s.x-len,s.y);ctx.lineTo(s.x+len,s.y);
-        ctx.moveTo(s.x,s.y-len);ctx.lineTo(s.x,s.y+len);
+        ctx.moveTo(L.x-len,L.y);ctx.lineTo(L.x+len,L.y);
+        ctx.moveTo(L.x,L.y-len);ctx.lineTo(L.x,L.y+len);
         ctx.stroke();
       }
     }
@@ -505,21 +593,28 @@ window.BACKGROUNDS.space={
     for(let i=0;i<TRAVELERS.length;i++){
       const s=TRAVELERS[i];
       const g=bhPull(s,.5);
-      if(g<0){TRAVELERS[i]=spawnTraveler(false);continue;}
+      if(g<0){
+        // swallowed → its last light stretches into a tidal streak (drawBlackHole animates it)
+        if(TIDAL.length<8)TIDAL.push({ang:Math.atan2(s.y-BH.y,s.x-BH.x),t0:t});
+        TRAVELERS[i]=spawnTraveler(false);continue;
+      }
       bodyPull(s,EARTH.x,EARTH.y,EARTH.r,.05);
       bodyPull(s,PLANET.x,PLANET.y,PLANET.r,.05);
       s.x+=s.vx;s.y+=s.vy;
       if(s.x<-20||s.x>W+20||s.y<-20||s.y>H+20){TRAVELERS[i]=spawnTraveler(false);continue;}
       const tw=.55+.45*Math.sin(t*s.spd+s.tw);
       const trail=6+s.r*5;
-      ctx.globalAlpha=g;
+      // draw at the LENSED positions (head + tail) so trails visibly curve past the hole
+      const L=lensImage(s.x,s.y),Lt=lensImage(s.x-s.vx*trail,s.y-s.vy*trail);
+      ctx.globalAlpha=Math.min(1,g*L.mag);
       ctx.strokeStyle=starColor(s.hue,.25*tw);
       ctx.lineWidth=s.r*.8;ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*trail,s.y-s.vy*trail);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(L.x,L.y);ctx.lineTo(Lt.x,Lt.y);ctx.stroke();
       ctx.fillStyle=starColor(s.hue,.16*tw);
-      ctx.beginPath();ctx.arc(s.x,s.y,s.r*2.6,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(L.x,L.y,s.r*2.6,0,TAU);ctx.fill();
       ctx.fillStyle=starColor(s.hue,.5+.5*tw);
-      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(L.x,L.y,s.r,0,TAU);ctx.fill();
+      if(L.ga>0){ctx.fillStyle=starColor(s.hue,(.5+.5*tw)*L.ga);ctx.beginPath();ctx.arc(L.gx,L.gy,s.r*.8,0,TAU);ctx.fill();}
     }
     ctx.globalAlpha=1;
   }
@@ -558,23 +653,54 @@ window.BACKGROUNDS.space={
     // clicked → a few seconds of feeding frenzy: everything spins, glows, races
     const fz=clickEnv(bhFrenzyT,t,3.5);
     const spin=1+2*fz;
+    // spiral DENSITY WAVES: two loose arms sweep the disk → clumpy streams, not a flat ring
+    const armWave=p=>.68+.32*Math.sin(2*p.ang-Math.log(p.d/r)*6+t*.7);   // high floor: disk stays lit
+    // relativistic DOPPLER BEAMING: matter orbiting TOWARD the viewer (left) is
+    // boosted ~D³ (brighter+hotter); the receding side dims/reddens
+    const doppler=ca=>Math.max(.42,Math.min(2.2,Math.pow(1+.42*-ca,3)));   // floored: receding side still visible
+    // a continuous luminous BAND under the grain, stroked in short arc segments
+    // so brightness/colour follow the Doppler gradient round the orbit (butt caps —
+    // round caps at disk widths stack into blobs under 'lighter')
+    const bandSeg=(dB,width,alphaScale,front,map)=>{
+      const STEPS=44;
+      for(let k=0;k<STEPS;k++){
+        const a0=k/STEPS*TAU,a1=a0+TAU/STEPS+.03,mid=a0+TAU/STEPS/2;
+        const sa=Math.sin(mid),ca=Math.cos(mid);
+        if(front!==(sa>=0))continue;
+        const D=doppler(ca),wave=.8+.2*Math.sin(2*mid-Math.log(dB/r)*6+t*.7);
+        const p0=map(a0,dB),p1=map(a1,dB);
+        ctx.strokeStyle=diskColor(dB-r*(D-1)*.25,Math.min(1,alphaScale*D*wave*(1+fz*.6)));
+        ctx.lineWidth=width;ctx.lineCap='butt';
+        ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();
+      }
+    };
+    // the disk's parametric path (same transform as the particles): tilted ellipse,
+    // BACK half lensed up over the shadow
+    const diskMap=(a,dB)=>{const ca=Math.cos(a),sa=Math.sin(a);return[ca*dB,sa*dB*tilt-(sa<0?Math.max(0,(1-Math.abs(ca))*r*.55):0)];};
+    // the SECONDARY image path — radially compressed against the shadow's lower edge
+    const underMap=(a,dB)=>{const ca=Math.cos(a),sa=Math.sin(a);return[ca*(r*1.05+(dB-r*1.45)*.38),(1-Math.abs(ca))*r*.88+-sa*dB*tilt*.22];};
     ctx.save();
     ctx.globalCompositeOperation='lighter';
     const breathe=(1+Math.sin(t*.5)*.04)*(1+fz*.25);
-    ctx.fillStyle=rg(ctx,x,y,r,r*5.2*breathe,[[0,`rgba(255, 170, 90, ${.14*(1+fz)})`],[.4,`rgba(255, 120, 60, ${.06*(1+fz)})`],[1,'rgba(255, 100, 50, 0)']]);
+    ctx.fillStyle=rg(ctx,x,y,r,r*5.2*breathe,[[0,`rgba(255, 170, 90, ${.16*(1+fz)})`],[.4,`rgba(255, 120, 60, ${.07*(1+fz)})`],[1,'rgba(255, 100, 50, 0)']]);
     ctx.beginPath();ctx.arc(x,y,r*5.2*breathe,0,TAU);ctx.fill();
-    // Accretion disk: BACK half (lensed up over the shadow)
+    // Einstein-ring pileup — bent background light piles into a cool halo just
+    // outside the photon ring (matches lensImage's void edge)
+    ctx.fillStyle=rg(ctx,x,y,r*1.05,r*2.1,[[0,'rgba(170, 200, 255, 0.075)'],[.4,'rgba(150, 180, 255, 0.03)'],[1,'rgba(150, 180, 255, 0)']]);
+    ctx.beginPath();ctx.arc(x,y,r*2.1,0,TAU);ctx.fill();
+    // Accretion disk: BACK half (lensed up over the shadow, Interstellar-style)
     ctx.save();
     ctx.translate(x,y);
+    bandSeg(r*2.05,r*.16,.07,false,diskMap);      // cool outer body
+    bandSeg(r*1.55,r*.10,.10,false,diskMap);      // hotter inner edge
     for(const p of DISK_PARTICLES){
       p.ang+=p.spd*.016*spin;
       const ca=Math.cos(p.ang),sa=Math.sin(p.ang);
       if(sa>=0)continue;
       const px=ca*p.d;
-      const py=sa*p.d*tilt-Math.max(0,(1-Math.abs(ca))*r*.55);
-      const flick=.6+.4*Math.sin(t*3+p.jitter);
-      const beam=.55+.45*Math.max(0,-ca);
-      ctx.fillStyle=diskColor(p.d,Math.min(1,.5*flick*beam*(1+fz*.6)));
+      const py=sa*p.d*tilt-Math.max(0,(1-Math.abs(ca))*r*.55)+p.z;
+      const flick=.7+.3*Math.sin(t*3+p.jitter),D=doppler(ca);
+      ctx.fillStyle=diskColor(p.d-r*(D-1)*.35,Math.min(1,.5*flick*D*armWave(p)*(1+fz*.6)));
       ctx.beginPath();ctx.arc(px,py,p.size,0,TAU);ctx.fill();
     }
     ctx.restore();
@@ -586,27 +712,76 @@ window.BACKGROUNDS.space={
     ctx.fillStyle='#000000';
     ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
     ctx.globalCompositeOperation='lighter';
-    // Photon ring
-    const ringPulse=(.8+.2*Math.sin(t*1.3))*(1+fz*.5);
-    ctx.strokeStyle=`rgba(255, 240, 215, ${Math.min(1,.85*ringPulse)})`;
-    ctx.lineWidth=r*.045;
-    ctx.beginPath();ctx.arc(x,y,r*1.03,0,TAU);ctx.stroke();
-    ctx.strokeStyle=`rgba(255, 180, 110, ${Math.min(1,.30*ringPulse)})`;
-    ctx.lineWidth=r*.13;
-    ctx.beginPath();ctx.arc(x,y,r*1.07,0,TAU);ctx.stroke();
-    // Accretion disk: FRONT half
+    // SECONDARY disk image — the far side's light also bends UNDER the hole:
+    // a thin, radially-compressed arc hugging the shadow's lower edge
     ctx.save();
     ctx.translate(x,y);
+    bandSeg(r*2.0,r*.10,.035,false,underMap);
+    for(const p of DISK_PARTICLES){
+      const ca=Math.cos(p.ang),sa=Math.sin(p.ang);
+      if(sa>=0)continue;
+      const px=ca*(r*1.05+(p.d-r*1.45)*.38);
+      const py=(1-Math.abs(ca))*r*.88+-sa*p.d*tilt*.22;
+      const D=doppler(ca);
+      ctx.fillStyle=diskColor(p.d+r*.55,Math.min(1,.16*D*armWave(p)*(1+fz*.6)));
+      ctx.beginPath();ctx.arc(px,py,p.size*.8,0,TAU);ctx.fill();
+    }
+    ctx.restore();
+    // Photon ring — razor-thin light at the horizon + fainter EHT inner subring + bloom
+    const ringPulse=(.8+.2*Math.sin(t*1.3))*(1+fz*.5);
+    ctx.strokeStyle=`rgba(255, 246, 228, ${Math.min(1,.95*ringPulse)})`;
+    ctx.lineWidth=r*.035;
+    ctx.beginPath();ctx.arc(x,y,r*1.025,0,TAU);ctx.stroke();
+    ctx.strokeStyle=`rgba(255, 250, 240, ${Math.min(1,.45*ringPulse)})`;
+    ctx.lineWidth=Math.max(1,r*.012);
+    ctx.beginPath();ctx.arc(x,y,r*1.006,0,TAU);ctx.stroke();
+    ctx.strokeStyle=`rgba(255, 180, 110, ${Math.min(1,.30*ringPulse)})`;
+    ctx.lineWidth=r*.13;
+    ctx.beginPath();ctx.arc(x,y,r*1.09,0,TAU);ctx.stroke();
+    ctx.fillStyle=rg(ctx,x,y,r*1.02,r*1.9,[[0,`rgba(255, 205, 150, ${.12*ringPulse})`],[1,'rgba(255, 205, 150, 0)']]);
+    ctx.beginPath();ctx.arc(x,y,r*1.9,0,TAU);ctx.fill();
+    // Accretion disk: FRONT half (passes in front of the shadow's lower edge)
+    ctx.save();
+    ctx.translate(x,y);
+    bandSeg(r*2.05,r*.20,.10,true,diskMap);
+    bandSeg(r*1.55,r*.12,.13,true,diskMap);
     for(const p of DISK_PARTICLES){
       const ca=Math.cos(p.ang),sa=Math.sin(p.ang);
       if(sa<0)continue;
-      const flick=.6+.4*Math.sin(t*3+p.jitter);
-      const beam=.55+.45*Math.max(0,-ca);
-      ctx.fillStyle=diskColor(p.d,Math.min(1,.75*flick*beam*(1+fz*.6)));
-      ctx.beginPath();ctx.arc(ca*p.d,sa*p.d*tilt,p.size*1.15,0,TAU);ctx.fill();
+      const flick=.7+.3*Math.sin(t*3+p.jitter),D=doppler(ca);
+      ctx.fillStyle=diskColor(p.d-r*(D-1)*.35,Math.min(1,.75*flick*D*armWave(p)*(1+fz*.6)));
+      ctx.beginPath();ctx.arc(ca*p.d,sa*p.d*tilt+p.z,p.size*1.15,0,TAU);ctx.fill();
     }
     ctx.restore();
-    // Matter spiraling in
+    // PERMANENT LIGHT SWIRL — glowing streaks endlessly circling the hole (comet
+    // heads, Doppler-graded) so the silhouette is never a plain black circle
+    for(const s of SWIRL){
+      s.ang+=s.spd*.016*spin;
+      const D=doppler(Math.cos(s.ang+s.len/2));
+      const pulse=.55+.45*Math.sin(t*1.6+s.tw);
+      const a=Math.min(1,(.22+.38*pulse)*D*(1+fz*.8));
+      ctx.strokeStyle=s.hue<.5?`rgba(255, 240, 215, ${a})`:`rgba(255, 205, 140, ${a})`;
+      ctx.lineWidth=s.w;ctx.lineCap='round';
+      ctx.beginPath();ctx.ellipse(x,y,s.d,s.d*(tilt+.3),0,s.ang,s.ang+s.len);ctx.stroke();
+      const hx=x+Math.cos(s.ang+s.len)*s.d,hy=y+Math.sin(s.ang+s.len)*s.d*(tilt+.3);
+      ctx.fillStyle=`rgba(255, 250, 240, ${Math.min(1,a*1.3)})`;
+      ctx.beginPath();ctx.arc(hx,hy,s.w*.9,0,TAU);ctx.fill();
+    }
+    // The orbiting HOT SPOT — a magnetic flare knot on the inner disk (Sgr A* style):
+    // persistently warm, erupting every ~8–18 s
+    HOT.ang+=HOT.spd*.016*spin;
+    if(t>HOT.nextFlareAt){HOT.flareT0=t;HOT.nextFlareAt=t+8+Math.random()*10;}
+    {
+      const fl=clickEnv(HOT.flareT0,t,2.6);
+      const ca=Math.cos(HOT.ang),sa=Math.sin(HOT.ang);
+      const hx=x+ca*HOT.d;
+      const hy=y+sa*HOT.d*tilt-(sa<0?Math.max(0,(1-Math.abs(ca))*r*.55):0);
+      const hr=r*(.16+.30*fl),hd=doppler(ca);
+      ctx.fillStyle=rg(ctx,hx,hy,0,hr,[[0,`rgba(255, 250, 235, ${Math.min(1,(.10+.55*fl)*hd)})`],[.4,`rgba(255, 205, 130, ${Math.min(1,(.06+.34*fl)*hd)})`],[1,'rgba(255, 180, 110, 0)']]);
+      ctx.beginPath();ctx.arc(hx,hy,hr,0,TAU);ctx.fill();
+    }
+    // Matter spiraling in — GRAVITATIONAL REDSHIFT steals its light on the last
+    // stretch: it reddens and fades just before crossing the horizon
     ctx.save();
     ctx.translate(x,y);
     for(const m of INFALL){
@@ -616,40 +791,74 @@ window.BACKGROUNDS.space={
       const px=Math.cos(m.ang)*m.d;
       const py=Math.sin(m.ang)*m.d*(tilt+.25);
       const closeness=1-(m.d-r)/(r*3.5);
-      ctx.fillStyle=`rgba(255, ${190+closeness*60|0}, ${130+closeness*100|0}, ${.3+closeness*.55})`;
+      const rsh=Math.max(0,(closeness-.72)/.28);
+      ctx.fillStyle=`rgba(${255-rsh*40|0}, ${(190+closeness*60)*(1-rsh*.55)|0}, ${(130+closeness*100)*(1-rsh*.8)|0}, ${(.3+closeness*.55)*(1-rsh*.45)})`;
       ctx.beginPath();ctx.arc(px,py,1+closeness*1.4,0,TAU);ctx.fill();
-      ctx.strokeStyle=`rgba(255, 200, 140, ${.12+closeness*.2})`;
+      ctx.strokeStyle=`rgba(255, ${200-rsh*90|0}, ${140-rsh*80|0}, ${(.12+closeness*.2)*(1-rsh*.4)})`;
       ctx.lineWidth=.8;
       ctx.beginPath();ctx.moveTo(px,py);
       ctx.lineTo(Math.cos(m.ang-.22)*m.d,Math.sin(m.ang-.22)*m.d*(tilt+.25));
       ctx.stroke();
     }
     ctx.restore();
-    // Relativistic jets — twin beams + plasma blobs racing out of the poles
-    const jetA=(.07+.04*Math.sin(t*.8))*(1+fz*1.2);
-    for(const dir of[-1,1]){
-      ctx.fillStyle=lg(ctx,x,y,x,y+dir*r*6,[[0,`rgba(170, 200, 255, ${jetA*2})`],[.5,`rgba(140, 170, 255, ${jetA})`],[1,'rgba(120, 150, 255, 0)']]);
-      ctx.beginPath();
-      ctx.moveTo(x-r*.16,y);
-      ctx.lineTo(x-r*.55,y+dir*r*6);
-      ctx.lineTo(x+r*.55,y+dir*r*6);
-      ctx.lineTo(x+r*.16,y);
-      ctx.closePath();ctx.fill();
+    // TIDAL STREAKS — a swallowed traveler's last light: it stretches into a
+    // glowing filament that whips round the hole and dives in (spaghettification)
+    for(let i=TIDAL.length-1;i>=0;i--){
+      const s=TIDAL[i],p=(t-s.t0)/1.15;
+      if(p>=1){TIDAL.splice(i,1);continue;}
+      const d=r*(2.6-1.52*p*p),ang=s.ang+p*4.2;
+      ctx.strokeStyle=`rgba(255, ${230-p*120|0}, ${190-p*130|0}, ${(1-p)*.8})`;
+      ctx.lineWidth=Math.max(.6,1.6-p);
+      ctx.beginPath();ctx.ellipse(x,y,d,d*(tilt+.3),0,ang,ang+.12+p*.95);ctx.stroke();
     }
+    // Relativistic jets — twin COLLIMATED beams (M87-style): a narrow hot white
+    // SPINE inside a wider magnetized SHEATH, launched from glowing polar
+    // FOOTPOINTS, threaded by a winding helical filament, punctuated by shock
+    // KNOTS with motion trails. The approaching (top) jet is Doppler-boosted
+    // brighter than the counter-jet; the whole axis PRECESSES slowly.
+    ctx.save();
+    ctx.translate(x,y);ctx.rotate(Math.sin(t*.13)*.07);ctx.translate(-x,-y);
+    const jetPulse=.07+.04*Math.sin(t*.8),jetLen=r*6;
+    for(const dir of[-1,1]){
+      const boost=(dir<0?1:.55)*(1+fz*1.2);   // top jet approaches → brighter
+      // sheath — wide faint magnetized cocoon
+      ctx.fillStyle=lg(ctx,x,y,x,y+dir*jetLen,[[0,`rgba(150, 180, 255, ${jetPulse*1.6*boost})`],[.45,`rgba(120, 150, 255, ${jetPulse*.8*boost})`],[1,'rgba(100, 130, 255, 0)']]);
+      ctx.beginPath();ctx.moveTo(x-r*.18,y);ctx.lineTo(x-r*.62,y+dir*jetLen);ctx.lineTo(x+r*.62,y+dir*jetLen);ctx.lineTo(x+r*.18,y);ctx.closePath();ctx.fill();
+      // spine — narrow hot core carrying most of the light
+      ctx.fillStyle=lg(ctx,x,y,x,y+dir*jetLen*.92,[[0,`rgba(235, 245, 255, ${Math.min(1,jetPulse*4.2*boost)})`],[.35,`rgba(190, 215, 255, ${Math.min(1,jetPulse*2.2*boost)})`],[1,'rgba(150, 180, 255, 0)']]);
+      ctx.beginPath();ctx.moveTo(x-r*.06,y);ctx.lineTo(x-r*.15,y+dir*jetLen*.92);ctx.lineTo(x+r*.15,y+dir*jetLen*.92);ctx.lineTo(x+r*.06,y);ctx.closePath();ctx.fill();
+      // polar footpoint launch glow
+      ctx.fillStyle=rg(ctx,x,y+dir*r*.55,0,r*.55,[[0,`rgba(210, 230, 255, ${Math.min(1,.30*boost)})`],[1,'rgba(160, 190, 255, 0)']]);
+      ctx.beginPath();ctx.arc(x,y+dir*r*.55,r*.55,0,TAU);ctx.fill();
+      // helical magnetic filament winding up the beam
+      ctx.strokeStyle=`rgba(200, 220, 255, ${Math.min(1,.16*boost)})`;
+      ctx.lineWidth=1.1;ctx.lineCap='round';
+      ctx.beginPath();
+      for(let k=0;k<=30;k++){
+        const f=k/30,half=r*(.15+.42*f);
+        const hx=x+Math.sin(f*11-dir*t*2.6)*half*.8;
+        const hy=y+dir*(r*.25+f*(jetLen*.9-r*.25));
+        k===0?ctx.moveTo(hx,hy):ctx.lineTo(hx,hy);
+      }
+      ctx.stroke();
+    }
+    // shock knots — elongated blobs with a fading trail pointing back at the hole
     for(const j of JETS){
       j.t+=j.spd*.016*(1+1.5*fz);
       if(j.t>=1){j.t=0;j.off=Math.random()*2-1;j.spd=.35+Math.random()*.55;}
-      const half=r*(.16+.39*j.t);
-      const px=x+j.off*half*.85;
+      const boost=(j.dir<0?1:.6)*(1+fz*.8);
+      const half=r*(.15+.39*j.t);
+      const px=x+j.off*half*.55+Math.sin(j.t*7+t*1.3)*half*.15;   // rides the helix
       const py=y+j.dir*(r*.25+j.t*r*5.75);
-      const a=Math.max(0,(1-j.t)*(.55+.3*Math.sin(t*4+j.off*9)));
-      const sz=j.size*(1.1-j.t*.55);
-      ctx.strokeStyle=`rgba(160, 195, 255, ${a*.45})`;
-      ctx.lineWidth=sz*.7;ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py-j.dir*(5+sz*4));ctx.stroke();
-      ctx.fillStyle=`rgba(200, 222, 255, ${a})`;
-      ctx.beginPath();ctx.arc(px,py,sz,0,TAU);ctx.fill();
+      const a=Math.max(0,(1-j.t)*(.5+.3*Math.sin(t*4+j.off*9)))*boost;
+      const sz=j.size*(1.1-j.t*.55),streak=8+sz*5+j.t*12;
+      ctx.strokeStyle=lg(ctx,px,py,px,py-j.dir*streak,[[0,`rgba(220, 235, 255, ${Math.min(1,a)})`],[1,'rgba(160, 195, 255, 0)']]);
+      ctx.lineWidth=sz*.9;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py-j.dir*streak);ctx.stroke();
+      ctx.fillStyle=`rgba(235, 245, 255, ${Math.min(1,a*1.2)})`;
+      ctx.beginPath();ctx.arc(px,py,sz*.8,0,TAU);ctx.fill();
     }
+    ctx.restore();
     ctx.restore();
   }
   // ── The doomed astronaut — caught by the black hole's gravity, spirals

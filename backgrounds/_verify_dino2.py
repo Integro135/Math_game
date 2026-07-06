@@ -12,14 +12,14 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-DSF      = 2                       # device scale factor (higher = sharper zoom)
+DSF      = 3                       # device scale factor (higher = sharper zoom)
 PAGE     = r"c:\Code\subtraction_game\backgrounds\dinosaurs2.html"
 VIEW     = {"width": 1600, "height": 900}   # viewport
-EVAL      = "try{var t=window.BACKGROUNDS.dinosaurs2._test;t.drophatch();t.star();t.star();'final scene: hatch egg + shooting stars';}catch(e){'ERR '+e.message;}"
-POST_EVAL = "(function(){var s=window.BACKGROUNDS.dinosaurs2._test.state;return 'walkers='+document.querySelectorAll('.d2w').length+' eggs(d2)='+document.querySelectorAll('.d2egg,.d2roll').length+' bte='+document.querySelectorAll('.bte').length+' stars='+document.querySelectorAll('linearGradient[id^=d2ss]').length;})()"
-WAIT_MS  = 2200
+EVAL      = "try{window.BACKGROUNDS.dinosaurs2.gallery({stage:document.getElementById('stage')});'gallery';}catch(e){'ERR '+e.message;}"
+POST_EVAL = "(function(){var t=document.querySelectorAll('.d2w')[3].getBoundingClientRect();return 'trex rect l='+Math.round(t.left)+' t='+Math.round(t.top)+' w='+Math.round(t.width)+' h='+Math.round(t.height);})()"
+WAIT_MS  = 800
 SHOTS    = [
-    {"path": r"c:\tmp\dino2_final.png", "clip": None},
+    {"path": r"c:\tmp\dino2_trex_head.png", "clip": {"x": 1150, "y": 660, "width": 300, "height": 220}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

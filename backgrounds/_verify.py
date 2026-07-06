@@ -12,20 +12,18 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "girls"
+THEME    = "galaxy"                # the space background (see _BG_THEMES: galaxy→space)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
-HIDE_UI  = False                   # hide the .wrap game card (background-only shots)
+HIDE_UI  = True                    # hide the .wrap game card (background-only shots)
 STANDALONE = ""                     # load the REAL game (index.html)
 VIEW     = {"width": 1000, "height": 760}   # viewport
-EVAL      = ("(async()=>{try{"
-             "await new Promise(function(res){loadExercisesFor('mul',res);});"
-             "mode='mul';problems=[{t:TMC,a:2,b:6}];idx=0;score=0;done=false;tryFirst=0;loadProblem();"
-             "return 'ok 2x6';}catch(e){return 'ERR '+e.message;}})()")
+EVAL      = ""                      # background-only: no exercise needed
 POST_EVAL = ""
-CLICKS   = []                      # list of [xFrac, yFrac] doc clicks, e.g. [[0.5,0.9]]
-WAIT_MS   = 500
+CLICKS   = []                      # no click — show the scene at rest (permanent swirl + jets + Milky Way)
+WAIT_MS   = 1600
 SHOTS    = [
-    {"path": r"c:\tmp\mul_final.png", "clip": {"x": 270, "y": 150, "width": 470, "height": 230}},
+    {"path": r"c:\tmp\space_full.png", "clip": {"x": 0, "y": 0, "width": 1000, "height": 760}},
+    {"path": r"c:\tmp\space_bh.png", "clip": {"x": 600, "y": 0, "width": 400, "height": 600}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

@@ -246,14 +246,19 @@
     '<g class="leg lgA"><path d="M254,304 C230,310 218,334 224,362 C228,386 240,400 248,408 L246,420 L294,420 L290,406 C300,378 302,344 292,324 C282,306 266,300 254,304 Z" fill="#6ea653" stroke="#3f6e2c" stroke-width="4"/></g>',
     /* head + body + tail — one silhouette with the open-mouth notch */
     '<path d="M368,92 C390,58 448,48 494,66 C530,80 552,108 558,138 C562,152 558,164 546,166 L458,176 C450,177 446,182 447,189 C448,196 454,201 462,204 C468,206 496,210 508,220 C514,232 506,244 490,244 C462,244 436,234 420,222 C413,244 409,264 407,284 C403,318 385,348 351,362 C321,374 283,374 259,364 C243,357 227,344 219,326 C186,328 124,318 72,290 C52,280 50,262 66,252 C122,260 182,256 230,248 C252,244 268,238 280,226 C292,192 310,148 340,114 C348,102 358,95 368,92 Z" fill="#8cc777" stroke="#3f6e2c" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>',
-    /* mouth interior + tongue + teeth — all drawn with the head so they can never drift */
+    /* mouth interior + teeth (no tongue) — drawn with the head so they never drift.
+       A clear grin: 4 upper teeth hang down from the top jaw, 3 lower teeth point
+       up from the bottom jaw, separated by the dark open cavity. */
     '<path d="M458,176 L546,166 C552,180 544,194 524,200 C504,206 474,204 462,198 C452,192 450,182 458,176 Z" fill="#a5486b"/>',
-    '<ellipse cx="505" cy="190" rx="19" ry="7.5" fill="#f1a0ab" transform="rotate(8 505 190)"/>',
-    '<path d="M534,168 L531,184 Q536,189 541,183 L542,168 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2.2" stroke-linejoin="round"/>',
-    '<path d="M508,171 L505,187 Q510,192 515,186 L516,171 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2.2" stroke-linejoin="round"/>',
-    '<path d="M482,174 L479,189 Q484,194 489,188 L490,174 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2.2" stroke-linejoin="round"/>',
-    '<path d="M472,203 L475,192 Q480,188 484,194 L482,205 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2.2" stroke-linejoin="round"/>',
-    '<path d="M496,209 L499,198 Q504,194 508,200 L506,212 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2.2" stroke-linejoin="round"/>',
+    /* upper teeth — hang DOWN from the top jaw */
+    '<path d="M471,174 L481,174 L476,186 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2" stroke-linejoin="round"/>',
+    '<path d="M492,172 L502,172 L497,184 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2" stroke-linejoin="round"/>',
+    '<path d="M513,169 L523,169 L518,181 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2" stroke-linejoin="round"/>',
+    '<path d="M531,167 L541,167 L536,178 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2" stroke-linejoin="round"/>',
+    /* lower teeth — point UP from the bottom jaw */
+    '<path d="M481,204 L491,204 L486,193 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2" stroke-linejoin="round"/>',
+    '<path d="M502,205 L512,205 L507,194 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2" stroke-linejoin="round"/>',
+    '<path d="M517,201 L527,201 L522,190 Z" fill="#ffffff" stroke="#3f6e2c" stroke-width="2" stroke-linejoin="round"/>',
     /* belly + rim light */
     '<path d="M280,258 C296,310 340,336 390,314 C374,352 308,366 268,338 C254,314 264,282 280,258 Z" fill="#c4e6a3" opacity=".5"/>',
     '<path d="M382,92 C412,68 460,62 498,78 C456,60 410,70 382,92 Z" fill="#eef4e0" opacity=".55"/>',
@@ -1578,7 +1583,10 @@
     aids: 'dinosaurs',
     // warm the one external dependency (the legacy rolling egg) during the intro
     // splash, so switching to the dinosaurs theme is seamless
-    preload: function () { needScript('BabyTrexEgg', 'baby-trex-egg.js', function () {}); },
+    preload: function () {
+      needScript('BabyTrexEgg', 'baby-trex-egg.js', function () {});
+      needScript('ChibiWalker', '../rumi/chibi-walker.js', function () {});
+    },
 
     init: function (ctx) {
       var stage = ctx && ctx.stage;
@@ -1589,7 +1597,7 @@
 
       var st = {
         cancelled: false, timers: [], anims: [], eggs: [], rolls: [], oldEggs: [],
-        clicks: 0, meteorActive: false, meteorBusy: false, meteor: null
+        clicks: 0, meteorActive: false, meteorBusy: false, meteor: null, chibi: null
       };
       buildScene(stage, st);
       puffSmoke(st);
@@ -1600,6 +1608,19 @@
       needScript('BabyTrexEgg', 'baby-trex-egg.js', function () {
         if (st.cancelled || !w.BabyTrexEgg) return;
         st.oldEggs.push(w.BabyTrexEgg.roll(stage, { direction: 'ltr', duration: 27000, height: '13%', bottom: '4%', zIndex: 6, gapMin: 16000, gapMax: 30000 }));
+      });
+
+      /* ── "rumi" (the chibi mascot) strolls the grass every few minutes, same as
+            in savanna/unicorns/reef. Loaded from ../rumi/ (needScript prepends
+            dinasours/, so dinasours/../rumi = rumi). Ambient — not part of the
+            dino cap. ── */
+      needScript('ChibiWalker', '../rumi/chibi-walker.js', function () {
+        if (st.cancelled || !w.ChibiWalker) return;
+        st.chibi = w.ChibiWalker.patrol(stage, {
+          height: '17%', bottom: '3.4%', duration: 17000, zIndex: 7,
+          gapMin: 120000, gapMax: 240000,               // reappears every 2–4 min
+          startDelay: 45000 + Math.random() * 90000     // first stroll after ~45s–2¼min
+        });
       });
 
       /* ── ambient self-eruptions ── */
@@ -1804,6 +1825,12 @@
         butterfly: function () { spawnButterfly(stage, st); },
         star: function () { shootingStar(st); },
         rollegg: function () { return dropRollEgg(stage, st, (stage.clientWidth || 800) * 0.4, (stage.clientHeight || 600) * 0.18); },
+        rumi: function () {   // force an immediate rumi stroll (harness/tests)
+          if (!w.ChibiWalker) return false;
+          if (st.chibi) { try { st.chibi.stop(); } catch (e) {} }
+          st.chibi = w.ChibiWalker.patrol(stage, { height: '17%', bottom: '3.4%', duration: 17000, zIndex: 7, gapMin: 120000, gapMax: 240000, startDelay: 0 });
+          return true;
+        },
         state: st
       };
 
@@ -1816,6 +1843,7 @@
         st.rolls.slice().forEach(function (inst) { try { inst.stop(); } catch (e) {} });
         st.oldEggs.forEach(function (eg) { try { (eg.remove || eg.stop)(); } catch (e) {} });
         liveWalkers.slice().forEach(function (inst) { try { inst.stop(); } catch (e) {} });
+        if (st.chibi) { try { st.chibi.stop(); } catch (e) {} }
         if (st.meteor) { try { st.meteor.stop(); } catch (e) {} }
         delete w.BACKGROUNDS.dinosaurs2._test;
         stage.innerHTML = '';
