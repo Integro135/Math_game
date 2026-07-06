@@ -16,12 +16,13 @@ window.EXERCISES.types.bagel_cost=(()=>{
 
   const PRICE=5;   // one bagel always costs ₪5 (the child knows this)
 
-  // a session shows THREE bagel problems with distinct counts, drawn from {2,3,4,6}
-  // (totals 10/15/20/30). We ask UP TO 6 and deliberately SKIP 5 — "how much do 5
-  // bagels cost" is confusing because the count (5) equals the per-bagel price (₪5).
+  // a session shows THREE bagel problems with distinct counts, drawn from
+  // {2,3,4,6,7,8} (totals 10/15/20/30/35/40 — max sum raised +10 to 40). We ask
+  // UP TO 8 and deliberately SKIP 5 — "how much do 5 bagels cost" is confusing
+  // because the count (5) equals the per-bagel price (₪5).
   function makePool(){
     const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
-    return sh([2,3,4,6]).slice(0,3).map(n=>({t:TBC,a:n,b:PRICE}));
+    return sh([2,3,4,6,7,8]).slice(0,3).map(n=>({t:TBC,a:n,b:PRICE}));
   }
 
   // the real silver ₪5 coin (tcCoinSVG is global, defined by coins.ex.js — loaded

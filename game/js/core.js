@@ -234,7 +234,7 @@ function loadProblem(){
   document.getElementById('hint').textContent=
     ptype===TCA?'🦸 חַבְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
    :ptype===TCS?'🦸 חַסְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
-   :ptype===TPG?'🔷 לַחֲצִי עַל כָּל צֵלַע, סְפְרִי כַּמָּה יֵשׁ — וְכִתְבִי אֶת הַמִּסְפָּר!'
+   :ptype===TPG?'🔷 סְפְרִי אֶת הַצּוּרָה וְכִתְבִי אֶת הַמִּסְפָּר!'
    :ptype===TMC?'✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! אֶפְשָׁר לְמַלֵּא אֶת הַבֵּינַיִם — אוֹ לִכְתֹּב אֶת הַתְּשׁוּבָה בַּסּוֹף!'
    :ptype===TCM?('🪙 כַּמָּה מַטְבְּעוֹת שֶׁל '+(num2||5)+' צְרִיכִים? הוֹסִיפִי וְסִפְרִי!')
    :ptype===TBC?'🥨 כַּמָּה זֶה עוֹלֶה? הוֹסִיפִי מַטְבְּעוֹת שֶׁל 5 וְסַכְּמִי!'
@@ -970,7 +970,7 @@ function _reportRows(){
     else if(r.ptype===TCS)eq=`${r.num1} − ${r.num2} = ${r.correct}`;
     else if(r.ptype===TCM)eq=`🪙 ${r.correct} × ${r.num2||5} = ${r.num1}`;
     else if(r.ptype===TBC)eq=`🥨 ${r.num1} × ${r.num2||5} = ${r.correct}`;
-    else if(r.ptype===TPG)eq=`🔷 ${({3:'מְשֻׁלָּשׁ',4:'מְרֻבָּע',5:'מְחֻמָּשׁ',6:'מְשֻׁשֶּׁה',7:'מְשֻׁבָּע',8:'מְתֻמָּן'}[r.correct]||'צוּרָה')} — ${r.correct} צְלָעוֹת`;
+    else if(r.ptype===TPG)eq=`🔷 ${({3:'מְשֻׁלָּשׁ',4:'מְרֻבָּע',5:'מְחֻמָּשׁ',6:'מְשֻׁשֶּׁה',7:'מְשֻׁבָּע',8:'מְתֻמָּן',10:'כּוֹכָב',12:'כּוֹכָב'}[r.correct]||'צוּרָה')} — ${r.correct} ${p.b===1?'קֹדְקוֹדִים':'צְלָעוֹת'}`;
     else if(r.ptype===TMC)eq=`✖️ ${r.num1} × ${r.num2} = ${r.correct}`;
     else if(r.ptype===TVA||r.ptype===TVS){const E=s=>({circle:'🔵',triangle:'🔺',square:'🟦'}[s]||'🔷');const e=E(p.sym),opc=r.ptype===TVA?'+':'−';
       eq=p.symA?`${E(p.symA)}=${r.num1} ${e}=${r.num2} · ${E(p.symA)} ${opc} ${e} = ${r.correct}`:`${e}=${r.num2} · ${r.num1} ${opc} ${e} = ${r.correct}`;}

@@ -304,7 +304,7 @@ document.getElementById('games-menu')?.addEventListener('click',e=>e.stopPropaga
    container, the counted items, the garden upgrade items, icons and hint
    texts) comes from the active aid VARIANT — a dynamically-loaded file in
    aids/<name>.aids.js, chosen by the active background (see bg-loader.js). */
-const PGM_NL=20;
+const PGM_NL=25;   // chain running-total line spans 0-25 (chain results reach up to 25)
 function aidCfg(){return (window.AIDS&&(AIDS.current||AIDS.variants.classic))||{};}
 /* hint line for the active variant; falls back to the classic kangaroo/cookies */
 function aidHint(kind,dir){
@@ -363,7 +363,7 @@ function pgmRenderGarden(){
   const cnt=document.getElementById('pgm-gn-count');
   if(!wrap)return;
   wrap.innerHTML='';
-  const n=Math.max(0,Math.min(pgmCV,20));
+  const n=Math.max(0,Math.min(pgmCV,PGM_NL));
   for(let i=0;i<n;i++){
     const d=document.createElement('div');d.className='pgm-gn-flower';
     d.innerHTML=gnFlowerSVG(i%5);wrap.appendChild(d);

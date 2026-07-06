@@ -53,7 +53,7 @@ window.BACKGROUNDS.space={
   function lg(c,x1,y1,x2,y2,st){const g=c.createLinearGradient(x1,y1,x2,y2);st.forEach(([t,col])=>g.addColorStop(t,col));return g;}
   function rg(c,x,y,r1,r2,st){const g=c.createRadialGradient(x,y,r1,x,y,r2);st.forEach(([t,col])=>g.addColorStop(t,col));return g;}
   function makeLayer(){const c=document.createElement('canvas');c.width=W*DPR;c.height=H*DPR;const x=c.getContext('2d');x.setTransform(DPR,0,0,DPR,0,0);return{cv:c,cx:x};}
-  let STARS_FAR,STARS_NEAR,GALAXIES,DISK_PARTICLES,INFALL,JETS,COMETS,PLANET,EARTH,TRAVELERS,BH,SUN,HOT,TIDAL,SWIRL;
+  let STARS_FAR,STARS_NEAR,GALAXIES,DISK_PARTICLES,INFALL,JETS,COMETS,PLANET,EARTH,TRAVELERS,BH,SUN,HOT,TIDAL,SWIRL,HALO;
   let spaceLayer,vigLayer,nova=null,nextNovaAt=25+Math.random()*35,lastT=0;
   let bhFrenzyT=null;   // click on the black hole → short feeding frenzy
   let ASTRO=null;       // click on the black hole → an astronaut spirals in
@@ -120,6 +120,15 @@ window.BACKGROUNDS.space={
       const d=BH.r*(1.12+Math.random()*.75);
       return{d,ang:Math.random()*TAU,spd:(2.2+Math.random()*.9)*Math.pow(BH.r*1.4/d,1.5),len:.5+Math.random()*1.0,w:.8+Math.random()*1.5,tw:Math.random()*TAU,hue:Math.random()};
     });
+    // the LENSED HALO — a THICK ring of gravity-bent light hugging the shadow,
+    // built from big soft light-balls (the hot-spot look) SMEARED tangentially
+    // along the rim, slowly circling it. CHEAP: 6 lobes + 1 annulus, no particles.
+    HALO=Array.from({length:6},(_,i)=>({
+      ang:i*TAU/6+Math.random()*.8,     // spread around the rim, uneven
+      spd:.38+Math.random()*.22,        // slow majestic orbit (~10–16 s)
+      stretch:2.4+Math.random()*1.2,    // tangential smear factor
+      amp:.8+Math.random()*.5,          // per-lobe brightness
+    }));
     COMETS=Array.from({length:3},()=>spawnComet(true));
     // The ringed planet — big at the top-left; its rings carry orbiting gravel
     PLANET={
@@ -740,6 +749,25 @@ window.BACKGROUNDS.space={
     ctx.beginPath();ctx.arc(x,y,r*1.09,0,TAU);ctx.stroke();
     ctx.fillStyle=rg(ctx,x,y,r*1.02,r*1.9,[[0,`rgba(255, 205, 150, ${.12*ringPulse})`],[1,'rgba(255, 205, 150, 0)']]);
     ctx.beginPath();ctx.arc(x,y,r*1.9,0,TAU);ctx.fill();
+    // The LENSED HALO — a THICK, uneven ring of gravity-bent light wrapping the
+    // whole shadow, so the silhouette never reads as a clean circle. One soft
+    // base annulus + 6 big light-balls (the hot-spot glow) SMEARED tangentially
+    // along the rim, slowly circling it. CHEAP: 7 gradient fills, no particles.
+    // (annulus stop-0 is TRANSPARENT — points inside the gradient's inner circle
+    // take stop-0's color, and the shadow must stay pitch black)
+    ctx.fillStyle=rg(ctx,x,y,r*.96,r*1.62,[[0,'rgba(255, 225, 180, 0)'],[.10,`rgba(255, 225, 180, ${.30*ringPulse})`],[.45,`rgba(255, 205, 150, ${.13*ringPulse})`],[1,'rgba(255, 190, 130, 0)']]);
+    ctx.beginPath();ctx.arc(x,y,r*1.62,0,TAU);ctx.fill();
+    for(const L of HALO){
+      L.ang+=L.spd*.016*spin;
+      const D=doppler(Math.cos(L.ang));
+      ctx.save();
+      ctx.translate(x+Math.cos(L.ang)*r*1.14,y+Math.sin(L.ang)*r*1.14);
+      ctx.rotate(L.ang+Math.PI/2);      // lie along the rim's tangent
+      ctx.scale(L.stretch,1);           // the smear along the circle
+      ctx.fillStyle=rg(ctx,0,0,0,r*.38,[[0,`rgba(255, 248, 232, ${Math.min(1,.30*L.amp*D*(1+fz*.8))})`],[.45,`rgba(255, 215, 155, ${Math.min(1,.15*L.amp*D)})`],[1,'rgba(255, 195, 135, 0)']]);
+      ctx.beginPath();ctx.arc(0,0,r*.38,0,TAU);ctx.fill();
+      ctx.restore();
+    }
     // Accretion disk: FRONT half (passes in front of the shadow's lower edge)
     ctx.save();
     ctx.translate(x,y);

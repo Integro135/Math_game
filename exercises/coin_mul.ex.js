@@ -4,7 +4,7 @@
    then COUNTS the coins and types that count — teaching that N coins of v make
    N×v (first multiplication as repeated equal groups). Each session shows ONE
    problem of EACH coin value, with a random target from its range:
-     ₪2  → targets 4..10  (2..5 coins)
+     ₪2  → targets 4..20  (2..10 coins)
      ₪5  → targets 10..35 (2..7 coins)
      ₪10 → targets 20..90 (2..9 coins)
    The coins are the SAME real coins as the coin-counting exercise, drawn by the
@@ -26,7 +26,7 @@ window.EXERCISES.types.coin_mul=(()=>{
     const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
     const pick=a=>a[(Math.random()*a.length)|0];
     const out=[
-      {t:TCM,a:pick([4,6,8,10]),                b:2},   // 2..5 coins of ₪2
+      {t:TCM,a:pick([4,6,8,10,12,14,16,18,20]), b:2},   // 2..10 coins of ₪2 (up to 20)
       {t:TCM,a:pick([10,15,20,25,30,35]),       b:5},   // 2..7 coins of ₪5
       {t:TCM,a:pick([20,30,40,50,60,70,80,90]), b:10},  // 2..9 coins of ₪10
     ];

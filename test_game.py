@@ -1416,19 +1416,20 @@ class TestChainAndCoinAids:
             "makeMxPool must include both TDA and TDS"
 
     def test_chain_third_number_can_exceed_six(self, page):
-        """The chain THIRD number c now reaches up to 9 (was capped at 6) while
-        results stay valid (TZ/TX sums ≤ 20, TW result ≥ 2)."""
+        """The chain THIRD number c reaches up to 9 (was capped at 6) while
+        results stay valid (TZ/TX sums ≤ 25, TW result ≥ 2)."""
         consts = page.evaluate("({TZ,TX,TW})")
         page.wait_for_function("window.EXERCISES && EXERCISES.types.chain", timeout=TIMEOUT)
-        res = page.evaluate("""(()=>{let maxC=0,invalid=0;
+        res = page.evaluate("""(()=>{let maxC=0,maxR=0,invalid=0;
           for(let k=0;k<400;k++){EXERCISES.types.chain.make('mx').forEach(p=>{
             if(p.c>maxC)maxC=p.c;
-            if(p.t===TZ&&p.a+p.b+p.c>20)invalid++;
-            if(p.t===TX&&p.a-p.b+p.c>20)invalid++;
+            if(p.t===TZ){if(p.a+p.b+p.c>maxR)maxR=p.a+p.b+p.c; if(p.a+p.b+p.c>25)invalid++;}
+            if(p.t===TX&&p.a-p.b+p.c>25)invalid++;
             if(p.t===TW&&p.a-p.b-p.c<2)invalid++;});}
-          return {maxC,invalid};})()""")
+          return {maxC,maxR,invalid};})()""")
         assert res["maxC"] >= 8, f"chain third number should now reach at least 8, got {res['maxC']}"
-        assert res["invalid"] == 0, f"all chain results must stay valid, {res['invalid']} invalid"
+        assert res["maxR"] > 20, f"chain results should now be able to exceed 20 (up to 25), max seen {res['maxR']}"
+        assert res["invalid"] == 0, f"all chain results must stay valid (≤25), {res['invalid']} invalid"
 
     # ── Chain last 4 have first operand > 10 ─────────────
 
@@ -3966,13 +3967,13 @@ class TestCoinMul:
     def test_coin_mul_in_sup_pool(self, page):
         """coin_mul.make('sup') yields 3 TCM problems — ONE of EACH coin value
         (₪2/₪5/₪10), each carrying b = the coin value and a valid target for that
-        coin: ₪2→{4,6,8,10}, ₪5→{10,15,20,25,30,35}, ₪10→{20..90}, with a/b ∈
-        {2..9}. Every Superman session weaves coin-multiplication in."""
+        coin: ₪2→{4..20}, ₪5→{10,15,20,25,30,35}, ₪10→{20..90}, with a/b ∈
+        {2..10}. Every Superman session weaves coin-multiplication in."""
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
         res = page.evaluate("""(() => {
-            const T={2:[4,6,8,10], 5:[10,15,20,25,30,35], 10:[20,30,40,50,60,70,80,90]};
+            const T={2:[4,6,8,10,12,14,16,18,20], 5:[10,15,20,25,30,35], 10:[20,30,40,50,60,70,80,90]};
             let saw={2:false,5:false,10:false}, bad=null;
             for (let k = 0; k < 40; k++) {
                 const ps = EXERCISES.types.coin_mul.make('sup');
@@ -3983,7 +3984,7 @@ class TestCoinMul:
                     if (p.t !== TCM) bad = {reason:'t', p};
                     if (!T[p.b] || !T[p.b].includes(p.a)) bad = {reason:'target', p};
                     const need = p.a / p.b;
-                    if (need < 2 || need > 9 || need !== Math.round(need)) bad = {reason:'need', p};
+                    if (need < 2 || need > 10 || need !== Math.round(need)) bad = {reason:'need', p};
                     if (saw[p.b] !== undefined) saw[p.b] = true;
                 }
             }
@@ -4154,8 +4155,8 @@ class TestBagelCost:
 
     def test_bagel_cost_in_sup_pool(self, page):
         """bagel_cost.make('sup') yields 3 TBC problems with DISTINCT bagel counts
-        from {2,3,4,6} — up to 6, SKIPPING 5 (5 bagels × ₪5 confuses count=price) —
-        each carrying b=5 (price per bagel); Superman includes them."""
+        from {2,3,4,6,7,8} — up to 8, SKIPPING 5 (5 bagels × ₪5 confuses count=price)
+        — each carrying b=5 (price per bagel); Superman includes them. Max total 40."""
         page.evaluate("setMode('sup')")
         page.wait_for_function(
             "typeof EXERCISES.types.bagel_cost === 'object'", timeout=TIMEOUT)
@@ -4168,7 +4169,7 @@ class TestBagelCost:
                 for (const p of ps) {
                     if (p.t !== TBC) { bad = {reason:'t', p}; break; }
                     if (p.b !== 5) { bad = {reason:'price', p}; break; }
-                    if (![2,3,4,6].includes(p.a)) { bad = {reason:'range', p}; break; }  // 2..6, never 5
+                    if (![2,3,4,6,7,8].includes(p.a)) { bad = {reason:'range', p}; break; }  // 2..8, never 5
                 }
             }
             return { bad };

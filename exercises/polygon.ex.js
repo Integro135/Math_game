@@ -1,8 +1,12 @@
-/* ── Polygon side-counting exercise (סְפִירַת צְלָעוֹת בְּמָצוּלָע) ──────────────
-   A shape is drawn — anything from a TRIANGLE (3) up to an OCTAGON (8) — and the
-   child counts its SIDES (צְלָעוֹת) and types how many. Each shape is generated in
-   a VARIED form (regular, rectangle, or an irregular-but-simple polygon, at a
-   random rotation), so the same side-count never looks the same twice.
+/* ── Polygon side/vertex-counting exercise (סְפִירַת צְלָעוֹת / קֹדְקוֹדִים) ────────
+   A shape is drawn — a TRIANGLE (3) up to an OCTAGON (8), or a 5-/6-point STAR
+   (10 / 12 sides) — and the child counts either its SIDES (צְלָעוֹת) or its
+   CORNERS/vertices (קֹדְקוֹדִים) and types how many. The problem's `b` flag chooses
+   the question (0 = sides, 1 = vertices); the answer is the same number either
+   way, but the counting task and the marked element differ.
+   Each shape is generated in a VARIED form so the same side-count never looks the
+   same twice — regular, rectangle, an irregular-but-simple polygon, a more COMPLEX
+   concave shape (dart, L, chevron, arrow, T…), or a star — at a random orientation.
 
    It is meant to be PLAYFUL, not a dry quiz:
      • Tapping a SIDE fires a small star-burst (ported in spirit from the space
@@ -18,13 +22,18 @@
 
    Self-contained interactive type, mounted by core.js _colxMount into #colx-root
    (the same host path as the coin/column modules); self-checks via
-   api.solved()/api.wrong(). Served by its own game mode 'poly' ("צוּרוֹת 🔷").
-   Problem shape: { t:TPG, a }  where a = the number of sides (3/4/5/6). */
+   api.solved()/api.wrong(). Woven into Queen (mx) + Superman (sup); the 'poly'
+   handle is used by the manual tester / direct setMode.
+   Problem shape: { t:TPG, a, b }  where a = number of sides (3..8) and
+   b = 0 → count SIDES, b = 1 → count CORNERS. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.polygon=(()=>{
 
-  const SHAPES=[3,4,5,6,7,8];
-  const NAMES={3:'מְשֻׁלָּשׁ',4:'מְרֻבָּע',5:'מְחֻמָּשׁ',6:'מְשֻׁשֶּׁה',7:'מְשֻׁבָּע',8:'מְתֻמָּן'};
+  // side-counts offered: 3..8 plain polygons, plus 10 & 12 as STARS (5- / 6-point)
+  const SHAPES=[3,4,5,6,7,8,10,12];
+  const NAMES={3:'מְשֻׁלָּשׁ',4:'מְרֻבָּע',5:'מְחֻמָּשׁ',6:'מְשֻׁשֶּׁה',7:'מְשֻׁבָּע',8:'מְתֻמָּן',10:'כּוֹכָב',12:'כּוֹכָב'};
+  // star side-count → number of points (10-sided = 5-point, 12-sided = 6-point)
+  const STARPTS={10:5,12:6};
   // happy body-fill palette (the body cycles through these on click)
   const FILLS=['#FF6FB5','#7DC4FF','#FFC64B','#8CE99A','#C77DFF','#FF9F68','#4DD0E1'];
   // star-burst palette — the space screen's supernova colours
@@ -50,24 +59,65 @@ window.EXERCISES.types.polygon=(()=>{
   function _regular(n){const rot=Math.random()*Math.PI*2,o=[];for(let i=0;i<n;i++){const a=rot+i*2*Math.PI/n;o.push([Math.cos(a),Math.sin(a)]);}return o;}
   function _rectangle(){const L=1,s=0.5+Math.random()*0.3,[w,h]=Math.random()<.5?[L,s]:[s,L];return[[-w,-h],[w,-h],[w,h],[-w,h]];}
   function _irregular(n){const sl=2*Math.PI/n,o=[];for(let i=0;i<n;i++){const a=(i+0.25+Math.random()*0.5)*sl,r=0.70+Math.random()*0.30;o.push([Math.cos(a)*r,Math.sin(a)*r]);}return o;}
-  // pick a fitted, varied shape whose every edge is long enough to click BETWEEN
-  // its two vertex zones; falls back to a regular polygon (comfortable edges).
-  function buildShape(n,vhitR){
-    const minLen=2*vhitR+12;
-    for(let t=0;t<16;t++){
-      const roll=Math.random();
-      const raw=(n===4&&roll<0.40)?_rectangle():roll<0.50?_regular(n):_irregular(n);
-      const pts=_fit(raw);
-      if(_minEdge(pts)>=minLen)return pts;
+  // ── CONCAVE ("more complex") templates, keyed by side-count. Each is a SIMPLE
+  // (non-self-intersecting) polygon with an inward dent, so counting sides /
+  // corners still works. Long-ish edges keep every side clickable after fitting. ──
+  const CONCAVE={
+    4:[[[2,0],[-1,1.5],[0.3,0],[-1,-1.5]]],                                  // dart / arrowhead
+    5:[[[0,0],[4,0],[4,3],[2,1.6],[0,3]]],                                   // caved-in "roof" pentagon
+    6:[[[0,0],[2,0],[2,1],[1,1],[1,3],[0,3]],                                // L-shape
+       [[1,0],[3,2],[1,4],[0,4],[2,2],[0,0]]],                               // chevron ">"
+    7:[[[0,3],[0,1],[2,1],[2,0],[4,2],[2,4],[2,3]]],                         // arrow →
+    8:[[[0,0],[3,0],[3,1],[2,1],[2,3],[1,3],[1,1],[0,1]]],                   // T-shape
+  };
+  function _concave(n){
+    const opts=CONCAVE[n];if(!opts)return null;
+    let pts=opts[(Math.random()*opts.length)|0].map(p=>[p[0],p[1]]);
+    const q=(Math.random()*4)|0;                    // random 90° turns (bbox-safe)
+    for(let i=0;i<q;i++)pts=pts.map(([x,y])=>[y,-x]);
+    if(Math.random()<.5)pts=pts.map(([x,y])=>[-x,y]); // random mirror
+    return pts;
+  }
+  // a p-pointed STAR as a SIMPLE polygon (2p vertices, alternating outer/inner
+  // radius) → 2p sides. Roughly point-up with a little jitter; the notch depth
+  // varies a touch for variety.
+  function _star(p){
+    const inner=0.38+Math.random()*0.12, rot=-Math.PI/2+(Math.random()*0.5-0.25), o=[];
+    for(let i=0;i<p;i++){
+      let a=rot+i*2*Math.PI/p;
+      o.push([Math.cos(a),Math.sin(a)]);                 // outer point
+      a+=Math.PI/p;
+      o.push([Math.cos(a)*inner,Math.sin(a)*inner]);     // inner point
     }
-    return _fit(_regular(n));
+    return o;
+  }
+  // Pick a fitted, varied shape AND the vertex-hit radius that keeps its shortest
+  // side clickable. High counts (10/12) are always STARS; otherwise ~40% of shapes
+  // that CAN be concave are, the rest regular / rectangle / irregular. Falls back
+  // to a regular polygon if a candidate's edges come out too short.
+  function buildShape(n){
+    for(let t=0;t<18;t++){
+      let raw,complex=false,star=false;
+      if(STARPTS[n]){raw=_star(STARPTS[n]);complex=true;star=true;}
+      else{
+        const r=Math.random();
+        if(CONCAVE[n]&&r<0.40){raw=_concave(n);complex=true;}
+        else if(n===4&&r<0.60)raw=_rectangle();
+        else if(r<0.78)       raw=_irregular(n);
+        else                  raw=_regular(n);
+      }
+      const vhitR=star?15:complex?18:(n>=7?20:24);
+      const pts=_fit(raw);
+      if(_minEdge(pts)>=2*vhitR+10)return{pts,vhitR};
+    }
+    return{pts:_fit(_regular(n)),vhitR:n>=7?20:24};
   }
 
-  // a bank of shapes — ONE of each side-count 3..8 (six problems), shuffled.
-  // Geometry is re-randomised on every mount, so even a repeated side-count looks
-  // different; this bank just guarantees the full 3..8 spread of side-counts.
+  // a bank of shapes — for each side-count 3..8, one COUNT-SIDES problem (b:0) and
+  // one COUNT-CORNERS problem (b:1), shuffled (12 total). Geometry is re-randomised
+  // on every mount, so even a repeated side-count looks different.
   function makePool(){
-    const arr=SHAPES.map(s=>({t:TPG,a:s}));
+    const arr=[];SHAPES.forEach(s=>{arr.push({t:TPG,a:s,b:0});arr.push({t:TPG,a:s,b:1});});
     for(let i=arr.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[arr[i],arr[j]]=[arr[j],arr[i]];}
     return arr;
   }
@@ -185,16 +235,17 @@ window.EXERCISES.types.polygon=(()=>{
   function mount({root,a,b,api}){
     injectStyle();
     const sides=a||3;
+    const askVtx=(b===1);                    // b=1 → count CORNERS, else count SIDES
+    const NOUN=askVtx?'קֹדְקוֹדִים':'צְלָעוֹת';
     const uid=++_uid;
-    let done=false,fillIdx=(Math.random()*FILLS.length)|0,countedN=0;
-    const counted=new Array(sides).fill(false);
+    let done=false,fillIdx=(Math.random()*FILLS.length)|0,goalN=0;
+    const markedE=new Array(sides).fill(false),markedV=new Array(sides).fill(false);
     const timers=[];const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
 
-    // ── geometry: a varied simple polygon, fitted to the viewBox. Vertex hit
-    // targets shrink a little for the busier 7/8-gons so each side keeps a
-    // clickable middle between its two corners. ──
-    const vhitR=sides>=7?20:24;
-    const V=buildShape(sides,vhitR);
+    // ── geometry: a varied simple polygon (may be CONCAVE). buildShape returns the
+    // fitted points AND the corner-target radius that keeps every side clickable. ──
+    const shp=buildShape(sides);
+    const V=shp.pts, vhitR=shp.vhitR;
     const ptsAttr=V.map(v=>v[0].toFixed(1)+','+v[1].toFixed(1)).join(' ');
     let edges='',his='',hits='',verts='',vhits='';
     for(let i=0;i<sides;i++){
@@ -210,7 +261,7 @@ window.EXERCISES.types.polygon=(()=>{
 
     root.innerHTML=`
       <div class="pg-root">
-        <div class="pg-q" id="pg-q-${uid}">כַּמָּה <b>צְלָעוֹת</b> יֵשׁ לַצּוּרָה?</div>
+        <div class="pg-q" id="pg-q-${uid}">כַּמָּה <b>${NOUN}</b> יֵשׁ לַצּוּרָה?</div>
         <div class="pg-stage">
           <svg class="pg-svg" viewBox="0 0 320 320" aria-label="צוּרָה">
             <defs>
@@ -232,12 +283,18 @@ window.EXERCISES.types.polygon=(()=>{
         </div>
         <div class="pg-ans-row">
           <button class="pg-btn" id="pg-chk-${uid}" aria-label="בְּדִיקָה">✓</button>
-          <input class="ans-inp pg-inp" id="pg-ans-${uid}" type="text" inputmode="numeric" maxlength="2" aria-label="כַּמָּה צְלָעוֹת">
+          <input class="ans-inp pg-inp" id="pg-ans-${uid}" type="text" inputmode="numeric" maxlength="2" aria-label="כַּמָּה ${NOUN}">
         </div>
       </div>`;
 
     const $=id=>root.querySelector('#'+id+'-'+uid);
     const body=$('pg-body'),fx=$('pg-fx'),inp=$('pg-ans'),chk=$('pg-chk'),qEl=$('pg-q');
+
+    // instruction hint for this variant (overrides the host's generic TPG hint)
+    {const h=document.getElementById('hint');
+     if(h)h.textContent=askVtx
+       ?'🔷 לַחֲצִי עַל כָּל קֹדְקוֹד (פִּנָּה), סְפְרִי כַּמָּה — וְכִתְבִי אֶת הַמִּסְפָּר!'
+       :'🔷 לַחֲצִי עַל כָּל צֵלַע, סְפְרִי כַּמָּה — וְכִתְבִי אֶת הַמִּסְפָּר!';}
 
     // clicking the shape's body → cycle its colour (pure fun)
     body.addEventListener('click',()=>{
@@ -247,17 +304,26 @@ window.EXERCISES.types.polygon=(()=>{
       body.classList.remove('wob');void body.offsetWidth;body.classList.add('wob');
     });
 
-    // mark the side as counted — light it up, but do NOT reveal any number
-    // (the child must count the marked sides herself)
-    function countEdge(i){
-      if(counted[i])return;
-      counted[i]=true;countedN++;
+    function nudge(){
+      if(goalN===sides&&!done){inp.classList.add('pg-ready');
+        const h=document.getElementById('hint');
+        if(h)h.textContent=askVtx?'🎉 סִמַּנְתְּ אֶת כָּל הַקֹּדְקוֹדִים! סְפְרִי כַּמָּה וְכִתְבִי אֶת הַמִּסְפָּר!'
+                                 :'🎉 סִמַּנְתְּ אֶת כָּל הַצְּלָעוֹת! סְפְרִי כַּמָּה וְכִתְבִי אֶת הַמִּסְפָּר!';}
+    }
+    // light a SIDE (gold) — counts toward the goal only when we're counting sides
+    function markEdge(i){
+      if(markedE[i])return;markedE[i]=true;
       const hi=root.querySelector('#pg-hi-'+uid+'-'+i);if(hi)hi.classList.add('on');
-      if(countedN===sides&&!done){inp.classList.add('pg-ready');
-        const h=document.getElementById('hint');if(h)h.textContent='🎉 סִמַּנְתְּ אֶת כָּל הַצְּלָעוֹת! סְפְרִי כַּמָּה וְכִתְבִי אֶת הַמִּסְפָּר!';}
+      if(!askVtx){goalN++;nudge();}
+    }
+    // colour a CORNER (magenta) — counts toward the goal only when counting corners
+    function markVtx(i){
+      if(markedV[i])return;markedV[i]=true;
+      const dot=root.querySelector('#pg-vtx-'+uid+'-'+i);if(dot)dot.classList.add('on');
+      if(askVtx){goalN++;nudge();}
     }
 
-    // clicking a SIDE → star-burst + floating "צֵלַע" + mark the side
+    // clicking a SIDE → star-burst + floating "צֵלַע" + light the side
     root.querySelectorAll('.pg-hit').forEach(line=>{
       line.addEventListener('click',ev=>{
         ev.stopPropagation();
@@ -265,12 +331,11 @@ window.EXERCISES.types.polygon=(()=>{
         const r=fx.getBoundingClientRect();
         const x=ev.clientX-r.left,y=ev.clientY-r.top;
         starBurst(fx,x,y);popLabel(fx,x,y,'צֵלַע');
-        countEdge(parseInt(line.dataset.i,10));
+        markEdge(parseInt(line.dataset.i,10));
       });
     });
 
     // clicking a CORNER → star-burst + floating "קֹדְקוֹד" + pop a coloured dot
-    // on that vertex (so the child learns to recognise a vertex too)
     root.querySelectorAll('.pg-vhit').forEach(c=>{
       c.addEventListener('click',ev=>{
         ev.stopPropagation();
@@ -278,26 +343,26 @@ window.EXERCISES.types.polygon=(()=>{
         const r=fx.getBoundingClientRect();
         const x=ev.clientX-r.left,y=ev.clientY-r.top;
         starBurst(fx,x,y);popLabel(fx,x,y,'קֹדְקוֹד');
-        const dot=root.querySelector('#pg-vtx-'+uid+'-'+c.dataset.i);if(dot)dot.classList.add('on');
+        markVtx(parseInt(c.dataset.i,10));
       });
     });
 
     function check(){
       if(done)return;
       const v=parseInt(inp.value,10);
-      if(inp.value===''||isNaN(v)){const h=document.getElementById('hint');if(h)h.textContent='כִּתְבִי כַּמָּה צְלָעוֹת סָפַרְתְּ 💗';return;}
+      if(inp.value===''||isNaN(v)){const h=document.getElementById('hint');if(h)h.textContent='כִּתְבִי כַּמָּה '+NOUN+' סָפַרְתְּ 💗';return;}
       if(v===sides){
         done=true;
         inp.classList.remove('pg-ready','ans-err');inp.classList.add('ans-ok');inp.disabled=true;chk.disabled=true;
-        // finale: light up every side + its number, then reveal the shape's name
-        for(let i=0;i<sides;i++)countEdge(i);
-        qEl.innerHTML=`🎉 זֶה <b>${NAMES[sides]||''}</b> — ${sides} צְלָעוֹת!`;
+        // finale: mark the whole COUNTED set, then reveal the shape's name
+        for(let i=0;i<sides;i++){if(askVtx)markVtx(i);else markEdge(i);}
+        qEl.innerHTML=`🎉 זֶה <b>${NAMES[sides]||''}</b> — ${sides} ${NOUN}!`;
         api.solved();
       }else{
         inp.classList.remove('pg-ready');inp.classList.add('ans-err');
         const h=document.getElementById('hint');
-        if(h)h.textContent=v<sides?'יֵשׁ עוֹד צְלָעוֹת! נַסִּי מִסְפָּר גָּדוֹל יוֹתֵר 🔷'
-                                   :'פָּחוֹת צְלָעוֹת! נַסִּי מִסְפָּר קָטָן יוֹתֵר 💗';
+        if(h)h.textContent=v<sides?('יֵשׁ עוֹד '+NOUN+'! נַסִּי מִסְפָּר גָּדוֹל יוֹתֵר 🔷')
+                                   :('פָּחוֹת '+NOUN+'! נַסִּי מִסְפָּר קָטָן יוֹתֵר 💗');
         api.wrong(v);
         later(()=>{if(!done){inp.value='';inp.classList.remove('ans-err');inp.focus();}},1000);
       }
