@@ -185,7 +185,7 @@ window.BACKGROUNDS.space={
   // approaches 0 near the horizon (1 = unaffected).
   function bhPull(o,K){
     const dx=BH.x-o.x,dy=BH.y-o.y,d=Math.hypot(dx,dy);
-    if(d<BH.r*1.05)return-1;
+    if(d<BH.r*1.02)return-1;   // swallowed right AT the rim (just past the photon ring)
     if(d>=BH.r*7)return 1;
     const f=K*(BH.r/d)*(BH.r/d);
     if(o.vx!==undefined){
@@ -193,7 +193,9 @@ window.BACKGROUNDS.space={
       const sp=Math.hypot(o.vx,o.vy);
       if(sp>6){o.vx*=6/sp;o.vy*=6/sp;}
     }else{o.x+=dx/d*f*2;o.y+=dy/d*f*2;}
-    return Math.min(1,(d-BH.r)/(BH.r*1.2));
+    // fade only over the LAST stretch (≲1.5r) — infalling things stay clearly
+    // visible almost all the way down to the event horizon
+    return Math.min(1,(d-BH.r)/(BH.r*.45));
   }
   // Gentle gravity of Earth & the ringed planet — bends a passing trajectory a
   // little, never captures: no pull inside the body, no fade, no swallowing.
@@ -220,7 +222,11 @@ window.BACKGROUNDS.space={
   function lensImage(ox,oy){
     const dx=ox-BH.x,dy=oy-BH.y,d=Math.hypot(dx,dy);
     if(d>=BH.r*7||d<.001)return{x:ox,y:oy,mag:1,gx:0,gy:0,ga:0};
-    const rE=BH.rE,root=Math.sqrt(d*d+4*rE*rE);
+    // NEAR-FIELD COLLAPSE: shrink the effective Einstein radius close-in (0 at
+    // the swallow radius → full by ~2.3r) so an infalling image walks DOWN to
+    // the photon ring instead of freezing ~2r out (matches real GR behaviour).
+    const nf=Math.min(1,Math.max(0,(d-BH.r*1.02)/(BH.r*1.3)));
+    const rE=BH.rE*Math.sqrt(nf),root=Math.sqrt(d*d+4*rE*rE);
     const w=Math.min(1,(BH.r*7-d)/(BH.r*2));       // ease-in at the zone edge
     const s=1+((d+root)/(2*d)-1)*w;                // primary-image radial stretch
     const mag=1+Math.min(1.6,(rE*rE)/(d*d))*w;     // brightening near the ring
@@ -713,9 +719,20 @@ window.BACKGROUNDS.space={
       ctx.beginPath();ctx.arc(px,py,p.size,0,TAU);ctx.fill();
     }
     ctx.restore();
-    ctx.strokeStyle='rgba(255, 215, 150, 0.35)';
-    ctx.lineWidth=r*.16;
+    // the lensed TOP ARC — no longer a frozen stroke: a faint base + bright lumps
+    // FLOWING along it left→right (the disk's rotation made visible on its
+    // lensed image). Cheap: 1 base + 3 short arc strokes.
+    ctx.strokeStyle='rgba(255, 215, 150, 0.22)';
+    ctx.lineWidth=r*.16;ctx.lineCap='round';
     ctx.beginPath();ctx.ellipse(x,y,r*1.28,r*1.22,0,Math.PI*1.06,Math.PI*1.94);ctx.stroke();
+    for(let i=0;i<3;i++){
+      const u=(t*.16*spin+i/3)%1;              // 0..1 along the arc, looping
+      const a0=Math.PI*(1.10+.74*u);           // sweeps across the top span
+      const lump=Math.sin(u*Math.PI);          // fades in/out at the ends
+      ctx.strokeStyle=`rgba(255, 232, 190, ${.34*lump*(1+fz*.6)})`;
+      ctx.lineWidth=r*.16;
+      ctx.beginPath();ctx.ellipse(x,y,r*1.28,r*1.22,0,a0,a0+.55);ctx.stroke();
+    }
     ctx.globalCompositeOperation='source-over';
     // The shadow itself
     ctx.fillStyle='#000000';
@@ -749,17 +766,38 @@ window.BACKGROUNDS.space={
     ctx.beginPath();ctx.arc(x,y,r*1.09,0,TAU);ctx.stroke();
     ctx.fillStyle=rg(ctx,x,y,r*1.02,r*1.9,[[0,`rgba(255, 205, 150, ${.12*ringPulse})`],[1,'rgba(255, 205, 150, 0)']]);
     ctx.beginPath();ctx.arc(x,y,r*1.9,0,TAU);ctx.fill();
+    // rotating HIGHLIGHTS riding the rings — the photon ring and the outer soft
+    // ring visibly TURN (two arcs each, counter-rotating for depth). 4 strokes.
+    ctx.lineCap='round';
+    for(let i=0;i<2;i++){
+      const hlA=t*(.5+i*.27)*spin+i*Math.PI;
+      ctx.strokeStyle=`rgba(255, 248, 232, ${.30*ringPulse})`;
+      ctx.lineWidth=r*.05;
+      ctx.beginPath();ctx.arc(x,y,r*1.03,hlA,hlA+1.1);ctx.stroke();
+      ctx.strokeStyle=`rgba(255, 200, 140, ${.16*ringPulse})`;
+      ctx.lineWidth=r*.12;
+      ctx.beginPath();ctx.arc(x,y,r*1.09,-hlA*.7,-hlA*.7+1.5);ctx.stroke();
+    }
     // The LENSED HALO — a THICK, uneven ring of gravity-bent light wrapping the
     // whole shadow, so the silhouette never reads as a clean circle. One soft
     // base annulus + 6 big light-balls (the hot-spot glow) SMEARED tangentially
     // along the rim, slowly circling it. CHEAP: 7 gradient fills, no particles.
     // (annulus stop-0 is TRANSPARENT — points inside the gradient's inner circle
     // take stop-0's color, and the shadow must stay pitch black)
-    ctx.fillStyle=rg(ctx,x,y,r*.96,r*1.62,[[0,'rgba(255, 225, 180, 0)'],[.10,`rgba(255, 225, 180, ${.30*ringPulse})`],[.45,`rgba(255, 205, 150, ${.13*ringPulse})`],[1,'rgba(255, 190, 130, 0)']]);
+    ctx.fillStyle=rg(ctx,x,y,r*.96,r*1.62,[[0,'rgba(255, 225, 180, 0)'],[.10,`rgba(255, 225, 180, ${.44*ringPulse})`],[.45,`rgba(255, 205, 150, ${.18*ringPulse})`],[1,'rgba(255, 190, 130, 0)']]);
     ctx.beginPath();ctx.arc(x,y,r*1.62,0,TAU);ctx.fill();
+    // CONTINUOUS bright ring — uniform strokes wrapping the FULL circumference at
+    // all times (never just a Doppler crescent); Doppler only biases it brighter left
+    ctx.lineCap='butt';
+    ctx.strokeStyle=`rgba(255, 238, 210, ${.34*ringPulse})`;
+    ctx.lineWidth=r*.18;
+    ctx.beginPath();ctx.arc(x,y,r*1.10,0,TAU);ctx.stroke();
+    ctx.strokeStyle=`rgba(255, 215, 165, ${.16*ringPulse})`;
+    ctx.lineWidth=r*.30;
+    ctx.beginPath();ctx.arc(x,y,r*1.24,0,TAU);ctx.stroke();
     for(const L of HALO){
       L.ang+=L.spd*.016*spin;
-      const D=doppler(Math.cos(L.ang));
+      const D=Math.max(.75,doppler(Math.cos(L.ang)));   // high floor: lobes glow ALL around
       ctx.save();
       ctx.translate(x+Math.cos(L.ang)*r*1.14,y+Math.sin(L.ang)*r*1.14);
       ctx.rotate(L.ang+Math.PI/2);      // lie along the rim's tangent
