@@ -978,6 +978,34 @@ class TestDoubleUnknown:
         inq = page.evaluate("(()=>{for(var k=0;k<10;k++){if(makeMxPool().some(p=>p.t===TRA))return true;}return false;})()")
         assert inq, "the three-unknown (TRA) must appear in the Queen pool"
 
+    def test_tri_unknown_rejects_zero_without_penalty(self, page):
+        """x+x+x=20 (TRA): a triple with a 0 in any box (e.g. 0+0+20) SUMS right but
+        isn't real practice — it's accepted-as-correct-but-refused: the child is
+        told it's right and asked for a DIFFERENT triple. No penalty (tryFirst/score
+        unchanged), boxes cleared; a real triple (5+7+8=20) is then accepted for
+        full points. Mirrors the TDS 'no lazy shortcut' rule."""
+        page.evaluate("mode='mx'; score=0; problems=[{t:TRA,r:20}]; idx=0; loadProblem()")
+        page.wait_for_selector("#ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        zero = page.evaluate("""(() => {
+            document.getElementById('ans1').value='0';
+            document.getElementById('ans2').value='0';
+            document.getElementById('ans3').value='20'; checkAns();
+            return {done:done, tryFirst:tryFirst, score:score,
+                    fbErr:document.getElementById('fb').className.includes('fb-err'),
+                    cleared:document.getElementById('ans1').value===''};})()""")
+        assert zero["done"] is False, f"a triple with a 0 must not be accepted: {zero}"
+        assert zero["tryFirst"] == 0 and zero["score"] == 0, f"no penalty for the zero try: {zero}"
+        assert zero["fbErr"] and zero["cleared"], f"'correct but give another' feedback + boxes cleared: {zero}"
+        # a real triple with NO zero is then accepted for FULL points
+        real = page.evaluate("""(() => {
+            document.getElementById('ans1').value='5';
+            document.getElementById('ans2').value='7';
+            document.getElementById('ans3').value='8'; checkAns();
+            return {done:done, score:score, got:(report[0]||{}).gotCorrect||false};})()""")
+        assert real["done"] is True and real["got"] is True and real["score"] > 0, \
+            f"a real triple (5+7+8=20) must be accepted for points: {real}"
+
     def test_xx_sub_rejects_minuend_of_ten(self, page):
         """x−x=9: the rote '10 − 1' (a minuend of 10) is correct but NOT accepted —
         the child must use a different minuend. No penalty; a real pair (13 − 4)

@@ -212,27 +212,27 @@ function makeBridgePool(){
 
 // ── bridging-20 ("גָּשֵׁר 20") — TWO fixed pedagogical sets of 15, served ALTERNATELY
 //    (set 1 → set 2 → set 1 …), like גָּשֵׁר 10. The turn is PERSISTED so the alternation
-//    survives refreshes. Both cross 20 by only 1–3 (sums/minuends 21–23); the order
-//    INSIDE each set is the curriculum and must NEVER change; fresh objects each build.
-//    SET 1 — SMALL jumps: anchors 19/18/17 (the addend just below 20).
-//    SET 2 — BIGGER jumps: anchors 16/15/14, so the make-20 split is larger (16+5 → 4|1,
-//            14+9 → 6|3) — the same gentle crossing practised with a wider decomposition.
+//    survives refreshes. Both cross 20 into the LOW-MID 20s; the order INSIDE each
+//    set is the curriculum and must NEVER change; fresh objects each build.
+//    SET 1 — MEDIUM jumps: anchors 18/17/16, results 22–24 (make-20 split 2/3/4).
+//    SET 2 — BIG jumps: lower anchors 16/15/14/13 and bigger addends, results 22–25
+//            (16+9 → 4|5, 13+9 → 7|2) — a wider decomposition, a notch harder.
 let _b20Turn=0;
 try{const _s=localStorage.getItem('b20Turn');if(_s!=null)_b20Turn=(+_s)||0;}catch(e){}
 function _bridge20Set1(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(19,2),A(19,3),A(19,4),S(21,2),S(22,3),S(23,4),   // 19-family (cross by 1/2/3) + inverses
-    A(18,3),A(18,4),A(18,5),S(21,3),S(22,4),S(23,5),   // 18-family + inverses
-    A(17,4),A(17,5),A(17,6),                            // 17-family (additions to finish)
+    A(18,4),A(18,5),A(18,6),S(22,4),S(23,5),S(24,6),   // 18-family (cross to 22–24) + inverses
+    A(17,5),A(17,6),A(17,7),S(22,5),S(23,6),S(24,7),   // 17-family + inverses
+    A(16,6),A(16,7),A(16,8),                            // 16-family (additions to finish → 22–24)
   ];
 }
 function _bridge20Set2(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(16,5),A(16,6),A(16,7),S(21,5),S(22,6),S(23,7),   // 16-family (bigger jumps) + inverses
-    A(15,6),A(15,7),A(15,8),S(21,6),S(22,7),S(23,8),   // 15-family + inverses
-    A(14,7),A(14,8),A(14,9),                            // 14-family (additions to finish)
+    A(16,7),A(16,8),A(16,9),S(23,7),S(24,8),S(25,9),   // 16-family (big jumps → 23–25) + inverses
+    A(15,7),A(15,8),A(15,9),S(22,7),S(23,8),S(24,9),   // 15-family + inverses
+    A(14,8),A(14,9),A(13,9),                            // 14/13-family (additions to finish → 22–23)
   ];
 }
 // the one-unknown type is woven into BOTH sets by _sprinkleUnknowns (~1 in 4),

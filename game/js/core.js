@@ -488,7 +488,7 @@ function renderEq(){
       const shpA=_varShapeSVG(P.symA);
       const symAtok=`<span class="eq-n vone-sym" data-num="${num1}">${shpA}</span>`;
       const dShpA=_varShapeSVG(P.symA,'1.5rem'),dShpB=_varShapeSVG(P.sym,'1.5rem');
-      const defOne=(s,v)=>`<span style="display:inline-flex;align-items:center;gap:4px">${s}<span class="eq-op op-e" style="font-size:.8em">=</span><span style="font-family:'Fredoka One',cursive">${v}</span></span>`;
+      const defOne=(s,v)=>`<span style="display:inline-flex;align-items:center;gap:4px">${s}<span class="eq-op op-e" style="font-size:.8em">=</span><span style="font-family:'Fredoka One',cursive;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5)">${v}</span></span>`;
       h='<div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+
           '<div class="vone-defs" style="display:flex;align-items:center;gap:20px;font-size:1.15rem;opacity:.95">'+
             defOne(dShpA,num1)+defOne(dShpB,num2)+'</div>'+
@@ -614,6 +614,15 @@ function checkAns(){
       const why=v1===10?'בְּלִי לְהַתְחִיל מ-10':'בְּלִי לְחַסֵּר 0';
       setFb(`נָכוֹן! אֲבָל ${why} — תְּנִי מִסְפָּרִים אֲחֵרִים כְּדֵי לְתַרְגֵּל 💪`,'fb-err');
       if(i1)i1.value='';if(i2)i2.value='';
+      setTimeout(()=>document.getElementById('ans1')?.focus(),150);
+      return;
+    }
+    // __+__+__: a 0 in any box is a trivial filler (e.g. 0+0+20). The sum is
+    // right, but it isn't real practice — ask for three real numbers, NO penalty
+    // (mirrors the TDS "no lazy shortcut" rule above).
+    if(ptype===TRA&&valid&&(v1===0||v2===0||v3===0)){
+      setFb('נָכוֹן! אֲבָל בְּלִי אֶפֶס — תְּנִי מִסְפָּרִים אֲחֵרִים כְּדֵי לְתַרְגֵּל 💪','fb-err');
+      if(i1)i1.value='';if(i2)i2.value='';if(i3)i3.value='';
       setTimeout(()=>document.getElementById('ans1')?.focus(),150);
       return;
     }
