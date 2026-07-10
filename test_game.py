@@ -2435,10 +2435,10 @@ class TestBridgeSplitTooltip:
 # Bridging-10 mode (br): focused practice on crossing 10
 # ─────────────────────────────────────────────────────────
 class TestBridgingMode:
-    """The 'br' mode (גָּשֵׁר 10) serves FOUR fixed pedagogical sets in a prescribed
-       order — no random generation, no shuffle. The sets ALTERNATE on EVERY
+    """The 'br' mode (גָּשֵׁר 10) serves SIX fixed pedagogical sets in a prescribed
+       order — no random generation, no shuffle. The sets ROTATE on EVERY
        rebuild — choosing the game, re-clicking it, "play again" (restart) or a
-       reload (set 1 → set 2 → set 3 → set 4 → set 1 …); a fresh start serves set 1.
+       reload (set 1 → 2 → 3 → 4 → 5 → 6 → set 1 …); a fresh start serves set 1.
        The order INSIDE each set is the curriculum and must never change."""
 
     # SET 1 — the original prescribed order: (type, a, b)
@@ -2478,6 +2478,22 @@ class TestBridgingMode:
         ("TA", 5, 6), ("TS", 11, 5), ("TA", 4, 7), ("TS", 11, 7), ("TA", 3, 8), ("TS", 11, 8), ("TA", 2, 9),
         ("TA", 5, 7), ("TS", 12, 7), ("TA", 4, 8), ("TS", 12, 8),
         ("TA", 5, 8), ("TS", 13, 8), ("TA", 4, 9), ("TS", 13, 9),
+    ]
+
+    # SET 5 — the +9 shortcut: 2+9 … 9+9 (→11–18) with −9 count-backs; 15 problems
+    EXPECTED_SEQ_5 = [
+        ("TA", 2, 9), ("TA", 3, 9), ("TA", 4, 9), ("TA", 5, 9),
+        ("TS", 11, 9), ("TS", 12, 9), ("TS", 13, 9), ("TS", 14, 9),
+        ("TA", 6, 9), ("TA", 7, 9), ("TA", 8, 9),
+        ("TS", 15, 9), ("TS", 16, 9), ("TS", 17, 9),
+        ("TA", 9, 9),
+    ]
+
+    # SET 6 — mid-teen count-backs (14 & 15 minus → 5-9) + the ways to build 14/15/16; 15
+    EXPECTED_SEQ_6 = [
+        ("TS", 14, 5), ("TS", 14, 6), ("TS", 14, 7), ("TS", 14, 8), ("TS", 14, 9),
+        ("TS", 15, 6), ("TS", 15, 7), ("TS", 15, 8), ("TS", 15, 9),
+        ("TA", 6, 8), ("TA", 7, 7), ("TA", 7, 8), ("TA", 8, 7), ("TA", 8, 8), ("TA", 9, 7),
     ]
 
     def _switch_br(self, page):
@@ -2532,24 +2548,23 @@ class TestBridgingMode:
         )
 
     def test_br_restart_alternates_sets(self, page):
-        """Every rebuild advances the set, so restart() cycles through the four
-        sets: set 1 → 2 → 3 → 4 → set 1 (deterministic). The shape-unknown type is
-        woven into every set (see test_br_weaves_unknown_every_fourth); normalise
-        TVA/TVS back to their base add/sub type for the order check."""
+        """Every rebuild advances the set, so restart() cycles through the six
+        sets: set 1 → 2 → 3 → 4 → 5 → 6 → set 1 (deterministic). The shape-unknown
+        type is woven into every set (see test_br_weaves_unknown_every_fourth);
+        normalise TVA/TVS back to their base add/sub type for the order check."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
-               (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3, self.EXPECTED_SEQ_4)]
+               (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3,
+                self.EXPECTED_SEQ_4, self.EXPECTED_SEQ_5, self.EXPECTED_SEQ_6)]
         NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch_br(page)
         seen = [page.evaluate(NORM)]
-        for _ in range(4):
+        for _ in range(6):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             seen.append(page.evaluate(NORM))
-        assert seen[0] == exp[0], "first build serves set 1"
-        assert seen[1] == exp[1], "restart → set 2"
-        assert seen[2] == exp[2], "restart → set 3"
-        assert seen[3] == exp[3], "restart → set 4"
-        assert seen[4] == exp[0], "the following restart wraps back to set 1"
+        for i in range(6):
+            assert seen[i] == exp[i], f"build {i+1} must serve set {i+1}\ngot={seen[i]}"
+        assert seen[6] == exp[0], "the following restart wraps back to set 1"
 
     def test_br_weaves_unknown_every_fourth(self, page):
         """An "unknown" exercise is woven into EVERY set at every 4th problem
@@ -2559,7 +2574,7 @@ class TestBridgingMode:
         consts = page.evaluate("({TVA, TVS, TRA})")
         kinds = {consts["TVA"], consts["TVS"], consts["TRA"]}
         self._switch_br(page)
-        for _ in range(4):                                  # check all four sets
+        for _ in range(6):                                  # check all six sets
             probs = page.evaluate("[...problems].map(p => p.t)")
             n = len(probs)
             unk = [i for i, t in enumerate(probs) if t in kinds]
@@ -2735,34 +2750,93 @@ class TestBridgingMode:
                 assert 11 <= a <= 13 and (a % 10) < b and (a - b) < 10, \
                     f"subtraction {a}-{b} must cross 10 from a low teen (minuend 11–13)"
 
+    def _reach_set(self, page, n):
+        """Rotate to set n (1-based): switch (set 1) then re-enter n-1 times."""
+        self._switch_br(page)
+        for _ in range(n - 1):
+            self._reenter_br(page)
+
+    def test_br_set5_has_15_problems(self, page):
+        """The fifth bridging set (the +9 shortcut) serves exactly 15 problems."""
+        self._reach_set(page, 5)
+        assert page.evaluate("problems.length") == 15, \
+            f"Expected 15 problems in set 5, got {page.evaluate('problems.length')}"
+
+    def test_br_set5_exact_order(self, page):
+        """The fifth selection serves SET 5 (+9 shortcut) in its exact prescribed order."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        self._reach_set(page, 5)
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_5]
+        assert probs == expected, f"br set 5 deviates.\nexpected={expected}\ngot={probs}"
+
+    def test_br_set5_all_cross_ten(self, page):
+        """Every set-5 problem bridges 10 (all are +9 / −9 crossings)."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        TA, TS = consts["TA"], consts["TS"]
+        self._reach_set(page, 5)
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        assert len(probs) == 15
+        for t, a, b in probs:
+            if t == TA:
+                assert a < 10 and b < 10 and a + b > 10, f"addition {a}+{b} must cross 10"
+            else:
+                assert 10 < a <= 18 and (a % 10) < b and (a - b) < 10, f"subtraction {a}-{b} must cross 10"
+
+    def test_br_set6_has_15_problems(self, page):
+        """The sixth bridging set (mid-teen count-backs) serves exactly 15 problems."""
+        self._reach_set(page, 6)
+        assert page.evaluate("problems.length") == 15, \
+            f"Expected 15 problems in set 6, got {page.evaluate('problems.length')}"
+
+    def test_br_set6_exact_order(self, page):
+        """The sixth selection serves SET 6 (mid-teen count-backs) in its exact order."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        self._reach_set(page, 6)
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_6]
+        assert probs == expected, f"br set 6 deviates.\nexpected={expected}\ngot={probs}"
+
+    def test_br_set6_all_cross_ten(self, page):
+        """Every set-6 problem bridges 10 (14/15 count-backs + builds to 14/15/16)."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        TA, TS = consts["TA"], consts["TS"]
+        self._reach_set(page, 6)
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        assert len(probs) == 15
+        for t, a, b in probs:
+            if t == TA:
+                assert a < 10 and b < 10 and a + b > 10, f"addition {a}+{b} must cross 10"
+            else:
+                assert 10 < a <= 18 and (a % 10) < b and (a - b) < 10, f"subtraction {a}-{b} must cross 10"
+
     def test_br_alternates_sets_in_turns(self, page):
-        """Each menu selection advances: set1 → 2 → 3 → 4 → set1 (unknowns woven
-        into every set; normalised back to base types for the order check)."""
+        """Each menu selection advances: set1 → 2 → 3 → 4 → 5 → 6 → set1 (unknowns
+        woven into every set; normalised back to base types for the order check)."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
-               (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3, self.EXPECTED_SEQ_4)]
+               (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3,
+                self.EXPECTED_SEQ_4, self.EXPECTED_SEQ_5, self.EXPECTED_SEQ_6)]
         NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch_br(page)
         seen = [page.evaluate(NORM)]
-        for _ in range(4):
+        for _ in range(6):
             self._reenter_br(page)
             seen.append(page.evaluate(NORM))
-        assert seen[0] == exp[0], "1st selection → set 1"
-        assert seen[1] == exp[1], "2nd selection → set 2"
-        assert seen[2] == exp[2], "3rd selection → set 3"
-        assert seen[3] == exp[3], "4th selection → set 4"
-        assert seen[4] == exp[0], "5th selection wraps back to set 1"
+        for i in range(6):
+            assert seen[i] == exp[i], f"selection {i+1} → set {i+1}"
+        assert seen[6] == exp[0], "the next selection wraps back to set 1"
 
     def test_br_restart_size_alternates(self, page):
-        """The four sets have lengths 25, 18, 15, 15; restarts cycle through them
-        (25 → 18 → 15 → 15 → 25). Weaving the unknowns in re-renders problems but
-        never adds/removes any, so the lengths are unchanged."""
+        """The six sets have lengths 25, 18, 15, 15, 15, 15; restarts cycle through
+        them (25 → 18 → 15 → 15 → 15 → 15 → 25). Weaving the unknowns in re-renders
+        problems but never adds/removes any, so the lengths are unchanged."""
         self._switch_br(page)
         lens = [page.evaluate("problems.length")]
-        for _ in range(4):
+        for _ in range(6):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             lens.append(page.evaluate("problems.length"))
-        assert lens == [25, 18, 15, 15, 25], f"sizes must cycle on restart, got {lens}"
+        assert lens == [25, 18, 15, 15, 15, 15, 25], f"sizes must cycle on restart, got {lens}"
 
     def test_br_reclick_while_active_rotates_set(self, page):
         """Re-selecting גָּשֵׁר 10 while ALREADY in it starts a fresh game with
@@ -2776,9 +2850,10 @@ class TestBridgingMode:
             "re-clicking גָּשֵׁר 10 must rotate to set 2 (18 problems)"
 
     def test_br_boot_alternates_across_reloads(self, page):
-        """Booting straight into br (the persisted mode) rotates the set each reload,
-        so 4 reloads from a fresh start serve all FOUR distinct sets in turn (sets 3
-        and 4 share a length, so compare by CONTENT, not size)."""
+        """Booting straight into br (the persisted mode) rotates the set each reload.
+        There are now SIX sets; 4 consecutive reloads therefore serve 4 DISTINCT sets
+        in turn (compared by CONTENT, since several sets share a length) — proving the
+        rotation persists across reloads."""
         seqs = []
         for _ in range(4):
             page.evaluate("localStorage.setItem('gameMode','br')")
@@ -2794,22 +2869,35 @@ class TestBridgingMode:
 # Bridging-20 mode (b20): a NEW category — crossing the SECOND ten, only by a little
 # ─────────────────────────────────────────────────────────
 class TestBridge20:
-    """'b20' (גָּשֵׁר 20) is its own game/category — TWO fixed 15-problem sets served
-    ALTERNATELY (set 1 → set 2 → set 1 …), whose sums/minuends all sit in 21–23, so 20
-    is crossed by only 1/2/3. Set 1 = small jumps (anchors 19/18/17); set 2 = bigger
-    jumps (anchors 16/15/14). Built in the complement-family style of גָּשֵׁר 10's set 1."""
+    """'b20' (גָּשֵׁר 20) is its own game/category — FOUR fixed 15-problem sets served in
+    ROTATION (set 1 → 2 → 3 → 4 → 1 …). All cross 20 into the low-mid 20s (results 21–25).
+    Set 1 = medium jumps (anchors 18/17/16); set 2 = bigger jumps (16/15/14/13);
+    set 3 = the 19-ladder + gentlest bridges to 21; set 4 = doubles crossing 20."""
 
-    # SET 1 — small jumps
+    # SET 1 — medium jumps (anchors 18/17/16, results 22–24)
     B20_SEQ = [
-        ("TA", 19, 2), ("TA", 19, 3), ("TA", 19, 4), ("TS", 21, 2), ("TS", 22, 3), ("TS", 23, 4),
-        ("TA", 18, 3), ("TA", 18, 4), ("TA", 18, 5), ("TS", 21, 3), ("TS", 22, 4), ("TS", 23, 5),
-        ("TA", 17, 4), ("TA", 17, 5), ("TA", 17, 6),
+        ("TA", 18, 4), ("TA", 18, 5), ("TA", 18, 6), ("TS", 22, 4), ("TS", 23, 5), ("TS", 24, 6),
+        ("TA", 17, 5), ("TA", 17, 6), ("TA", 17, 7), ("TS", 22, 5), ("TS", 23, 6), ("TS", 24, 7),
+        ("TA", 16, 6), ("TA", 16, 7), ("TA", 16, 8),
     ]
-    # SET 2 — bigger jumps (anchors 16/15/14)
+    # SET 2 — bigger jumps (anchors 16/15/14/13, results 22–25)
     B20_SEQ_2 = [
-        ("TA", 16, 5), ("TA", 16, 6), ("TA", 16, 7), ("TS", 21, 5), ("TS", 22, 6), ("TS", 23, 7),
-        ("TA", 15, 6), ("TA", 15, 7), ("TA", 15, 8), ("TS", 21, 6), ("TS", 22, 7), ("TS", 23, 8),
-        ("TA", 14, 7), ("TA", 14, 8), ("TA", 14, 9),
+        ("TA", 16, 7), ("TA", 16, 8), ("TA", 16, 9), ("TS", 23, 7), ("TS", 24, 8), ("TS", 25, 9),
+        ("TA", 15, 7), ("TA", 15, 8), ("TA", 15, 9), ("TS", 22, 7), ("TS", 23, 8), ("TS", 24, 9),
+        ("TA", 14, 8), ("TA", 14, 9), ("TA", 13, 9),
+    ]
+    # SET 3 — the 19-ladder (→21–25) + the three smallest bridges to 21
+    B20_SEQ_3 = [
+        ("TA", 19, 2), ("TA", 19, 3), ("TA", 19, 4), ("TA", 19, 5), ("TA", 19, 6),
+        ("TS", 21, 2), ("TS", 22, 3), ("TS", 23, 4), ("TS", 24, 5), ("TS", 25, 6),
+        ("TA", 18, 3), ("TA", 17, 4), ("TA", 16, 5), ("TS", 21, 3), ("TS", 21, 4),
+    ]
+    # SET 4 — doubles & near-doubles crossing 20 (both operands in the low teens)
+    B20_SEQ_4 = [
+        ("TA", 11, 11), ("TS", 22, 11), ("TA", 12, 12), ("TS", 24, 12),
+        ("TA", 11, 12), ("TA", 12, 11), ("TS", 23, 11), ("TS", 23, 12),
+        ("TA", 11, 13), ("TA", 13, 11), ("TS", 24, 11), ("TS", 24, 13),
+        ("TA", 12, 13), ("TA", 13, 12), ("TS", 25, 12),
     ]
 
     def _switch(self, page):
@@ -2836,17 +2924,18 @@ class TestBridge20:
         assert probs == expected, f"b20 order deviated.\nexpected={expected}\ngot={probs}"
 
     def test_b20_crosses_twenty_only_gently(self, page):
-        """Every b20 problem bridges 20 by ≤3 — sums 21–23 / minuends 21–23, results 17–19."""
+        """Every b20 problem bridges 20 into the low-mid 20s — additions have a sum
+        21–25 (anchor < 20), subtractions have a minuend 21–25 and a result below 20."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch(page)
         for t, a, b in page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"):
             if t == TA:
-                assert a < 20 and b < 10 and 21 <= a + b <= 23, \
-                    f"addition {a}+{b} must cross 20 by ≤3 (sum 21–23)"
+                assert a < 20 and 20 < a + b <= 25, \
+                    f"addition {a}+{b} must cross 20 (sum 21–25)"
             else:
-                assert 21 <= a <= 23 and (a - b) < 20 and 17 <= (a - b) <= 19, \
-                    f"subtraction {a}-{b} must cross 20 from a low-20s minuend (result 17–19)"
+                assert 20 < a <= 25 and 0 < (a - b) < 20, \
+                    f"subtraction {a}-{b} must cross 20 from a low-20s minuend (result <20)"
 
     def test_b20_pts_and_prize(self, page):
         """b20 scores 15 per answer and has its own prize goal (like גָּשֵׁר 10)."""
@@ -2859,31 +2948,47 @@ class TestBridge20:
         assert page.locator("#lbb20.active").count() == 1
         assert page.locator("#lbbr.active").count() == 0
 
-    def test_b20_alternates_two_sets(self, page):
-        """Every rebuild advances the set: set 1 → set 2 → set 1 (the shape-unknown
-        type is woven into BOTH sets, every 4th problem; normalised back to base
-        types for the order check)."""
+    def test_b20_rotates_four_sets(self, page):
+        """Every rebuild advances the set: 1 → 2 → 3 → 4 → 1 (the shape-unknown type
+        is woven into EACH set, every 4th problem; normalised back to base types for
+        the order check)."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
-        exp1 = [[consts[t], a, b] for t, a, b in self.B20_SEQ]
-        exp2 = [[consts[t], a, b] for t, a, b in self.B20_SEQ_2]
+        exps = [[[consts[t], a, b] for t, a, b in seq]
+                for seq in (self.B20_SEQ, self.B20_SEQ_2, self.B20_SEQ_3, self.B20_SEQ_4)]
         NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch(page)
-        s1 = page.evaluate(NORM)
-        page.evaluate("restart()"); page.wait_for_timeout(120)
-        s2 = page.evaluate(NORM)
-        page.evaluate("restart()"); page.wait_for_timeout(120)
-        s3 = page.evaluate(NORM)
-        assert s1 == exp1, "first build serves set 1"
-        assert s2 == exp2, "restart advances to set 2"
-        assert s3 == exp1, "next restart wraps back to set 1"
-        # the unknown type is present in each set, on 4th slots
+        got = [page.evaluate(NORM)]
+        for _ in range(4):
+            page.evaluate("restart()"); page.wait_for_timeout(120)
+            got.append(page.evaluate(NORM))
+        assert got[0] == exps[0], f"build 1 must serve set 1\ngot={got[0]}"
+        assert got[1] == exps[1], "restart → set 2"
+        assert got[2] == exps[2], "restart → set 3"
+        assert got[3] == exps[3], "restart → set 4"
+        assert got[4] == exps[0], "wraps back to set 1"
+        # the unknown type is present, on 4th slots (checked on the last-built set)
         unk = page.evaluate("[...problems].map((p,i)=>({i,u:p.t===TVA||p.t===TVS})).filter(o=>o.u).map(o=>o.i)")
         assert unk and all((i + 1) % 4 == 0 for i in unk), \
             f"b20 must weave shape-unknowns onto 4th slots, got idx {unk}"
 
+    def test_b20_all_four_sets_cross_twenty(self, page):
+        """Every problem in ALL FOUR sets bridges 20 (sums/minuends 21–25), including
+        the new set 3 (19-ladder) and set 4 (doubles)."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        TA, TS = consts["TA"], consts["TS"]
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        self._switch(page)
+        for s in range(4):
+            for t, a, b in page.evaluate(NORM):
+                if t == TA:
+                    assert a < 20 and 20 < a + b <= 25, f"set{s+1}: {a}+{b} must cross 20 (sum 21–25)"
+                else:
+                    assert 20 < a <= 25 and 0 < (a - b) < 20, f"set{s+1}: {a}-{b} must cross 20 (result <20)"
+            page.evaluate("restart()"); page.wait_for_timeout(120)
+
     def test_b20_set2_exact_order_and_crosses_gently(self, page):
-        """Set 2 (bigger jumps) serves its exact order; all 15 still cross 20 by ≤3
-        (sums/minuends 21–23) — only the decomposition is larger."""
+        """Set 2 (bigger jumps) serves its exact order; all 15 still cross 20 into the
+        low-mid 20s (sums/minuends 21–25) — only the decomposition is larger."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch(page)                          # set 1
@@ -2893,10 +2998,10 @@ class TestBridge20:
         assert probs == expected, f"b20 set 2 order deviated.\nexpected={expected}\ngot={probs}"
         for t, a, b in probs:
             if t == TA:
-                assert a < 20 and b < 10 and 21 <= a + b <= 23, \
-                    f"addition {a}+{b} must cross 20 by ≤3 (sum 21–23)"
+                assert a < 20 and 20 < a + b <= 25, \
+                    f"addition {a}+{b} must cross 20 (sum 21–25)"
             else:
-                assert 21 <= a <= 23 and (a - b) < 20, \
+                assert 20 < a <= 25 and (a - b) < 20, \
                     f"subtraction {a}-{b} must cross 20 from a low-20s minuend"
 
 

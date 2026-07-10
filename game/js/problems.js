@@ -149,13 +149,15 @@ function makeMxPool(){
   return pool;
 }
 
-// ── bridging-10 ("גָּשֵׁר 10") — FOUR fixed pedagogical sets, served ALTERNATELY.
+// ── bridging-10 ("גָּשֵׁר 10") — SIX fixed pedagogical sets, served in ROTATION.
 //    EVERY time a bridge pool is built — choosing the game, "play again"
-//    (restart), or a reload — it advances to the next set (set 1, set 2, set 3,
-//    set 4, set 1 …). The turn is PERSISTED in localStorage so the alternation
-//    survives refreshes instead of always replaying set 1 (9+2…). The order INSIDE
-//    each set is the curriculum and must NEVER change; each builder returns fresh
-//    objects.
+//    (restart), or a reload — it advances to the next set (set 1 … set 6, set 1 …).
+//    The turn is PERSISTED in localStorage so the rotation survives refreshes
+//    instead of always replaying set 1 (9+2…). The order INSIDE each set is the
+//    curriculum and must NEVER change; each builder returns fresh objects.
+//    SETS 1–4: family/ladder, 11-13 count-downs, doubles-into-high-teens, gentlest.
+//    SET 5 — the +9 SHORTCUT (add/subtract 9 by crossing 10): 2+9…9+9 with inverses.
+//    SET 6 — MID-TEEN count-backs (14 & 15 minus, results 5-9) + the ways to build 14/15/16.
 let _brTurn=0;
 try{const _s=localStorage.getItem('brTurn');if(_s!=null)_brTurn=(+_s)||0;}catch(e){}
 function _bridgeSet1(){
@@ -199,9 +201,29 @@ function _bridgeSet4(){
     A(5,8),S(13,8),A(4,9),S(13,9),                          // cross by 3 (sum / from 13)
   ];
 }
+// SET 5 — the +9 SHORTCUT: adding 9 (or its inverse −9) always crosses 10 by making
+// ten and stepping one more. The full 2+9 … 9+9 climb (→11–18) with −9 count-backs.
+function _bridgeSet5(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    A(2,9),A(3,9),A(4,9),A(5,9),S(11,9),S(12,9),S(13,9),S(14,9),   // +9 → 11-14 + −9 inverses
+    A(6,9),A(7,9),A(8,9),S(15,9),S(16,9),S(17,9),                   // +9 → 15-17 + inverses
+    A(9,9),                                                         // 9+9=18 — the biggest +9
+  ];
+}
+// SET 6 — MID-TEEN count-backs: the full 14- and 15-minus families (results 5-9,
+// the harder count-backs over 10), then the ways to BUILD 14/15/16 by adding.
+function _bridgeSet6(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    S(14,5),S(14,6),S(14,7),S(14,8),S(14,9),   // 14 − 5..9 (→9,8,7,6,5)
+    S(15,6),S(15,7),S(15,8),S(15,9),           // 15 − 6..9 (→9,8,7,6)
+    A(6,8),A(7,7),A(7,8),A(8,7),A(8,8),A(9,7),  // make 14 / 15 / 16 (both operands over 5)
+  ];
+}
 // The one-unknown (נֶעְלָם) type is no longer a separate set — _sprinkleUnknowns
 // weaves it into EVERY set below (~1 in 4), so it recurs throughout the rotation.
-const _BRIDGE_SETS=[_bridgeSet1,_bridgeSet2,_bridgeSet3,_bridgeSet4];
+const _BRIDGE_SETS=[_bridgeSet1,_bridgeSet2,_bridgeSet3,_bridgeSet4,_bridgeSet5,_bridgeSet6];
 // serve the current set, then advance the turn (persisted) for the NEXT build
 function makeBridgePool(){
   const set=_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length]());
@@ -210,13 +232,18 @@ function makeBridgePool(){
   return set;
 }
 
-// ── bridging-20 ("גָּשֵׁר 20") — TWO fixed pedagogical sets of 15, served ALTERNATELY
-//    (set 1 → set 2 → set 1 …), like גָּשֵׁר 10. The turn is PERSISTED so the alternation
-//    survives refreshes. Both cross 20 into the LOW-MID 20s; the order INSIDE each
-//    set is the curriculum and must NEVER change; fresh objects each build.
+// ── bridging-20 ("גָּשֵׁר 20") — FOUR fixed pedagogical sets of 15, served in
+//    ROTATION (set 1 → 2 → 3 → 4 → 1 …), like גָּשֵׁר 10. The turn is PERSISTED so the
+//    rotation survives refreshes. All cross 20 into the LOW-MID 20s (results 21–25);
+//    the order INSIDE each set is the curriculum and must NEVER change; fresh
+//    objects each build.
 //    SET 1 — MEDIUM jumps: anchors 18/17/16, results 22–24 (make-20 split 2/3/4).
 //    SET 2 — BIG jumps: lower anchors 16/15/14/13 and bigger addends, results 22–25
 //            (16+9 → 4|5, 13+9 → 7|2) — a wider decomposition, a notch harder.
+//    SET 3 — the 19-LADDER + gentlest bridges: the full 19+2..6 climb (→21–25) with
+//            inverses, then the three smallest crossings to 21 (18+3, 17+4, 16+5).
+//    SET 4 — DOUBLES & near-doubles that cross 20: 11+11, 12+12, 11+12, 11+13, 12+13
+//            … (→22–25) with inverses — a fresh angle (both operands in the low teens).
 let _b20Turn=0;
 try{const _s=localStorage.getItem('b20Turn');if(_s!=null)_b20Turn=(+_s)||0;}catch(e){}
 function _bridge20Set1(){
@@ -235,9 +262,30 @@ function _bridge20Set2(){
     A(14,8),A(14,9),A(13,9),                            // 14/13-family (additions to finish → 22–23)
   ];
 }
-// the one-unknown type is woven into BOTH sets by _sprinkleUnknowns (~1 in 4),
+// SET 3 — the 19-LADDER (add just below 20) + the gentlest bridges to 21.
+function _bridge20Set3(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    A(19,2),A(19,3),A(19,4),A(19,5),A(19,6),           // 19 + 2..6 = 21..25 (the full 19-ladder)
+    S(21,2),S(22,3),S(23,4),S(24,5),S(25,6),           // inverses (back down to 19)
+    A(18,3),A(17,4),A(16,5),                            // the three smallest crossings to 21 (cross by 1)
+    S(21,3),S(21,4),                                    // inverses (21−3=18, 21−4=17)
+  ];
+}
+// SET 4 — DOUBLES & near-doubles that cross 20 (both operands in the low teens).
+function _bridge20Set4(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    A(11,11),S(22,11),                                 // 11+11=22 (double) + inverse
+    A(12,12),S(24,12),                                 // 12+12=24 (double) + inverse
+    A(11,12),A(12,11),S(23,11),S(23,12),               // near-doubles → 23 + inverses
+    A(11,13),A(13,11),S(24,11),S(24,13),               // 11 & 13 → 24 + inverses
+    A(12,13),A(13,12),S(25,12),                        // 12 & 13 → 25 (+ one inverse to finish)
+  ];
+}
+// the one-unknown type is woven into EVERY set by _sprinkleUnknowns (~1 in 4),
 // instead of being a separate set — so it recurs throughout bridge-20 too.
-const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2];
+const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2,_bridge20Set3,_bridge20Set4];
 function makeBridge20Pool(){
   const set=_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length]());
   _b20Turn=(_b20Turn+1)%_BRIDGE20_SETS.length;
