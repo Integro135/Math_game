@@ -12,18 +12,18 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "galaxy"                # the space background (see _BG_THEMES: galaxy→space)
+THEME    = "galaxy"                # (unused in standalone mode)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
-HIDE_UI  = True                    # hide the .wrap game card (background-only shots)
-STANDALONE = ""                     # load the REAL game (index.html)
+HIDE_UI  = True                    # (unused in standalone mode)
+STANDALONE = r"c:\Code\subtraction_game\backgrounds\princess.html"  # ice-princess character workshop
 VIEW     = {"width": 1000, "height": 760}   # viewport
-EVAL      = ""                      # background-only: no exercise needed
+EVAL      = ""                      # e.g. "window.__princess.magic() || 'ok'" / "...wave()..." for the click effects
 POST_EVAL = ""
-CLICKS   = []                      # no click — show the scene at rest (permanent swirl + jets + Milky Way)
+CLICKS   = []
 WAIT_MS   = 1600
 SHOTS    = [
-    {"path": r"c:\tmp\space_full.png", "clip": {"x": 0, "y": 0, "width": 1000, "height": 760}},
-    {"path": r"c:\tmp\space_bh.png", "clip": {"x": 600, "y": 0, "width": 400, "height": 600}},
+    {"path": r"c:\tmp\princess_pair.png", "clip": {"x": 100, "y": 40, "width": 800, "height": 720}},
+    {"path": r"c:\tmp\princess_sister_idle.png", "clip": {"x": 600, "y": 150, "width": 300, "height": 320}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

@@ -15,11 +15,51 @@ from playwright.sync_api import sync_playwright
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 PAGE     = r"c:\Code\subtraction_game\backgrounds\frozen.html"
 VIEW     = {"width": 1600, "height": 900}   # viewport
-EVAL      = "try{setTimeout(function(){window.BACKGROUNDS.frozen._test.bolt();},900);'bolt in .9s';}catch(e){'ERR '+e.message;}"
-POST_EVAL = "'final polish shot'"
-WAIT_MS  = 1100
+# Exercise the ROYAL SISTERS port: leak-safe re-init, spawn the pair, confirm
+# the per-figure defs are suffixed, and that ALL idle animations are attached
+# to the sprite (so they travel during the crossing). Returns a diagnostic obj.
+# Diagnostic: leak-safe re-init + GROUNDING (all sprites share Olaf's ~31.5px
+# foot line), Olaf starts OFF-STAGE (not a static fixture), igloo relocated
+# up-left onto its hill. Poses everyone mid-scene for the comparison shot.
+EVAL = r"""(function(){
+  var F=window.BACKGROUNDS.frozen;
+  start();start();                                   /* 3 inits → leak check */
+  var T=F._test, stage=document.getElementById('stage');
+  var sr=stage.getBoundingClientRect();
+  function fromBot(el){ if(!el) return 'MISS'; var r=el.getBoundingClientRect(); return +(sr.bottom-r.bottom).toFixed(1); }
+  var out={leak:{scenes:stage.querySelectorAll('.fzscene').length,
+                 olafs:stage.querySelectorAll('.fz-olaf').length}};
+  /* (2) Olaf STARTS fully off-stage */
+  var ow=stage.querySelector('.fz-olaf').getBoundingClientRect();
+  out.olafInitOffscreen=(ow.right<=sr.left||ow.left>=sr.right);
+  var feet=stage.querySelectorAll('.fz-olaf .foot'), of=999;
+  for(var i=0;i<feet.length;i++){var r=feet[i].getBoundingClientRect(); of=Math.min(of, sr.bottom-r.bottom);}
+  out.olafFootFromBot=+of.toFixed(1);
+  /* (1) seal belly rests on the ice */
+  var se=T.sealIn();
+  if(se){se.animation&&(se.animation.currentTime=se.animation.effect.getTiming().duration*0.45);
+    out.sealBodyFromBot=fromBot(se.element.querySelector('ellipse'));}
+  /* (4) royals' shoe tips on Olaf's line */
+  T.royals();
+  T.state.royals.forEach(function(r){ if(r.animation){r.animation.currentTime=r.animation.effect.getTiming().duration*0.45;} });
+  var rs=stage.querySelectorAll('.prw'); out.royals=[];
+  for(var k=0;k<rs.length;k++){out.royals.push({kind:T.state.royals[k]?T.state.royals[k].kind:'?',
+    footFromBot:fromBot(rs[k].querySelector('.pr-footL'))});}
+  /* (3) igloo up-left on its hill */
+  var ig=document.querySelector('#fzIgloo');
+  if(ig){var ir=ig.getBoundingClientRect();
+    out.iglooCentreXpct=+(((ir.left+ir.right)/2-sr.left)/sr.width*100).toFixed(1);
+    out.iglooBaseFromBot=+(sr.bottom-ir.bottom).toFixed(1);}
+  /* pose Olaf mid-walk for the comparison shot */
+  T.stroll();
+  if(T.state.olaf.walkAnim){T.state.olaf.walkAnim.currentTime=T.state.olaf.walkAnim.effect.getTiming().duration*0.5;}
+  return JSON.stringify(out,null,1);
+})();"""
+POST_EVAL = ""
+WAIT_MS  = 500
 SHOTS    = [
-    {"path": r"c:\tmp\frozen_v2_final.png", "clip": None},
+    {"path": r"c:\tmp\frozen_ground_all.png", "clip": None},
+    {"path": r"c:\tmp\frozen_igloo_hill.png", "clip": {"x": 250, "y": 550, "width": 700, "height": 350}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

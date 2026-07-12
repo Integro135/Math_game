@@ -19,12 +19,11 @@
   --skin-text:   #EAF7FF;   /* frost white         */
 }
 
-/* ── 4. POSITION — the board hugs the LEFT so the palace mount (right ~59%+)
-   stays in full view. Width caps at ~half the viewport and scales DOWN with
-   the window (a fixed px width would overlap on narrower desktops). ── */
+/* ── 4. POSITION — the board sits CENTERED on screen (glass over the scene).
+   A comfortable column width keeps the aurora + palace visible around it. ── */
 body.theme-frozen .wrap{
-  max-width:min(700px, calc(50vw - 0.5cm));
-  margin:0 auto 0 calc(8px + 0.5cm);
+  max-width:680px;
+  margin:0 auto;
 }
 @media(max-width:840px){body.theme-frozen .wrap{max-width:600px;margin:8px auto 0}}
 
