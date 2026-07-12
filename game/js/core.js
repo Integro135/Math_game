@@ -459,10 +459,14 @@ function renderEq(){
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
   }
   else if(ptype===TRA){
-    // THREE unknowns: __ + __ + __ = num1 (the child fills three addends)
+    // THREE unknowns: __ + __ + __ = num1 (the child fills three addends).
+    // Each box: hovering it AFTER typing a number shows that number's splits
+    // (number-bonds) as emojis (_nttSplitsFromInput); ans1 also previews its
+    // plain count while typing (_nttInput).
     const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="20"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this);tdaJarSync(this)':''}"`+
       (id==='ans1'?` onblur="_nttHide()"`:'')+
+      ` onmouseenter="_nttSplitsFromInput(this)" onmouseleave="_nttHide()"`+
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
     // the RESULT carries a complete-to-ten split so hovering it shows the
     // ten-and-ones bond (e.g. 20 → 10 | 10, 15 → 10 | 5) — helps the child
@@ -1107,6 +1111,7 @@ function _nttRender(num,split,anchorEl,side){
   if(_celebrationUp()){tt.style.display='none';return;}   // hide + bail while a celebration screen shows
   const grid=tt.querySelector('.ntt-grid');
   const lbl=tt.querySelector('.ntt-lbl');
+  grid.classList.remove('ntt-splitlist');               // clear the TRA splits-fan layout
   if(split){
     grid.classList.add('ntt-split');
     // two columns: each PART number stacked directly ABOVE its own cluster of
@@ -1164,6 +1169,49 @@ function _nttInput(inp){
   const v=parseInt(inp.value,10);
   if(isNaN(v)||v<=0||v>100){_nttHide();return;}
   _nttRender(v,null,inp);
+}
+/* THREE-UNKNOWN (TRA, __+__+__=r) split preview: hovering a filled addend box
+   shows ALL the ways to split that number into two parts (its number-bonds) as
+   emoji clusters — 1+(v-1), 2+(v-2) … up to the middle. Helps the child see how
+   an addend she typed is built (and how she could redistribute toward the goal). */
+function _nttSplits(v,anchorEl){
+  const tt=document.getElementById('num-tt');if(!tt)return;
+  if(_celebrationUp()){tt.style.display='none';return;}
+  const grid=tt.querySelector('.ntt-grid');
+  const lbl=tt.querySelector('.ntt-lbl');
+  grid.classList.remove('ntt-split');
+  lbl.classList.remove('ntt-lbl-split');
+  lbl.textContent=v;                                     // the whole number sits on top
+  if(v<2){                                               // 1 has no two-part split → plain count
+    grid.classList.remove('ntt-splitlist');
+    grid.innerHTML=_nttGroups(0,v);
+  }else{
+    grid.classList.add('ntt-splitlist');
+    let rows='';
+    for(let k=1;k<=Math.floor(v/2);k++){                 // unique unordered splits, no 0 part
+      rows+=`<div class="ntt-splitrow">`+
+        `<span class="ntt-part">${k}</span><div class="ntt-objs">${_nttGroups(0,k)}</div>`+
+        `<span class="ntt-plus">+</span>`+
+        `<span class="ntt-part">${v-k}</span><div class="ntt-objs">${_nttGroups(k,v-k)}</div>`+
+      `</div>`;
+    }
+    grid.innerHTML=rows;
+  }
+  _nttBond(tt,grid,null);                                // no single-bond lines for the list
+  tt.classList.remove('ntt-rt');
+  tt.style.display='block';
+  const r=anchorEl.getBoundingClientRect();
+  const tw=tt.offsetWidth,th=tt.offsetHeight;
+  let left=Math.max(8,Math.min(r.left+r.width/2-tw/2,innerWidth-tw-8));
+  let top=r.bottom+10;
+  if(top+th>innerHeight-8)top=Math.max(8,r.top-th-10);
+  tt.style.left=left+'px';tt.style.top=top+'px';
+}
+// hover a TRA addend box → show that typed number's splits (nothing if empty)
+function _nttSplitsFromInput(inp){
+  const v=parseInt(inp.value,10);
+  if(isNaN(v)||v<1||v>100){_nttHide();return;}
+  _nttSplits(v,inp);
 }
 // Draw (or hide) the number-bond branch lines: an SVG overlay on #num-tt whose
 // endpoints are MEASURED so each line points exactly from the whole number down

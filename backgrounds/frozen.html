@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frozen Ice Castle — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the FROZEN background module.
+     The actual scene lives in frozen.bg.js — the SAME file the game
+     would load dynamically (single source of truth, no copy-porting).
+     Open this file directly to iterate on the background in isolation.
+     Add ?gallery to the URL (or click Gallery) for a static art line-up.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #101c45; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  .hbtn {
+    position: fixed; bottom: 24px; z-index: 10;
+    padding: 9px 22px;
+    background: rgba(14, 30, 62, 0.55);
+    color: rgba(214, 238, 255, 0.92);
+    border: 1px solid rgba(140, 200, 255, 0.35);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(4, 10, 24, 0.45);
+    transition: background .25s, box-shadow .25s, transform .15s;
+  }
+  .hbtn:hover {
+    background: rgba(35, 70, 130, 0.6);
+    box-shadow: 0 4px 24px rgba(120, 190, 255, 0.25);
+    transform: translateY(-1px);
+  }
+  #toggle { right: 24px; }
+  #gallery { right: 140px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="toggle" class="hbtn">Restart</button>
+<button id="gallery" class="hbtn">Gallery</button>
+<script src="frozen.bg.js"></script>
+<script>
+let cleanup = null;
+function start() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.frozen.init({ stage: document.getElementById('stage') });
+}
+function gallery() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.frozen.gallery({ stage: document.getElementById('stage') });
+}
+document.getElementById('toggle').addEventListener('click', start);
+document.getElementById('gallery').addEventListener('click', gallery);
+if (location.search.indexOf('gallery') >= 0) gallery(); else start();
+</script>
+</body>
+</html>

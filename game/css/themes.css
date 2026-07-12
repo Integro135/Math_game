@@ -11,6 +11,7 @@ body.theme-reef    #stars-layer{display:block}
 body.theme-dubai   #stars-layer{display:block}
 body.theme-savanna #stars-layer{display:block}
 body.theme-dinosaurs #stars-layer{display:block}
+body.theme-frozen  #stars-layer{display:block}
 
 /* ── Savanna (Pride Rock) — warm load-flash fallback behind the canvas ── */
 body.theme-savanna #bg{
@@ -21,6 +22,12 @@ body.theme-savanna #bg{
 /* ── Dinosaurs (volcano valley) — sunset load-flash fallback behind the scene ── */
 body.theme-dinosaurs #bg{
   background:linear-gradient(180deg,#F2B65F 0%,#F0AA77 60%,#EFA18B 100%);
+  animation:none;
+}
+
+/* ── Frozen (ice palace) — night-ice load-flash fallback behind the scene ── */
+body.theme-frozen #bg{
+  background:linear-gradient(180deg,#14235A 0%,#24478A 45%,#4A7CB8 80%,#8FC4E2 100%);
   animation:none;
 }
 

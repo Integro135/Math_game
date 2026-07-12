@@ -1,0 +1,759 @@
+<div class="container">
+	<div class="olaf-container">
+		<div class="olaf">
+			<div class="head">
+				<div class="top">
+					<div class="shadow"></div>
+				</div>
+				<div class="hair">
+					<span>
+						<span></span>
+						<span>
+							<span></span>
+						</span>
+					</span>
+					<span>
+						<span>
+							<span></span>
+						</span>
+					</span>
+					<span>
+						<span>
+							<span></span>
+							<span></span>
+						</span>
+					</span>
+				</div>
+				<div class="brow left"></div>
+				<div class="brow right"></div>
+				<div class="eye left">
+					<div class="pupil"></div>
+				</div>
+				<div class="eye right">
+					<div class="pupil"></div>
+				</div>
+				<div class="nose"></div>
+				<div class="mouth"></div>
+				<div class="top-lip"></div>
+				<div class="tooth"></div>
+				<div class="bottom-lip"></div>
+			</div>
+			<div class="body top">
+				<div class="button"></div>
+			</div>
+			<div class="body bottom">
+				<div class="button"></div>
+				<div class="button"></div>
+			</div>
+			<div class="arm left">
+				<div class="upper-arm">
+					<span></span>
+					<div class="lower-arm">
+						<span></span>
+						<div class="hand">
+							<span></span>
+							<div class="fingers">
+								<span></span>
+								<span></span>
+								<span></span>
+								<span></span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="arm right">
+				<div class="upper-arm">
+					<span></span>
+					<div class="lower-arm">
+						<span></span>
+						<div class="hand">
+							<span></span>
+							<div class="fingers">
+								<span></span>
+								<span></span>
+								<span></span>
+								<span></span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="foot left"></div>
+			<div class="foot right"></div>
+			<div class="shadow"></div>
+		</div>
+	</div>
+</div>
+<div class="logo"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Frozen_logo.svg/1200px-Frozen_logo.svg.png" alt="Frozen Font">
+	<h1>Olaf in Pure CSS</h1></div>
+
+@import "compass";
+
+html, body {
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+}
+
+body {
+	background-color: #31a7c3;
+	@include filter-gradient(#AEE4FB, #2A8DC5, horizontal);
+	@include background-image(radial-gradient(center, ellipse cover, #AEE4FB 10%,#2A8DC5 100%));
+	
+	.container {
+		max-width: 550px;
+		padding: 0;
+		margin: 0 auto;
+		min-height: 450px;
+
+		:before, :after {
+			position: absolute;
+			content: "";
+			width: 0;
+			height: 0;
+		}
+	}
+}
+
+@mixin pair($position, $rotate: null, $child: null) {
+	@if $child != null {
+		&.left {
+			.#{$child} { left: $position;
+				@if $rotate != null {
+					@include transform(rotate($rotate));
+				}
+			}
+		}
+		&.right {
+			.#{$child} { right: $position;
+				@if $rotate != null {
+					@include transform(rotate(-$rotate));
+				}
+			}
+		}
+	} @else {
+		&.left { left: $position; 
+			@if $rotate != null {
+				@include transform(rotate($rotate));
+			}
+		}
+		&.right { right: $position;
+			@if $rotate != null {
+				@include transform(rotate(-$rotate));
+			}
+		}
+	}
+}
+
+@mixin pair-content($position) {
+	&:before { left: $position; }
+	&:after { right: $position; }
+}
+
+.olaf-container {
+	position: absolute;
+	height: 400px;
+	width: 120px;
+	top: calc(50% - 200px);
+	left: calc(50% - 60px);
+	margin-top: -15px;
+}
+
+$olaf-width: 120px;
+$olaf-height: 160px;
+
+$skin-color: #FFFFFF;
+$stick-color: #533F38;
+
+$head-height: 116px;
+$neck-height: 7px;
+
+.olaf {
+	height: $olaf-height;
+	width: $olaf-width;
+	margin: 230px auto 0 auto;
+	position: relative;
+	
+	* {
+		position: absolute;
+	}
+	
+	$head-width: $head-height - 20px;
+	$head-top-height: 44px;
+	
+	.head {
+		top: -152px;
+		left: calc(50% - (#{$head-width} / 2));
+		width: $head-width;
+		height: $head-height;
+		background-color: $skin-color;
+		margin-top: $head-top-height;
+		@include border-radius(20% 20% 50% 50% / 15% 15% 85% 85%);
+		@include box-shadow(
+			inset 10px -2px 35px -5px rgba(0,0,0,0.3) /* shadow */,
+			inset 0 -8px 5px -5px rgba(0,0,0,0.2) /* bumfluff */ );
+		z-index: 3;
+		
+		$head-top-width: $head-width - 43px;
+		
+		.top {
+			height: $head-top-height;
+			width: $head-top-width;
+			top: -($head-top-height - 3px);
+			left: calc(50% - (#{$head-top-width} / 2));
+			background: $skin-color;
+			@include border-radius(45% 45% 1% 1% / 40% 40% 1% 1%);
+			@include box-shadow(inset 15px 0px 10px -5px rgba(0,0,0,0.1));
+			
+			&:before, &:after {
+				top: 16px;
+				height: 20px;
+				width: 34px;
+				border-top: 10px solid $skin-color;
+				z-index: 2;
+			}
+			
+			$cheek-position: -28px;
+			$cheek-angle: 110deg;
+			
+			&:before {
+				border-top-color: darken($skin-color, 12%);
+				@include border-radius(0 50% 0 0);
+				left: $cheek-position;
+				@include transform(rotate($cheek-angle));
+			}
+			
+			&:after {
+				@include border-radius(50% 0 0 0);
+				right: $cheek-position;
+				@include transform(rotate(-$cheek-angle));
+			}
+			
+			.shadow {
+				left: calc(52% - 58%);
+				top: 38px;
+				height: 30%;
+				width: 116%;
+				@include box-shadow( inset 0 -2px 8px -4px rgba(0,0,0,0.2) );
+				@include border-radius( 1% 1% 45% 45% / 1% 1% 40% 40% );
+				z-index: 3;
+			}
+		}
+		
+		.hair {
+			top: -35px;
+			left: 38px;
+			z-index: -1;
+			
+			$stick-height: 32px;
+			
+			span {
+				bottom: 0;
+				height: $stick-height;
+				width: 10px;
+				border-right: 2px solid $stick-color;
+			}
+			
+			> span:nth-of-type(1) {
+				height: $stick-height - 5px;
+				left: -5px;
+				@include transform(rotate(-10deg));
+				@include border-radius(10%);
+				
+				> span:nth-of-type(1) {
+					left: 0px;
+					height: $stick-height - 10px;
+					bottom: $stick-height - 9px;
+					@include transform(rotate(-5deg));
+					@include border-radius(30%);
+				}
+				
+				> span:nth-of-type(2) {
+					left: -4px;
+					bottom: $stick-height - 14px;
+					height: $stick-height - 10px;
+					@include transform(rotate(-40deg));
+					@include border-radius(30%);
+					
+					span {
+						left: -3px;
+						bottom: $stick-height - 15px;
+						height: $stick-height - 16px;
+						@include transform(rotate(-35deg));
+						@include border-radius(30%);
+					}
+				}
+			}
+			
+			> span:nth-of-type(2) {
+				@include transform(rotate(-2deg));
+				@include border-radius(10%);
+				
+				span {
+					left: -2px;
+					height: $stick-height - 5px;
+					bottom: $stick-height - 2px;
+					@include transform(rotate(-10deg));
+					@include border-radius(30%);
+					
+					span {
+						left: -4px;
+						bottom: $stick-height - 10px;
+						@include transform(rotate(-20deg));
+					}
+				}
+			}
+			
+			> span:nth-of-type(3) {
+				border-right: none;
+				border-left: 2px solid $stick-color;
+				height: $stick-height - 2px;
+				left: 14px;
+				@include transform(rotate(5deg));
+				@include border-radius(10%);
+				
+				span {
+					left: 1px;
+					height: $stick-height - 8px;
+					bottom: $stick-height - 7px;
+					border-right: none;
+					border-left: 2px solid $stick-color;
+					@include transform(rotate(15deg));
+					@include border-radius(30%);
+					
+					span:nth-of-type(1) {
+						left: -3px;
+						height: 14px;
+						bottom: $stick-height - 15px;
+						@include transform(rotate(-10deg));
+					}
+					
+					span:nth-of-type(2) {
+						left: 3px;
+						bottom: $stick-height - 15px;
+						@include transform(rotate(25deg));
+					}
+				}
+			}
+		}
+		
+		$brow-color: #413121;
+		
+		.brow {
+			top: -36px;
+			height: 5px;
+			width: 20px;
+			background: $brow-color;
+			@include pair(26px, -13deg);
+			
+			$brow-position: 26px;
+			$brow-before-position: -5px;
+			
+			&.left {
+				left: $brow-position + 1px;
+				@include border-radius( 40% 1% 10% 5% / 70% 1% 20% 20% );
+				
+				&:before {
+					left: $brow-before-position;
+					@include border-radius( 90% 0 0 0 / 99% 0 0 0);
+					@include box-shadow( -1px -4px 0 0 rgba($brow-color, 1) );
+					@include transform(skewX(-10deg));
+				}
+			}
+			
+			&.right {
+				right: $brow-position - 1px;
+				@include border-radius( 1% 40% 5% 10% / 1% 70% 20% 20% );
+				
+				&:before {
+					right: $brow-before-position;
+					@include border-radius( 0 90% 0 0 / 0 99% 0 0);
+					@include box-shadow( 1px -4px 0 0 rgba($brow-color, 1) );
+					@include transform(skewX(10deg));
+				}
+			}
+			
+			&:before {
+				top: 4px;
+				height: 12px;
+				width: 15px;
+			}
+		}
+		
+		$eye-height: 24px;
+		$eye-width: 20px;
+		
+		.eye {
+			top: -18px;
+			height: $eye-height;
+			width: $eye-width;
+			z-index: 5;
+			background: #FFFFFF;
+			@include box-shadow(
+						0 -1px 0px 1px rgba(#010100, 1)/*eye-lid*/,
+						0 1px 1px 1px rgba(#4B7886, 0.8)/*bottom*/,
+						0 -3px 0px 2px rgba(#24525E, 0.8)/*top*/,
+						inset 0 -15px 10px -5px rgba(0,0,0,0.2)/*eyeball shadow*/);
+			@include border-radius(50%);
+			
+			$eye-position: 26px;
+			$pupil-position: 30%;
+			
+			&.left {
+				left: $eye-position + 2px;
+				
+				.pupil {
+					left: $pupil-position;
+				}
+			}
+			
+			&.right {
+				right: $eye-position - 2px;
+				
+				.pupil {
+					right: $pupil-position;
+				}
+			}
+			
+			.pupil {
+				top: 34%;
+				height: 44%;
+				width: 52%;
+				background: #000000;
+				@include border-radius(50%);
+			}
+		}
+		
+		.nose {
+			top: 0px;
+			left: 42px;
+			height: 23px;
+			width: 28px;
+			background: #EC622A;
+			overflow: hidden;
+			@include border-radius( 40% 60% 40% 30% / 70% 60% 40% 30%);
+			@include box-shadow( inset 8px -5px 5px 0 rgba(0,0,0,0.3) );
+			z-index: 6;
+			
+			&:before /* highlight */ {
+				top: -5px;
+				right: 0px;
+				height: 110%;
+				width: 60%;
+				@include filter-gradient(#ffffff, #ffffff, horizontal);
+				@include background-image(radial-gradient(50% 70%, ellipse cover,  rgba(255,255,255,0.5) 0%,rgba(255,255,255,0) 90%));
+				@include transform(rotate(-30deg));
+
+			}
+		}
+		
+		$mouth-width: $head-width - 28px;
+		$mouth-height: $head-height - 40px;
+		$mouth-radius: 25% 25% 50% 50% / 5% 5% 95% 95%;
+		
+		.mouth {
+			top: 14px;
+			left: calc(50% - (#{$mouth-width} / 2) + 2px);
+			height: $mouth-height;
+			width: $mouth-width;
+			@include border-radius($mouth-radius);
+			background: #234148;
+			z-index: 2;
+		}
+		
+		$top-lip-width: $mouth-width + 14px;
+		
+		.top-lip {
+			top: 10px;
+			left: calc(50% - (#{$top-lip-width} / 2) + 2px);
+			width: $top-lip-width;
+			height: 35px;
+			background: $skin-color;
+			@include box-shadow( -2px 5px 10px -1px rgba(0,0,0,0.2),
+						inset 10px -0px 15px -5px rgba(0,0,0,0.2) );
+			@include border-radius(20% 20% 40% 60% / 10% 20% 70% 90%);
+			z-index: 4;
+		}
+
+		.tooth {
+			left: 40%;
+			top: 40px;
+			width: 35px;
+			height: 16px;
+			background: $skin-color;
+			@include border-radius( 1% 1% 40% 50% / 1% 1% 20% 20%);
+			z-index: 3;
+		}
+		
+		$bottom-lip-width: $mouth-width + 14px;
+		
+		.bottom-lip {
+			top: 12px;
+			left: calc(50% - (#{$bottom-lip-width} / 2) + 2px);
+			height: $mouth-height + 8px;
+			width: $bottom-lip-width;
+			@include border-radius($mouth-radius);
+			@include box-shadow( 0 5px 10px -4px rgba(0,0,0,0.3),
+							inset 2px 0px 10px -5px rgba(0,0,0,0.2));
+			z-index: 1;
+		}
+	}
+	
+	@mixin body-shape {
+		background: $skin-color;
+		@include border-radius( 35% 35% 30% 40% / 60% 60% 40% 40% );
+		@include box-shadow(
+			inset 2px 5px 10px -6px rgba(0,0,0,0.2),
+			inset 20px 5px 30px -6px rgba(0,0,0,0.2),
+			inset 0 -5px 15px -2px rgba(0,0,0,0.2) );
+	}
+	
+	.body {
+		@include body-shape;
+		top: 0;
+		left: calc(50% - (#{$olaf-width} / 2));
+		
+		$top-width: $olaf-width / 1.5;
+		$top-height: 60px;
+		
+		&.top {
+			left: calc(50% - (#{$top-width} /2));
+			height: $top-height;
+			width: $top-width;
+			z-index: 2;
+			overflow: hidden;
+			
+			&:before {
+				height: 10px;
+				width: 50%;
+				left: 20%;
+				@include filter-gradient(#000000, #000000, horizontal);
+				@include background-image(radial-gradient(
+					center, ellipse cover,
+					rgba(0,0,0,0.3) 0%,
+					rgba(0,0,0,0) 80%));
+			}
+		}
+		
+		&.bottom {
+			top: $top-height - 10px;
+			height: 90px;
+			width: $olaf-width;
+			z-index: 1;
+		}
+		
+		$button-width: 26px;
+		
+		.button {
+			height: 22px;
+			width: $button-width;
+			top: 20px;
+			left: calc(50% - (#{$button-width}) / 2);
+			background: #222222;
+			@include border-radius( 45% 55% 40% 50% / 60% 55% 45% 40% );
+			
+			~ .button {
+				top: 55px;
+			}
+			
+			&:before {
+				right: 8px;
+				bottom: 7px;
+				height: 0;
+				width: 10%;
+				@include box-shadow( 0 0 8px 2px rgba(#FFFFFF, 0.4) );
+			}
+		}
+	}
+	
+	$stick-width: 40px;
+		
+	.arm {
+		top: 20px;
+		width: $stick-width;
+		height: 10px;
+		
+		@mixin stick {
+			width: $stick-width;
+			height: 3px;
+			background: $stick-color;
+		}
+		
+		$arm-position: 17px;
+		$arm-rotate: 40deg;
+		
+		&.left {
+			left: -$arm-position;
+			@include transform-origin(top,right);
+			@include transform(rotate($arm-rotate));
+			
+			.lower-arm {
+				left: -$stick-width;
+			}
+			
+			.upper-arm span, .lower-arm span {
+				right: -2px;
+			}
+			
+			.hand {
+				left: 0px;
+				
+				.fingers {
+					left: -4px;
+					
+					span {
+						@include transform-origin(right,top);
+						
+						&:nth-of-type(1) /* thumb */ {
+							right: -7px;
+							@include transform(rotate(45deg));
+						}
+					}
+				}
+			}
+		}
+		
+		&.right {
+			right: -$arm-position;
+			@include transform-origin(top, left);
+			@include transform(rotate(-$arm-rotate));
+			
+			.lower-arm {
+				right: -$stick-width;
+			}
+			
+			.upper-arm span, .lower-arm span {
+				left: -2px;
+			}
+			
+			.hand {
+				right: 0px;
+				
+				.fingers {
+					right: -4px;
+					
+					span {
+						@include transform-origin(left, top);
+						
+						&:nth-of-type(1) /* thumb */ {
+							left: -7px;
+							@include transform(rotate(-45deg));
+						}
+					}
+				}
+			}
+		}
+		
+		.lower-arm {
+			@include stick;
+			top: 0px;
+			
+			> span /* joint */ {
+				top: -1px;
+				height: 5px;
+				width: 7px;
+				background: $stick-color;
+				@include border-radius(50%);
+			}
+		}
+		
+		.upper-arm {
+			@include stick;
+			top: -3px;
+			
+			> span /* joint */ {
+				top: -2px;
+				height: 7px;
+				width: 10px;
+				background: $stick-color;
+				@include border-radius(50%);
+			}
+		}
+		
+		.hand {
+			
+			> span /*Joint*/ {
+				top: -2px;
+				height: 7px;
+				width: 10px;
+				background: $stick-color;
+				@include border-radius(50%);
+			}
+			
+			.fingers span {
+				@include stick;
+				width: 15px;
+
+				&:nth-of-type(1) /* thumb */ {
+					width: 10px;
+				}
+
+				&:nth-of-type(2) { @include transform(rotate(-30deg)); }
+				&:nth-of-type(4) { @include transform(rotate(30deg)); }
+			}
+		}
+	}
+		
+	.leg {
+		@include pair(20px);
+	}
+		
+	.foot {
+		@include body-shape;
+		bottom: 0;
+		height: 32px;
+		width: $olaf-width / 2.8;
+		overflow: hidden;
+		@include pair(12px);
+		
+		&.left:before {
+			top: -3px;
+		}
+		
+		&:before {
+			height: 15px;
+			width: 100%;
+			left: -10%;
+			@include filter-gradient(#000000, #000000, horizontal);
+			@include background-image(radial-gradient(
+				center, ellipse cover,
+				rgba(0,0,0,0.3) 0%,
+				rgba(0,0,0,0) 80%));
+		}
+	}
+	
+	$shadow-width: 100px;
+
+	> .shadow {
+		bottom: 0;
+		left: 50%;
+		height: 20px;
+		z-index: -1;
+		width: 0;
+		@include box-shadow( 0 -27px 40px 30px rgba(0,0,0, 0.4));
+		@include transform(skewX(65deg));
+	}
+}
+
+.logo {
+	position: fixed;
+	bottom: 15px;
+	left: 15px;
+	
+	img {
+		width: 250px;
+	}
+
+	h1, h2 {
+		font-family: "helvetica neue", helvetica, arial, sans-serif;
+		margin: 0;
+		font-size: 26px;
+		letter-spacing: 1px;
+		color: #FFFFFF;
+		font-weight: 100;
+	}
+}
+
+

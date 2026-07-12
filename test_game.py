@@ -1006,6 +1006,37 @@ class TestDoubleUnknown:
         assert real["done"] is True and real["got"] is True and real["score"] > 0, \
             f"a real triple (5+7+8=20) must be accepted for points: {real}"
 
+    def test_tri_unknown_hover_shows_splits(self, page):
+        """x+x+x=20 (TRA): after typing a number in an addend box, HOVERING it shows
+        that number's possible splits (number-bonds) as emoji clusters — e.g. 9 →
+        1+8, 2+7, 3+6, 4+5. Nothing shows for an empty box."""
+        page.evaluate("mode='mx'; problems=[{t:TRA,r:20}]; idx=0; done=false; report=[]; loadProblem()")
+        page.wait_for_selector("#ans2", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        # empty box → no tooltip on hover
+        page.mouse.move(5, 5)
+        page.hover("#ans2"); page.wait_for_timeout(120)
+        assert page.evaluate("getComputedStyle(document.getElementById('num-tt')).display") == "none", \
+            "an empty addend box must not pop the splits tooltip"
+        # type 9, LEAVE the box, then hover again so mouseenter re-fires → splits fan
+        page.fill("#ans2", "9")
+        page.mouse.move(5, 5); page.wait_for_timeout(80)
+        page.hover("#ans2"); page.wait_for_timeout(150)
+        assert page.evaluate("getComputedStyle(document.getElementById('num-tt')).display") == "block", \
+            "hovering a filled addend box must show the tooltip"
+        assert page.evaluate("!!document.querySelector('#num-tt .ntt-grid.ntt-splitlist')"), \
+            "the tooltip must use the splits-fan layout"
+        parts = page.evaluate("[...document.querySelectorAll('#num-tt .ntt-splitrow')]"
+                              ".map(r=>[...r.querySelectorAll('.ntt-part')].map(p=>p.textContent).join('+'))")
+        assert parts == ["1+8", "2+7", "3+6", "4+5"], f"9 must split into its four bonds, got {parts}"
+        # each split part is drawn with emoji/object clusters
+        assert page.evaluate("document.querySelectorAll('#num-tt .ntt-splitrow .ntt-objs').length") == 8, \
+            "each of the 4 rows shows two object clusters (the two parts)"
+        # moving away hides it
+        page.mouse.move(5, 5); page.wait_for_timeout(120)
+        assert page.evaluate("getComputedStyle(document.getElementById('num-tt')).display") == "none", \
+            "the splits tooltip hides when the pointer leaves the box"
+
     def test_xx_sub_rejects_minuend_of_ten(self, page):
         """x−x=9: the rote '10 − 1' (a minuend of 10) is correct but NOT accepted —
         the child must use a different minuend. No penalty; a real pair (13 − 4)
