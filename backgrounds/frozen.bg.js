@@ -2181,6 +2181,14 @@
       /* clip so sprites parked/exiting past the edges can't spill into the page */
       var prevOverflow = stage.style.overflow;
       stage.style.overflow = 'hidden';
+      /* FORCE LTR on the stage: the game document is dir="rtl", and an abs-pos
+         sprite wrapper with left:auto anchors its STATIC origin to the RIGHT in
+         rtl — so a crossing driven by translateX (x0 off the left edge) instead
+         parks/spawns MID-SCREEN (the "bears appear from the middle by the
+         castle" bug). ltr pins the origin at x=0 so translateX(x0) is truly
+         off-screen for every current + future sprite. */
+      var prevDir = stage.style.direction;
+      stage.style.direction = 'ltr';
       stage.innerHTML = '';
 
       var st = {
@@ -2331,6 +2339,7 @@
         if (st.seal && st.seal.stop) { try { st.seal.stop(); } catch (e) {} }
         delete w.BACKGROUNDS.frozen._test;
         stage.style.overflow = prevOverflow;
+        stage.style.direction = prevDir;
         stage.innerHTML = '';
       };
     },
