@@ -289,11 +289,42 @@
     '  background:radial-gradient(circle,rgba(255,255,255,.95),rgba(160,220,255,.55) 40%,rgba(160,220,255,0) 70%)}'
   ].join('\n');
 
+  /* ── POLAR-BEAR CSS — ported 1:1 from backgrounds/polar_bear.html (pb*),
+        the only changes: .pb-dust fixed→absolute (appended to the stage) and
+        a .pbflip class for leftward crossings (he's drawn facing right).
+        All idle/gait animations ride DESCENDANTS so they travel with the
+        wrapper as it glides across. ── */
+  var PB_CSS = [
+    '.pbw{position:absolute;pointer-events:none;will-change:transform}',
+    '.pbw .pbact{display:inline-block;height:100%;vertical-align:top;transform-origin:50% 100%;animation:pbBreath 3.8s ease-in-out infinite}',
+    '.pbw svg{height:100%;width:auto;display:block;overflow:visible}',
+    '.pbw.pbflip svg{transform:scaleX(-1)}',
+    '.pbw .pb-shadow{position:absolute;left:50%;bottom:-2%;width:86%;height:7%;transform:translateX(-50%);',
+    '  border-radius:50%;background:radial-gradient(ellipse,rgba(20,45,80,.32),transparent 70%)}',
+    '@keyframes pbBreath{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.015)}}',
+    '.pbw svg .eye{transform-box:fill-box;transform-origin:50% 50%;animation:pbBlink 4.4s ease-in-out infinite}',
+    '@keyframes pbBlink{0%,88%,94%,100%{transform:scaleY(1)}91%{transform:scaleY(.08)}}',
+    '.pbw svg .pb-spark{animation:pbTwinkle 2.8s ease-in-out infinite}',
+    '@keyframes pbTwinkle{0%,100%{opacity:.15}50%{opacity:.9}}',
+    /* 4-leg DIAGONAL GAIT — near-front + far-back swing together, the other
+       diagonal counter-phases; the body trots at double the step rate */
+    '.pbw svg .pb-legNF,.pbw svg .pb-legNB,.pbw svg .pb-legFF,.pbw svg .pb-legFB{transform-box:fill-box;transform-origin:50% 10%}',
+    '.pbw.pb-walk svg .pb-legNF,.pbw.pb-walk svg .pb-legFB{animation:pbSwingA .7s ease-in-out infinite}',
+    '.pbw.pb-walk svg .pb-legNB,.pbw.pb-walk svg .pb-legFF{animation:pbSwingB .7s ease-in-out infinite}',
+    '@keyframes pbSwingA{0%,100%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}}',
+    '@keyframes pbSwingB{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}',
+    '.pbw.pb-walk .pbact{animation:pbTrot .35s ease-in-out infinite alternate}',
+    '@keyframes pbTrot{0%{transform:translateY(0) rotate(.4deg)}100%{transform:translateY(-4px) rotate(-.3deg)}}',
+    '.pb-dust{position:absolute;pointer-events:none;z-index:9;border-radius:50%;opacity:0;',
+    '  background:radial-gradient(circle,#ffffff,rgba(255,255,255,.35) 70%,transparent);',
+    '  box-shadow:0 0 6px rgba(220,240,255,.8)}'
+  ].join('\n');
+
   function injectCSS() {
     if (doc.getElementById('frozen-css')) return;
     var s = el('style');
     s.id = 'frozen-css';
-    s.textContent = CSS + '\n' + OLAF_CSS + '\n' + PR_CSS;
+    s.textContent = CSS + '\n' + OLAF_CSS + '\n' + PR_CSS + '\n' + PB_CSS;
     doc.head.appendChild(s);
   }
 
@@ -1654,6 +1685,172 @@
     slideRoyal(stage, st, { kind: 'anna', ltr: ltr, duration: dur, height: 30.5, bottom: 1.7, offset: gap, breathDelay: '-1.7s' });
   }
 
+  /* ══ POLAR BEARS ═══════════════════════════════════════════════════════
+     A mother/father bear leads a little TRAIL OF CUBS across the ice (like
+     the penguin family march). Ported 1:1 from backgrounds/polar_bear.html:
+     one continuous body silhouette, 4 gaited legs, fur shading, blink, frost
+     sparkles. He's drawn facing RIGHT; leftward crossings add .pbflip. ── */
+  var BEAR_SVG = [
+    '<svg viewBox="0 0 480 306">',
+    '<defs>',
+    '<linearGradient id="pbBodyG" x1="0" y1="0" x2="0" y2="1">',
+    '<stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#eef5fb"/><stop offset="1" stop-color="#dcebf6"/>',
+    '</linearGradient>',
+    '<linearGradient id="pbLegG" x1="0" y1="0" x2="0" y2="1">',
+    '<stop offset="0" stop-color="#f2f8fc"/><stop offset="1" stop-color="#e2eef8"/>',
+    '</linearGradient>',
+    '</defs>',
+    /* far legs (in shade) */
+    '<path class="pb-legFF" d="M297,205 L295,262 C295,278 300,290 316,290 L330,290 C339,290 342,283 341,272 L338,205 Z" fill="#d3e2ef" stroke="#a9c1d6" stroke-width="3"/>',
+    '<path class="pb-legFB" d="M113,200 L111,260 C111,276 116,288 132,288 L146,288 C155,288 158,281 157,270 L154,203 Z" fill="#d3e2ef" stroke="#a9c1d6" stroke-width="3"/>',
+    /* stubby tail + far ear */
+    '<ellipse cx="80" cy="158" rx="13" ry="11" fill="#eef5fb" stroke="#a9c1d6" stroke-width="3"/>',
+    '<circle cx="338" cy="70" r="14" fill="#dce9f4" stroke="#a9c1d6" stroke-width="3"/>',
+    /* near legs (lit) — snow-paws with toe creases */
+    '<g class="pb-legNB">',
+    '<path d="M148,208 L146,268 C146,284 151,297 168,297 L184,297 C193,297 196,289 195,278 L192,210 Z" fill="url(#pbLegG)" stroke="#a9c1d6" stroke-width="3.2"/>',
+    '<path d="M166,296 C167,289 167,284 166,279 M178,296 C178,289 178,284 177,280" fill="none" stroke="#b9cede" stroke-width="2"/>',
+    '</g>',
+    '<g class="pb-legNF">',
+    '<path d="M332,210 L330,268 C330,284 335,297 352,297 L368,297 C377,297 380,289 379,278 L376,212 Z" fill="url(#pbLegG)" stroke="#a9c1d6" stroke-width="3.2"/>',
+    '<path d="M350,296 C351,289 351,284 350,279 M362,296 C362,289 362,284 361,280" fill="none" stroke="#b9cede" stroke-width="2"/>',
+    '</g>',
+    /* body + head — one continuous silhouette */
+    '<path d="M86,148 C92,116 122,100 162,102 C210,105 240,100 272,108 C298,114 316,104 330,88',
+    ' C340,74 352,64 366,63 C382,62 396,68 406,78 C418,88 428,98 436,110 C444,118 448,124 447,129',
+    ' C446,138 438,144 428,146 C418,148 408,148 402,146 C392,158 386,168 382,180 C377,196 375,214 376,232',
+    ' C376,244 374,250 368,252 C330,260 300,262 262,258 C230,255 205,252 185,250 C150,247 118,240 102,220',
+    ' C90,205 84,175 86,148 Z" fill="url(#pbBodyG)" stroke="#a9c1d6" stroke-width="3.5" stroke-linejoin="round"/>',
+    /* fur + shading */
+    '<path d="M132,124 C185,112 252,112 302,106" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".8"/>',
+    '<ellipse cx="268" cy="246" rx="94" ry="9" fill="#c9dcec" opacity=".45"/>',
+    '<path d="M212,170 C190,190 180,215 180,240" fill="none" stroke="#c9dcec" stroke-width="3" stroke-linecap="round" opacity=".8"/>',
+    '<path d="M330,160 C322,185 320,210 322,233" fill="none" stroke="#c9dcec" stroke-width="3" stroke-linecap="round" opacity=".6"/>',
+    '<ellipse cx="388" cy="162" rx="12" ry="5" fill="#c9dcec" opacity=".28"/>',
+    '<g fill="none" stroke="#d5e4f1" stroke-width="2" stroke-linecap="round">',
+    '<path d="M375,198 l-8,6 M376,212 l-8,5"/>',
+    '<path d="M198,112 l6,-8 M228,109 l6,-8 M258,108 l6,-8"/>',
+    '<path d="M112,150 l-8,5 M108,168 l-8,4"/>',
+    '</g>',
+    '<g fill="#ffffff">',
+    '<path class="pb-spark" d="M200,126 L201.6,129.4 L205,131 L201.6,132.6 L200,136 L198.4,132.6 L195,131 L198.4,129.4 Z"/>',
+    '<path class="pb-spark" style="animation-delay:-1s" d="M298,138 L299.3,140.7 L302,142 L299.3,143.3 L298,146 L296.7,143.3 L294,142 L296.7,140.7 Z"/>',
+    '<path class="pb-spark" style="animation-delay:-1.9s" d="M152,186 L153.3,188.7 L156,190 L153.3,191.3 L152,194 L150.7,191.3 L148,190 L150.7,188.7 Z"/>',
+    '</g>',
+    /* near ear */
+    '<circle cx="392" cy="72" r="16" fill="url(#pbBodyG)" stroke="#a9c1d6" stroke-width="3"/>',
+    '<circle cx="393" cy="74" r="7.5" fill="#e0b6bd" opacity=".8"/>',
+    /* face */
+    '<path d="M404,100 C420,95 436,104 442,119 C444,131 437,141 425,143 C411,145 402,137 400,123 C399,111 400,104 404,100 Z" fill="#ffffff" opacity=".45"/>',
+    '<path d="M388,88 Q396,85 404,88" fill="none" stroke="#c9dcec" stroke-width="2" stroke-linecap="round" opacity=".8"/>',
+    '<g class="eye"><circle cx="398" cy="104" r="6.4" fill="#26221f"/><circle cx="400.3" cy="101.6" r="2.3" fill="#ffffff"/></g>',
+    '<path d="M391,112 Q398,115 405,112" fill="none" stroke="#c9dcec" stroke-width="2" stroke-linecap="round" opacity=".7"/>',
+    '<path d="M436,112 Q450,114 450,124 Q449,134 437,133 Q429,124 436,112 Z" fill="#2b2f36"/>',
+    '<ellipse cx="441" cy="118" rx="3" ry="2" fill="#ffffff" opacity=".5"/>',
+    '<path d="M440,133 Q438,141 430,143" fill="none" stroke="#8fa9bf" stroke-width="2.5" stroke-linecap="round"/>',
+    '<path d="M430,143 Q420,149 410,144" fill="none" stroke="#8fa9bf" stroke-width="2.5" stroke-linecap="round"/>',
+    '<circle cx="420" cy="130" r="1" fill="#b9cede"/><circle cx="425" cy="126" r="1" fill="#b9cede"/><circle cx="417" cy="124" r="1" fill="#b9cede"/>',
+    '<ellipse cx="402" cy="126" rx="7" ry="4.5" fill="#f1b9c0" opacity=".35"/>',
+    '</svg>'
+  ].join('');
+
+  /* per-instance defs-id suffix (pb* ids; class hooks untouched) */
+  function bearNS(markup, sfx) {
+    return markup.replace(/id="(pb[A-Za-z0-9]+)"/g, 'id="$1' + sfx + '"')
+                 .replace(/url\(#(pb[A-Za-z0-9]+)\)/g, 'url(#$1' + sfx + ')');
+  }
+  /* one gliding bear. opts {ltr, duration, height, bottom, offset, cub,
+     breathDelay}. Faces right; leftward crossings flip via .pbflip. The
+     4-leg gait rides .pb-walk (descendant animations travel with the wrap). */
+  function slideBear(stage, st, opts) {
+    if (st.cancelled) return null;
+    injectCSS();
+    opts = opts || {};
+    var sfx = '_b' + (st.bearSeq = (st.bearSeq || 0) + 1);
+    var wrap = el('div', 'pbw pb-walk');
+    var ltr = opts.ltr != null ? opts.ltr : Math.random() < 0.5;
+    wrap.style.cssText = 'height:' + (opts.height || 24) + '%;bottom:' +
+      (opts.bottom != null ? opts.bottom : 2.5).toFixed(1) + '%;z-index:6';
+    if (!ltr) wrap.classList.add('pbflip');
+    var act = el('div', 'pbact');
+    if (opts.breathDelay) act.style.animationDelay = opts.breathDelay;
+    act.appendChild(parseSVG(bearNS(BEAR_SVG, sfx)));
+    var sh = el('div', 'pb-shadow');
+    wrap.appendChild(sh);
+    wrap.appendChild(act);
+    wrap.style.transform = 'translateX(-99999px)';
+    stage.appendChild(wrap);
+    var ew = wrap.offsetWidth || 320, cw = stage.clientWidth || 800;
+    var pad = ew + 90, off = opts.offset || 0, x0, x1;
+    if (ltr) { x0 = -pad - off; x1 = cw + pad - off; }
+    else { x0 = cw + pad + off; x1 = -pad + off; }
+    var dur = opts.duration || rnd(22000, 32000);
+    var inst = { element: wrap, act: act, stopped: false, busy: false, cub: !!opts.cub };
+    function end() {
+      if (inst.stopped) return;
+      inst.stopped = true;
+      if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+      var ix = st.bears.indexOf(inst);
+      if (ix >= 0) st.bears.splice(ix, 1);
+    }
+    var a = animate(wrap, [{ transform: 'translateX(' + x0 + 'px)' }, { transform: 'translateX(' + x1 + 'px)' }],
+      { duration: dur, easing: 'linear', fill: 'forwards' });
+    if (a) { inst.animation = a; a.onfinish = end; }
+    else { wrap.style.transform = 'translateX(' + x1 + 'px)'; setTimeout(end, dur); }
+    inst.stop = function () { try { if (a) a.cancel(); } catch (e) {} end(); };
+    st.bears.push(inst);
+    return inst;
+  }
+  /* the family crosses TOGETHER: a big bear leads, 1-2 CUBS trail behind him
+     at a constant gap (shared direction + pace). One family at a time. */
+  function spawnBears(stage, st) {
+    if (st.cancelled || st.bears.length) return;
+    var ltr = Math.random() < 0.5;
+    var dur = rnd(23000, 33000);
+    var cw = stage.clientWidth || 800;
+    /* bottoms tuned so the PAWS land on Olaf's ~31.5px foot line (measured) */
+    slideBear(stage, st, { ltr: ltr, duration: dur, height: 24, bottom: 3.1, offset: 0 });
+    var cubs = irnd(1, 2), k;
+    for (k = 1; k <= cubs; k++) {
+      slideBear(stage, st, {
+        cub: true, ltr: ltr, duration: dur, height: rnd(12.5, 14.5), bottom: 3.0,
+        offset: cw * (0.10 + (k - 1) * 0.075), breathDelay: '-' + (k * 0.6).toFixed(1) + 's'
+      });
+    }
+  }
+  /* click a bear → happy wet-dog SNOW-SHAKE (wiggle + snow dust off the back) */
+  function bearShake(st, inst) {
+    var b = inst || st.bears[0];
+    if (!b || b.stopped || b.busy || !b.act.animate) return;
+    b.busy = true;
+    var stage = b.element.parentNode;
+    b.act.animate([
+      { transform: 'rotate(0deg)' }, { transform: 'rotate(-4deg)', offset: 0.15 },
+      { transform: 'rotate(4deg)', offset: 0.3 }, { transform: 'rotate(-3.5deg)', offset: 0.45 },
+      { transform: 'rotate(3deg)', offset: 0.6 }, { transform: 'rotate(-1.5deg)', offset: 0.75 },
+      { transform: 'rotate(0deg)' }
+    ], { duration: 750, easing: 'ease-in-out' });
+    var r = b.element.getBoundingClientRect(), sr = stage.getBoundingClientRect(), i;
+    for (i = 0; i < 14; i++) (function (i) {
+      var d = el('div', 'pb-dust');
+      var sz = 3 + Math.random() * 6;
+      d.style.width = d.style.height = sz.toFixed(1) + 'px';
+      d.style.left = (r.left - sr.left + r.width * (0.15 + Math.random() * 0.6)) + 'px';
+      d.style.top = (r.top - sr.top + r.height * (0.2 + Math.random() * 0.3)) + 'px';
+      stage.appendChild(d);
+      var ang = -Math.PI * (0.15 + Math.random() * 0.7), dist = 40 + Math.random() * 80,
+          dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+      var a = animate(d, [
+        { transform: 'translate(0,0)', opacity: 0 },
+        { transform: 'translate(' + (dx * 0.3).toFixed(0) + 'px,' + (dy * 0.3).toFixed(0) + 'px)', opacity: 0.95, offset: 0.2 },
+        { transform: 'translate(' + dx.toFixed(0) + 'px,' + (dy + 40).toFixed(0) + 'px)', opacity: 0 }
+      ], { duration: 800 + Math.random() * 350, delay: i * 22, easing: 'cubic-bezier(.2,.65,.4,1)', fill: 'backwards' });
+      if (a) a.onfinish = function () { if (d.parentNode) d.remove(); };
+      gone(d, 1600);
+    })(i);
+    setTimeout(function () { b.busy = false; }, 850);
+  }
+
   /* ── emoji burst above a sprite (snow-hearts) ── */
   function fzBurst(stage, wrap, chars) {
     if (!stage || !wrap) return;
@@ -1988,7 +2185,8 @@
 
       var st = {
         cancelled: false, timers: [], anims: [], flakes: [],
-        olaf: null, seal: null, sliders: [], royals: [], royalSeq: 0, magicBusy: false
+        olaf: null, seal: null, sliders: [], royals: [], royalSeq: 0,
+        bears: [], bearSeq: 0, magicBusy: false
       };
       buildScene(stage, st);
       buildSnow(stage, st);
@@ -2021,6 +2219,14 @@
         st.timers.push(setTimeout(scheduleRoyals, rnd(32000, 58000)));
       }
       st.timers.push(setTimeout(scheduleRoyals, rnd(6000, 12000)));
+
+      /* a POLAR-BEAR family (mother + cubs) crosses the ice now and then */
+      function scheduleBears() {
+        if (st.cancelled) return;
+        spawnBears(stage, st);
+        st.timers.push(setTimeout(scheduleBears, rnd(30000, 52000)));
+      }
+      st.timers.push(setTimeout(scheduleBears, rnd(9000, 16000)));
 
       /* a lone shooting star now and then */
       function scheduleStar() {
@@ -2066,6 +2272,12 @@
             e.stopPropagation(); return;
           }
         }
+        for (si = 0; si < st.bears.length; si++) {
+          var bl = st.bears[si];
+          if (!bl.stopped && inRect(x, y, bl.element.getBoundingClientRect())) {
+            bearShake(st, bl); e.stopPropagation(); return;
+          }
+        }
         for (si = 0; si < st.sliders.length; si++) {
           var sl = st.sliders[si];
           if (!sl.stopped && inRect(x, y, sl.element.getBoundingClientRect())) {
@@ -2098,6 +2310,8 @@
         royals: function () { spawnRoyals(stage, st); },
         royalMagic: function () { for (var i = 0; i < st.royals.length; i++) if (st.royals[i].kind === 'elsa') return royalMagic(st, st.royals[i]); },
         royalWave: function () { for (var i = 0; i < st.royals.length; i++) if (st.royals[i].kind === 'anna') return royalWave(st, st.royals[i]); },
+        bears: function () { spawnBears(stage, st); },
+        bearShake: function () { for (var i = 0; i < st.bears.length; i++) if (!st.bears[i].cub) return bearShake(st, st.bears[i]); },
         igloo: function () { iglooParty(stage, st); },
         star: function () { shootingStar(st); },
         bolt: function () { lightningStrike(st); },
@@ -2113,6 +2327,7 @@
         st.anims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
         st.sliders.slice().forEach(function (s) { try { s.stop(); } catch (e) {} });
         st.royals.slice().forEach(function (r) { try { r.stop(); } catch (e) {} });
+        st.bears.slice().forEach(function (b) { try { b.stop(); } catch (e) {} });
         if (st.seal && st.seal.stop) { try { st.seal.stop(); } catch (e) {} }
         delete w.BACKGROUNDS.frozen._test;
         stage.style.overflow = prevOverflow;

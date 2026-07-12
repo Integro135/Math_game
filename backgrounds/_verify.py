@@ -15,15 +15,15 @@ from playwright.sync_api import sync_playwright
 THEME    = "galaxy"                # (unused in standalone mode)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = True                    # (unused in standalone mode)
-STANDALONE = r"c:\Code\subtraction_game\backgrounds\princess.html"  # ice-princess character workshop
+STANDALONE = r"c:\Code\subtraction_game\backgrounds\polar_bear.html"  # polar-bear character workshop
 VIEW     = {"width": 1000, "height": 760}   # viewport
-EVAL      = ""                      # e.g. "window.__princess.magic() || 'ok'" / "...wave()..." for the click effects
+EVAL      = ""                      # hooks: __bear.walk(true) / __bear.shake()
 POST_EVAL = ""
 CLICKS   = []
 WAIT_MS   = 1600
 SHOTS    = [
-    {"path": r"c:\tmp\princess_pair.png", "clip": {"x": 100, "y": 40, "width": 800, "height": 720}},
-    {"path": r"c:\tmp\princess_sister_idle.png", "clip": {"x": 600, "y": 150, "width": 300, "height": 320}},
+    {"path": r"c:\tmp\bear_full.png", "clip": {"x": 80, "y": 100, "width": 840, "height": 620}},
+    {"path": r"c:\tmp\bear_face.png", "clip": {"x": 620, "y": 220, "width": 280, "height": 240}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

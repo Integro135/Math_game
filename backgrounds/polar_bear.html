@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polar Bear — Character Workshop</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     STANDALONE character workshop for the POLAR BEAR — no scene, just the
+     bear on a neutral backdrop (BG button cycles night / day / plain to
+     judge the white fur against each). Same workflow as princess.html →
+     frozen.bg.js: iterate here, port only when he looks good.
+
+     BEAR_SVG + PB_CSS are written like the other frozen sprites (string
+     array, .eye blink class, wrapper + act + shadow layers, everything
+     namespaced pb*) so porting is copy-paste. NOTES FOR THE PORT:
+       · defs ids (pb*G) need a per-instance suffix (dinosaurs2 lesson)
+       · he faces RIGHT — use a fzflip-style scaleX(-1) for leftward walks
+       · viewBox 480×306 is TRIMMED to the paw line (no empty space below —
+         the royal-sisters floating lesson), shadow hugs the paws
+       · .pb-walk on the wrapper switches the 4-leg diagonal-gait cycle +
+         trot bob on; without it he stands and just breathes/blinks
+
+     Interactions here: Walk toggles the gait; click the bear (or Shake) →
+     a happy wet-dog snow-shake that flings snow dust off his back.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: linear-gradient(180deg, #0a1734 0%, #1d3f6e 55%, #2c5a94 100%); transition: background .4s; }
+  body.bg-day   { background: linear-gradient(180deg, #bfe3f7 0%, #e8f7ff 70%, #f6fcff 100%); }
+  body.bg-plain { background: #3a3f4b; }
+  #stage { position: fixed; inset: 0; }
+  .hbtn {
+    position: fixed; bottom: 24px; z-index: 10;
+    padding: 9px 22px;
+    background: rgba(14, 30, 62, 0.55);
+    color: rgba(214, 238, 255, 0.92);
+    border: 1px solid rgba(140, 200, 255, 0.35);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(4, 10, 24, 0.45);
+    transition: background .25s, box-shadow .25s, transform .15s;
+  }
+  .hbtn:hover {
+    background: rgba(35, 70, 130, 0.6);
+    box-shadow: 0 4px 24px rgba(120, 190, 255, 0.25);
+    transform: translateY(-1px);
+  }
+  #shake { right: 24px; }
+  #walk { right: 136px; }
+  #bg { right: 240px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="bg" class="hbtn">BG</button>
+<button id="walk" class="hbtn">Walk</button>
+<button id="shake" class="hbtn">Shake ❄</button>
+
+<script>
+(function (w) {
+'use strict';
+var doc = w.document;
+
+/* ── bear CSS — namespaced pb*, port-ready ───────────────────────────── */
+var PB_CSS = [
+  '.pbw{position:absolute;pointer-events:none;will-change:transform}',
+  '.pbw .pbact{display:inline-block;height:100%;vertical-align:top;transform-origin:50% 100%;animation:pbBreath 3.8s ease-in-out infinite}',
+  '.pbw svg{height:100%;width:auto;display:block;overflow:visible}',
+  '.pbw .pb-shadow{position:absolute;left:50%;bottom:-2%;width:86%;height:7%;transform:translateX(-50%);',
+  '  border-radius:50%;background:radial-gradient(ellipse,rgba(20,45,80,.32),transparent 70%)}',
+  '@keyframes pbBreath{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.015)}}',
+  /* blink — the shared frozen recipe */
+  '.pbw svg .eye{transform-box:fill-box;transform-origin:50% 50%;animation:pbBlink 4.4s ease-in-out infinite}',
+  '@keyframes pbBlink{0%,88%,94%,100%{transform:scaleY(1)}91%{transform:scaleY(.08)}}',
+  /* frost sparkles glinting on the fur */
+  '.pbw svg .pb-spark{animation:pbTwinkle 2.8s ease-in-out infinite}',
+  '@keyframes pbTwinkle{0%,100%{opacity:.15}50%{opacity:.9}}',
+  /* 4-leg DIAGONAL GAIT — near-front + far-back swing together, the other
+     diagonal counter-phases; the body trots at double the step rate */
+  '.pbw svg .pb-legNF,.pbw svg .pb-legNB,.pbw svg .pb-legFF,.pbw svg .pb-legFB{transform-box:fill-box;transform-origin:50% 10%}',
+  '.pbw.pb-walk svg .pb-legNF,.pbw.pb-walk svg .pb-legFB{animation:pbSwingA .7s ease-in-out infinite}',
+  '.pbw.pb-walk svg .pb-legNB,.pbw.pb-walk svg .pb-legFF{animation:pbSwingB .7s ease-in-out infinite}',
+  '@keyframes pbSwingA{0%,100%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}}',
+  '@keyframes pbSwingB{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}',
+  '.pbw.pb-walk .pbact{animation:pbTrot .35s ease-in-out infinite alternate}',
+  '@keyframes pbTrot{0%{transform:translateY(0) rotate(.4deg)}100%{transform:translateY(-4px) rotate(-.3deg)}}',
+  /* snow-shake dust (harness-local burst particles) */
+  '.pb-dust{position:fixed;pointer-events:none;z-index:9;border-radius:50%;opacity:0;',
+  '  background:radial-gradient(circle,#ffffff,rgba(255,255,255,.35) 70%,transparent);',
+  '  box-shadow:0 0 6px rgba(220,240,255,.8)}'
+].join('\n');
+
+/* ── THE POLAR BEAR — viewBox 480×306, facing right, paws ON the bottom
+      edge. Layers back-to-front: far legs → tail + far ear → near legs →
+      body+head silhouette (one clean path) → fur/shading → face. ───────── */
+var BEAR_SVG = [
+'<svg viewBox="0 0 480 306">',
+'<defs>',
+'<linearGradient id="pbBodyG" x1="0" y1="0" x2="0" y2="1">',
+'<stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#eef5fb"/><stop offset="1" stop-color="#dcebf6"/>',
+'</linearGradient>',
+'<linearGradient id="pbLegG" x1="0" y1="0" x2="0" y2="1">',
+'<stop offset="0" stop-color="#f2f8fc"/><stop offset="1" stop-color="#e2eef8"/>',
+'</linearGradient>',
+'</defs>',
+
+/* far legs (in shade) */
+'<path class="pb-legFF" d="M297,205 L295,262 C295,278 300,290 316,290 L330,290 C339,290 342,283 341,272 L338,205 Z"',
+' fill="#d3e2ef" stroke="#a9c1d6" stroke-width="3"/>',
+'<path class="pb-legFB" d="M113,200 L111,260 C111,276 116,288 132,288 L146,288 C155,288 158,281 157,270 L154,203 Z"',
+' fill="#d3e2ef" stroke="#a9c1d6" stroke-width="3"/>',
+
+/* stubby tail + far ear (behind the silhouette) */
+'<ellipse cx="80" cy="158" rx="13" ry="11" fill="#eef5fb" stroke="#a9c1d6" stroke-width="3"/>',
+'<circle cx="338" cy="70" r="14" fill="#dce9f4" stroke="#a9c1d6" stroke-width="3"/>',
+
+/* near legs (lit) — big snow-paws with toe creases */
+'<g class="pb-legNB">',
+'<path d="M148,208 L146,268 C146,284 151,297 168,297 L184,297 C193,297 196,289 195,278 L192,210 Z"',
+' fill="url(#pbLegG)" stroke="#a9c1d6" stroke-width="3.2"/>',
+'<path d="M166,296 C167,289 167,284 166,279 M178,296 C178,289 178,284 177,280" fill="none" stroke="#b9cede" stroke-width="2"/>',
+'</g>',
+'<g class="pb-legNF">',
+'<path d="M332,210 L330,268 C330,284 335,297 352,297 L368,297 C377,297 380,289 379,278 L376,212 Z"',
+' fill="url(#pbLegG)" stroke="#a9c1d6" stroke-width="3.2"/>',
+'<path d="M350,296 C351,289 351,284 350,279 M362,296 C362,289 362,284 361,280" fill="none" stroke="#b9cede" stroke-width="2"/>',
+'</g>',
+
+/* BODY + HEAD — one continuous silhouette (rump → back → neck → crown →
+   muzzle → chin → chest → belly → haunch → rump) */
+'<path d="M86,148 C92,116 122,100 162,102 C210,105 240,100 272,108 C298,114 316,104 330,88',
+' C340,74 352,64 366,63 C382,62 396,68 406,78 C418,88 428,98 436,110 C444,118 448,124 447,129',
+' C446,138 438,144 428,146 C418,148 408,148 402,146 C392,158 386,168 382,180 C377,196 375,214 376,232',
+' C376,244 374,250 368,252 C330,260 300,262 262,258 C230,255 205,252 185,250 C150,247 118,240 102,220',
+' C90,205 84,175 86,148 Z"',
+' fill="url(#pbBodyG)" stroke="#a9c1d6" stroke-width="3.5" stroke-linejoin="round"/>',
+
+/* fur + shading (soft, layered) */
+'<path d="M132,124 C185,112 252,112 302,106" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".8"/>',
+'<ellipse cx="268" cy="246" rx="94" ry="9" fill="#c9dcec" opacity=".45"/>',
+'<path d="M212,170 C190,190 180,215 180,240" fill="none" stroke="#c9dcec" stroke-width="3" stroke-linecap="round" opacity=".8"/>',
+'<path d="M330,160 C322,185 320,210 322,233" fill="none" stroke="#c9dcec" stroke-width="3" stroke-linecap="round" opacity=".6"/>',
+'<ellipse cx="388" cy="162" rx="12" ry="5" fill="#c9dcec" opacity=".28"/>',
+/* fur tufts */
+'<g fill="none" stroke="#d5e4f1" stroke-width="2" stroke-linecap="round">',
+'<path d="M375,198 l-8,6 M376,212 l-8,5"/>',
+'<path d="M198,112 l6,-8 M228,109 l6,-8 M258,108 l6,-8"/>',
+'<path d="M112,150 l-8,5 M108,168 l-8,4"/>',
+'</g>',
+/* frost sparkles on the fur */
+'<g fill="#ffffff">',
+'<path class="pb-spark" d="M200,126 L201.6,129.4 L205,131 L201.6,132.6 L200,136 L198.4,132.6 L195,131 L198.4,129.4 Z"/>',
+'<path class="pb-spark" style="animation-delay:-1s" d="M298,138 L299.3,140.7 L302,142 L299.3,143.3 L298,146 L296.7,143.3 L294,142 L296.7,140.7 Z"/>',
+'<path class="pb-spark" style="animation-delay:-1.9s" d="M152,186 L153.3,188.7 L156,190 L153.3,191.3 L152,194 L150.7,191.3 L148,190 L150.7,188.7 Z"/>',
+'</g>',
+
+/* near ear (on the crown) */
+'<circle cx="392" cy="72" r="16" fill="url(#pbBodyG)" stroke="#a9c1d6" stroke-width="3"/>',
+'<circle cx="393" cy="74" r="7.5" fill="#e0b6bd" opacity=".8"/>',
+
+/* FACE */
+'<path d="M404,100 C420,95 436,104 442,119 C444,131 437,141 425,143 C411,145 402,137 400,123 C399,111 400,104 404,100 Z"',
+' fill="#ffffff" opacity=".45"/>',
+'<path d="M388,88 Q396,85 404,88" fill="none" stroke="#c9dcec" stroke-width="2" stroke-linecap="round" opacity=".8"/>',
+'<g class="eye">',
+'<circle cx="398" cy="104" r="6.4" fill="#26221f"/>',
+'<circle cx="400.3" cy="101.6" r="2.3" fill="#ffffff"/>',
+'</g>',
+'<path d="M391,112 Q398,115 405,112" fill="none" stroke="#c9dcec" stroke-width="2" stroke-linecap="round" opacity=".7"/>',
+/* nose + mouth + whisker dots + blush */
+'<path d="M436,112 Q450,114 450,124 Q449,134 437,133 Q429,124 436,112 Z" fill="#2b2f36"/>',
+'<ellipse cx="441" cy="118" rx="3" ry="2" fill="#ffffff" opacity=".5"/>',
+'<path d="M440,133 Q438,141 430,143" fill="none" stroke="#8fa9bf" stroke-width="2.5" stroke-linecap="round"/>',
+'<path d="M430,143 Q420,149 410,144" fill="none" stroke="#8fa9bf" stroke-width="2.5" stroke-linecap="round"/>',
+'<circle cx="420" cy="130" r="1" fill="#b9cede"/><circle cx="425" cy="126" r="1" fill="#b9cede"/><circle cx="417" cy="124" r="1" fill="#b9cede"/>',
+'<ellipse cx="402" cy="126" rx="7" ry="4.5" fill="#f1b9c0" opacity=".35"/>',
+'</svg>'
+].join('');
+
+/* ── harness plumbing (ES5, file:// safe) ────────────────────────────── */
+function parseSVG(markup) {
+  markup = markup.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+  return new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
+}
+var style = doc.createElement('style');
+style.textContent = PB_CSS;
+doc.head.appendChild(style);
+
+var stage = doc.getElementById('stage');
+var wrap = doc.createElement('div');
+wrap.className = 'pbw';
+wrap.style.cssText = 'height:56%;left:50%;bottom:14%;transform:translateX(-50%)';
+var act = doc.createElement('div');
+act.className = 'pbact';
+act.appendChild(parseSVG(BEAR_SVG));
+var sh = doc.createElement('div');
+sh.className = 'pb-shadow';
+wrap.appendChild(sh);
+wrap.appendChild(act);
+stage.appendChild(wrap);
+
+var busy = false;
+function shake() {
+  if (busy) return;
+  busy = true;
+  /* wet-dog wiggle */
+  if (act.animate) act.animate([
+    { transform: 'rotate(0deg)' },
+    { transform: 'rotate(-4deg)', offset: 0.15 },
+    { transform: 'rotate(4deg)', offset: 0.3 },
+    { transform: 'rotate(-3.5deg)', offset: 0.45 },
+    { transform: 'rotate(3deg)', offset: 0.6 },
+    { transform: 'rotate(-1.5deg)', offset: 0.75 },
+    { transform: 'rotate(0deg)' }
+  ], { duration: 750, easing: 'ease-in-out' });
+  /* snow dust flying off the back */
+  var r = act.getBoundingClientRect(), i;
+  for (i = 0; i < 14; i++) (function (i) {
+    var d = doc.createElement('span');
+    d.className = 'pb-dust';
+    var sz = 3 + Math.random() * 6;
+    d.style.width = d.style.height = sz.toFixed(1) + 'px';
+    d.style.left = (r.left + r.width * (0.15 + Math.random() * 0.6)) + 'px';
+    d.style.top = (r.top + r.height * (0.25 + Math.random() * 0.3)) + 'px';
+    doc.body.appendChild(d);
+    var ang = -Math.PI * (0.15 + Math.random() * 0.7),
+        dist = 40 + Math.random() * 80,
+        dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+    if (d.animate) d.animate([
+      { transform: 'translate(0,0)', opacity: 0 },
+      { transform: 'translate(' + (dx * 0.3).toFixed(0) + 'px,' + (dy * 0.3).toFixed(0) + 'px)', opacity: 0.95, offset: 0.2 },
+      { transform: 'translate(' + dx.toFixed(0) + 'px,' + (dy + 40).toFixed(0) + 'px)', opacity: 0 }
+    ], { duration: 800 + Math.random() * 350, delay: i * 22, easing: 'cubic-bezier(.2,.65,.4,1)', fill: 'backwards' });
+    setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1500);
+  })(i);
+  setTimeout(function () { busy = false; }, 850);
+}
+var walking = false;
+function walk(on) {
+  walking = (on != null) ? !!on : !walking;
+  wrap.classList.toggle('pb-walk', walking);
+  return walking;
+}
+doc.getElementById('shake').addEventListener('click', shake);
+doc.getElementById('walk').addEventListener('click', function () { walk(); });
+doc.addEventListener('click', function (ev) {
+  var r = wrap.getBoundingClientRect();
+  if (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) shake();
+});
+var BGS = ['', 'bg-day', 'bg-plain'], bgIx = 0;
+doc.getElementById('bg').addEventListener('click', function () {
+  bgIx = (bgIx + 1) % BGS.length;
+  doc.body.className = BGS[bgIx];
+});
+w.__bear = { shake: shake, walk: walk };
+})(window);
+</script>
+</body>
+</html>
