@@ -1,5 +1,12 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
+/* touch: taps must never double-tap-ZOOM the game (e.g. rapid +/− presses on
+   the number line) — manipulation keeps pan + pinch, drops double-tap zoom.
+   Set on the roots (effective touch-action intersects down the tree) AND
+   explicitly on the controls kids hammer on. */
+html,body{touch-action:manipulation}
+button,input{touch-action:manipulation}
+
 body{
   min-height:100vh;font-family:'Nunito','Arial Rounded MT Bold',sans-serif;
   direction:rtl;overflow-x:hidden;background:#0d0020;

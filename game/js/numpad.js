@@ -1,18 +1,18 @@
 /* =====================================================================
    numpad.js — the game's own NUMBER PAD (tablet-keyboard fix).
    ---------------------------------------------------------------------
+   TOUCH DEVICES ONLY (tablet/phone browsers — primary pointer is
+   coarse, or a touch screen with no hover). On desktop this module is
+   completely INERT: no listeners, no pad, the physical keyboard is the
+   only input. On a touch device:
+
    Tapping ANY answer box — core #ans / ans1-3, chain sub-answers
    (.tx-sub-inp), column-exercise digit cells and every minigame input
    (they all carry .ans-inp / .tx-sub-inp) — pops a minimal in-game
-   keypad: 1-9, 0, ⌫, ✔ (nothing more).
-
-   Why: on tablets the OS keyboard covers half the game and scroll-jumps
-   the fixed backgrounds. So on coarse-pointer devices every answer box
-   also gets inputmode="none" — the OS keyboard NEVER opens (tap or
-   programmatic focus) and the pad fully replaces it, appearing on the
-   auto-focus each problem gives its first box. On desktop the pad only
-   appears when a box is clicked, and the physical keyboard keeps
-   working alongside it.
+   keypad: 1-9, 0, ⌫, ✔ (nothing more). Every answer box also gets
+   inputmode="none", so the OS keyboard NEVER opens (tap or programmatic
+   focus — it used to cover half the game); the pad fully replaces it,
+   appearing on the auto-focus each problem gives its first box.
 
    Zero changes to game logic: a key writes the digit into the focused
    box and re-dispatches a bubbling 'input' event, so every existing
@@ -27,8 +27,15 @@
    ===================================================================== */
 (function () {
   'use strict';
+  /* run ONLY in tablet/phone browsers: coarse primary pointer (tablets,
+     phones) or a hover-less touch screen — desktops/laptops (fine pointer
+     + hover, even touch-screen laptops) keep the OS keyboard and no pad */
+  var TOUCH = !!(window.matchMedia &&
+    (matchMedia('(pointer:coarse)').matches ||
+     (matchMedia('(hover:none)').matches && navigator.maxTouchPoints > 0)));
+  if (!TOUCH) return;
+
   var SEL = 'input.ans-inp,input.tx-sub-inp';
-  var COARSE = window.matchMedia && matchMedia('(pointer:coarse)').matches;
   var pad = null, active = null;
 
   function build() {
@@ -93,18 +100,19 @@
     var t = e.target;
     if (t && t.closest && t.closest('#game-numpad')) return;
     if (t && t.matches && t.matches(SEL)) {
-      if (COARSE) t.inputMode = 'none';
+      t.inputMode = 'none';
       show(t);
       return;
     }
     hide();                                        // tapping anywhere else closes
   }, true);
 
+  /* each problem's auto-focus opens the pad (and follows Enter-chains) */
   document.addEventListener('focusin', function (e) {
     var t = e.target;
     if (!(t && t.matches && t.matches(SEL))) return;
-    if (COARSE) { t.inputMode = 'none'; show(t); } // auto-focus opens it on tablets
-    else if (isOpen()) active = t;                 // open pad follows Enter-chains
+    t.inputMode = 'none';
+    show(t);
   });
 
   document.addEventListener('focusout', function () {
@@ -114,22 +122,20 @@
     }, 200);
   });
 
-  /* tablets: every answer box (present + future) refuses the OS keyboard */
-  if (COARSE) {
-    var arm = function (root) {
-      if (!root.querySelectorAll) return;
-      var list = root.querySelectorAll(SEL), i;
-      for (i = 0; i < list.length; i++) list[i].inputMode = 'none';
-    };
-    arm(document);
-    new MutationObserver(function (muts) {
-      for (var m = 0; m < muts.length; m++)
-        for (var n = 0; n < muts[m].addedNodes.length; n++) {
-          var node = muts[m].addedNodes[n];
-          if (node.nodeType !== 1) continue;
-          if (node.matches && node.matches(SEL)) node.inputMode = 'none';
-          arm(node);
-        }
-    }).observe(document.body, { childList: true, subtree: true });
-  }
+  /* every answer box (present + future) refuses the OS keyboard */
+  var arm = function (root) {
+    if (!root.querySelectorAll) return;
+    var list = root.querySelectorAll(SEL), i;
+    for (i = 0; i < list.length; i++) list[i].inputMode = 'none';
+  };
+  arm(document);
+  new MutationObserver(function (muts) {
+    for (var m = 0; m < muts.length; m++)
+      for (var n = 0; n < muts[m].addedNodes.length; n++) {
+        var node = muts[m].addedNodes[n];
+        if (node.nodeType !== 1) continue;
+        if (node.matches && node.matches(SEL)) node.inputMode = 'none';
+        arm(node);
+      }
+  }).observe(document.body, { childList: true, subtree: true });
 })();
