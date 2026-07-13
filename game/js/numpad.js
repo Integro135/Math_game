@@ -1,0 +1,135 @@
+/* =====================================================================
+   numpad.js — the game's own NUMBER PAD (tablet-keyboard fix).
+   ---------------------------------------------------------------------
+   Tapping ANY answer box — core #ans / ans1-3, chain sub-answers
+   (.tx-sub-inp), column-exercise digit cells and every minigame input
+   (they all carry .ans-inp / .tx-sub-inp) — pops a minimal in-game
+   keypad: 1-9, 0, ⌫, ✔ (nothing more).
+
+   Why: on tablets the OS keyboard covers half the game and scroll-jumps
+   the fixed backgrounds. So on coarse-pointer devices every answer box
+   also gets inputmode="none" — the OS keyboard NEVER opens (tap or
+   programmatic focus) and the pad fully replaces it, appearing on the
+   auto-focus each problem gives its first box. On desktop the pad only
+   appears when a box is clicked, and the physical keyboard keeps
+   working alongside it.
+
+   Zero changes to game logic: a key writes the digit into the focused
+   box and re-dispatches a bubbling 'input' event, so every existing
+   sanitizer/sync (oninput slices, jar sync, colx auto-advance, ntt
+   preview) runs exactly as if typed; ✔ dispatches an Enter keydown so
+   the box's own Enter behaviour (checkAns / focus-next-box / module
+   check) runs unchanged, and the pad follows the focus to the next box.
+
+   The pad element lives INSIDE .wrap: the background click-routers all
+   whitelist '.wrap,button,input,…', so pad taps never reach the scene
+   (no per-background edits needed).
+   ===================================================================== */
+(function () {
+  'use strict';
+  var SEL = 'input.ans-inp,input.tx-sub-inp';
+  var COARSE = window.matchMedia && matchMedia('(pointer:coarse)').matches;
+  var pad = null, active = null;
+
+  function build() {
+    if (pad) return pad;
+    pad = document.createElement('div');
+    pad.id = 'game-numpad';
+    pad.dir = 'ltr';                               // 1-2-3 rows read left-to-right
+    var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✔'], i;
+    for (i = 0; i < keys.length; i++) (function (k) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'np-key' + (k === '✔' ? ' np-ok' : k === '⌫' ? ' np-del' : '');
+      b.textContent = k;
+      /* act on pointerdown and swallow it — focus stays in the answer box */
+      b.addEventListener('pointerdown', function (ev) {
+        ev.preventDefault(); ev.stopPropagation(); press(k);
+      });
+      b.addEventListener('click', function (ev) { ev.preventDefault(); });
+      pad.appendChild(b);
+    })(keys[i]);
+    (document.querySelector('.wrap') || document.body).appendChild(pad);
+    return pad;
+  }
+
+  function show(inp) {
+    active = inp;
+    build().classList.add('np-show');
+  }
+  function hide() {
+    active = null;
+    if (pad) pad.classList.remove('np-show');
+  }
+  function isOpen() { return !!(pad && pad.classList.contains('np-show')); }
+
+  function press(k) {
+    if (!active || !document.contains(active) || active.disabled || active.readOnly) return;
+    active.focus();
+    if (k === '✔') {
+      active.dispatchEvent(new KeyboardEvent('keydown',
+        { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }));
+      /* Enter may have chained focus to the next answer box (ans1→ans2,
+         sub→final) — follow it; if focus left the boxes, close the pad */
+      setTimeout(function () {
+        var f = document.activeElement;
+        if (f && f.matches && f.matches(SEL) && !f.disabled) active = f;
+        else hide();
+      }, 80);
+      return;
+    }
+    if (k === '⌫') {
+      active.value = active.value.slice(0, -1);
+    } else {
+      var ml = active.maxLength;                   // -1 when unset
+      if (ml > 0 && active.value.length >= ml) return;   // full cell — same as typing
+      active.value += k;
+    }
+    active.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  /* ── wiring (delegated — answer boxes are re-created per problem) ── */
+  document.addEventListener('pointerdown', function (e) {
+    var t = e.target;
+    if (t && t.closest && t.closest('#game-numpad')) return;
+    if (t && t.matches && t.matches(SEL)) {
+      if (COARSE) t.inputMode = 'none';
+      show(t);
+      return;
+    }
+    hide();                                        // tapping anywhere else closes
+  }, true);
+
+  document.addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (!(t && t.matches && t.matches(SEL))) return;
+    if (COARSE) { t.inputMode = 'none'; show(t); } // auto-focus opens it on tablets
+    else if (isOpen()) active = t;                 // open pad follows Enter-chains
+  });
+
+  document.addEventListener('focusout', function () {
+    setTimeout(function () {
+      var f = document.activeElement;
+      if (isOpen() && !(f && f.matches && f.matches(SEL))) hide();
+    }, 200);
+  });
+
+  /* tablets: every answer box (present + future) refuses the OS keyboard */
+  if (COARSE) {
+    var arm = function (root) {
+      if (!root.querySelectorAll) return;
+      var list = root.querySelectorAll(SEL), i;
+      for (i = 0; i < list.length; i++) list[i].inputMode = 'none';
+    };
+    arm(document);
+    new MutationObserver(function (muts) {
+      for (var m = 0; m < muts.length; m++)
+        for (var n = 0; n < muts[m].addedNodes.length; n++) {
+          var node = muts[m].addedNodes[n];
+          if (node.nodeType !== 1) continue;
+          if (node.matches && node.matches(SEL)) node.inputMode = 'none';
+          arm(node);
+        }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+})();

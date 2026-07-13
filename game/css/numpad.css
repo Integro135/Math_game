@@ -1,0 +1,37 @@
+/* ── in-game number pad (game/js/numpad.js) — pops when an answer box is
+      tapped; on tablets it fully replaces the OS keyboard. Fixed to the
+      bottom-centre, above the parent-gate modal (990) so the gate can use
+      it too, below the number tooltip (2000). ── */
+#game-numpad{
+  position:fixed;left:50%;bottom:12px;
+  transform:translateX(-50%) translateY(18px);
+  display:grid;grid-template-columns:repeat(3,64px);gap:8px;padding:10px;
+  direction:ltr;z-index:1200;
+  background:rgba(18,14,48,.82);
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:20px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  box-shadow:0 10px 34px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;
+  transition:opacity .16s ease,transform .16s ease;
+}
+#game-numpad.np-show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+
+#game-numpad .np-key{
+  height:56px;border:none;border-radius:14px;cursor:pointer;
+  font-family:'Fredoka One',cursive;font-size:1.55rem;line-height:1;color:#fff;
+  background:rgba(255,255,255,.15);
+  -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
+  touch-action:manipulation;
+  transition:background .1s,transform .08s;
+}
+#game-numpad .np-key:active{background:rgba(255,255,255,.34);transform:scale(.93)}
+#game-numpad .np-del{background:rgba(255,128,171,.30);font-size:1.3rem}
+#game-numpad .np-ok{background:linear-gradient(135deg,#1eb85e,#53d98a);font-size:1.4rem}
+#game-numpad .np-ok:active{background:linear-gradient(135deg,#25cf6c,#6ae59b)}
+
+/* small phones — slightly tighter keys, still ≥48px touch targets */
+@media (max-width:480px){
+  #game-numpad{grid-template-columns:repeat(3,56px);gap:7px;padding:8px;bottom:8px}
+  #game-numpad .np-key{height:50px;font-size:1.4rem}
+}
