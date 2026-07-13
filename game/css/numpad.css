@@ -1,14 +1,20 @@
 /* ── in-game number pad (game/js/numpad.js) — pops when an answer box is
       tapped; on tablets it fully replaces the OS keyboard. Fixed to the
       bottom-centre, above the parent-gate modal (990) so the gate can use
-      it too, below the number tooltip (2000). ── */
+      it too, below the number tooltip (2000).
+
+      THEMING: every colour is consumed through a --np-* custom property
+      (fallback = the neutral night-glass default), and each theme sets its
+      own palette below — a DARK glass panel tinted to the scene keeps the
+      white digits readable over any background, while ⌫/✔ take the theme's
+      accent (✔ ink flips dark where the accent is light). ── */
 #game-numpad{
   position:fixed;left:50%;bottom:12px;
   transform:translateX(-50%) translateY(18px);
   display:grid;grid-template-columns:repeat(3,64px);gap:8px;padding:10px;
   direction:ltr;z-index:1200;
-  background:rgba(18,14,48,.82);
-  border:1px solid rgba(255,255,255,.28);
+  background:var(--np-panel,rgba(18,14,48,.82));
+  border:1px solid var(--np-border,rgba(255,255,255,.28));
   border-radius:20px;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   box-shadow:0 10px 34px rgba(0,0,0,.5);
@@ -19,19 +25,88 @@
 
 #game-numpad .np-key{
   height:56px;border:none;border-radius:14px;cursor:pointer;
-  font-family:'Fredoka One',cursive;font-size:1.55rem;line-height:1;color:#fff;
-  background:rgba(255,255,255,.15);
+  font-family:'Fredoka One',cursive;font-size:1.55rem;line-height:1;
+  color:var(--np-ink,#fff);
+  background:var(--np-key,rgba(255,255,255,.15));
   -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
   touch-action:manipulation;
   transition:background .1s,transform .08s;
 }
-#game-numpad .np-key:active{background:rgba(255,255,255,.34);transform:scale(.93)}
-#game-numpad .np-del{background:rgba(255,128,171,.30);font-size:1.3rem}
-#game-numpad .np-ok{background:linear-gradient(135deg,#1eb85e,#53d98a);font-size:1.4rem}
-#game-numpad .np-ok:active{background:linear-gradient(135deg,#25cf6c,#6ae59b)}
+#game-numpad .np-key:active{background:var(--np-key-hi,rgba(255,255,255,.34));transform:scale(.93)}
+#game-numpad .np-del{background:var(--np-del,rgba(255,128,171,.30));font-size:1.3rem}
+#game-numpad .np-ok{
+  background:var(--np-ok,linear-gradient(135deg,#1eb85e,#53d98a));
+  color:var(--np-ok-ink,#fff);font-size:1.4rem;
+}
+#game-numpad .np-ok:active{background:var(--np-ok-hi,linear-gradient(135deg,#25cf6c,#6ae59b))}
 
 /* small phones — slightly tighter keys, still ≥48px touch targets */
 @media (max-width:480px){
   #game-numpad{grid-template-columns:repeat(3,56px);gap:7px;padding:8px;bottom:8px}
   #game-numpad .np-key{height:50px;font-size:1.4rem}
+}
+
+/* ── per-theme palettes (body.theme-* is set by themes.js) ─────────────── */
+
+/* girls — candy pink / lilac over the LIGHT pastel valley → deep-plum glass */
+body.theme-girls #game-numpad{
+  --np-panel:rgba(74,34,68,.86);--np-border:rgba(255,143,200,.5);
+  --np-key:rgba(255,255,255,.17);--np-key-hi:rgba(255,255,255,.36);
+  --np-del:rgba(255,111,181,.38);
+  --np-ok:linear-gradient(135deg,#FF8FC8,#D63384);
+  --np-ok-hi:linear-gradient(135deg,#FFA6D4,#E8479A);
+}
+
+/* galaxy — nebula violet starfield → star-gold ✔ (dark ink on gold) */
+body.theme-galaxy #game-numpad{
+  --np-panel:rgba(22,10,50,.86);--np-border:rgba(199,125,255,.45);
+  --np-key:rgba(199,125,255,.20);--np-key-hi:rgba(199,125,255,.4);
+  --np-del:rgba(255,125,170,.32);
+  --np-ok:linear-gradient(135deg,#FFD27D,#E8A020);--np-ok-ink:#3A2400;
+  --np-ok-hi:linear-gradient(135deg,#FFE0A0,#F0B040);
+}
+
+/* reef — lagoon aqua under water → sunbeam-gold ✔, coral ⌫ */
+body.theme-reef #game-numpad{
+  --np-panel:rgba(3,42,56,.86);--np-border:rgba(102,224,255,.42);
+  --np-key:rgba(102,224,255,.18);--np-key-hi:rgba(102,224,255,.38);
+  --np-del:rgba(255,138,128,.32);
+  --np-ok:linear-gradient(135deg,#FFD166,#E8A63A);--np-ok-ink:#4A3000;
+  --np-ok-hi:linear-gradient(135deg,#FFE08C,#F0B850);
+}
+
+/* dubai — navy dusk + amber gold */
+body.theme-dubai #game-numpad{
+  --np-panel:rgba(8,13,32,.86);--np-border:rgba(255,181,77,.5);
+  --np-key:rgba(255,210,125,.16);--np-key-hi:rgba(255,210,125,.34);
+  --np-del:rgba(255,120,130,.30);
+  --np-ok:linear-gradient(135deg,#FFB54D,#E8901E);--np-ok-ink:#3A2000;
+  --np-ok-hi:linear-gradient(135deg,#FFC870,#F0A430);
+}
+
+/* savanna — sunset orange / golden hour */
+body.theme-savanna #game-numpad{
+  --np-panel:rgba(40,16,7,.86);--np-border:rgba(255,197,104,.5);
+  --np-key:rgba(255,197,104,.18);--np-key-hi:rgba(255,197,104,.38);
+  --np-del:rgba(255,107,129,.32);
+  --np-ok:linear-gradient(135deg,#FFC568,#E07028);--np-ok-ink:#3A1500;
+  --np-ok-hi:linear-gradient(135deg,#FFD488,#F08438);
+}
+
+/* dinosaurs — jungle dusk → leaf-green ✔ (dark ink), lava ⌫ */
+body.theme-dinosaurs #game-numpad{
+  --np-panel:rgba(35,19,9,.86);--np-border:rgba(127,184,78,.5);
+  --np-key:rgba(255,243,224,.16);--np-key-hi:rgba(255,243,224,.34);
+  --np-del:rgba(232,116,60,.34);
+  --np-ok:linear-gradient(135deg,#9CCB6C,#6AA23C);--np-ok-ink:#142E06;
+  --np-ok-hi:linear-gradient(135deg,#B0DA82,#7EB650);
+}
+
+/* frozen — night ice → glacial-cyan ✔ (dark ink), warm-pink ⌫ */
+body.theme-frozen #game-numpad{
+  --np-panel:rgba(13,28,60,.86);--np-border:rgba(143,224,255,.45);
+  --np-key:rgba(143,224,255,.17);--np-key-hi:rgba(143,224,255,.36);
+  --np-del:rgba(255,128,171,.30);
+  --np-ok:linear-gradient(135deg,#8FE0FF,#4FA8DC);--np-ok-ink:#06263D;
+  --np-ok-hi:linear-gradient(135deg,#AEE8FF,#66B8E8);
 }
