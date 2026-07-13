@@ -223,7 +223,9 @@
   cursor:default;display:flex;flex-direction:column;align-items:flex-end;gap:1px;
 }
 .gift-mode-lbl{display:block;text-align:right;opacity:.85}
-@media(max-width:480px){.gift-indicator{display:none}}
+/* NOTE: JS shows the pill with an inline display:flex (updateGiftIndicator),
+   so a media display:none here could never win — on phones the pill instead
+   becomes a compact in-flow row (header phone layout in responsive.css). */
 /* ── End-screen gift ── */
 .end-gift{font-size:5rem;margin:8px 0;display:block;
   animation:giftPop .65s cubic-bezier(.17,1.5,.5,1) both}
