@@ -25,6 +25,18 @@
   .gift-indicator{flex-direction:row;align-items:center;gap:4px;padding:3px 8px}
   #gift-next{white-space:nowrap}  /* the pill text must not wrap onto itself */
   .mode-ind{font-size:.8rem}
+
+  /* ── number line, phones: smaller +/− side buttons + tighter gaps free
+     ~64px for the track itself, and smaller, slightly condensed number
+     labels give every number its own room (0-20/25 all legible) ── */
+  #nl-panel{padding:8px 4px 6px}
+  #nl-panel .nl-row{gap:5px}
+  #nl-panel .side-btn{width:32px;height:32px;border-radius:10px;font-size:1.2rem}
+  #nl-panel .nl-num{font-size:.62rem;letter-spacing:-.3px}
+  #nl-panel .nl-num.major{font-size:.8rem}
+  #nl-panel .tick{height:9px}
+  #nl-panel .tick.major{height:14px}
+  #nl-panel .nl-num{top:calc(100% + 14px)}
 }
 
 /* ── Responsive — mobile (≤480px) ── */
@@ -78,6 +90,9 @@
   /* header row: shrink so game-name + gift pill clear the 🎨/⚙️ zone */
   .mode-ind{font-size:.72rem}
   .gift-indicator{font-size:.62rem;padding:2px 6px}
+  /* number line: the 0-20 labels need one more notch down at this width */
+  #nl-panel .nl-num{font-size:.56rem;letter-spacing:-.4px}
+  #nl-panel .nl-num.major{font-size:.7rem}
 }
 
 /* ══════════════════════════════════════
