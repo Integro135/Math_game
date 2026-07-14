@@ -314,7 +314,7 @@ This is the largest file and owns nearly all gameplay state and logic.
     The TOP units shows a **plain** count (`aU + 10` after a borrow). It reuses the
     exact same number-bond rendering as the make-ten split — only the two parts
     differ.
-  - **Tests:** `test_game.py::TestBridgeSplitTooltip` covers the subtraction/
+  - **Tests:** `tests/test_tooltips.py::TestBridgeSplitTooltip` covers the subtraction/
     addition operand splits, the first-operand-never-splits and non-crossing
     cases, the chain third-term running-result split, the missing-type ten+ones
     result split, the bond (whole + 2 branch lines), and the two-addends input

@@ -949,27 +949,25 @@ loadProblem()
 
 ---
 
-## קובץ בדיקות — `test_game.py`
+## בדיקות — חבילת `tests/`
 
-קובץ Python יחיד (ללא conftest.py) המריץ 66 בדיקות אוטומטיות עם Playwright על Chrome.
+284 בדיקות אוטומטיות (pytest + Playwright על Chrome), רצות מול `index.html`.
+מאורגנות לפי קטגוריה תחת התיקייה `tests/` (בעבר קובץ יחיד ענק, `test_game.py`).
+תשתית משותפת: `tests/helpers.py` (קבועים + עזרים) ו־`tests/conftest.py`
+(fixtures + תוסף דיווח). **המבנה המלא מתועד ב־[`tests/README.md`](tests/README.md).**
 
 ```
-py -m pytest test_game.py              # headless (~2.5 דקות)
-set HEADED=1 && py -m pytest test_game.py          # חלון נראה
-set HEADED=1 && set SLOW_MO=600 && py -m pytest    # איטי + נראה
+py -m pytest tests                       # headless (~כמה דקות)
+py -m pytest tests/test_columns.py       # קובץ קטגוריה בודד
+set HEADED=1 && py -m pytest tests                    # חלון נראה
+set HEADED=1 && set SLOW_MO=600 && py -m pytest tests # איטי + נראה
 ```
 
-### קבוצות בדיקות
+### קבצי הקטגוריות (בקצרה)
 
-| קבוצה | # | מה נבדק |
-|---|---|---|
-| `TestReport` | 5 | דוח סיכום: ציון 1000, סימון טעויות, "דולג", זוג TDA/TDS, ניקוד מלא |
-| `TestDoubleUnknown` | 11 | TDA/TDS: פוזיציות, שתי תיבות, כל זוג חוקי, modal שגוי, Enter→focus |
-| `TestMiniGames` | 3 | כפתורי משחקון: אין ב-X±X, אין בשרשרת, 2 בדיוק בתרגיל רגיל |
-| `TestScoreAndMode` | 7 | ניקוד: 0 בהתחלה, +5/+10/+20 לפי רמה, איפוס החלפת רמה |
-| `TestGameFlow` | 6 | 12 תרגילים, סרגל התקדמות, מסך סיום, restart |
-| `TestCoinProblems` | 4 | תרגיל מטבעות קיים בכל סשן — רמות 5, 10, 20 (5× כל אחת) |
-| `TestMiniGameFunctionality` | 31 | 10 משחקונים × (עלות נכונה + תשובה נכונה + תשובה שגויה) + si |
+20 קבצים, אחד לכל קטגוריה — למשל `test_report.py`, `test_scoring.py`,
+`test_columns.py`, `test_bridging.py`, `test_champion.py` (אַלּוּפָה 🏆).
+הטבלה המלאה עם מספר הבדיקות והמחלקות שכל קובץ מכסה נמצאת ב־`tests/README.md`.
 
 ### תלויות
 

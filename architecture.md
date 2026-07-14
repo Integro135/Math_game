@@ -26,7 +26,8 @@ green against this structure.*
 subtraction_game/
 ├─ index.html                      ★ THE entry point — HTML skeleton + ordered
 │                                    <link>/<script> includes + version tag
-├─ test_game.py                    pytest+Playwright suite (runs on index.html)
+├─ tests/                          pytest+Playwright suite (runs on index.html),
+│                                    split by category — see tests/README.md
 │
 ├─ game/
 │  ├─ css/                         loaded in this order:

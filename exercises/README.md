@@ -222,7 +222,7 @@ respond while adding units, only the tens digits (`colx-aT`/`bT`) + the carried
 `1` (`colx-carry`) while adding tens. On a units **carry**, the SECOND number's
 units digit (`bU`) splits into complete-to-ten | remainder via the global
 `_bridgeSplit(P.aU,'add',P.bU)` — the same number-bond as the equation hover.
-Covered by `test_game.py::TestSupermanDigitPreview`.
+Covered by `tests/test_columns.py::TestSupermanDigitPreview`.
 
 **The `api` callbacks** (provided by `core.js` `_colxMount`):
 - `api.wrong(val)` — records the wrong value into the per-problem report,
