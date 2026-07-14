@@ -12,18 +12,36 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "galaxy"                # (unused in standalone mode)
+THEME    = "maldives"              # the harness picks this theme in-game
 DSF      = 2                       # device scale factor (higher = sharper zoom)
-HIDE_UI  = True                    # (unused in standalone mode)
-STANDALONE = r"c:\Code\subtraction_game\backgrounds\polar_bear.html"  # polar-bear character workshop
-VIEW     = {"width": 1000, "height": 760}   # viewport
-EVAL      = ""                      # hooks: __bear.walk(true) / __bear.shake()
-POST_EVAL = ""
+HIDE_UI  = False                   # keep the skinned card visible for the screenshot
+STANDALONE = ""                    # "" → drive the real game (index.html)
+VIEW     = {"width": 1280, "height": 800}   # viewport
+# Maldives POKEMON walkers IN THE GAME: the game doesn't ship pokemons/*.js, so
+# maldives.bg.js must inject them itself. Confirm window.Pokemons populates in
+# the game, then force a few walkers + the flyer and spread them for the shot.
+EVAL = r"""(function(){ return 'ok'; })();"""
+POST_EVAL = r"""(function(){
+  var out={};
+  out.loaded=window.Pokemons?Object.keys(window.Pokemons).sort():[];
+  var t=window.BACKGROUNDS&&BACKGROUNDS.maldives&&BACKGROUNDS.maldives._test;
+  out.hasTest=!!t;
+  // force a few walkers + the flyer now that the modules are loaded
+  ['eevee','pikachu','bulbasaur','squirtle'].forEach(function(n){ if(t)t.walk(n); });
+  if(t)t.fly();
+  // spread them across the beach and freeze the crossing for a clean screenshot
+  var actors=Array.prototype.slice.call(document.querySelectorAll('.mv-actors > *'));
+  actors.forEach(function(el,i){
+    if(el.getAnimations)el.getAnimations().forEach(function(a){try{a.cancel();}catch(e){}});
+    el.style.transform='translateX('+(90+i*230)+'px)';
+  });
+  out.actorsPlaced=actors.length;
+  return JSON.stringify(out);
+})();"""
 CLICKS   = []
-WAIT_MS   = 1600
+WAIT_MS   = 1400   # give maldives.bg.js time to inject pokemons/*.js before forcing walkers
 SHOTS    = [
-    {"path": r"c:\tmp\bear_full.png", "clip": {"x": 80, "y": 100, "width": 840, "height": 620}},
-    {"path": r"c:\tmp\bear_face.png", "clip": {"x": 620, "y": 220, "width": 280, "height": 240}},
+    {"path": r"c:\tmp\maldives_pokemon.png", "clip": None},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

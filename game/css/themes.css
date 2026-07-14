@@ -12,6 +12,7 @@ body.theme-dubai   #stars-layer{display:block}
 body.theme-savanna #stars-layer{display:block}
 body.theme-dinosaurs #stars-layer{display:block}
 body.theme-frozen  #stars-layer{display:block}
+body.theme-maldives #stars-layer{display:block}
 
 /* ── Savanna (Pride Rock) — warm load-flash fallback behind the canvas ── */
 body.theme-savanna #bg{
@@ -54,5 +55,11 @@ body.theme-reef #bg{
 /* ── Dubai (golden hour) ── */
 body.theme-dubai #bg{
   background:linear-gradient(180deg,#0a1230 0%,#13234a 40%,#3a2c50 70%,#7a4a40 88%,#b07040 100%);
+  animation:none;
+}
+
+/* ── Maldives (lagoon day) — matches the scene sky→sea so any pre-load flash blends ── */
+body.theme-maldives #bg{
+  background:linear-gradient(180deg,#8fd4ef 0%,#bfe9f2 34%,#2fc4c9 55%,#1f9bbe 74%,#1d6fa8 100%);
   animation:none;
 }

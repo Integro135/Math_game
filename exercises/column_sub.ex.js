@@ -174,6 +174,14 @@ window.EXERCISES.types.column_sub=(()=>{
   .colxs-show-btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 10px 28px rgba(120,90,200,.6);filter:brightness(1.06)}
   .colxs-show-btn:active{transform:translateY(0) scale(.99)}
   .colxs-show-ico{width:36px;height:38px;flex:0 0 auto;background:rgba(255,255,255,.22);border-radius:12px;padding:4px}
+  /* staged (אַלּוּפָה) intro: solve the equation HORIZONTALLY first */
+  .colxs-solve-row{display:flex;gap:12px;align-items:center;justify-content:center;direction:ltr}
+  #colx-root .ans-inp.colxs-solve-inp{width:96px;height:66px;font-size:2.5rem;border-radius:16px;text-align:center}
+  #colx-root .colxs-solve-inp.blink{animation:colxsBlink 1.1s ease-in-out infinite alternate}
+  .colxs-solve-btn{font-family:'Fredoka One',cursive;font-size:1.35rem;border:0;border-radius:14px;
+    padding:13px 26px;cursor:pointer;color:#fff;background:linear-gradient(160deg,#86E29B,#2FA257 85%);
+    border:2px solid rgba(255,255,255,.5);box-shadow:0 3px 0 rgba(0,0,0,.28)}
+  .colxs-solve-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
   @keyframes colxsBtnPulse{0%,100%{box-shadow:0 6px 20px rgba(120,90,200,.5),inset 0 1px 0 rgba(255,255,255,.45)}
     50%{box-shadow:0 6px 27px rgba(255,210,125,.65),inset 0 1px 0 rgba(255,255,255,.55)}}
   @media(max-width:480px){
@@ -196,8 +204,68 @@ window.EXERCISES.types.column_sub=(()=>{
 
   /* mount shows the ORIGINAL one-line equation + a "show in column" button;
      the column board (build) appears only when the child taps it. */
+  /* ── STAGED (אַלּוּפָה / mulc) flow ─────────────────────────────────────────
+     Show the equation HORIZONTALLY with a solvable input. If she solves it in
+     her head → full marks (she never sees the column). A wrong answer applies a
+     graded penalty and drops to the column; further column mistakes keep
+     grading down and — on the 2nd mistake — open the number line:
+        0 mistakes → 100% · 1 → 75% · 2 → 50% (+ number line) · 3+ → 0%
+     Uses the host's api.penalize / api.showNL / api.solvedFrac (graded), so the
+     standard try-first machinery is bypassed (this type is aidsReveal:'always'). */
+  function mountStaged(ctx){
+    injectStyle();
+    const {root,a,b,api}=ctx;
+    const correct=a-b;
+    const FRAC=[1,0.75,0.5,0];
+    let mistakes=0,live=null,solved=false;
+    const timers=[];const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
+    const flow={
+      onWrong:function(v){
+        mistakes++;
+        if(api.penalize)api.penalize(v);else api.wrong(v);
+        if(mistakes===2&&api.showNL)api.showNL();     // 2nd mistake → reveal the number line
+      },
+      onSolved:function(){
+        if(solved)return;solved=true;
+        if(api.solvedFrac)api.solvedFrac(FRAC[Math.min(mistakes,3)]);else api.solved();
+      },
+    };
+    function revealColumn(){ if(live||solved)return; root.innerHTML=''; live=build({root,a,b,api,flow}); }
+    root.innerHTML=`
+      <div class="colxs-intro">
+        <div class="colxs-intro-eq">${a} − ${b} =</div>
+        <div class="colxs-solve-row">
+          <button type="button" class="colxs-solve-btn" id="colxs-solvebtn" aria-label="בְּדִיקָה">✓</button>
+          <input class="ans-inp colxs-solve-inp blink" id="colxs-solveinp" type="text" inputmode="numeric" maxlength="3" aria-label="הַתְּשׁוּבָה">
+        </div>
+      </div>`;
+    const h=document.getElementById('hint');if(h)h.textContent='🏆 פִּתְרִי בָּרֹאשׁ! אִם תִּטְעִי — נַצִּיג בְּטוּר';
+    const inp=root.querySelector('#colxs-solveinp'),btn=root.querySelector('#colxs-solvebtn');
+    function tryHoriz(){
+      if(live||solved)return;
+      const v=parseInt(inp.value,10);
+      if(inp.value===''||isNaN(v)){if(h)h.textContent='כִּתְבִי אֶת הַתְּשׁוּבָה 💗';return;}
+      if(v===correct){
+        inp.classList.remove('ans-err','blink');inp.classList.add('ans-ok');inp.disabled=true;btn.disabled=true;
+        flow.onSolved();
+      }else{
+        inp.classList.remove('blink');inp.classList.add('ans-err');
+        flow.onWrong(v);                              // 1st mistake → 75%
+        if(h)h.textContent='כִּמְעַט! בּוֹאִי נִפְתֹּר בְּטוּר, צַעַד־צַעַד 🏆';
+        later(revealColumn,900);                      // drop to the column to solve it
+      }
+    }
+    btn.addEventListener('click',tryHoriz);
+    inp.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryHoriz();}});
+    if(window.__colxAutoReveal)later(revealColumn,10);   // test hook: skip straight to the column board
+    later(()=>{if(inp&&!live)inp.focus();},60);
+    return function cleanup(){ timers.forEach(clearTimeout); if(live){live();live=null;} else root.innerHTML=''; };
+  }
+
   function mount(ctx){
     injectStyle();
+    if(ctx.p&&ctx.p.staged)return mountStaged(ctx);   // אַלּוּפָה: horizontal-first graded flow
     const {root,a,b}=ctx;
     let live=null;
     root.innerHTML=`
@@ -223,7 +291,12 @@ window.EXERCISES.types.column_sub=(()=>{
     return function cleanup(){ if(live){live();live=null;} else root.innerHTML=''; };
   }
 
-  function build({root,a,b,api}){
+  function build(ctx){
+    const {root,a,b,api}=ctx;
+    // wrong/solved go through a FLOW object so the staged (mulc) mode can swap
+    // in graded penalties + a delayed number-line reveal. Default = the plain
+    // host contract (api.wrong / api.solved), used by mx/sup.
+    const flow=ctx.flow||{onWrong:function(v){api.wrong(v);},onSolved:function(){api.solved();}};
     injectStyle();
     const P={
       a,b,
@@ -456,7 +529,7 @@ window.EXERCISES.types.column_sub=(()=>{
         else{unitsHint=true;fb('חַסְּרִי אֶת הָאֲחָדוֹת שֶׁבָּעִגּוּלִים 💗');}
         drawLines();
         anchorNL();
-        api.wrong(val);
+        flow.onWrong(val);
         later(()=>{
           if(phase==='units'){iU.value='';iU.classList.remove('ans-err');iU.classList.add('blink');iU.focus();}
         },1000);
@@ -479,7 +552,7 @@ window.EXERCISES.types.column_sub=(()=>{
         iT.classList.remove('blink','ans-err');iT.classList.add('ans-ok');
         iT.disabled=true;
         phase='done';drawLines();
-        api.solved();
+        flow.onSolved();
       }else{
         if(!commit)return;
         tensHint=true;drawLines();
@@ -488,7 +561,7 @@ window.EXERCISES.types.column_sub=(()=>{
           ?'זִכְרִי — לָקַחְנוּ 10, אָז נִשְׁאֲרוּ פָּחוֹת עֲשָׂרוֹת לְמַעְלָה! 💗'
           :'חַסְּרִי אֶת הָעֲשָׂרוֹת שֶׁבָּעִגּוּלִים 💗');
         anchorNL();
-        api.wrong(val);
+        flow.onWrong(val);
         later(()=>{
           if(phase==='tens'){iT.value='';iT.classList.remove('ans-err');iT.classList.add('blink');iT.focus();}
         },1000);
@@ -571,16 +644,22 @@ window.EXERCISES.types.column_sub=(()=>{
     };
   }
 
+  // TAG every problem `staged` so the host passes the flag through (ctx.p.staged)
+  // and mount() runs the GRADED horizontal-first flow. Used by BOTH Superman (sup)
+  // and אַלּוּפָה (mulc) — same mechanic, only the point base (modePts) differs.
+  function makeStaged(arr){arr.forEach(p=>{p.staged=true;});return arr;}
+  // אַלּוּפָה (mulc): the two-digit borrow subtractions, staged; 5 for the mixed set.
+  function makeMulc(){return makeStaged(makeSup()).slice(0,5);}   // 3 no-borrow + 3 with-borrow, up to 98
+
   return{
     t:TCS,
-    modes:['mx','sup'],
-    // Superman: try-first like Queen — the skinned number line stays HIDDEN until
-    // the first mistake (then revealed; scoring drops to partial via _tfPts).
-    // Queen (mx) keeps the line shown from the start (its 2 no-borrow ≤20 subs).
-    aidsReveal:{mx:'always',sup:'afterMistake'},
-    // 'mx' (Queen) gets a couple of NO-BORROW column subtractions (≤20); 'sup'
-    // (Superman) gets makeSup() = 3 no-borrow + 3 with-borrow, full 11–29 range.
-    make(mode){return mode==='mx'?makeNoBorrow(2):mode==='sup'?makeSup():[];},
+    modes:['mx','sup','mulc'],
+    // Queen (mx) keeps the number line shown from the start. Superman (sup) AND
+    // אַלּוּפָה (mulc) both run the GRADED horizontal-first flow, so both use
+    // 'always' (NO try-first lock) — the staged flow controls the line itself
+    // (api.showNL on the 2nd mistake) and loadProblem starts it hidden per `staged`.
+    aidsReveal:{mx:'always',sup:'always',mulc:'always'},
+    make(mode){return mode==='mx'?makeNoBorrow(2):mode==='sup'?makeStaged(makeSup()):mode==='mulc'?makeMulc():[];},
     mount,
   };
 })();

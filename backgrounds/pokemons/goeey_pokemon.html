@@ -1,0 +1,215 @@
+<div style="background-color: #A5A7BB;"></div>
+<div style="background-color: #A496A4;"></div>
+<div style="background-color: #554d73;"></div>
+
+<div class="center">
+  <div id="circle"></div>
+
+  <div class="gooey-container">
+    <div class="balls-container">
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="circle"></div>
+    </div>
+  </div>
+
+  <div class="left eye">
+    <div class="pupil"></div>
+  </div>
+  <div class="right eye">
+    <div class="pupil"></div>
+  </div>
+
+  <div class="mouth">
+    <div class="tooth left"></div>
+    <div class="tooth right"></div>
+  </div>
+</div>
+
+<div style="position: absolute; bottom: 5px; right: 10px; font-size: 20px;">
+  Made by <a href="http://www.mrperes.com/" target="_blank">Diogo Peres </a>
+</div>
+
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <defs>
+    <filter id="goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+      <feBlend in="SourceGraphic" in2="goo" />
+    </filter>
+  </defs>
+</svg>
+
+.center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #554d73;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: inset 5px -4px 20px 0px #0000004f;
+}
+
+@ball-size: 70px;
+
+.gooey-container {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  filter: url("#goo");
+  z-index: 1;
+  padding: 70px;
+}
+
+.balls-container {
+  animation: rotate linear 15s infinite;
+}
+
+.balls-container .ball {
+  position: absolute;
+  left: calc(50% - @ball-size / 2);
+  top: calc(50% - @ball-size / 2);
+
+  &:before {
+    content: "";
+    display: inline-block;
+    width: @ball-size;
+    height: @ball-size;
+    border-radius: 50%;
+    background: #a5a7bb;
+    animation: move linear 3s infinite;
+  }
+
+  each(range(12), {
+    &:nth-child(@{value}) {
+      transform: rotate(@value * 30deg);
+      
+      &:before {
+        animation-delay: @value * 0.2s;
+      }
+    }
+  });
+}
+
+.balls-container .circle {
+  background: #a496a4;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+}
+
+@keyframes move {
+  0% {
+    transform: translateY(@ball-size * 1.1);
+  }
+  25% {
+    transform: translateY(@ball-size * 1.5);
+  }
+  50% {
+    transform: translateY(@ball-size * 1.3);
+  }
+  75% {
+    transform: translateY(@ball-size * 1.7);
+  }
+  100% {
+    transform: translateY(@ball-size * 1.1);
+  }
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+.eye {
+  position: absolute;
+  top: -33px;
+  width: 80px;
+  height: 46px;
+  background-color: #ffffff;
+  border-bottom-left-radius: 100px;
+  border-bottom-right-radius: 100px;
+  z-index: 3;
+
+  & .pupil {
+    position: absolute;
+    top: 10px;
+    width: 4px;
+    height: 10px;
+    border-radius: 10px;
+    background: #000000;
+  }
+
+  &.left {
+    transform: rotate(26deg);
+    left: -72px;
+    & .pupil {
+      left: 60px;
+      transform: rotate(-26deg);
+    }
+  }
+  &.right {
+    transform: rotate(-27deg);
+    left: 36px;
+    & .pupil {
+      right: 60px;
+      transform: rotate(27deg);
+    }
+  }
+}
+
+.mouth {
+  position: absolute;
+  top: 32px;
+  left: -44px;
+  width: 105px;
+  height: 50px;
+  background-color: #a496a4;
+  border-bottom-left-radius: 110px;
+  border-bottom-right-radius: 110px;
+  z-index: 3;
+  transform: rotate(9deg);
+
+  & .tooth {
+    position: absolute;
+    top: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 20px 8px 0px 8px;
+    border-color: #ffffff transparent transparent transparent;
+
+    &.left {
+      left: 2px;
+    }
+
+    &.right {
+      right: 2px;
+    }
+  }
+}

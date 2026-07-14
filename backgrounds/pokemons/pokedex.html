@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokemon workshop — background characters</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     DEV STAGE for the pokemon background characters (backgrounds/pokemons/).
+     Each pokemon lives in its own module file registering
+         window.Pokemons.<name> = { nativeW/H, footFrac, place(opts)→inst }
+     Current scene: a BLANK stage with EEVEE + PIKACHU + BULBASAUR +
+     SQUIRTLE + JIGGLYPUFF walking side to side (inst.patrol) at their own
+     paces — each trots to an edge, pauses a beat, turns to face the other
+     way and heads back, forever — plus the GOOEY GHOST hover-drifting
+     through the air above them. Buttons exercise the object API on all six.
+     Hooks for the verify harness: window.__pk = {list, seek(ms)}.
+     Original pen/SVG references: evee.html, picachu.html (kept untouched).
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  /* blank stage — just a whisper of a floor line so grounding reads */
+  body { background: #f2f4f6; }
+  #stage { position: fixed; inset: 0; }
+  #stage::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 12%;
+    background: linear-gradient(180deg, rgba(0,0,0,0), rgba(70,80,90,.08));
+    pointer-events: none;
+  }
+  .hbtn {
+    position: fixed; bottom: 24px; z-index: 10;
+    padding: 9px 22px;
+    background: rgba(40, 50, 60, 0.75);
+    color: rgba(240, 245, 250, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    font-family: Georgia, serif; font-size: 13px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; backdrop-filter: blur(6px);
+  }
+  .hbtn:hover { background: rgba(60, 75, 90, 0.85); }
+  #walk { right: 24px; }
+  #pause { right: 132px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="pause" class="hbtn">Pause</button>
+<button id="walk" class="hbtn">Stop walk</button>
+
+<script src="eevee.js"></script>
+<script src="pikachu.js"></script>
+<script src="bulbasaur.js"></script>
+<script src="squirtle.js"></script>
+<script src="jigglypuff.js"></script>
+<script src="gooey.js"></script>
+<script>
+(function () {
+  'use strict';
+  var stage = document.getElementById('stage');
+
+  /* All five walk the stage side to side at their own pace. Two things are
+     tuned per-pokemon:
+     • SIZE — each rig fills its canvas differently, so `height` (the wrapper)
+       is set to normalise the VISIBLE creature height to ~225px (≈ equal size
+       on screen): height = 225px_target / (fillH * viewportH). Measured fillH
+       ≈ ev .99, pi .92, bu .90, sq .82, jg .95 (_verify_bulba.py sizes).
+     • GROUND — feet sit (1-footFrac)*height above the wrapper bottom, so
+       `bottom` = 11% - (1-footFrac)*height puts every foot line on ~11%. */
+  var ev = Pokemons.eevee.place({ parent: stage, height: '28%', left: '8%', bottom: '8.8%' });
+  var pi = Pokemons.pikachu.place({ parent: stage, height: '30.5%', left: '60%', bottom: '10.1%' });
+  var bu = Pokemons.bulbasaur.place({ parent: stage, height: '31%', left: '34%', bottom: '8.5%' });
+  var sq = Pokemons.squirtle.place({ parent: stage, height: '34.5%', left: '80%', bottom: '7.2%' });
+  /* jigglypuff kept 35% SMALLER than the ~225px norm, per user request (29.5%→19.2%) */
+  var jg = Pokemons.jigglypuff.place({ parent: stage, height: '19.2%', left: '20%', bottom: '10.2%' });
+  /* the gooey ghost FLIES — parked high above the walkers' ground band,
+     hover-bobbing while it drifts (footFrac/ground tuning don't apply).
+     Sized larger than the walkers' 225px rule: its core ball is only half
+     the canvas (the rest is the pale goo aura), so 38% reads ~same-size. */
+  var go = Pokemons.gooey.place({ parent: stage, height: '38%', left: '48%', bottom: '42%' });
+  var walkers = [ev.patrol({ speed: 150 }), pi.patrol({ speed: 110 }),
+                 bu.patrol({ speed: 130 }), sq.patrol({ speed: 95 }), jg.patrol({ speed: 120 }),
+                 go.patrol({ speed: 65 })];
+  var pets = [ev, pi, bu, sq, jg, go];
+
+  /* pose helper (verify harness): ms into each rig's own master loop —
+     Eevee's CSS timeline is 10s; Pikachu's SMIL loop is 1.5s */
+  function seek(ms) {
+    ev.element.getAnimations({ subtree: true }).forEach(function (a) {
+      if (a.animationName) a.currentTime = ms;   // rig CSS animations only, not the patrol
+    });
+    pi.seek((ms % 1500) / 1000);
+  }
+
+  var paused = false, walking = true;
+  document.getElementById('pause').addEventListener('click', function () {
+    paused = !paused;
+    pets.forEach(function (p) { p.setPaused(paused); });
+    this.textContent = paused ? 'Play' : 'Pause';
+  });
+  document.getElementById('walk').addEventListener('click', function () {
+    walking = !walking;
+    if (walking) { walkers = [ev.patrol({ speed: 150 }), pi.patrol({ speed: 110 }),
+                              bu.patrol({ speed: 130 }), sq.patrol({ speed: 95 }), jg.patrol({ speed: 120 }),
+                              go.patrol({ speed: 65 })]; }
+    else { walkers.forEach(function (c) { if (c) c.stop(); }); walkers = []; }
+    this.textContent = walking ? 'Stop walk' : 'Walk';
+  });
+
+  window.__pk = { list: pets, seek: seek };
+})();
+</script>
+</body>
+</html>

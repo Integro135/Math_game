@@ -38,12 +38,19 @@ exercises/
 ├─ column_add.ex.js   INTERACTIVE column addition (Superman)
 ├─ column_sub.ex.js   INTERACTIVE column subtraction, with BORROW (פְּרִיטָה)
 ├─ coin_mul.ex.js     INTERACTIVE "how many ₪2/₪5/₪10 coins fit in X" (first ×)
-└─ mult_chain.ex.js   INTERACTIVE multiplication as repeated addition (2×3 → 2+2+2 chain, ≤20)
+├─ mult_chain.ex.js   INTERACTIVE multiplication as repeated addition (2×3 → 2+2+2 chain, ≤20)
+├─ mult_champ.ex.js   INTERACTIVE אַלּוּפָה 🏆 multiplication (קָשֶׁה tier, factors ≤4) — product FIRST, chain-on-mistake + 🔁 switch
+├─ perimeter.ex.js    INTERACTIVE polygon PERIMETER (הֶקֵּף) — sum the 1..4 side labels of a to-scale square/rect/triangle
+├─ compare.ex.js      INTERACTIVE DRAG the comparison sign (< / > / =) into the slot between two numbers
+├─ word_prob.ex.js    INTERACTIVE בְּעָיוֹת מִלּוּלִיּוֹת עַד 10 — a short NIKUD word story (digits, up to 10); a wrong answer costs 25% AND reveals the derived equation (5−3) to retry (graded 100/75/50/0). Mixed into אַלּוּפָה (mulc).
+└─ triple_sum.ex.js   INTERACTIVE __+__+__ = 20 — three CHOSEN addends; 0 and 10 are DISALLOWED (a 0/10 answer is praised, costs nothing, but must be re-tried with other numbers). Mixed into אַלּוּפָה (mulc).
 ```
 
-(A few later type files — `bagel_cost`, `polygon`, `mult_chain`, and the
-`var_one`/`tri_unknown`/`hundreds` data types — are newer than some tables below;
-`mult_chain` is documented in §4d.)
+(A few later type files — `bagel_cost`, `polygon`, `mult_chain`, `mult_champ`,
+`perimeter`, `compare`, and the `var_one`/`tri_unknown`/`hundreds` data types —
+are newer than some tables below; `mult_chain` is documented in §4d,
+`mult_champ` in §4e, `perimeter` in §4f, `compare` in §4g. The `column_sub`
+STAGED (horizontal-first) flow used by Superman + אַלּוּפָה is in §4b.)
 
 Every file opens with the same idempotent guard and self-registration:
 
@@ -113,12 +120,18 @@ A registered type is an object of this exact shape:
 | `column_sub`| `{t:TCS, a, b}`  (always `a > b`)                 | column-subtraction problem (interactive) |
 | `coin_mul`  | `{t:TCM, a, b}`  (`a` = target, `b` = coin value 2/5) | "how many `b`-coins fit in `a`" (answer `a/b`, interactive) |
 | `mult_chain`| `{t:TMC, a, b}`  (`a` = base 2/3, `b` = count)     | `a × b` under a "זֶה כְּמוֹ" line as the chain `a+a+…+a =` with OPTIONAL running-sum helper boxes + a final answer box (answer `a·b` ≤ 20, interactive) |
+| `mult_champ`| `{t:TMK, a, b}`  (`a` = small multiplicand, `b` = count; both ∈ {2,3,4}) | `a × b = □` shown FIRST; a wrong answer reveals the `a+a+…+a = □` chain (the mult_chain scaffold) + a 🔁 SWITCH that flips the repeated number (3×4: `3+3+3+3` ↔ `4+4+4`). Answer `a·b` ≤ 16, interactive |
+| `perimeter` | `{t:TPP, shape:'square'|'rect'|'tri', sides:[…], a}`  (rect also `w,h`; `a` = perimeter) | a to-scale shape with a length **1..4** by each side; type the SUM of the sides. Interactive |
+| `compare`   | `{t:TCP, a, b}`  (sign derived: `a<b`→‹ , `a>b`→› , `a===b`→=) | DRAG the correct comparison sign (`<`/`>`/`=`) into the empty slot between the two numbers. Interactive |
+| `triple_sum`| `{t:TTS, a}`  (`a` = the target sum, 20) | `__ + __ + __ = a` — pick THREE addends that sum to `a`; **0 and 10 are disallowed** (a 0/10 answer is praised, costs nothing, but must be re-tried). Interactive |
 
 ptype constants (`game/js/data.js`):
 `TM='missing'`, `TS='sub'`, `TA='add'`, `TX='mixed'`, `TZ='triple'`,
 `TW='twin_sub'`, `TDA='dbl_add'`, `TDS='dbl_sub'`, `TC='coins'`, `TT='tens'`,
 `TCA='col_add'`, `TCS='col_sub'`, `TBG='big_step'`, `TCM='coin_mul'`,
-`TMC='mult_chain'` (+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TVA`/`TVS`/`TRA`/`TH`).
+`TMC='mult_chain'`, `TMK='mult_champ'`, `TPP='perimeter'`, `TCP='compare'`,
+`TTS='triple_sum'`
+(+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TWP='word_prob'`, `TVA`/`TVS`/`TRA`/`TH`).
 
 ---
 
@@ -135,8 +148,11 @@ ptype constants (`game/js/data.js`):
 | `tens.ex.js`   | `TT`            | `'mx'`                  | `'mx'` only: 2 round-tens problems; ~50/50 add vs subtract, operands are multiples of 10 chosen so results stay in 0–90. Other modes → `[]`. |
 | `big_step.ex.js`| `TBG`          | `'big','mx','sup'`      | **Add 1–2** to / **subtract 1–4** from a two-digit number (21–89). Generated **without carry/borrow** — only the ONES digit changes (`u<b` rejected for sub, `u+b>9` rejected for add), so a subtraction never crosses the ten below (85−4 ok, 82−3 never). `'big'`: `build(12)` balanced sub/add then shuffled. `'mx'`: `build(2)` (2 mixed problems). `'sup'`: `buildSubs(3)` — **3 big-number SUBTRACTIONS only**. |
 | `column_add.ex.js`| `TCA`        | `'sup'`                 | The **Superman** interactive column-addition module. `make('sup')` → `makePool(2,1)` = **3 problems** (2 with a units carry + 1 without; `a=11..29`, `b=2..19`, largest result 29+19 = **48**), shuffled. Declares `aidsReveal:'always'` and provides `mount()`. See §4. |
-| `column_sub.ex.js`| `TCS`        | `'mx','sup'`            | Interactive column **subtraction** with BORROW (פְּרִיטָה). `'mx'` (Queen) → `makeNoBorrow(2)` (NO-borrow only, teen minuends `a≤19`). `'sup'` (Superman) → `makeSup()` = **6** (3 no-borrow + 3 with-borrow), both kinds spanning the full `a=11..29` range. `aidsReveal:'always'`; provides `mount()`. See §4b. |
+| `column_sub.ex.js`| `TCS`        | `'mx','sup','mulc'`     | Interactive column **subtraction** with BORROW (פְּרִיטָה). `'mx'` (Queen) → `makeNoBorrow(2)` (NO-borrow only, teen minuends `a≤19`, non-staged). `'sup'`/`'mulc'` → `makeStaged(makeSup())` = the two-digit set **TAGGED `staged`** → the horizontal-first GRADED flow (§4b). `aidsReveal:{mx:'always',sup:'always',mulc:'always'}`; provides `mount()`. See §4b. |
 | `coin_mul.ex.js`| `TCM`          | `'sup'`                 | Interactive **first multiplication**: "how many `b`-coins fit in `a`". `make('sup')` → `makePool()` = **3** problems, ONE of EACH coin value — ₪2 (targets 4/6/8/10), ₪5 (10..35), ₪10 (20..90), so a/b ∈ 2..9 coins. The answer is `a/b` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
+| `perimeter.ex.js`| `TPP`         | `'perim','mulc'`        | Interactive polygon **perimeter**. `make('mulc')` → **5** (cycles square/rect/triangle); `make('perim')` → 9 (tester handle). Each shape is drawn **to scale** (triangle via `triVerts`, law-of-cosines) with a length 1..4 by each side; answer = sum of sides. `aidsReveal:'always'` (no number line — the labelled shape IS the manipulative). See §4f. |
+| `compare.ex.js`  | `TCP`         | `'cmp','mulc'`          | Interactive **drag-the-sign** comparison. `make('mulc')` → **5** (always ≥1 of each relation `<`/`>`/`=`; `make('cmp')` → 9). Numbers 1..99; the child DRAGS the correct sign into the slot between them. `aidsReveal:'always'` (no number line). See §4g. |
+| `triple_sum.ex.js`| `TTS`        | `'trip','mulc'`         | Interactive **three-addends-to-a-target** `__+__+__=20`. `make('mulc')` → **3** (`make('trip')` → 6), all target 20. Any triple that sums to 20 is accepted **except that 0 and 10 are disallowed** — a sum-correct 0/10 answer is praised, costs NOTHING and does NOT complete (retry with other numbers). `aidsReveal:'always'`. See §4h. |
 
 Notes:
 - `add`/`sub`/`missing`/`double` share the same `pick(arr,n)` Fisher–Yates
@@ -242,25 +258,52 @@ The mirror of `column_add`: two-stage column **subtraction** (units → tens →
 the exact reverse of the carry.
 
 ```js
-return { t:TCS, modes:['mx','sup'], aidsReveal:'always', make(mode){…}, mount };
+return { t:TCS, modes:['mx','sup','mulc'],
+         aidsReveal:{mx:'always',sup:'always',mulc:'always'}, make(mode){…}, mount };
 ```
 
 ### Data side — `make(mode)`
-Two generators, one per mode (both emit `{t:TCS,a,b}` with `a>b`, so the
-standard algorithm never goes negative in any column). `makeNoBorrow(n,maxA,maxB)`
-caps the operands: `maxA` defaults to 19, `maxB` to 18.
+All generators emit `{t:TCS,a,b}` with `a>b`, so the standard algorithm never goes
+negative in any column. `makeNoBorrow(n,maxA,maxB)` caps the operands (`maxA`
+defaults to 19, `maxB` to 18); `makeStaged(arr)` tags every problem `staged:true`.
 
 - `'mx'` (Queen) → `makeNoBorrow(2)` = **2 NO-borrow** subtractions only; teen
   minuends (`a=11..19`) so every operand stays ≤ 20 like the rest of Queen.
-- `'sup'` (Superman) → `makeSup()` = **6** total: 3 no-borrow
-  (`makeNoBorrow(3,29,19)`) + 3 with-borrow, both now spanning the **full
-  `a=11..29` range** (e.g. 27−13 no-borrow, 25−17 with borrow), shuffled — an
-  equal share of both kinds.
+  **Not staged** — the classic intro (a one-line equation + a "הַצֵּג בְּטוּר"
+  button) then the column board.
+- `'sup'` (Superman) → `makeStaged(makeSup())` = **6** total (3 no-borrow + 3
+  with-borrow, two-digit, `a` up to 98), shuffled — all TAGGED `staged`.
+- `'mulc'` (אַלּוּפָה) → `makeStaged(makeSup()).slice(0,5)` — the same staged set,
+  **5** for the mixed hard-tier pool.
 
-The NO-borrow column subtractions used to be capped at 20; they were **widened**
-so Superman's no-borrow problems span the whole `a∈[11,29]` range. Superman is
-therefore a strict **superset** of the old standalone column-subtraction game
+Superman is a strict **superset** of the old standalone column-subtraction game
 (now removed) — nothing was lost when that game went away.
+
+### The STAGED (horizontal-first, graded) flow — Superman + אַלּוּפָה
+Any problem tagged **`staged:true`** is mounted by `mountStaged` instead of the
+classic intro. It teaches the fact first, only falling back to the column on a
+mistake, and grades the fall-back:
+
+1. **Horizontal.** The equation is shown as `a − b =` with a solvable input
+   (`#colxs-solveinp`) — solved in the head → **full marks**, the column is never
+   shown.
+2. **On a wrong answer** the column board is revealed (`revealColumn → build`) so
+   she can work it out digit-by-digit.
+3. **Graded penalty ladder** `FRAC=[1,0.75,0.5,0]` by mistake count, on the mode's
+   own `modePts()` base: **0 → 100% · 1st (horizontal) → 75% · 2nd (column) → 50%
+   AND the number line opens · 3rd → 0%** — so mulc(20) → 20/15/10/0, sup(15) →
+   15/11/8/0.
+
+`mountStaged`/`build` route `wrong`/`solved` through a `flow` object so the same
+column code serves both the classic (`mx`) and staged (`sup`/`mulc`) paths. The
+flow uses three host `api` hooks (see §5): **`penalize(v)`** (log a mistake + sad
+modal, WITHOUT the try-first unlock/score), **`showNL()`** (reveal `#nl-panel` on
+the 2nd mistake), and **`solvedFrac(frac)`** (`addScore(round(modePts()*frac))`).
+Because a staged problem never calls `api.wrong`, the try-first machinery stays
+out of the way — hence `aidsReveal:'always'` for `sup`/`mulc`, and `loadProblem`
+starts the line HIDDEN for a `staged` TCS. (Test hook: `window.__colxAutoReveal`
+skips straight to the column board — the `page` fixture sets it, so dedicated
+horizontal-first tests clear it first.)
 
 ### Interactive side — `mount({root,a,b,api})`
 `a` = minuend (top), `b` = subtrahend (bottom). On mount it injects its private
@@ -424,6 +467,170 @@ self-hosting types.
 
 ---
 
+## 4e. `mult_champ.ex.js` in depth — the אַלּוּפָה 🏆 category
+
+The `mult_chain` idea inverted for a higher tier. Where `mult_chain` shows the
+repeated-addition scaffold immediately, `mult_champ` makes the child try the
+**product first** and only *earns* the scaffold on a mistake.
+
+```js
+return { t:TMK, modes:['mulc'], aidsReveal:'always', make(mode){…}, mount };
+```
+
+It is the sole game in the **`hard` tier** (`DIFFICULTY_GROUPS`, tier label
+`קָשֶׁה`, game tile `אַלּוּפָה 🏆`, `modePts('mulc')=20`,
+`DEFAULT_GIFT_GOALS.mulc=900`).
+
+### Data side — `make('mulc')`
+`makePool()` → the complete `a∈{2,3,4} × b∈{2,3,4}` grid (9 problems), shuffled —
+**multiplication up to 4** (the 2×/3×/4× facts, product ≤ 16). `a` (the small
+multiplicand) is the number repeated **by default**; both `a` and `b` stay ≤ 4 so
+*either* orientation is a short one-line chain after the switch. The answer
+(`report.correct`) is `a·b`, computed by `core.js` (`_cor` includes
+`ptype===TMK?num1*num2`).
+
+### Interactive side — `mount({root,a,b,api})` — TWO PHASES
+1. **Phase 1 — the bare product.** Renders `a × b = □` (`input.ans-inp.mk-ans`),
+   blinking, auto-focused. Submitted **only on Enter**. Correct → `solve()` →
+   `api.solved()` (full points, `tryFirst=0`).
+2. **On a WRONG product** → `api.wrong(v)` (the host's penalty + sad modal — there
+   is no number-line aid to reveal here) **AND** `reveal()`: the product greys out
+   (`.mk-answered`, its box disabled) and the scaffold opens beneath a separator +
+   a `.mk-like-row` holding the 🔁 switch and the Hebrew "זֶה כְּמוֹ" label (the row
+   is `direction:rtl`, so the label sits to the **RIGHT** of the switch): then the
+   repeated-addition chain `a +a +… = □` — the **same** structure as `mult_chain`
+   (optional running-sum helper boxes `input.tx-sub-inp.mk-box` with the pulsing
+   diagonal guide `.mk-sub-row::after`, and the scoring `input.ans-inp.mk-final`
+   = `data-exp=product`). `fit()` scales the row to one line.
+3. **The 🔁 SWITCH** (`#mk-switch`) flips which number repeats: not-flipped shows
+   `a` repeated `b` times; flipped shows `b` repeated `a` times (3×4: `3+3+3+3`
+   ↔ `4+4+4`). The button always **previews the OTHER orientation** as its label
+   (e.g. `🔁 4 + 4 + 4`). `renderChain()` rebuilds + re-wires the row on every flip;
+   the final answer box always expects the **same product**, so switching never
+   changes the answer.
+
+Only the FINAL box scores (helpers give gentle green/red feedback, no penalty,
+never required) — a correct final value on **Enter** → `api.solved()`, a wrong one
+→ `api.wrong(v)` (penalty + clear + refocus), exactly like `mult_chain`. Because
+`api.wrong` fires once for the bare product and again for any wrong final answer,
+the standard `_tfPts` ladder applies (full → 67% → 0). No number-line/jar aid
+(`aidsReveal:'always'`); the games-menu toggle and host check button are hidden
+for `TMK` like the other self-hosting types. **Cleanup** removes the resize
+listener, clears timers, empties `root`.
+
+---
+
+## 4f. `perimeter.ex.js` in depth — polygon PERIMETER (הֶקֵּף 📐)
+
+A self-mounting type (`t:TPP`, `modes:['perim','mulc']`) mixed into אַלּוּפָה. A
+SIMPLE shape — square, rectangle or triangle — is drawn with an integer length
+**1..4** printed beside each side; the child types the **sum of the sides** (the
+perimeter). No number line — the labelled shape IS the manipulative
+(`aidsReveal:'always'`).
+
+```js
+return { t:TPP, modes:['perim','mulc'], aidsReveal:'always', make(mode){…}, mount };
+```
+
+### Data side — `make(mode)`
+`makeOne(kind)` builds one `{t:TPP,shape,sides:[…],a:perimeter}` (rect also stores
+`w,h`): square → one side `s∈1..4` ×4 (`a=4s`); rect → `w≠h∈1..4` (`a=2(w+h)`);
+triangle → three sides `1..4` obeying the **triangle inequality** (`a=a+b+c`).
+`make('mulc')` → **5** problems (cycles square→rect→tri, shuffled); `make('perim')`
+→ 9 (internal tester handle). All side lengths are `<5` ("קטן מ5").
+
+### Drawn TO SCALE — `geom(p)` / `triVerts(sides,C)`
+The picture must never contradict the numbers. Square = equal sides; rect pixel
+ratio = `w:h`; the **triangle's vertices are computed from its labels**
+(`triVerts`, law-of-cosines apex placement, then fit + centre in the 320 viewBox),
+so the drawn edge lengths are proportional to the side numbers — an equilateral
+`(3,3,3)` draws equilateral, a scalene `(2,4,3)` draws scalene. Labels sit at each
+edge midpoint pushed out along the normal from the true **centroid**.
+
+### Interactive side — `mount({root,a,b,api})`
+Reads the FULL problem via `ctx.p` (`a`/`b` alone can't carry the side list); the
+perimeter is `ctx.a` (falls back to `p.a` / the side sum). Renders an SVG polygon
+(`.pm-body`) + per-side edge/highlight/hit lines + `.pm-lbl` labels, a `.pm-inp`
+answer box and a ✓ `.pm-btn`. Tapping a side lights it gold + a star-burst (pure
+aid). A correct sum → green box + names the shape ("זֶה מְרֻבָּע — הֶקֵּף 12!") +
+`api.solved()`; a wrong sum → red + a "bigger/smaller" nudge + `api.wrong(v)`, then
+clears for a retry. **Cleanup** clears timers and empties `root`. CSS namespaced
+`pm-*` (`#pm-style`).
+
+---
+
+## 4g. `compare.ex.js` in depth — DRAG the comparison sign (⚖️)
+
+A self-mounting type (`t:TCP`, `modes:['cmp','mulc']`) mixed into אַלּוּפָה. Two
+numbers are shown with an empty SLOT between them; the child **DRAGS** the correct
+comparison sign — `<`, `>` or `=` — from a tray into the slot. No number line
+(`aidsReveal:'always'`).
+
+```js
+return { t:TCP, modes:['cmp','mulc'], aidsReveal:'always', make(mode){…}, mount };
+```
+
+### Data side — `make(mode)`
+`makeOne(force)` builds `{t:TCP,a,b}` with the relation derived from the numbers
+(the sign is never stored). `make('mulc')` → **5** problems that ALWAYS include ≥1
+of each relation (`<`, `>`, `=`); `make('cmp')` → 9 (internal tester handle).
+Numbers are `1..99`.
+
+### Interactive side — `mount({root,a,b,api})`
+Renders two `.cp-num` numbers, a `.cp-slot` (starts with a `?`), and a `.cp-tray`
+of three shuffled `.cp-tile` buttons (`data-op` ∈ `lt`/`gt`/`eq`). Op-tokens map to
+a glyph via `G[]` (safe as `textContent`) and an HTML-escaped `ESC[]`
+(`&lt;`/`&gt;` — a raw `<`/`>` in an HTML string would break parsing). The wanted
+relation is `opOf(a,b)`.
+
+**Genuine pointer-drag (mouse + touch).** `pointerdown` on a tile starts a drag
+once the pointer moves past a 6px threshold: a floating `.cp-ghost`
+(`position:fixed`, `pointer-events:none`) follows the pointer, and the slot lights
+`.cp-hot` when the pointer is over it (a RECT hit-test, `overSlot`, ±16px).
+Listeners live on `window` (not `setPointerCapture`) so a drag that leaves the tile
+still tracks — and so automated `page.mouse` drags work. `pointerup` **on the slot**
+places the sign and checks it; anywhere else cancels (a no-move tap shows a "drag
+me" hint). A correct sign → green `.cp-ok` slot + `api.solved()`; a wrong sign →
+red shake + `api.wrong()`, then the slot clears after ~1s for another try.
+**Cleanup** clears timers, removes the window listeners and any stray ghost, and
+empties `root`. CSS namespaced `cp-*` (`#cp-style`).
+
+---
+
+## 4h. `triple_sum.ex.js` in depth — three addends to a target (➕➕)
+
+A self-mounting type (`t:TTS`, `modes:['trip','mulc']`) mixed into אַלּוּפָה.
+`__ + __ + __ = 20`: the child fills THREE addends of her own choosing that sum to
+the target. Any triple that reaches the target is accepted — **except that 0 and
+10 may not be used** as an addend. No number line (`aidsReveal:'always'`).
+
+```js
+return { t:TTS, modes:['trip','mulc'], aidsReveal:'always', make(mode){…}, mount };
+```
+
+### Data side — `make(mode)`
+`makePool(n,target)` emits `n` copies of `{t:TTS, a:target}` (target `20`);
+`make('mulc')` → **3**, `make('trip')` → 6 (tester handle). Every card is the same
+target — the challenge is finding a FRESH non-0/non-10 triple each time.
+
+### Interactive side — `mount({root,a,b,api})`
+Reads the target from `ctx.a` (falls back to `ctx.p.a` / 20). Renders three
+`.tsm-inp` boxes joined by `+`, then `= <target>`, plus a ✓ `.tsm-btn`; Enter
+walks box→box→check. `check()` has THREE outcomes:
+1. **Wrong sum** → a real mistake: red boxes + directional hint + `api.wrong(sum)`,
+   then clears for a retry.
+2. **Correct sum but a 0 or 10 was used** → the special rule: the boxes with the
+   0/10 pulse amber (`.tsm-nudge`), the prompt says "נָכוֹן! אֲבָל בְּלִי 0 וּבְלִי 10
+   — נַסִּי מִסְפָּרִים אֲחֵרִים!", and the boxes clear for a retry — **no `api.wrong`
+   (no penalty) and no `api.solved` (no advance)**. So it never costs points and the
+   child must find other numbers.
+3. **Correct sum, no 0/no 10** → green boxes + `api.solved()` (full try-first score).
+
+**Cleanup** clears timers and empties `root`. CSS namespaced `tsm-*`
+(`#tsm-style`).
+
+---
+
 ## 5. Integration into the game
 
 ```
@@ -471,9 +678,27 @@ boot / setMode(m) / restart()
   moved) so a stale module-load cannot mount the wrong exercise. (Each module's
   own `mount()` cleanup cancels its layout `requestAnimationFrame` + timers.)
 - **`EXERCISE_OF_TYPE`** (`data.js`) maps a ptype → its interactive file:
-  `{[TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul'}`.
+  `{[TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul', [TBC]:'bagel_cost',
+  [TPG]:'polygon', [TMC]:'mult_chain', [TMK]:'mult_champ', [TPP]:'perimeter',
+  [TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum'}`.
+  - `'mulc'` (אַלּוּפָה, the `hard`/קָשֶׁה tier) is a **MIXED pool**, capped at 20:
+    `mult_champ.make('mulc')` (multiplication-up-to-4, product first) +
+    `perimeter.make('mulc')` (§4f) + `column_sub.make('mulc')` (the staged
+    subtraction, §4b) + `compare.make('mulc')` (§4g) + `word_prob.make('mulc')` +
+    `triple_sum.make('mulc')` (§4h), shuffled then coverage-capped (`_capPool`); a
+    guard keeps a `mult_champ` (TMK) card at slot 0.
+- **`api`** — the host object handed to `mount()`. Base: `wrong(v)` (log a mistake
+  + sad modal + try-first unlock), `solved()` (award `_tfPts()` + celebrate),
+  `nl(anchor)` (park the number-line rider). The **staged** column-subtraction adds
+  three graded hooks: `penalize(v)` (log a mistake WITHOUT the try-first
+  unlock/score), `showNL()` (reveal the number line on demand), and
+  `solvedFrac(frac)` (award `round(modePts()*frac)` — the 100/75/50/0 ladder).
+  `_colxMount` also passes the FULL problem as `p` so a module can read fields
+  beyond `a`/`b` (perimeter's `sides`, the subtraction's `staged` flag).
 - **`aidsReveal`** is read generically by `core.js` `_lockAids` for whichever
   ptype is on screen, so one field in a type file changes when its aids appear.
+  It may be PER-MODE (an object keyed by mode) — e.g. `column_sub` is
+  `{mx:'always',sup:'always',mulc:'always'}`.
 - **Gift goals.** `DEFAULT_GIFT_GOALS` (`core.js`) = `{br:900, mx:900, sup:825}`
   — the three reward modes; the basic modes (`0/5/10/20/big`) have no prize
   threshold.

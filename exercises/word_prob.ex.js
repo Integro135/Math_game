@@ -1,0 +1,207 @@
+/* ── "בְּעָיוֹת מִלּוּלִיּוֹת עַד 10" — short nikud word problems ────────────────
+   A new exercise for the אַלּוּפָה category (mode 'mulc'). A SHORT vowelled
+   (מְנֻקָּד) story up to 10, e.g.:
+
+       לְיוֹסִי 5 תַּפּוּחִים. רוֹעִי לָקַח לוֹ 3 תַּפּוּחִים.
+       כַּמָּה תַּפּוּחִים נִשְׁאֲרוּ לְיוֹסִי?
+
+   The child types the answer. Correct on the first try → full points.
+   A WRONG answer costs 25% of the problem's points AND reveals the bare
+   equation the story boils down to (5 − 3 =) with a fresh input to try again.
+   Each further mistake costs another 25% (100 → 75 → 50 → 0), driven by the
+   host's graded api.penalize / api.solvedFrac hooks (the same staged scoring
+   the אַלּוּפָה column-subtraction uses).
+
+   Numbers are shown as DIGITS (as in the example), so the fixed nikud story
+   text never has to agree with a spelled-out Hebrew numeral — only the two
+   operands vary. Every template keeps its name/noun/verb FIXED so the grammar
+   + nikud are always correct; operands stay ≥ 2 so the plural noun agrees.
+
+   Problem shape: { t:TWP, a, b, op:'sub'|'add', story } (story = pre-rendered
+   nikud HTML). Interactive: mounted by core.js _colxMount into #colx-root;
+   self-checks via api.solvedFrac()/api.penalize(). */
+window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
+window.EXERCISES.types.word_prob=(()=>{
+
+  const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const irnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
+  const N=v=>'<b class="wp-num">'+v+'</b>';   // a highlighted digit inside the story
+
+  /* SUBTRACTION stories — answer = a − b (a = start, b = taken away). Each is a
+     complete, grammatically-fixed nikud sentence; only the two digits change. */
+  const SUB=[
+    (a,b)=>'לְיוֹסִי '+N(a)+' תַּפּוּחִים. רוֹעִי לָקַח לוֹ '+N(b)+' תַּפּוּחִים. כַּמָּה תַּפּוּחִים נִשְׁאֲרוּ לְיוֹסִי?',
+    (a,b)=>'לְדָנָה הָיוּ '+N(a)+' בָּלוֹנִים. '+N(b)+' בָּלוֹנִים הִתְפּוֹצְצוּ. כַּמָּה בָּלוֹנִים נִשְׁאֲרוּ לְדָנָה?',
+    (a,b)=>'לְנֹעַם הָיוּ '+N(a)+' סֻכָּרִיּוֹת. הוּא אָכַל '+N(b)+' מֵהֶן. כַּמָּה סֻכָּרִיּוֹת נִשְׁאֲרוּ לוֹ?',
+    (a,b)=>'עַל הָעֵץ יָשְׁבוּ '+N(a)+' צִפּוֹרִים. '+N(b)+' צִפּוֹרִים עָפוּ. כַּמָּה צִפּוֹרִים נִשְׁאֲרוּ עַל הָעֵץ?',
+    (a,b)=>'לְמַיָּה הָיוּ '+N(a)+' עֻגִיּוֹת. הִיא נָתְנָה '+N(b)+' עֻגִיּוֹת לַחֲבֵרָה. כַּמָּה עֻגִיּוֹת נִשְׁאֲרוּ לָהּ?',
+  ];
+  /* ADDITION stories — answer = a + b. */
+  const ADD=[
+    (a,b)=>'לְאִיתַי הָיוּ '+N(a)+' גֻּלּוֹת. הוּא קִבֵּל עוֹד '+N(b)+' גֻּלּוֹת. כַּמָּה גֻּלּוֹת יֵשׁ לוֹ עַכְשָׁיו?',
+    (a,b)=>'רוֹנִי קָטְפָה '+N(a)+' פְּרָחִים, וְאַחַר כָּךְ עוֹד '+N(b)+' פְּרָחִים. כַּמָּה פְּרָחִים קָטְפָה רוֹנִי?',
+    (a,b)=>'בַּבְּרֵכָה הָיוּ '+N(a)+' דָּגִים. הוֹסִיפוּ עוֹד '+N(b)+' דָּגִים. כַּמָּה דָּגִים יֵשׁ עַכְשָׁיו בַּבְּרֵכָה?',
+    (a,b)=>'לְעֹמֶר הָיוּ '+N(a)+' מַדְבֵּקוֹת. הוּא קָנָה עוֹד '+N(b)+' מַדְבֵּקוֹת. כַּמָּה מַדְבֵּקוֹת יֵשׁ לוֹ?',
+  ];
+
+  /* one problem: pick an op, pick operands (≤10, both ≥2), render a story */
+  function makeOne(op){
+    let a,b;
+    if(op==='add'){ a=irnd(2,8); b=irnd(2,10-a); }          // sum 4..10
+    else          { b=irnd(2,6); a=irnd(b+2,10); }          // a 4..10, answer a−b ≥ 2
+    const tpl=(op==='add'?ADD:SUB)[irnd(0,(op==='add'?ADD:SUB).length-1)];
+    return {t:TWP,a,b,op,story:tpl(a,b)};
+  }
+
+  /* a de-duplicated batch, roughly half subtraction / half addition, shuffled */
+  function makePool(n){
+    n=n||4;
+    const out=[],seen={};
+    let guard=0;
+    while(out.length<n&&guard++<200){
+      const op=out.length%2===0?'sub':'add';
+      const p=makeOne(op);
+      const key=p.op+p.a+'_'+p.b;
+      if(seen[key])continue;
+      seen[key]=1;out.push(p);
+    }
+    return sh(out);
+  }
+
+  const CSS=`
+  .wp-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:520px;margin:0 auto}
+  .wp-story{direction:rtl;text-align:center;line-height:1.7;
+    font-family:'Fredoka One','Heebo',sans-serif;font-weight:400;
+    font-size:1.5rem;color:var(--skin-text,#fff);
+    text-shadow:0 0 12px rgba(160,190,255,.25);
+    background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);
+    border-radius:16px;padding:16px 20px;animation:wpFade .35s ease}
+  .wp-story .wp-num{color:var(--skin-accent,#ffd27d);font-weight:700;font-size:1.15em;margin:0 1px}
+  @keyframes wpFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .wp-ansrow,.wp-eqrow{display:flex;align-items:center;justify-content:center;gap:12px;direction:ltr}
+  .wp-eq{font-family:'Fredoka One',cursive;font-size:1.9rem;color:var(--skin-text,#fff);letter-spacing:.03em}
+  #colx-root .ans-inp.wp-inp,#colx-root .ans-inp.wp-inp2{width:74px;height:58px;font-size:2rem;border-radius:12px;text-align:center;padding:0}
+  .wp-chk{width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+    font-size:1.5rem;line-height:1;color:#fff;background:var(--skin-primary,#c77dff);
+    box-shadow:0 3px 10px rgba(0,0,0,.25);transition:transform .12s,filter .12s}
+  .wp-chk:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .wp-chk:active{transform:scale(.94)}
+  .wp-chk:disabled{opacity:.5;cursor:default}
+  /* the derived equation, revealed after a mistake */
+  .wp-derived{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;animation:wpFade .35s ease}
+  .wp-sep{width:70%;max-width:340px;height:0;border-top:2px solid var(--skin-accent,#ffd27d);opacity:.5;border-radius:2px}
+  .wp-eqlabel{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.05rem;color:var(--skin-text,#fff);opacity:.85;direction:rtl}
+  #colx-root .wp-inp.blink,#colx-root .wp-inp2.blink{animation:wpBlink 1.1s ease-in-out infinite alternate}
+  @keyframes wpBlink{
+    from{border-color:var(--skin-primary,#c77dff);box-shadow:0 0 6px rgba(157,78,221,.6)}
+    to{border-color:var(--skin-accent,#ffe28a);box-shadow:0 0 20px var(--skin-accent,#ffd27d)}}
+  `;
+
+  function injectStyle(){
+    if(document.getElementById('wp-style'))return;
+    const st=document.createElement('style');st.id='wp-style';st.textContent=CSS;
+    document.head.appendChild(st);
+  }
+
+  function mount({root,a,b,p,api}){
+    injectStyle();
+    const op=(p&&p.op)||'sub';
+    const A=Math.max(0,a||0), B=Math.max(0,b||0);
+    const correct=op==='add'?A+B:A-B;
+    const opSign=op==='add'?'+':'−';
+    const story=(p&&p.story)||(A+' '+opSign+' '+B+' =');
+    const FRAC=[1,0.75,0.5,0];                 // 0 mistakes→100% · 1→75% · 2→50% · 3+→0%
+    let mistakes=0, solved=false, revealed=false;
+    const timers=[]; const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
+    const H=()=>document.getElementById('hint');
+    const fb=m=>{const h=H();if(h)h.textContent=m;};
+
+    root.innerHTML=
+      '<div class="wp-root">'+
+        '<div class="wp-story">'+story+'</div>'+
+        '<div class="wp-ansrow">'+
+          '<input class="ans-inp wp-inp blink" id="wp-inp" type="text" inputmode="numeric" maxlength="2" aria-label="הַתְּשׁוּבָה">'+
+          '<button type="button" class="wp-chk" id="wp-chk" aria-label="בְּדִיקָה">✓</button>'+
+        '</div>'+
+        '<div class="wp-derived" id="wp-derived" style="display:none">'+
+          '<div class="wp-sep"></div>'+
+          '<div class="wp-eqlabel">הַתַּרְגִּיל מֵהַסִּפּוּר:</div>'+
+          '<div class="wp-eqrow">'+
+            '<span class="wp-eq">'+A+' '+opSign+' '+B+' =</span>'+
+            '<input class="ans-inp wp-inp2 blink" id="wp-inp2" type="text" inputmode="numeric" maxlength="2" aria-label="הַתְּשׁוּבָה">'+
+            '<button type="button" class="wp-chk" id="wp-chk2" aria-label="בְּדִיקָה">✓</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+
+    const inp1=root.querySelector('#wp-inp'), chk1=root.querySelector('#wp-chk');
+    const derived=root.querySelector('#wp-derived');
+    const inp2=root.querySelector('#wp-inp2'), chk2=root.querySelector('#wp-chk2');
+
+    fb('📖 קִרְאִי אֶת הַסִּפּוּר וְכִתְבִי כַּמָּה יָצָא 💗');
+
+    function grade(box){
+      if(solved)return;solved=true;
+      if(box){box.classList.remove('blink','ans-err');box.classList.add('ans-ok');}
+      root.querySelectorAll('input').forEach(el=>{el.classList.remove('blink');el.disabled=true;});
+      root.querySelectorAll('.wp-chk').forEach(el=>{el.disabled=true;});
+      if(api.solvedFrac)api.solvedFrac(FRAC[Math.min(mistakes,3)]);else api.solved();
+    }
+    // a mistake: −25% (host logs it + shows the sad modal) without ending the problem
+    function penalize(v){
+      mistakes++;
+      if(api.penalize)api.penalize(v);else if(api.wrong)api.wrong(v);
+    }
+    function reveal(){
+      if(revealed)return;revealed=true;
+      derived.style.display='';
+      fb('כִּמְעַט! הִנֵּה הַתַּרְגִּיל מֵהַסִּפּוּר — פִּתְרִי אוֹתוֹ 💗');
+      later(()=>{try{inp2.focus();}catch(e){}},320);
+    }
+
+    // ── Phase 1: read the story, answer it (submitted on Enter or ✓) ──
+    function try1(){
+      if(solved||revealed)return;
+      const v=parseInt(inp1.value,10);
+      if(inp1.value===''||isNaN(v)){fb('כִּתְבִי אֶת הַתְּשׁוּבָה 💗');return;}
+      if(v===correct){inp1.classList.remove('blink');grade(inp1);}
+      else{
+        inp1.classList.remove('blink');inp1.classList.add('ans-err');inp1.disabled=true;chk1.disabled=true;
+        penalize(v);              // −25% + sad modal
+        reveal();                 // show the derived equation (5 − 3 =) + a fresh input
+      }
+    }
+    // ── Phase 2: the bare equation derived from the story ──
+    function try2(){
+      if(solved)return;
+      const v=parseInt(inp2.value,10);
+      if(inp2.value===''||isNaN(v)){fb('כִּתְבִי אֶת הַתְּשׁוּבָה 💗');return;}
+      if(v===correct){inp2.classList.remove('blink');grade(inp2);}
+      else{
+        inp2.classList.remove('blink');inp2.classList.add('ans-err');
+        penalize(v);              // another −25%
+        fb('נַסִּי שׁוּב — כַּמָּה זֶה '+A+' '+opSign+' '+B+'? 💗');
+        later(()=>{if(!solved){inp2.value='';inp2.classList.remove('ans-err');inp2.classList.add('blink');try{inp2.focus();}catch(e){}}},1000);
+      }
+    }
+
+    function wire(inp,chk,fn){
+      inp.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,2);this.classList.remove('ans-err');});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();fn();}});
+      chk.addEventListener('click',fn);
+    }
+    wire(inp1,chk1,try1);
+    wire(inp2,chk2,try2);
+
+    requestAnimationFrame(()=>{try{inp1.focus();}catch(e){}});
+    return function cleanup(){timers.forEach(clearTimeout);root.innerHTML='';};
+  }
+
+  return{
+    t:TWP,
+    modes:['wp','mulc'],       // 'wp' = internal handle (tester / direct setMode); mixed into אַלּוּפָה
+    aidsReveal:'always',       // no number-line aid — the story reveals its own equation on a mistake
+    make(mode){ return mode==='wp'?makePool(12):mode==='mulc'?makePool(4):[]; },
+    mount,
+  };
+})();

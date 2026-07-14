@@ -106,6 +106,26 @@ function makePool(m){
   if(m==='big')return EX('big_step').make('big');    // big number ± step game
   if(m==='poly')return EX('polygon')?EX('polygon').make('poly'):[];   // count-the-sides shapes game
   if(m==='mul')return EX('mult_chain')?EX('mult_chain').make('mul'):[];// multiplication as repeated addition (2×3 → 2+2+2)
+  // אַלּוּפָה — the multiplication-champion game MIXED with polygon-PERIMETER
+  // (sum of sides) and GRADED column-subtraction (horizontal-first, staged
+  // penalties), shuffled then capped to 20 (coverage-preserving).
+  if(m==='mulc'){
+    const pool=_capPool(shuffle([
+      ...(EX('mult_champ')?EX('mult_champ').make('mulc'):[]),
+      ...(EX('perimeter')?EX('perimeter').make('mulc'):[]),
+      ...(EX('column_sub')?EX('column_sub').make('mulc'):[]),
+      ...(EX('compare')?EX('compare').make('mulc'):[]),
+      ...(EX('word_prob')?EX('word_prob').make('mulc'):[]),   // בעיות מילוליות עד 10
+      ...(EX('triple_sum')?EX('triple_sum').make('mulc'):[]), // __+__+__ = 20 (בלי 0/10)
+    ]),QUEEN_SUPER_COUNT);
+    // the אַלּוּפָה game OPENS on its flagship multiplication card (TMK): keep a
+    // mult_champ problem at slot 0 (the rest — perimeter / column-sub / compare /
+    // word-problems — stay mixed through the deck).
+    const ti=pool.findIndex(p=>p.t===TMK);
+    if(ti>0){const tp=pool.splice(ti,1)[0];pool.unshift(tp);}
+    return pool;
+  }
+  if(m==='wp')return EX('word_prob')?EX('word_prob').make('wp'):[];   // word-problems only (internal handle)
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
   // then the coins type seeds 1-2 coin problems
   const pool=[
@@ -295,4 +315,4 @@ function makeBridge20Pool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='trip'?15:mode==='mulc'?20:mode||5;}

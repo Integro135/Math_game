@@ -110,3 +110,12 @@ body.theme-frozen #game-numpad{
   --np-ok:linear-gradient(135deg,#8FE0FF,#4FA8DC);--np-ok-ink:#06263D;
   --np-ok-hi:linear-gradient(135deg,#AEE8FF,#66B8E8);
 }
+
+/* maldives — turquoise lagoon glass → sunset-gold ✔ (dark ink), coral ⌫ */
+body.theme-maldives #game-numpad{
+  --np-panel:rgba(6,58,76,.85);--np-border:rgba(111,230,216,.45);
+  --np-key:rgba(111,230,216,.18);--np-key-hi:rgba(111,230,216,.4);
+  --np-del:rgba(255,138,120,.34);
+  --np-ok:linear-gradient(135deg,#FFC94D,#E8A02A);--np-ok-ink:#3A2600;
+  --np-ok-hi:linear-gradient(135deg,#FFD873,#F0B440);
+}

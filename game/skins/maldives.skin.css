@@ -1,0 +1,312 @@
+/* ── Maldives skin — "Lagoon" ───────────────────────────────────────────────
+   The game is a thin instrument layer floating over the turquoise lagoon — it
+   should OCCLUDE AS LITTLE OF THE BEACH AS POSSIBLE. Panels are near-transparent
+   with NO blur; the ONLY blurred element is the equation island (a small
+   sea-glass pane behind the exercise), so the sea, sand, palms and leaping
+   dolphins stay sharp everywhere else. Buttons are ghost bubbles; sunset-gold
+   marks active states.
+
+   A skin owns four families:  1. palette (CSS vars, also fed to success
+   screens)   2. fonts/type   3. glass transparency   4. position on screen.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root{
+  --skin-primary: #17B6C9;   /* lagoon turquoise */
+  --skin-accent:  #FFC24D;   /* sunset gold      */
+  --skin-glow:    #6FE6D8;   /* aqua glow        */
+  --skin-text:    #F4FCFD;   /* sea-foam white   */
+}
+
+/* ── 4. POSITION — top-centre, over the open lagoon between the palms ── */
+body.theme-maldives .wrap{max-width:720px;padding-top:6px}
+
+/* ── 3. GLASS — a light sea-glass pane, NO blur: the beach shows through ── */
+body.theme-maldives .glass{
+  background:rgba(6,54,72,.24);
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border:1px solid rgba(111,230,216,.24);
+  box-shadow:0 0 0 1px rgba(2,28,40,.16),0 14px 44px rgba(1,20,30,.28);
+}
+
+/* ════ HEADER — a thin waterline strip ════ */
+body.theme-maldives .header{
+  background:linear-gradient(180deg,rgba(6,54,72,.30),rgba(6,54,72,.06));
+  border:none;box-shadow:none;border-radius:18px;
+  padding:10px 18px 10px;margin-bottom:10px;position:relative;
+}
+body.theme-maldives .header::after{
+  content:'';position:absolute;left:8%;right:8%;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(111,230,216,.65) 30%,
+             rgba(255,194,77,.55) 70%,transparent);
+  box-shadow:0 0 8px rgba(111,230,216,.5);
+}
+body.theme-maldives .uni{display:none}
+body.theme-maldives .hdr-top{gap:0}
+
+/* title — foam-to-turquoise, wide tracking, no shimmer, no emojis */
+body.theme-maldives .title{
+  font-family:'Fredoka One',cursive;font-size:1.55rem;letter-spacing:.14em;
+  animation:none;
+  background:linear-gradient(180deg,#FFFFFF 0%,#C6F6EE 50%,#63D9CE 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 12px rgba(111,230,216,.42));
+}
+
+/* stats — small aqua readouts */
+body.theme-maldives .hdr-stats{
+  margin-top:4px;gap:26px;font-size:.84rem;font-weight:800;
+  color:#AEE6DE;letter-spacing:.05em;text-shadow:0 1px 4px rgba(2,24,34,.6);
+}
+body.theme-maldives .hdr-stats strong{color:#FFC24D;text-shadow:0 0 10px rgba(255,190,80,.45)}
+body.theme-maldives .mode-ind{color:#AEE6DE;letter-spacing:.04em;text-shadow:0 1px 4px rgba(2,24,34,.6)}
+body.theme-maldives .mode-ind .mi-cur{color:#FFC24D;text-shadow:0 0 8px rgba(255,190,80,.45)}
+
+/* progress — a 3px sunbeam */
+body.theme-maldives .prog-wrap{
+  height:3px;max-width:320px;margin-top:8px;border-radius:2px;
+  background:rgba(111,230,216,.14);
+}
+body.theme-maldives .prog-bar{
+  background:linear-gradient(90deg,#6FE6D8,#17B6C9 55%,#FFC24D);
+  box-shadow:0 0 10px rgba(120,230,220,.85),0 0 3px #fff;
+}
+
+/* ════ SETTINGS MODAL (a dialog — stays readable and mostly opaque) ════ */
+body.theme-maldives #settings-ov,
+body.theme-maldives #parent-ov{background:rgba(2,20,30,.7)}
+body.theme-maldives .settings-box{
+  background:linear-gradient(170deg,rgba(7,60,80,.97),rgba(5,40,56,.97));
+  border:1px solid rgba(111,230,216,.35);
+  box-shadow:0 0 50px rgba(50,180,190,.25),0 22px 60px rgba(0,12,20,.8);
+}
+body.theme-maldives .settings-title,
+body.theme-maldives .settings-hdr .settings-title{
+  background:linear-gradient(90deg,#F4FCFD,#6FE6D8 50%,#FFC24D);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-maldives .set-sec-lbl{color:#AEE6DE}
+body.theme-maldives .tier-tab{
+  background:transparent;border:1px solid rgba(111,230,216,.28);color:#96CEC6;
+}
+body.theme-maldives .tier-tab:hover{background:rgba(111,230,216,.10)}
+body.theme-maldives .tier-tab.active{
+  background:rgba(23,182,201,.16);border-color:rgba(111,230,216,.6);color:#F4FCFD;
+  box-shadow:0 0 12px rgba(90,200,210,.3);
+}
+body.theme-maldives .lvl-btn{
+  background:transparent;border:1px solid rgba(111,230,216,.26);color:#AEE6DE;box-shadow:none;
+}
+body.theme-maldives .lvl-btn:hover{
+  background:rgba(111,230,216,.10);border-color:rgba(140,235,225,.5);
+  box-shadow:0 0 14px rgba(90,205,215,.3);
+}
+body.theme-maldives .lvl-btn.active{
+  background:rgba(255,194,77,.12);
+  border:1px solid rgba(255,194,77,.85);color:#FFC24D;font-weight:900;
+  box-shadow:0 0 14px rgba(255,190,80,.4),inset 0 0 12px rgba(255,190,80,.10);
+  text-shadow:0 0 8px rgba(255,194,77,.5);transform:scale(1.06);
+}
+body.theme-maldives .lvl-btn.active:hover{transform:scale(1.08)}
+
+/* ════ THE CARD — an open frame; the lagoon flows through it ════ */
+body.theme-maldives .card{
+  background:radial-gradient(120% 90% at 50% 30%,rgba(6,54,72,.24),rgba(6,54,72,.06) 70%);
+  border:1px solid rgba(111,230,216,.20);border-radius:20px;
+  box-shadow:none;padding:18px 18px 14px;
+}
+/* corner sun-glints */
+body.theme-maldives .card::before,
+body.theme-maldives .card::after{
+  content:'';position:absolute;width:7px;height:7px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#FFFFFF 0%,rgba(111,230,216,.65) 45%,transparent 72%);
+  pointer-events:none;
+}
+body.theme-maldives .card::before{top:-3px;right:-3px;box-shadow:0 0 10px rgba(140,235,225,.8)}
+body.theme-maldives .card::after {bottom:-3px;left:-3px;box-shadow:0 0 10px rgba(255,194,77,.7);
+  background:radial-gradient(circle at 35% 30%,#FFF3D6 0%,rgba(255,194,77,.6) 45%,transparent 72%)}
+
+/* ════ THE EQUATION ISLAND — the ONLY blurred pane in the scene ════ */
+body.theme-maldives .eq-row{
+  background:rgba(6,60,80,.34);
+  backdrop-filter:blur(9px) saturate(1.1);-webkit-backdrop-filter:blur(9px) saturate(1.1);
+  border:1px solid rgba(111,230,216,.24);border-radius:18px;padding:10px 14px;
+}
+body.theme-maldives .eq-n,body.theme-maldives .eq-res{
+  color:#F4FDFF;
+  text-shadow:0 0 16px rgba(111,230,216,.55),0 0 4px rgba(224,250,246,.9),0 2px 8px rgba(0,14,20,.6);
+}
+body.theme-maldives .eq-op{text-shadow:0 0 12px rgba(255,190,80,.55),0 2px 6px rgba(0,14,20,.55)}
+body.theme-maldives .op-m,body.theme-maldives .op-p,body.theme-maldives .op-e{color:#FFC24D}
+body.theme-maldives .eq-res{color:#FFC24D;text-shadow:0 0 18px rgba(255,190,80,.65),0 2px 8px rgba(0,14,20,.55)}
+
+body.theme-maldives .ans-inp,body.theme-maldives .tx-sub-inp{
+  background:rgba(4,40,54,.5);border:2px solid rgba(111,230,216,.45);color:#F4FDFF;
+  box-shadow:0 0 10px rgba(70,190,200,.2),inset 0 0 12px rgba(8,66,90,.3);
+}
+body.theme-maldives .ans-inp:focus,body.theme-maldives .tx-sub-inp:focus{
+  border-color:#9AF0E4;background:rgba(5,48,64,.6);
+  box-shadow:0 0 22px rgba(100,220,210,.55),0 0 5px rgba(210,248,244,.9),inset 0 0 12px rgba(10,76,100,.35);
+}
+
+/* the check button — a ring bubble */
+body.theme-maldives .chk-btn{
+  background:rgba(5,42,56,.4);border:2px solid rgba(140,235,225,.55);color:#CFF7F1;
+  box-shadow:0 0 14px rgba(90,205,210,.4),inset 0 0 12px rgba(60,170,180,.2);
+}
+body.theme-maldives .chk-btn::after{background:none}
+body.theme-maldives .chk-btn:hover{
+  border-color:#BDF5EF;color:#fff;box-shadow:0 0 24px rgba(120,225,215,.7),inset 0 0 16px rgba(80,200,200,.3);
+}
+
+/* hint + divider + feedback */
+body.theme-maldives .hint{color:#A6DED6;text-shadow:0 1px 6px rgba(2,24,34,.65);letter-spacing:.02em}
+body.theme-maldives .div{background:linear-gradient(90deg,transparent,rgba(111,230,216,.32),transparent)}
+body.theme-maldives .fb-ok{color:#7CFFC4;text-shadow:0 0 16px rgba(60,255,180,.55)}
+body.theme-maldives .fb-err{color:#FF9AA6;text-shadow:0 0 16px rgba(255,100,130,.5)}
+body.theme-maldives #tf-msg{color:#8FF0E4;text-shadow:0 0 10px rgba(90,210,200,.6)}
+body.theme-maldives #tf-nl-note{color:#FFC24D;text-shadow:0 0 8px rgba(255,190,80,.4)}
+
+/* ════ ACTION BUTTONS — ghost bubbles ════ */
+body.theme-maldives .btn{
+  background:rgba(5,42,56,.36);text-shadow:none;
+  border:1.5px solid rgba(111,230,216,.4);color:#D6F7F2;
+  box-shadow:0 0 10px rgba(70,190,200,.18);font-weight:800;letter-spacing:.03em;
+}
+body.theme-maldives .btn::after{background:none}
+body.theme-maldives .btn:hover{box-shadow:0 0 20px rgba(100,215,210,.4)}
+body.theme-maldives .b-chk{border-color:rgba(23,182,201,.65);color:#BDF5EF}
+body.theme-maldives .b-chk:hover,body.theme-maldives .b-chk:active{
+  background:rgba(23,182,201,.18);box-shadow:0 0 22px rgba(60,210,215,.5)}
+body.theme-maldives .b-try,body.theme-maldives .b-nxt{border-color:rgba(111,230,216,.55);color:#CFF7F1}
+body.theme-maldives .b-try:hover,body.theme-maldives .b-try:active,
+body.theme-maldives .b-nxt:hover,body.theme-maldives .b-nxt:active{
+  background:rgba(80,200,205,.16);box-shadow:0 0 22px rgba(100,215,210,.5)}
+body.theme-maldives .b-rpl{
+  background:rgba(255,194,77,.12);border-color:rgba(255,194,77,.85);color:#FFC24D;
+  text-shadow:0 0 8px rgba(255,190,80,.4);box-shadow:0 0 16px rgba(255,190,80,.3)}
+body.theme-maldives .b-rpl:hover,body.theme-maldives .b-rpl:active{
+  background:rgba(255,194,77,.2);box-shadow:0 0 26px rgba(255,194,77,.5)}
+
+/* utility buttons — faint bubbles */
+body.theme-maldives .games-drop-btn,body.theme-maldives .theme-toggle-btn{
+  background:rgba(5,42,56,.4);border:1px solid rgba(111,230,216,.3);
+  box-shadow:0 0 10px rgba(70,190,200,.2);
+}
+body.theme-maldives .tt-hint-icon{
+  background:rgba(5,42,56,.4);border-color:rgba(255,194,77,.5);color:#FFC24D;
+  box-shadow:0 0 8px rgba(255,190,80,.25);
+}
+body.theme-maldives .gift-indicator{
+  background:transparent;border:1px solid rgba(255,194,77,.35);box-shadow:0 0 10px rgba(255,190,80,.18);
+}
+body.theme-maldives #score-star{filter:drop-shadow(0 0 7px rgba(255,205,0,.8))}
+
+/* coin stage — an open sandy tray */
+body.theme-maldives .coins-stage{background:rgba(6,54,72,.22);border:1px solid rgba(111,230,216,.16)}
+body.theme-maldives .coin-lbl{color:#A6DED6}
+body.theme-maldives .tc-eq-lbl,body.theme-maldives .tc-hint-top{color:#BEE8E2}
+
+/* ════ THE MALDIVES NUMBER LINE — a current of foam bubbles ════
+   Track = a glowing turquoise stream. Ticks = foam bubbles, golden pearls on
+   the fives. ± controls are round bubbles (teal / deep blue). */
+body.theme-maldives #nl-panel{background:transparent;border:none;box-shadow:none}
+body.theme-maldives #nl-panel .nl-bar-track{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(111,230,216,.08),
+             rgba(111,230,216,.55) 18%,rgba(23,182,201,.55) 82%,rgba(23,182,201,.08));
+  box-shadow:0 0 10px rgba(90,205,215,.45);
+}
+body.theme-maldives #nl-panel .tick{
+  width:5px;height:5px;border-radius:50%;top:calc(100% + 5px);
+  background:rgba(210,246,242,.6);box-shadow:0 0 6px rgba(160,232,224,.6);
+}
+body.theme-maldives #nl-panel .tick.major{
+  width:8px;height:8px;top:calc(100% + 3px);
+  background:radial-gradient(circle at 35% 30%,#FFF,#FFC24D);
+  box-shadow:0 0 10px rgba(255,194,77,.85);
+}
+body.theme-maldives #nl-panel .nl-num{color:rgba(174,230,222,.78)}
+body.theme-maldives #nl-panel .nl-num.major{color:#FFC24D;text-shadow:0 0 10px rgba(255,190,80,.55)}
+body.theme-maldives #nl-panel .nl-dot::after{background:rgba(111,230,216,.8);box-shadow:0 0 6px rgba(111,230,216,.9)}
+body.theme-maldives #nl-panel .kang{
+  filter:drop-shadow(0 2px 5px rgba(0,16,24,.6)) drop-shadow(0 0 10px rgba(111,230,216,.6));
+}
+body.theme-maldives #nl-panel .arc-add{stroke:rgba(255,194,77,.9)}
+body.theme-maldives #nl-panel .arc-sub{stroke:rgba(111,230,216,.9)}
+body.theme-maldives #nl-panel .side-btn{border-radius:50%}
+body.theme-maldives #nl-panel .btn-plus{
+  background:radial-gradient(circle at 34% 30%,#7FEAE1,#0E9089 75%);color:#033531;
+  border:2px solid rgba(224,252,248,.6);
+  box-shadow:0 0 14px rgba(50,205,195,.45),inset 0 1px 0 rgba(255,255,255,.4);
+}
+body.theme-maldives #nl-panel .btn-minus{
+  background:radial-gradient(circle at 34% 30%,#7FC0EE,#1E5AA0 75%);color:#EAF4FF;
+  border:2px solid rgba(224,242,255,.55);
+  box-shadow:0 0 14px rgba(70,150,230,.45),inset 0 1px 0 rgba(255,255,255,.35);
+}
+body.theme-maldives #nl-panel .btn-reset{
+  background:rgba(255,194,77,.12);border:1.5px solid rgba(255,194,77,.7);color:#FFC24D;
+  box-shadow:0 0 12px rgba(255,190,80,.3);
+}
+body.theme-maldives #nl-panel .btn-reset:hover{background:rgba(255,194,77,.2)}
+body.theme-maldives #nl-panel .btn-undo{
+  background:transparent;border:1.5px solid rgba(111,230,216,.4);color:#AEE6DE;
+}
+body.theme-maldives #nl-panel .btn-undo:hover{background:rgba(111,230,216,.12)}
+
+/* ════ CHAIN MODE — mirrored foam stream ════ */
+body.theme-maldives .pgm-bar{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(111,230,216,.08),
+             rgba(111,230,216,.5) 18%,rgba(23,182,201,.5) 82%,rgba(23,182,201,.08));
+  box-shadow:0 0 8px rgba(90,205,215,.4);
+}
+body.theme-maldives .pgm-dot{
+  background:radial-gradient(circle at 35% 30%,#FFF,#9AE8DE);
+  border-color:rgba(235,252,248,.85);box-shadow:0 0 12px rgba(140,232,224,.95);
+}
+body.theme-maldives .pgm-nl-num{color:rgba(174,230,222,.7)}
+body.theme-maldives .pgm-nl-num5{color:#FFC24D;text-shadow:0 0 8px rgba(255,190,80,.5)}
+body.theme-maldives .pgm-arc-add{stroke:rgba(255,194,77,.9)}
+body.theme-maldives .pgm-arc-sub{stroke:rgba(111,230,216,.9)}
+body.theme-maldives .pgm-side{border-radius:50%;font-size:2.1rem}
+body.theme-maldives .pgm-side::after{background:none}
+body.theme-maldives .pgm-plus{
+  background:radial-gradient(circle at 34% 30%,#7FEAE1,#0E9089 75%);color:#033531;
+  border:2px solid rgba(224,252,248,.6);
+  box-shadow:0 0 14px rgba(50,205,195,.45),inset 0 1px 0 rgba(255,255,255,.4);
+}
+body.theme-maldives .pgm-minus{
+  background:radial-gradient(circle at 34% 30%,#7FC0EE,#1E5AA0 75%);color:#EAF4FF;
+  border:2px solid rgba(224,242,255,.55);
+  box-shadow:0 0 14px rgba(70,150,230,.45),inset 0 1px 0 rgba(255,255,255,.35);
+}
+body.theme-maldives .pgm-jar-btm{background:rgba(4,38,52,.55);border-color:rgba(255,194,77,.45)}
+
+/* number-hover tooltip — a sea-glass pane (objects come from the maldives aid
+   variant: seashells) */
+body.theme-maldives #num-tt{
+  --ntt-accent:#FFC24D;
+  background:rgba(6,60,80,.97);
+  border:1px solid rgba(111,230,216,.45);
+  box-shadow:0 6px 24px rgba(0,12,20,.7),0 0 18px rgba(90,205,215,.25);
+}
+body.theme-maldives #num-tt .ntt-lbl{color:#FFC24D;text-shadow:0 0 10px rgba(255,190,80,.4)}
+
+/* ════ END SCREEN ════ */
+body.theme-maldives .end-ttl{
+  background:linear-gradient(135deg,#FFFFFF,#9AF0E4 40%,#FFC24D);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-maldives .end-sc{color:#BEE8E2}
+body.theme-maldives .end-grade-num{
+  background:linear-gradient(135deg,#FFC24D,#17B6C9,#6FE6D8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(120,230,220,.5));
+}
+body.theme-maldives .end-grade-max{color:rgba(174,230,222,.7)}
+body.theme-maldives .end-grade-msg{color:#BEE8E2}
+
+@media(max-width:480px){
+  body.theme-maldives .title{font-size:1.2rem;letter-spacing:.1em}
+}

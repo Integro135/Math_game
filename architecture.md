@@ -88,11 +88,29 @@ subtraction_game/
 │  │                                 below; only the ones move
 │  ├─ column_add.ex.js             TCA column addition — Superman 🦸
 │  │                                 (interactive mount module, #colx-root)
-│  ├─ column_sub.ex.js             TCS column SUBTRACTION (borrow/פריטה) — woven
-│  │                                 into Queen (no-borrow) + Superman
+│  ├─ column_sub.ex.js             TCS column SUBTRACTION (borrow/פריטה) — Queen
+│  │                                 (no-borrow), and a STAGED horizontal-first
+│  │                                 GRADED flow in Superman + אַלּוּפָה (§3.6)
 │  │                                 (interactive mount module, #colx-root)
-│  └─ coin_mul.ex.js               TCM "how many ₪2/₪5/₪10 coins fit in X" — first
-│                                    multiplication, Superman 🦸
+│  ├─ coin_mul.ex.js               TCM "how many ₪2/₪5/₪10 coins fit in X" — first
+│  │                                 multiplication, Superman 🦸
+│  │                                 (interactive mount module, #colx-root)
+│  ├─ mult_champ.ex.js             TMK אַלּוּפָה 🏆 multiplication (the קָשֶׁה tier,
+│  │                                 factors ≤4) — the bare product a×b shown
+│  │                                 FIRST; a wrong answer reveals the repeated-
+│  │                                 addition chain (a+a+…) + a 🔁 SWITCH that
+│  │                                 flips the repeated number (3×4: 3+3+3+3 ↔ 4+4+4)
+│  │                                 (interactive mount module, #colx-root)
+│  ├─ perimeter.ex.js              TPP polygon PERIMETER (הֶקֵּף) — a to-scale
+│  │                                 square/rect/triangle with a 1..4 length by
+│  │                                 each side; sum the sides. אַלּוּפָה
+│  │                                 (interactive mount module, #colx-root)
+│  ├─ compare.ex.js                TCP DRAG a < / > / = sign into the slot between
+│  │                                 two numbers (pointer-drag). אַלּוּפָה
+│  │                                 (interactive mount module, #colx-root)
+│  └─ triple_sum.ex.js             TTS __+__+__ = 20 — three CHOSEN addends; 0 and
+│                                    10 disallowed (a 0/10 answer is praised, no
+│                                    penalty, must retry). אַלּוּפָה
 │                                    (interactive mount module, #colx-root)
 │
 ├─ backgrounds/
@@ -211,6 +229,7 @@ standalone dev harness). Integration = add the file name to the
 const DIFFICULTY_GROUPS=[
   {id:'easy',  label:'קַל',      modes:[{id:0,label:'1+1 🌱'},{id:5,label:'עַד 5'},{id:10,label:'עַד 10'},{id:20,label:'עַד 20'}]},
   {id:'medium',label:'בֵּינוֹנִי', modes:[{id:'br',label:'גָּשֵׁר 10 🌈'},{id:'mx',label:'מַלְכָּה 👸'},{id:'sup',label:'סוּפֶּרְמֶן 🦸'}]},
+  {id:'hard',  label:'קָשֶׁה',     modes:[{id:'mulc',label:'אַלּוּפָה 🏆'}]},   // multiplication (factors ≤4): product first, chain-on-mistake + 🔁 switch
 ];
 ```
 
@@ -325,11 +344,27 @@ Current recipes:
   shuffled: `column_add.make('sup')` (3 = 2-carry + 1 no-carry),
   `big_step.make('sup')` (3 big-number SUBTRACTIONS),
   `coin_mul.make('sup')` (3 = one each ₪2/₪5/₪10), and
-  `column_sub.make('sup') = makeSup()` (6 = 3 no-borrow + 3 with-borrow, both
-  now spanning the full a∈[11,29] range, e.g. 27−13) → 15 total. The no-borrow
-  subtractions were WIDENED from the old ≤20 cap to the full 11–29 range, so
-  Superman is a strict superset of the removed standalone column-subtraction
-  game — nothing was lost.
+  `column_sub.make('sup') = makeStaged(makeSup())` (6 two-digit subtractions, 3
+  no-borrow + 3 with-borrow, TAGGED `staged` → the horizontal-first GRADED flow
+  below) + `hundreds`/`mult_chain` shares. Superman is a strict superset of the
+  removed standalone column-subtraction game — nothing was lost.
+- **אַלּוּפָה (`mulc`, the קָשֶׁה/hard tier)** — a MIXED pool (`_capPool` to 20) of
+  the self-mounting hard types, shuffled: `mult_champ.make('mulc')`
+  (multiplication up to 4, product first), `perimeter.make('mulc')` (polygon
+  perimeter, §3.6 list), `column_sub.make('mulc')` (the STAGED subtraction),
+  `compare.make('mulc')` (drag-the-sign), `word_prob.make('mulc')` (short nikud
+  word problems) and `triple_sum.make('mulc')` (`__+__+__=20`, no 0/10).
+  `modePts('mulc')=20`.
+
+**Staged (horizontal-first, graded) column subtraction.** In Superman and
+אַלּוּפָה any TCS problem tagged `staged` is mounted by `mountStaged`: the fact is
+shown HORIZONTALLY first (`a − b =`) with a solvable input; a wrong answer drops
+to the vertical column. Points are graded by mistake count on the mode's
+`modePts()` base — `FRAC=[1,0.75,0.5,0]` → 100% · 75% · 50% (+ the number line
+opens) · 0%. It uses three extra `api` hooks (`penalize`, `showNL`, `solvedFrac`,
+see below) and never calls `api.wrong`, so the try-first machinery stays out of
+its way (`aidsReveal:'always'` for `sup`/`mulc`; `loadProblem` starts the line
+hidden for a `staged` TCS).
 
 setMode / restart / boot all run their pool build inside the loader callback.
 
@@ -339,18 +374,25 @@ adds a `mount` to the same registration:
 
 ```js
 window.EXERCISES.types.column_add = {
-  mount({root, a, b, api}) {     // build everything inside root
+  mount({root, a, b, p, api}) {  // build everything inside root
     /* api.wrong(val) — committed wrong answer (host: penalty + sad modal)
-       api.solved()   — exercise complete    (host: score + success screen) */
+       api.solved()   — exercise complete    (host: score + success screen)
+       api.nl(anchor) — park the number-line rider
+       // graded (staged) extras, used by the staged column subtraction:
+       api.penalize(v)     — log a mistake WITHOUT the try-first unlock/score
+       api.showNL()        — reveal the number line on demand
+       api.solvedFrac(f)   — award round(modePts()*f)  (the 100/75/50/0 ladder)
+       p = the FULL problem object (fields beyond a/b: perimeter's sides, staged) */
     return cleanup;              // remove listeners/timers
   },
 };
 ```
 
 `EXERCISE_OF_TYPE` (data.js) maps a ptype to its file —
-`{ [TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul' }` (THREE
-interactive types share this one host). `renderEq` emits a single
-`<div id="colx-root">` for any of TCA/TCS/TCM and calls `_colxMount` (core.js).
+`{ [TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul', [TBC]:'bagel_cost',
+[TPG]:'polygon', [TMC]:'mult_chain', [TMK]:'mult_champ', [TPP]:'perimeter',
+[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum' }`. `renderEq` emits a
+single `<div id="colx-root">` for any of them and calls `_colxMount` (core.js).
 `_colxMount` injects `exercises/<name>.ex.js` on demand (bg-loader
 .loadExercise) and mounts it into that root. Its async load callback re-checks
 that the live `idx`/`ptype` is still the same and that
@@ -362,7 +404,9 @@ module owns everything visual + its own checking. Module inputs carry the
 global `ans-inp` class so the green/red answer-border contract applies
 automatically.
 
-The three interactive types served by this host:
+The interactive types served by this `#colx-root` host (the newer ones —
+`mult_chain`, `mult_champ`, `perimeter`, `compare`, `word_prob`, `triple_sum` — share the same
+mount contract; a few are detailed in `exercises/README.md`):
 
 - **column addition** (`column_add.ex.js`, TCA) — units first, a carried 1
   flies up to the tens column; the skinned 0-20 number line is on from the
@@ -386,6 +430,14 @@ The three interactive types served by this host:
   in a tray (the manipulative; no number-line aid),
   capped at `need+3` so reaching the answer never reveals it; a wrong answer
   gives directional (bigger/smaller) feedback off the TYPED value.
+- **polygon perimeter** (`perimeter.ex.js`, TPP) — a square/rect/triangle drawn
+  TO SCALE (`triVerts`, law-of-cosines) with a length 1..4 by each side; the child
+  types the SUM of the sides. Self-checks; no number line (the labelled shape is
+  the manipulative). Mixed into אַלּוּפָה.
+- **compare** (`compare.ex.js`, TCP) — two numbers with an empty slot between
+  them; the child DRAGS the correct `<`/`>`/`=` sign into the slot (genuine
+  pointer-drag, mouse + touch; a floating ghost + a rect hit-test on the slot).
+  Self-checks; no number line. Mixed into אַלּוּפָה.
 
 Each ships a thin dev harness (single source of truth) — e.g.
 `column_addition.html` for `column_add`.
@@ -408,6 +460,8 @@ Each ships a thin dev harness (single source of truth) — e.g.
 | Added permanent coverage for the success-screen display duration (the +1s linger): a no-op probe screen + `_fwOn` lifetime measurement assert ~2700ms normal / ~4500ms super and that the game advances after each | **124 passed / 0 failed / 8 skips** (132 collected) |
 | Fixed a sticky try-first lock: entering Superman (an `aidsReveal:'always'` type) from a normal mode left `tf-locked-nl` on `<body>`, CSS-hiding the number-line numbers until a refresh. The always-on branch of `_lockAids` now actively clears the lock (body class + `tf-locked` buttons). Added a regression test | **126 passed / 0 failed / 7 skips** (134 collected) |
 | Fixed the number-line ←/→ arrow keys in the column exercise: the handler was gated on `tryFirst>0` (dead on an always-on line) and ignored non-`type=number` inputs (the column boxes are `type=text`). Arrows now drive the rider whenever the line is visible and pass through from any `.ans-inp` answer box; drag gated on visibility too. Added a regression test | **127 passed / 0 failed / 7 skips** (135 collected) |
+| Three אַלּוּפָה additions covered: **`perimeter`/TPP** (sum a to-scale polygon's 1–4 side labels; drawn-to-scale triangle via `triVerts`), **`compare`/TCP** (DRAG a `<`/`>`/`=` sign into the slot; real `page.mouse` pointer-drag), and the **STAGED horizontal-first column subtraction** now in **Superman + אַלּוּפָה** (graded ladder 100/75/50/0 on the mode base — mulc 20/15/10/0, sup 15/11/8/0 — number line opens on the 2nd mistake). 17 new tests (`TestPerimeter`, `TestCompare`, `TestStagedColumnSub`) | **+17 new (perimeter/compare/staged-sub), all pass** |
+| New אַלּוּפָה type **`triple_sum`/TTS** — `__+__+__ = 20`, the child picks three addends; **0 and 10 are disallowed** — a sum-correct 0/10 answer is PRAISED, costs NO points and does NOT complete (retry with other numbers), a wrong sum is a normal mistake. Self-mounting, wired like the other mulc types. 5 new tests (`TestTripleSum`: mount, valid→full 20, wrong-sum→penalty, 0→no-penalty-must-retry, 10→no-penalty-must-retry) | **+5 new (triple_sum), all pass** |
 
 ## 5. Next steps (not yet done)
 

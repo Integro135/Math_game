@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -28,7 +28,7 @@ const EXERCISE_INDEX=[
   {file:'chain',     modes:['mx']},
   {file:'tens',      modes:['mx']},
   {file:'column_add',modes:['sup']},
-  {file:'column_sub',modes:['mx','sup']},
+  {file:'column_sub',modes:['mx','sup','mulc']},   // mulc = אַלּוּפָה: horizontal-first GRADED flow (staged 25% penalties, number line on 2nd mistake)
   {file:'coin_mul',  modes:['sup']},
   {file:'bagel_cost',modes:['sup']},
   {file:'big_step',  modes:['big','mx','sup']},
@@ -37,9 +37,14 @@ const EXERCISE_INDEX=[
   {file:'hundreds',  modes:['mx','sup']},        // whole-hundreds addition (200+60, 300+300 …), result ≤ 900
   {file:'polygon',   modes:['poly','mx','sup']}, // count polygon SIDES; woven into Queen (mx) + Superman (sup) ~1 per 9. 'poly' is an INTERNAL handle only (tester / direct setMode) — no picker tile.
   {file:'mult_chain',modes:['mul','mx','sup']},  // multiplication as repeated addition (2×3 → 2+2+2 chain, ≤20). 'mul' is an INTERNAL handle only (no picker tile); mixed into Queen (mx) + Superman (sup).
+  {file:'mult_champ',modes:['mulc']},            // אַלּוּפָה game (the "קָשֶׁה" tier) — multiplication PRODUCT first (factors ≤ 4), repeated-addition chain (+ 🔁 switch) revealed only AFTER a mistake.
+  {file:'perimeter', modes:['perim','mulc']},    // polygon PERIMETER (sum of side lengths <5) — mixed into אַלּוּפָה. 'perim' is an INTERNAL handle only (tester / direct setMode).
+  {file:'compare',   modes:['cmp','mulc']},      // DRAG the ‹ › = sign between two numbers — mixed into אַלּוּפָה. 'cmp' is an INTERNAL handle only (tester / direct setMode).
+  {file:'word_prob', modes:['wp','mulc']},       // בְּעָיוֹת מִלּוּלִיּוֹת עַד 10 (nikud short stories) — mixed into אַלּוּפָה. On a mistake: −25% + the derived equation (5−3) revealed + a retry. 'wp' is an INTERNAL handle only (tester / direct setMode).
+  {file:'triple_sum',modes:['trip','mulc']},     // __+__+__ = 20 — three CHOSEN addends; 0 and 10 are disallowed (a 0/10 answer is praised with NO penalty but must be re-tried with other numbers). Mixed into אַלּוּפָה. 'trip' is an INTERNAL handle only.
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain'};
+const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config
@@ -57,6 +62,9 @@ const DIFFICULTY_GROUPS=[
     {id:'b20',label:'גָּשֵׁר 20 🌉'},
     {id:'mx',label:'מַלְכָּה 👸'},
     {id:'sup',label:'סוּפֶּרְמֶן 🦸'},
+  ]},
+  {id:'hard',label:'קָשֶׁה',modes:[
+    {id:'mulc',label:'אַלּוּפָה 🏆'},
   ]},
 ];
 /* NOTE: the 🎁 prize badge is NOT part of the label — it is appended at render

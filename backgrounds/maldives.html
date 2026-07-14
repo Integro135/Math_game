@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maldives beach — background dev harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     DEV HARNESS for the Maldives beach background.
+     The actual scene lives in maldives.bg.js — the SAME file the game
+     would load; this page just gives it a stage. Buttons: Restart,
+     Gallery (art line-up), and day-phase jumps (Noon / Golden / Sunset)
+     that drive BACKGROUNDS.maldives._test.seek(0..1).
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: #123; }
+  #stage { position: fixed; inset: 0; }
+  .hbtn {
+    position: fixed; bottom: 18px; z-index: 10;
+    padding: 8px 18px;
+    background: rgba(10, 30, 40, 0.55);
+    color: rgba(220, 245, 255, 0.95);
+    border: 1px solid rgba(160, 220, 255, 0.35);
+    border-radius: 999px;
+    font-family: Georgia, serif; font-size: 12px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; backdrop-filter: blur(6px);
+  }
+  .hbtn:hover { background: rgba(25, 60, 80, 0.7); }
+  #restart { right: 18px; }
+  #gallery { right: 118px; }
+  #noon    { right: 218px; }
+  #golden  { right: 300px; }
+  #sunset  { right: 396px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="sunset"  class="hbtn">Sunset</button>
+<button id="golden"  class="hbtn">Golden</button>
+<button id="noon"    class="hbtn">Noon</button>
+<button id="gallery" class="hbtn">Gallery</button>
+<button id="restart" class="hbtn">Restart</button>
+
+<!-- pokemon walkers (registered on window.Pokemons); loaded BEFORE the bg so
+     init finds them and schedules the beach strollers -->
+<script src="pokemons/eevee.js"></script>
+<script src="pokemons/pikachu.js"></script>
+<script src="pokemons/bulbasaur.js"></script>
+<script src="pokemons/squirtle.js"></script>
+<script src="pokemons/jigglypuff.js"></script>
+<script src="pokemons/gooey.js"></script>
+<script src="maldives.bg.js"></script>
+<script>
+let cleanup = null;
+function start() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.maldives.init({ stage: document.getElementById('stage') });
+}
+function gallery() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.maldives.gallery({ stage: document.getElementById('stage') });
+}
+function seek(f) {
+  const t = window.BACKGROUNDS.maldives._test;
+  if (t) t.seek(f);
+}
+document.getElementById('restart').addEventListener('click', start);
+document.getElementById('gallery').addEventListener('click', gallery);
+document.getElementById('noon').addEventListener('click', () => seek(0.4));
+document.getElementById('golden').addEventListener('click', () => seek(0.8));
+document.getElementById('sunset').addEventListener('click', () => seek(0.9));
+if (location.search.indexOf('gallery') >= 0) gallery(); else start();
+</script>
+</body>
+</html>
