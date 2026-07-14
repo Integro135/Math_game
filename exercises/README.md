@@ -150,7 +150,7 @@ ptype constants (`game/js/data.js`):
 | `column_add.ex.js`| `TCA`        | `'sup'`                 | The **Superman** interactive column-addition module. `make('sup')` → `makePool(2,1)` = **3 problems** (2 with a units carry + 1 without; `a=11..29`, `b=2..19`, largest result 29+19 = **48**), shuffled. Declares `aidsReveal:'always'` and provides `mount()`. See §4. |
 | `column_sub.ex.js`| `TCS`        | `'mx','sup','mulc'`     | Interactive column **subtraction** with BORROW (פְּרִיטָה). `'mx'` (Queen) → `makeNoBorrow(2)` (NO-borrow only, teen minuends `a≤19`, non-staged). `'sup'`/`'mulc'` → `makeStaged(makeSup())` = the two-digit set **TAGGED `staged`** → the horizontal-first GRADED flow (§4b). `aidsReveal:{mx:'always',sup:'always',mulc:'always'}`; provides `mount()`. See §4b. |
 | `coin_mul.ex.js`| `TCM`          | `'sup'`                 | Interactive **first multiplication**: "how many `b`-coins fit in `a`". `make('sup')` → `makePool()` = **3** problems, ONE of EACH coin value — ₪2 (targets 4/6/8/10), ₪5 (10..35), ₪10 (20..90), so a/b ∈ 2..9 coins. The answer is `a/b` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
-| `perimeter.ex.js`| `TPP`         | `'perim','mulc'`        | Interactive polygon **perimeter**. `make('mulc')` → **5** (cycles square/rect/triangle); `make('perim')` → 9 (tester handle). Each shape is drawn **to scale** (triangle via `triVerts`, law-of-cosines) with a length 1..4 by each side; answer = sum of sides. `aidsReveal:'always'` (no number line — the labelled shape IS the manipulative). See §4f. |
+| `perimeter.ex.js`| `TPP`         | `'perim','mulc'`        | Interactive polygon **perimeter**. `make('mulc')` → **5** (cycles square/rect/triangle); `make('perim')` → 9 (tester handle). Each shape is drawn **to scale** (triangle via `triVerts`, law-of-cosines) with a length 1..4 by each side; answer = sum of sides. `aidsReveal:'always'`; the number line is hidden until a WRONG answer, then shown so she can hop the sides. See §4f. |
 | `compare.ex.js`  | `TCP`         | `'cmp','mulc'`          | Interactive **drag-the-sign** comparison. `make('mulc')` → **5** (always ≥1 of each relation `<`/`>`/`=`; `make('cmp')` → 9). Numbers 1..99; the child DRAGS the correct sign into the slot between them. `aidsReveal:'always'` (no number line). See §4g. |
 | `triple_sum.ex.js`| `TTS`        | `'trip','mulc'`         | Interactive **three-addends-to-a-target** `__+__+__=20`. `make('mulc')` → **3** (`make('trip')` → 6), all target 20. Any triple that sums to 20 is accepted **except that 0 and 10 are disallowed** — a sum-correct 0/10 answer is praised, costs NOTHING and does NOT complete (retry with other numbers). `aidsReveal:'always'`. See §4h. |
 
@@ -491,8 +491,11 @@ multiplicand) is the number repeated **by default**; both `a` and `b` stay ≤ 4
 
 ### Interactive side — `mount({root,a,b,api})` — TWO PHASES
 1. **Phase 1 — the bare product.** Renders `a × b = □` (`input.ans-inp.mk-ans`),
-   blinking, auto-focused. Submitted **only on Enter**. Correct → `solve()` →
-   `api.solved()` (full points, `tryFirst=0`).
+   blinking, auto-focused. The hint below the exercise spells the product out in
+   Hebrew WORDS with niqqud — `spoken(a,b)` → e.g. 4×3 = "כַּמָּה זֶה אַרְבַּע
+   פְּעָמִים שָׁלוֹשׁ?" (a factor of 2 reads "פַּעֲמַיִם", not "שְׁתֵּי פְּעָמִים";
+   `NUM[]` holds the feminine number words). Submitted **only on Enter**. Correct →
+   `solve()` → `api.solved()` (full points, `tryFirst=0`).
 2. **On a WRONG product** → `api.wrong(v)` (the host's penalty + sad modal — there
    is no number-line aid to reveal here) **AND** `reveal()`: the product greys out
    (`.mk-answered`, its box disabled) and the scaffold opens beneath a separator +
@@ -525,8 +528,9 @@ listener, clears timers, empties `root`.
 A self-mounting type (`t:TPP`, `modes:['perim','mulc']`) mixed into אַלּוּפָה. A
 SIMPLE shape — square, rectangle or triangle — is drawn with an integer length
 **1..4** printed beside each side; the child types the **sum of the sides** (the
-perimeter). No number line — the labelled shape IS the manipulative
-(`aidsReveal:'always'`).
+perimeter). The labelled shape is the primary manipulative; the game's number
+line is hidden at first and **appears on a WRONG answer** (see below) so she can
+hop and add the sides (`aidsReveal:'always'`).
 
 ```js
 return { t:TPP, modes:['perim','mulc'], aidsReveal:'always', make(mode){…}, mount };
@@ -553,9 +557,18 @@ perimeter is `ctx.a` (falls back to `p.a` / the side sum). Renders an SVG polygo
 (`.pm-body`) + per-side edge/highlight/hit lines + `.pm-lbl` labels, a `.pm-inp`
 answer box and a ✓ `.pm-btn`. Tapping a side lights it gold + a star-burst (pure
 aid). A correct sum → green box + names the shape ("זֶה מְרֻבָּע — הֶקֵּף 12!") +
-`api.solved()`; a wrong sum → red + a "bigger/smaller" nudge + `api.wrong(v)`, then
-clears for a retry. **Cleanup** clears timers and empties `root`. CSS namespaced
-`pm-*` (`#pm-style`).
+`api.solved()`; a wrong sum → red + a "bigger/smaller" nudge + `api.wrong(v)` +
+**`revealNL()`** (the number line appears — see below), then clears for a retry.
+**Cleanup** clears timers and empties `root`. CSS namespaced `pm-*` (`#pm-style`).
+
+**Number line on a mistake.** The shape carries no aid at first, but the FIRST
+wrong perimeter reveals the game's number line so she can HOP the length of each
+side and add them: `revealNL()` calls `api.showNL()` (un-hides `#nl-panel`) and
+configures a count-up line `NL.configure(20,1); NL.init(0)`. It is revealed once
+and stays for the rest of that problem; `loadProblem` hides it again on the next
+card. (`aidsReveal:'always'` here means "no try-first LOCK" — the module reveals
+the line itself on demand, exactly like the staged column subtraction, rather than
+via `_unlockAids`.)
 
 ---
 

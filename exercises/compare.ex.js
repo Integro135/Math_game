@@ -78,7 +78,11 @@ window.EXERCISES.types.compare=(()=>{
   .cp-tile.cp-dragging{opacity:.22}
   .cp-tile:disabled{opacity:.3;cursor:default;box-shadow:none;animation:none}
   @keyframes cpFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  /* direction:ltr is REQUIRED — the ghost is appended to <body> (which is RTL),
+     and < / > are BiDi-MIRRORED glyphs, so without it a '<' renders as '>' mid-drag
+     (the sign appeared to "flip sides" while dragging, then flip back in the LTR slot) */
   .cp-ghost{position:fixed;z-index:9999;pointer-events:none;font-family:'Fredoka One',cursive;font-size:3rem;
+    direction:ltr;unicode-bidi:isolate;
     width:92px;height:92px;display:flex;align-items:center;justify-content:center;color:#fff;
     border:3px solid rgba(255,255,255,.7);border-radius:20px;
     transform:translate(-50%,-50%) scale(1.12) rotate(-4deg);

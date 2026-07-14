@@ -125,9 +125,20 @@ aurora glow, bubble pop, magic wand, rocket launch, princess crown, butterfly
 swarm, snow sparkle, dolphin splash, fireworks, confetti, shooting stars,
 balloons, trophy, paint splash, music notes, pinwheel, fireflies, ribbons,
 phoenix rising, peacock fan, kaleidoscope bloom, birthday cake, carousel spin,
-treasure chest, sky lanterns, prism rainbow, enchanted tree …).
-There are currently **36** rotation screens registered in `SUCCESS_FILES`
+treasure chest, sky lanterns, prism rainbow, enchanted tree, sandcastle,
+ice-cream tower, glowing jellyfish, hot-air balloon, kite festival,
+turtle lagoon, ferris wheel, moon swing, star train …).
+There are currently **45** rotation screens registered in `SUCCESS_FILES`
 (game/js/data.js), plus the **gift** reward screen in `SUCCESS_SPECIAL`.
+
+> **Bright-backdrop exception.** Three screens (`hot-air-balloon`,
+> `kite-festival`, `turtle-lagoon`) deliberately PAINT THEIR OWN full-screen
+> non-black background (day sky / sunny sky / turquoise lagoon) per an explicit
+> user request — they cover the host's dark backdrop instead of reading over it.
+> They fade that background in (~200ms) and out with the global fade so skips
+> stay clean, and their praise text carries strong DARK shadows for contrast on
+> a bright field. New screens should still default to the dark-cover rule above
+> unless a bright look is specifically wanted.
 
 Wanted: fresh ideas that fit the dark backdrops and read instantly. Aim for
 delight + variety; 2–4 new styles is a great batch.

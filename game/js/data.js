@@ -27,7 +27,7 @@ const EXERCISE_INDEX=[
   {file:'coins',     modes:[5,10,20,'mx','sup']},
   {file:'chain',     modes:['mx']},
   {file:'tens',      modes:['mx']},
-  {file:'column_add',modes:['sup']},
+  {file:'column_add',modes:['sup','mulc']},   // mulc = אַלּוּפָה: horizontal-first GRADED flow (staged 25% penalties, number line on 2nd mistake) — mirrors column_sub
   {file:'column_sub',modes:['mx','sup','mulc']},   // mulc = אַלּוּפָה: horizontal-first GRADED flow (staged 25% penalties, number line on 2nd mistake)
   {file:'coin_mul',  modes:['sup']},
   {file:'bagel_cost',modes:['sup']},
@@ -116,6 +116,15 @@ const SUCCESS_FILES=[
   'success-treasure-chest',
   'success-prism-rainbow',
   'success-enchanted-tree',
+  'success-sandcastle',
+  'success-ice-cream-tower',
+  'success-jellyfish-glow',
+  'success-hot-air-balloon',
+  'success-kite-festival',
+  'success-turtle-lagoon',
+  'success-ferris-wheel',
+  'success-moon-swing',
+  'success-star-train',
 ];
 
 /* ── Special reward screens (success_screens/<sub>/<name>.js) ────────────────

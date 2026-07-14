@@ -315,8 +315,11 @@ def _register_hooks(request):
 @pytest.fixture(scope="session")
 def browser_instance(_register_hooks):
     """One browser process for the entire test session, pre-warmed."""
-    headed  = bool(os.environ.get("HEADED"))
-    slow_mo = int(os.environ.get("SLOW_MO", "0"))
+    # Headless by DEFAULT (no window). A visible Chrome opens ONLY when HEADED
+    # is explicitly one of 1/true/yes/on — so a leftover `HEADED=0` / empty /
+    # garbage in the shell can never surprise you with a white window.
+    headed  = os.environ.get("HEADED", "").strip().lower() in ("1", "true", "yes", "on")
+    slow_mo = int(os.environ.get("SLOW_MO", "0") or "0")
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
             headless=not headed,
@@ -5027,6 +5030,29 @@ class TestSuccessDuration:
             f"super success screen should linger ~4500ms (3500+1000), got {ms:.0f}ms"
         assert page.evaluate("idx") >= 1, "game advances after the screen closes"
 
+    def test_tap_or_click_dismisses_immediately(self, page):
+        """A tap/click anywhere skips the celebration AT ONCE (mobile/tablet parity
+        with the desktop Enter/Space skip) and advances to the next problem. A real
+        touch fires the same document `pointerdown`, so this also covers mobile."""
+        page.evaluate("setMode(10)")
+        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.evaluate("problems[0] = {t: TA, a: 2, b: 3}; idx = 0; loadProblem()")
+        page.wait_for_timeout(150)
+        page.evaluate("""
+            SUCCESS.styles.length = 0;
+            SUCCESS.styles.push({name:'__probe', supportsSuper:true, show(){ return () => {}; }});
+            fwCount = 0;
+        """)
+        page.fill("#ans", "5")
+        page.click("#chk-btn")
+        page.wait_for_function("_fwOn === true", timeout=TIMEOUT)
+        before_idx = page.evaluate("idx")
+        page.mouse.click(200, 360)                       # a tap on the celebration
+        # must close WELL before the ~2700ms auto-timer — proving the tap did it
+        page.wait_for_function("_fwOn === false", timeout=1500)
+        assert page.evaluate("idx") == before_idx + 1, \
+            "the tap must advance to the next problem, like the desktop click"
+
 
 # ─────────────────────────────────────────────────────────
 # Number line (#nl-panel) interactivity across exercise types
@@ -5209,6 +5235,28 @@ class TestChampMultiplication:
             ".filter(p => p.a<2 || p.a>4 || p.b<2 || p.b>4)")
         assert bad == [], f"all factors must be 2..4, offenders: {bad}"
 
+    def test_hint_reads_the_product_in_hebrew_words(self, page):
+        """The text below the exercise reads the product in WORDS with niqqud —
+        4×3 → 'כמה זה ארבע פעמים שלוש?' (a '2' factor reads 'פעמיים')."""
+        import re
+        strip = lambda s: re.sub(r"[֑-ׇ]", "", s)   # drop niqqud for a robust check
+        _enter_mulc(page)
+        page.evaluate("problems[0]={t:TMK,a:4,b:3};idx=0;loadProblem();")
+        page.wait_for_function(
+            "!!document.getElementById('mk-ans') && num1===4 && num2===3", timeout=TIMEOUT)
+        page.wait_for_timeout(80)
+        bare = strip(page.evaluate("document.getElementById('hint').textContent"))
+        assert "ארבע פעמים שלוש" in bare, f"expected 'ארבע פעמים שלוש', got: {bare}"
+        # a 2× problem reads 'פעמיים' (twice), not 'שתיים פעמים'
+        page.evaluate("problems[0]={t:TMK,a:2,b:4};idx=0;loadProblem();")
+        page.wait_for_function(
+            "!!document.getElementById('mk-ans') && num1===2 && num2===4", timeout=TIMEOUT)
+        page.wait_for_timeout(80)
+        bare2 = strip(page.evaluate("document.getElementById('hint').textContent"))
+        # פַּעֲמַיִם (twice) strips to 'פעמים'; assert that form + no 'שתיים פעמים'
+        assert "פעמים ארבע" in bare2 and "שתיים" not in bare2, \
+            f"a 2× problem must read 'פעמיים ארבע' (twice four), got: {bare2}"
+
 
 # =============================================================================
 # אַלּוּפָה 🏆 — the three additions of 2026-07 (perimeter, compare, staged sub).
@@ -5289,6 +5337,19 @@ class TestPerimeter:
         _dispatch_enter(page, ".pm-inp", 9)
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13, "solve after one miss must score 67% (13)"
+
+    def test_perimeter_mistake_reveals_number_line(self, page):
+        """A wrong perimeter brings up the number line (hidden until then) so she can
+        hop each side and add them up."""
+        _enter_perim(page, "{t:TPP,shape:'square',sides:[3,3,3,3],a:12}")
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'"), \
+            "the number line starts hidden for perimeter"
+        _dispatch_enter(page, ".pm-inp", 10)          # wrong (correct is 12)
+        page.wait_for_function(
+            "getComputedStyle(document.getElementById('nl-panel')).display !== 'none'",
+            timeout=TIMEOUT)
+        assert page.evaluate("tryFirst") == 1, "the wrong answer must be logged as a mistake"
 
     def test_perimeter_triangle_drawn_to_scale(self, page):
         """An equilateral (3,3,3) draws three near-equal edges; a scalene (2,4,3)

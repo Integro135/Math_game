@@ -281,7 +281,10 @@ function loadProblem(){
   if(ptype===TCA){
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
     const nlp=document.getElementById('nl-panel');
-    if(nlp){nlp.style.display='';NL.configure(20,1);NL.init(0);}
+    // אַלּוּפָה (staged) additions start with the line HIDDEN — the module reveals
+    // it only on the 2nd mistake (api.showNL). All others show it now.
+    const _staged=(problems[idx]||{}).staged;
+    if(nlp){nlp.style.display=_staged?'none':'';NL.configure(20,1);NL.init(0);}
     chainGnMode=false;tdaJarMode=false;}
   // TCS (column subtraction): mirror of TCA — module owns the staged inputs and
   // hints; the aid is the skinned 0-20 number line, COUNT-BACK (main.js steps −1)

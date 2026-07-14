@@ -376,11 +376,19 @@ This is the largest file and owns nearly all gameplay state and logic.
   `try/catch` — **a broken external screen must never soft-lock the game** (an
   exception would otherwise leave `_fwOn` stuck `true` forever). `_fwDone` clears
   timers/listeners, runs the screen's returned cleanup, and calls `nextP()`.
+- **Skip: keyboard AND tap/click.** `showFw` registers two document listeners
+  (removed by `_fwDone`): `_fwKey` (Enter/Space) and `_fwTap` (`pointerdown` →
+  `fwClose`). `pointerdown` unifies mouse + touch + pen, so a TAP on mobile/tablet
+  skips the celebration immediately, exactly like a desktop click/Enter. Both are
+  registered only when the screen opens (which is ~400ms after the answer is
+  judged), so the answer-submitting tap can't self-dismiss.
 - **`_showExternal`** builds a `pointer-events:none` root with a backdrop whose
   hue is picked at RANDOM from the active skin's palette (`_skinBackdrop()` →
   `--skin-primary/glow/accent` sunk toward black) that fades in/out around the
   screen's own canvas, and passes `{root,isSuper,durationMs,points,palette,praise}`
-  to `show()`.
+  to `show()`. The backdrop itself is `pointer-events:auto;cursor:pointer` (over
+  the `none` root) so a tap lands ON it (skips via `_fwTap`) instead of falling
+  through to the card beneath.
 - **Gift screen** (`showGiftScreen`) is a *special* celebration from
   `SUCCESS.special.gift`, **not** part of the rotation. Played by `endGame()`
   only when the grade clears the threshold; click/Enter/Space/Escape skips it;

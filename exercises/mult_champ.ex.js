@@ -31,6 +31,12 @@ window.EXERCISES.types.mult_champ=(()=>{
 
   const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 
+  // Hebrew number WORDS (feminine, NIQQUD) — factors are 2..4; a few extra for safety.
+  const NUM={1:'אַחַת',2:'שְׁתַּיִם',3:'שָׁלוֹשׁ',4:'אַרְבַּע',5:'חָמֵשׁ',6:'שֵׁשׁ',7:'שֶׁבַע',8:'שְׁמוֹנֶה',9:'תֵּשַׁע',10:'עֶשֶׂר'};
+  const timesW=n=>n===1?'פַּעַם':n===2?'פַּעֲמַיִם':(NUM[n]||n)+' פְּעָמִים';   // "<n> times"
+  // spoken form of the displayed product a×b → "<a-times> <b>" (4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ")
+  const spoken=(a,b)=>timesW(a)+' '+(NUM[b]||b);
+
   /* champion grid: factors up to 4 — a∈{2,3,4} × b∈{2,3,4} (product ≤ 16).
      `a` (the number repeated by default) and `b` (the count) both stay ≤ 4, so
      the whole 2×/3×/4× fact set is covered and EITHER orientation is a short
@@ -125,7 +131,7 @@ window.EXERCISES.types.mult_champ=(()=>{
     const switchBtn=root.querySelector('#mk-switch');
     const rowEl=root.querySelector('#mk-row');
 
-    fb('✖️ כַּמָּה זֶה '+A+' × '+B+'? כִּתְבִי אֶת הַתְּשׁוּבָה 💗');
+    fb('✖️ כַּמָּה זֶה '+spoken(A,B)+'? כִּתְבִי אֶת הַתְּשׁוּבָה 💗');   // e.g. 4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ"
 
     // keep a chain on ONE line — scale the row down if it overflows
     function fit(){

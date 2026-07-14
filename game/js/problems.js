@@ -114,6 +114,7 @@ function makePool(m){
       ...(EX('mult_champ')?EX('mult_champ').make('mulc'):[]),
       ...(EX('perimeter')?EX('perimeter').make('mulc'):[]),
       ...(EX('column_sub')?EX('column_sub').make('mulc'):[]),
+      ...(EX('column_add')?EX('column_add').make('mulc'):[]),  // חיבור בטור — horizontal-first graded flow
       ...(EX('compare')?EX('compare').make('mulc'):[]),
       ...(EX('word_prob')?EX('word_prob').make('mulc'):[]),   // בעיות מילוליות עד 10
       ...(EX('triple_sum')?EX('triple_sum').make('mulc'):[]), // __+__+__ = 20 (בלי 0/10)

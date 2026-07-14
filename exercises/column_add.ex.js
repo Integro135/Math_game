@@ -99,6 +99,14 @@ window.EXERCISES.types.column_add=(()=>{
   .colx-intro{display:flex;flex-direction:column;align-items:center;gap:22px;padding:14px 0}
   .colx-intro-eq{direction:ltr;font-family:'Fredoka One',cursive;font-size:3.2rem;
     color:var(--skin-text,#fff);text-shadow:0 0 18px rgba(160,190,255,.35);letter-spacing:3px}
+  /* staged (אַלּוּפָה) "solve horizontally first" row — input + ✓ */
+  .colx-solve-row{display:flex;gap:12px;align-items:center;justify-content:center;direction:ltr}
+  #colx-root .ans-inp.colx-solve-inp{width:96px;height:66px;font-size:2.5rem;border-radius:16px;text-align:center}
+  #colx-root .colx-solve-inp.blink{animation:colxBlink 1.1s ease-in-out infinite alternate}
+  .colx-solve-btn{font-family:'Fredoka One',cursive;font-size:1.35rem;border:0;border-radius:14px;
+    padding:13px 26px;cursor:pointer;color:#fff;background:linear-gradient(160deg,#86E29B,#2FA257 85%);
+    border:2px solid rgba(255,255,255,.5);box-shadow:0 3px 0 rgba(0,0,0,.28)}
+  .colx-solve-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
   .colx-show-btn{display:inline-flex;align-items:center;gap:12px;font-family:'Fredoka One',cursive;
     font-size:1.4rem;color:#fff;cursor:pointer;
     background:linear-gradient(135deg,var(--skin-glow,#7dc4ff),var(--skin-primary,#c77dff) 58%,var(--skin-accent,#ffd27d));
@@ -130,8 +138,67 @@ window.EXERCISES.types.column_add=(()=>{
   /* mount shows the ORIGINAL one-line equation + a "show in column" button;
      the column board (build) appears only when the child taps it, so they
      first read what problem they're solving. */
+  /* ── STAGED (אַלּוּפָה / mulc) flow — MIRRORS column_sub.mountStaged ──────────
+     Show the equation HORIZONTALLY with a solvable input FIRST. Solve it in your
+     head → full marks (you never see the column). A wrong answer applies a graded
+     penalty and DROPS to the column; further column mistakes keep grading down
+     and — on the 2nd mistake — open the number line:
+        0 mistakes → 100% · 1 → 75% · 2 → 50% (+ number line) · 3+ → 0%
+     Uses the host's api.penalize / api.showNL / api.solvedFrac (graded). */
+  function mountStaged(ctx){
+    injectStyle();
+    const {root,a,b,api}=ctx;
+    const correct=a+b;
+    const FRAC=[1,0.75,0.5,0];
+    let mistakes=0,live=null,solved=false;
+    const timers=[];const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
+    const flow={
+      onWrong:function(v){
+        mistakes++;
+        if(api.penalize)api.penalize(v);else api.wrong(v);
+        if(mistakes===2&&api.showNL)api.showNL();     // 2nd mistake → reveal the number line
+      },
+      onSolved:function(){
+        if(solved)return;solved=true;
+        if(api.solvedFrac)api.solvedFrac(FRAC[Math.min(mistakes,3)]);else api.solved();
+      },
+    };
+    function revealColumn(){ if(live||solved)return; root.innerHTML=''; live=build({root,a,b,api,flow}); }
+    root.innerHTML=`
+      <div class="colx-intro">
+        <div class="colx-intro-eq">${a} + ${b} =</div>
+        <div class="colx-solve-row">
+          <button type="button" class="colx-solve-btn" id="colx-solvebtn" aria-label="בְּדִיקָה">✓</button>
+          <input class="ans-inp colx-solve-inp blink" id="colx-solveinp" type="text" inputmode="numeric" maxlength="3" aria-label="הַתְּשׁוּבָה">
+        </div>
+      </div>`;
+    const h=document.getElementById('hint');if(h)h.textContent='🏆 פִּתְרִי בָּרֹאשׁ! אִם תִּטְעִי — נַצִּיג בְּטוּר';
+    const inp=root.querySelector('#colx-solveinp'),btn=root.querySelector('#colx-solvebtn');
+    function tryHoriz(){
+      if(live||solved)return;
+      const v=parseInt(inp.value,10);
+      if(inp.value===''||isNaN(v)){if(h)h.textContent='כִּתְבִי אֶת הַתְּשׁוּבָה 💗';return;}
+      if(v===correct){
+        inp.classList.remove('ans-err','blink');inp.classList.add('ans-ok');inp.disabled=true;btn.disabled=true;
+        flow.onSolved();
+      }else{
+        inp.classList.remove('blink');inp.classList.add('ans-err');
+        flow.onWrong(v);                              // 1st mistake → 75%
+        if(h)h.textContent='כִּמְעַט! בּוֹאִי נִפְתֹּר בְּטוּר, צַעַד־צַעַד 🏆';
+        later(revealColumn,900);                      // drop to the column to solve it
+      }
+    }
+    btn.addEventListener('click',tryHoriz);
+    inp.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryHoriz();}});
+    if(window.__colxAutoReveal)later(revealColumn,10);   // test hook: skip straight to the column board
+    later(()=>{if(inp&&!live)inp.focus();},60);
+    return function cleanup(){ timers.forEach(clearTimeout); if(live){live();live=null;} else root.innerHTML=''; };
+  }
+
   function mount(ctx){
     injectStyle();
+    if(ctx.p&&ctx.p.staged)return mountStaged(ctx);   // אַלּוּפָה: horizontal-first graded flow
     const {root,a,b}=ctx;
     let live=null;
     root.innerHTML=`
@@ -157,7 +224,12 @@ window.EXERCISES.types.column_add=(()=>{
     return function cleanup(){ if(live){live();live=null;} else root.innerHTML=''; };
   }
 
-  function build({root,a,b,api}){
+  function build(ctx){
+    const {root,a,b,api}=ctx;
+    // wrong/solved go through a FLOW object so the staged (mulc) mode can swap in
+    // graded penalties + a delayed number-line reveal. Default = the plain host
+    // contract (api.wrong / api.solved), used by Superman.
+    const flow=ctx.flow||{onWrong:function(v){api.wrong(v);},onSolved:function(){api.solved();}};
     injectStyle();
     const P={
       a,b,
@@ -324,7 +396,7 @@ window.EXERCISES.types.column_add=(()=>{
           ?'כִּמְעַט! כִּתְבִי אֶת כָּל הַתּוֹצָאָה — גַּם הָעֶשֶׂר! 🤏'
           :'חַבְּרִי אֶת שְׁתֵּי הַסְּפָרוֹת שֶׁבָּעִגּוּלִים 💗');
         anchorNL();
-        api.wrong(val);
+        flow.onWrong(val);
         later(()=>{
           if(phase==='units'){iU.value='';iU.classList.remove('ans-err');iU.classList.add('blink');iU.focus();}
         },1000);
@@ -347,7 +419,7 @@ window.EXERCISES.types.column_add=(()=>{
         iT.classList.remove('blink','ans-err');iT.classList.add('ans-ok');
         iT.disabled=true;
         phase='done';drawLines();
-        api.solved();
+        flow.onSolved();
       }else{
         if(!commit)return;
         tensHint=true;drawLines();
@@ -356,7 +428,7 @@ window.EXERCISES.types.column_add=(()=>{
           ?'חַבְּרִי אֶת הַסְּפָרוֹת שֶׁבָּעִגּוּלִים — גַּם אֶת הָאֶחָד שֶׁלְּמַעְלָה! 💗'
           :'חַבְּרִי אֶת שְׁתֵּי הַסְּפָרוֹת שֶׁבָּעִגּוּלִים 💗');
         anchorNL();
-        api.wrong(val);
+        flow.onWrong(val);
         later(()=>{
           if(phase==='tens'){iT.value='';iT.classList.remove('ans-err');iT.classList.add('blink');iT.focus();}
         },1000);
@@ -427,15 +499,25 @@ window.EXERCISES.types.column_add=(()=>{
     };
   }
 
+  // אַלּוּפָה (mulc): two-digit additions TAGGED `staged`, so the host passes the
+  // flag through (ctx.p.staged) and mount() runs the graded horizontal-first flow.
+  function makeMulc(){
+    const out=makePool(3,2);              // 3 with a carry + 2 without = 5
+    out.forEach(p=>{p.staged=true;});
+    return out;
+  }
+
   return{
     t:TCA,
-    modes:['sup'],
-    // try-first like Queen: the skinned number line stays HIDDEN until the first
-    // mistake (then it's revealed and scoring drops to partial via _tfPts).
-    aidsReveal:'afterMistake',
+    modes:['sup','mulc'],
+    // Superman: try-first — the number line stays HIDDEN until the first mistake
+    // (then it's revealed and scoring drops to partial via _tfPts). אַלּוּפָה
+    // (mulc): 'always' means NO try-first lock — the staged flow controls the line
+    // itself (api.showNL on the 2nd mistake), and loadProblem starts it hidden.
+    aidsReveal:{sup:'afterMistake',mulc:'always'},
     // Superman weaves in an EQUAL share of each exercise type, so column
-    // addition contributes just 3 (2 with a carry, 1 without).
-    make(mode){return mode==='sup'?makePool(2,1):[];},
+    // addition contributes just 3 (2 with a carry, 1 without). אַלּוּפָה: 5 staged.
+    make(mode){return mode==='sup'?makePool(2,1):mode==='mulc'?makeMulc():[];},
     mount,
   };
 })();

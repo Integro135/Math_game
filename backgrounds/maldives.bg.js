@@ -112,6 +112,10 @@
        hit-pad must opt back IN with pointer-events:all (a transparent SVG fill
        is NOT hit under the default visiblePainted) */
     '.mv-coco-hit{pointer-events:all;cursor:pointer}',
+    /* the beach starfish gently rocks + breathes as the surf nudges it (the
+       positioning transform stays on the OUTER group, this animates the INNER) */
+    '.mv-starfish{transform-box:fill-box;transform-origin:50% 50%;animation:mvStarWiggle 3.8s ease-in-out infinite}',
+    '@keyframes mvStarWiggle{0%,100%{transform:rotate(-7deg) scale(1)}50%{transform:rotate(7deg) scale(1.07)}}',
     /* foam lines breathe up the sand and fade back */
     '.mv-foam1{animation:mvFoam 7.2s ease-in-out infinite}',
     '.mv-foam2{animation:mvFoam 9.4s ease-in-out infinite;animation-delay:-3.4s}',
@@ -356,11 +360,13 @@
       '<path class="mv-foam1" d="M0,600 Q300,548 640,564 Q980,580 1280,536" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".8"/>',
       '<path class="mv-foam2" d="M0,590 Q300,540 640,556 Q980,572 1280,528" fill="none" stroke="#EFFffA" stroke-width="3" stroke-linecap="round" opacity=".5"/>',
 
-      /* beach details — starfish + shells */
-      '<g transform="translate(920,742) rotate(18) scale(1.15)">',
+      /* beach details — starfish (gently rocking) + shells. Positioning lives on
+         the OUTER group; the sway class rides the INNER one (a CSS transform
+         animation replaces an svg transform attribute — the palm-sway lesson). */
+      '<g transform="translate(920,742) rotate(18) scale(1.15)"><g class="mv-starfish">',
       '<path d="M0,-13 L3.6,-4.2 L13,-3.4 L6,2.8 L8.2,12 L0,7 L-8.2,12 L-6,2.8 L-13,-3.4 L-3.6,-4.2 Z" fill="#FF8A65" stroke="#E06B48" stroke-width="1.6" stroke-linejoin="round"/>',
       '<circle cx="0" cy="0" r="1.6" fill="#FFD1B8"/><circle cx="0" cy="-6.4" r="1.1" fill="#FFD1B8"/><circle cx="5.6" cy="-1.8" r="1.1" fill="#FFD1B8"/>',
-      '</g>',
+      '</g></g>',
       '<g transform="translate(360,758)"><path d="M0,0 A9,9 0 0 1 18,0 L9,2.5 Z" fill="#F6E8F1" stroke="#D9BFD2" stroke-width="1.4"/>',
       '<path d="M4,-6.5 L9,2 M14,-6.5 L9,2" stroke="#D9BFD2" stroke-width="1.1" fill="none"/></g>',
       '<g transform="translate(210,776) rotate(-14)"><path d="M0,0 A7,7 0 0 1 14,0 L7,2 Z" fill="#FBE3D0" stroke="#DFB999" stroke-width="1.3"/></g>',
@@ -407,13 +413,13 @@
     st.frontSvg = fsvg;
 
     /* ── tap a foreground palm's coconuts → the lowest one falls and vanishes.
-          Delegated on the front SVG; the transparent .mv-coco-hit pad is the
-          only pointer-events target, so a tap anywhere on the cluster drops the
-          next remaining nut. Each drop is a short gravity fall + fade, then the
-          circle is removed; when the last is gone the pad is removed too. ── */
-    fsvg.addEventListener('click', function (e) {
-      var group = e.target && e.target.closest && e.target.closest('.mv-cocos');
-      if (!group || st.cancelled) return;
+          A DOCUMENT-level hit-test (like the pokemon click FX / bulbasaur roots),
+          NOT a listener on the scene SVG: in the GAME the scene lives in
+          #stars-layer which is pointer-events:none + z-index:-1, so a click never
+          reaches the svg — but hit-testing the pad's live box on `document`
+          works in BOTH the game and the standalone. ── */
+    function dropCoco(group) {
+      if (st.cancelled) return;
       var live = group.querySelectorAll('.mv-coco:not(.mv-gone)');
       if (!live.length) return;
       var coco = live[live.length - 1];            // the lowest / front-most nut
@@ -431,7 +437,21 @@
         { transform: 'translateY(320px)', opacity: 0, offset: 1 }
       ], { duration: 900, easing: 'cubic-bezier(.45,0,.9,.5)', fill: 'forwards' });
       if (a) { st.anims.push(a); a.onfinish = done; } else done();
-    });
+    }
+    st.cocoClick = function (e) {
+      if (st.cancelled) return;
+      if (e.target && e.target.closest && e.target.closest(
+        '.wrap,button,input,select,textarea,#particles,#games-menu,#theme-menu,#fw-ov,#sad-ov,#report-ov,#settings-ov,#parent-ov')) return;
+      var pads = fsvg.querySelectorAll('.mv-coco-hit');
+      for (var i = 0; i < pads.length; i++) {
+        var r = pads[i].getBoundingClientRect();
+        if (r.width && e.clientX >= r.left && e.clientX <= r.right &&
+            e.clientY >= r.top && e.clientY <= r.bottom) {
+          dropCoco(pads[i].parentNode); e.stopPropagation(); return;
+        }
+      }
+    };
+    doc.addEventListener('click', st.cocoClick, true);
 
     /* ══ THE DAY CYCLE — everything on one 140s clock ══ */
     var sun = svg.querySelector('#mvSun');
@@ -866,6 +886,7 @@
         st.timers.forEach(clearTimeout);
         st.anims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
         st.walkerInsts.slice().forEach(function (i) { try { i.remove(); } catch (e) {} });
+        if (st.cocoClick) doc.removeEventListener('click', st.cocoClick, true);
         delete w.BACKGROUNDS.maldives._test;
         stage.style.overflow = prevOverflow;
         stage.style.direction = prevDir;

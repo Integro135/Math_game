@@ -3,7 +3,7 @@
    built-in screens from the old single-file game (canvas fireworks + the four
    "nfw" overlays) were removed; this host only orchestrates the registered
    screens. */
-let _fwOn=false,_fwKey=null,fwCount=0,_fwTO=null;
+let _fwOn=false,_fwKey=null,_fwTap=null,fwCount=0,_fwTO=null;
 
 /* ── SUCCESS registry — external celebration screens plug in here ──────────
    Contract (see success_screens_spec.md): a screen file registers
@@ -91,7 +91,11 @@ function _showExternal(styleDef,isSuper,DUR){
   // celebration. It sits as the FIRST child so the screen's own canvas
   // (appended by show()) layers on top; fades in on open, out before advancing.
   const _bd=document.createElement('div');
-  _bd.style.cssText='position:absolute;inset:0;opacity:0;transition:opacity .26s ease;background:'+_skinBackdrop();
+  // pointer-events:auto (over the pointer-events:none _extRoot) so a tap/click
+  // lands on the backdrop — it's absorbed here (skips via the document _fwTap
+  // listener) instead of falling through to the card beneath. cursor:pointer
+  // signals "tap to continue" on desktop.
+  _bd.style.cssText='position:absolute;inset:0;opacity:0;transition:opacity .26s ease;pointer-events:auto;cursor:pointer;background:'+_skinBackdrop();
   _extRoot.appendChild(_bd);
   document.body.appendChild(_extRoot);
   requestAnimationFrame(()=>{_bd.style.opacity='1';});
@@ -119,6 +123,12 @@ function showFw(){
   const DUR=isSuper?4500:2700;   // +1s over the original 3500/1700 — linger longer
   _fwKey=e=>{if(e.key==='Enter'||e.key===' ')fwClose();};
   document.addEventListener('keydown',_fwKey);
+  // A TAP / CLICK anywhere skips the celebration and advances — the touch (mobile
+  // / tablet) counterpart of the Enter/Space skip. `pointerdown` unifies mouse +
+  // touch + pen and fires immediately. Registered only AFTER the answer is judged
+  // (showFw runs ~400ms later), so the submitting tap itself can't self-dismiss.
+  _fwTap=()=>fwClose();
+  document.addEventListener('pointerdown',_fwTap);
   // pick a random registered screen (super variants only on every 5th win);
   // with no screens loaded yet, just advance so the game never soft-locks
   const _ext=window.SUCCESS.styles||[];
@@ -142,6 +152,7 @@ function _fwDone(){
   if(_fwTO){clearTimeout(_fwTO);_fwTO=null;}
   if(_extBdTO){clearTimeout(_extBdTO);_extBdTO=null;}
   if(_fwKey){document.removeEventListener('keydown',_fwKey);_fwKey=null;}
+  if(_fwTap){document.removeEventListener('pointerdown',_fwTap);_fwTap=null;}
   if(_extCleanup){try{_extCleanup();}catch(e){}_extCleanup=null;}
   if(_extRoot){_extRoot.remove();_extRoot=null;}
   nextP();

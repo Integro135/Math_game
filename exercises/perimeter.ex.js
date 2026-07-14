@@ -195,6 +195,15 @@ window.EXERCISES.types.perimeter=(()=>{
       });
     });
 
+    // On a WRONG perimeter the game's number line appears (count-up 0..20) so she
+    // can HOP the length of each side and add them up. Revealed once, then it stays
+    // for the rest of this problem; loadProblem hides it again on the next card.
+    let nlShown=false;
+    function revealNL(){
+      if(nlShown)return;nlShown=true;
+      if(api.showNL)api.showNL();                                   // un-hide #nl-panel
+      try{if(typeof NL!=='undefined'){NL.configure(20,1);NL.init(0);}}catch(e){}  // 0..20, rider at 0
+    }
     function check(){
       if(done)return;
       const v=parseInt(inp.value,10);
@@ -208,9 +217,11 @@ window.EXERCISES.types.perimeter=(()=>{
         api.solved();
       }else{
         inp.classList.remove('pm-ready');inp.classList.add('ans-err');
-        if(h)h.textContent=v<peri?'קְצָת גָּדוֹל יוֹתֵר — חַבְּרִי אֶת כָּל הַצְּלָעוֹת שׁוּב 🔷'
-                                  :'קְצָת קָטָן יוֹתֵר — סַכְּמִי רַק אֶת הַצְּלָעוֹת 💗';
         api.wrong(v);
+        revealNL();                        // a mistake brings up the number line
+        if(h)h.textContent=v<peri
+          ? 'קְצָת גָּדוֹל — סַפְּרִי עַל יְשַׁר הַמִּסְפָּרִים: קִפְצִי אֶת אֹרֶךְ כָּל צֵלַע 🔢'
+          : 'קְצָת קָטָן — סַפְּרִי עַל יְשַׁר הַמִּסְפָּרִים: קִפְצִי אֶת אֹרֶךְ כָּל צֵלַע 🔢';
         later(()=>{if(!done){inp.value='';inp.classList.remove('ans-err');inp.focus();}},1000);
       }
     }

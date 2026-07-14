@@ -12,36 +12,58 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "maldives"              # the harness picks this theme in-game
+THEME    = "galaxy"                # dark space backdrop — the spec's primary case
 DSF      = 2                       # device scale factor (higher = sharper zoom)
-HIDE_UI  = False                   # keep the skinned card visible for the screenshot
+HIDE_UI  = False
 STANDALONE = ""                    # "" → drive the real game (index.html)
 VIEW     = {"width": 1280, "height": 800}   # viewport
-# Maldives POKEMON walkers IN THE GAME: the game doesn't ship pokemons/*.js, so
-# maldives.bg.js must inject them itself. Confirm window.Pokemons populates in
-# the game, then force a few walkers + the flyer and spread them for the shot.
-EVAL = r"""(function(){ return 'ok'; })();"""
-POST_EVAL = r"""(function(){
-  var out={};
-  out.loaded=window.Pokemons?Object.keys(window.Pokemons).sort():[];
-  var t=window.BACKGROUNDS&&BACKGROUNDS.maldives&&BACKGROUNDS.maldives._test;
-  out.hasTest=!!t;
-  // force a few walkers + the flyer now that the modules are loaded
-  ['eevee','pikachu','bulbasaur','squirtle'].forEach(function(n){ if(t)t.walk(n); });
-  if(t)t.fly();
-  // spread them across the beach and freeze the crossing for a clean screenshot
-  var actors=Array.prototype.slice.call(document.querySelectorAll('.mv-actors > *'));
-  actors.forEach(function(el,i){
-    if(el.getAnimations)el.getAnimations().forEach(function(a){try{a.cancel();}catch(e){}});
-    el.style.transform='translateX('+(90+i*230)+'px)';
+# THREE NEW SUCCESS SCREENS (ferris-wheel / moon-swing / star-train — standard
+# dark-backdrop batch): confirm they registered, exercise each show()+cleanup()
+# (cleanup must leave the root EMPTY), then leave all three running side by
+# side (super variant) for one mid-animation screenshot.
+EVAL = r"""(function(){
+  var NEW=['ferris-wheel','moon-swing','star-train'];
+  var names=(window.SUCCESS&&SUCCESS.styles||[]).map(function(s){return s.name;});
+  var out={total:names.length,
+    registered:NEW.map(function(n){return n+':'+(names.indexOf(n)>=0);})};
+  var pal={primary:'#C77DFF',accent:'#FFD27D',glow:'#7DC4FF',text:'#FFFFFF'};
+  // cleanup test: show → immediately cleanup → root must be empty
+  out.cleanupOk=NEW.map(function(n){
+    var st=SUCCESS.styles.filter(function(s){return s.name===n;})[0];
+    if(!st)return n+':missing';
+    var r=document.createElement('div');
+    r.style.cssText='position:fixed;inset:0;z-index:60;pointer-events:none';
+    document.body.appendChild(r);
+    var c=st.show({root:r,isSuper:true,durationMs:4500,points:20,palette:pal,praise:'כָּל הַכָּבוֹד!'});
+    c();
+    var empty=r.childElementCount===0;
+    r.remove();
+    return n+':'+(empty?'clean':'LEFTOVER('+r.childElementCount+')');
   });
-  out.actorsPlaced=actors.length;
+  // now run all three side by side for the screenshot (thirds of the screen)
+  window.__cleanups=[];
+  NEW.forEach(function(n,i){
+    var st=SUCCESS.styles.filter(function(s){return s.name===n;})[0];
+    var r=document.createElement('div');
+    r.className='__suc_probe';
+    r.style.cssText='position:fixed;top:0;bottom:0;left:'+(i*33.3)+'%;width:33.3%;z-index:60;pointer-events:none;overflow:hidden';
+    document.body.appendChild(r);
+    window.__cleanups.push({c:st.show({root:r,isSuper:true,durationMs:4500,points:20,palette:pal,praise:'כָּל הַכָּבוֹד!'}),r:r});
+  });
   return JSON.stringify(out);
 })();"""
+POST_EVAL = r"""(function(){
+  // NON-destructive (the screenshot is taken AFTER this): each probe should be
+  // mid-animation with a canvas + the praise text mounted
+  var probes=Array.prototype.slice.call(document.querySelectorAll('.__suc_probe'));
+  return JSON.stringify({probes:probes.length,
+    canvases:probes.map(function(p){return p.querySelectorAll('canvas').length;}),
+    texts:probes.map(function(p){return p.querySelectorAll('div').length;})});
+})();"""
 CLICKS   = []
-WAIT_MS   = 1400   # give maldives.bg.js time to inject pokemons/*.js before forcing walkers
+WAIT_MS   = 2600   # mid-animation for the super variants (4500ms) → screenshot
 SHOTS    = [
-    {"path": r"c:\tmp\maldives_pokemon.png", "clip": None},
+    {"path": r"c:\tmp\success_new3.png", "clip": None},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 
