@@ -1,6 +1,6 @@
 /* ── "כַּמָּה זֶה חֵצִי" — share EQUALLY between two friends (✂️➗) ──────────────
    The gentlest first taste of DIVISION: a tiny word problem — two girls have
-   4 / 6 / 8 / 10 items, and they must share them EQUALLY (שָׁוֶה בְּשָׁוֶה).
+   4 / 6 / 8 / 10 items, and they must share them EQUALLY (שָׁווֶה בְּשָׁווֶה).
    The child types how many EACH one gets (= n ÷ 2).
 
    • The items are drawn on screen as a row of emoji between the two friends.
@@ -111,7 +111,7 @@ window.EXERCISES.types.half=(()=>{
     root.innerHTML=
       '<div class="hf-root" id="hf-root-'+uid+'">'+
         '<div class="hf-q" id="hf-q-'+uid+'">לְ<b>'+names[0]+'</b> וּלְ<b>'+names[1]+'</b> יֵשׁ <b>'+n+'</b> '+itemName+' '+item+
-          ' — אֵיךְ הֵן יִתְחַלְּקוּ <b>שָׁוֶה בְּשָׁוֶה</b>?</div>'+
+          ' — אֵיךְ הֵן יִתְחַלְּקוּ <b>שָׁווֶה בְּשָׁווֶה</b>?</div>'+
         '<div class="hf-stage" id="hf-stage-'+uid+'" role="button" aria-label="חַלְּקִי לִשְׁנַיִם">'+
           '<span class="hf-kid">👧🏻</span>'+
           '<div class="hf-items">'+
@@ -131,7 +131,7 @@ window.EXERCISES.types.half=(()=>{
 
     const $=id=>root.querySelector('#'+id+'-'+uid);
     const rootEl=$('hf-root'),stage=$('hf-stage'),inp=$('hf-ans'),chk=$('hf-chk'),qEl=$('hf-q');
-    hint('✂️ חַלְּקִי שָׁוֶה בְּשָׁוֶה בֵּין שְׁתֵּיהֶן — אֶפְשָׁר לִלְחֹץ עַל הַ'+itemName+'!');
+    hint('✂️ חַלְּקִי שָׁווֶה בְּשָׁווֶה בֵּין שְׁתֵּיהֶן — אֶפְשָׁר לִלְחֹץ עַל הַ'+itemName+'!');
 
     // tap the items → toggle the middle split line (the halves part visually)
     stage.addEventListener('click',()=>{if(!done)rootEl.classList.toggle('hf-split');});

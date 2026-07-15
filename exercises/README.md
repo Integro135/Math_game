@@ -651,7 +651,7 @@ walks box→box→check. `check()` has THREE outcomes:
 ## 4i. `half.ex.js` in depth — "כַּמָּה זֶה חֵצִי" (share equally ✂️➗)
 
 The gentlest first taste of DIVISION, framed as a mini word problem: two girls
-have `n` items (4/6/8/10 — always EVEN) and must share them שָׁוֶה בְּשָׁוֶה; the
+have `n` items (4/6/8/10 — always EVEN) and must share them שָׁווֶה בְּשָׁווֶה; the
 child types how many EACH gets (`n ÷ 2`). Self-mounting (`t:THF`,
 `modes:['hlf','mulc']`), mixed into אַלּוּפָה.
 
@@ -669,7 +669,7 @@ girl-name pairs (דָּנָה/נֹעָה …) so every card reads like a fresh s
 
 ### Interactive side — `mount({root,a,b,api})`
 Reads the full problem via `ctx.p`. Renders the story line ("לְדָנָה וּלְנֹעָה
-יֵשׁ 8 תַּפּוּחִים 🍎 — אֵיךְ הֵן יִתְחַלְּקוּ שָׁוֶה בְּשָׁוֶה?"), then the
+יֵשׁ 8 תַּפּוּחִים 🍎 — אֵיךְ הֵן יִתְחַלְּקוּ שָׁווֶה בְּשָׁווֶה?"), then the
 stage: 👧🏻 · the items · 👧🏽. The items are PRE-GROUPED in the DOM as two equal
 `.hf-half` wrappers with a `.hf-line` divider between them (`scaleY(0)`, hidden).
 
