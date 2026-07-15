@@ -43,7 +43,7 @@ exercises/
 ├─ perimeter.ex.js    INTERACTIVE polygon PERIMETER (הֶקֵּף) — sum the 1..4 side labels of a to-scale square/rect/triangle
 ├─ compare.ex.js      INTERACTIVE DRAG the comparison sign (< / > / =) into the slot between two numbers
 ├─ word_prob.ex.js    INTERACTIVE בְּעָיוֹת מִלּוּלִיּוֹת עַד 10 — a short NIKUD word story with the numbers SPELLED OUT as gender-agreeing Hebrew words (חֲמִשָּׁה תַּפּוּחִים / שָׁלֹשׁ עֻגִיּוֹת), up to 10. Each number word is UNDERLINED; hovering (desktop) / tapping (touch) it pops a tooltip of that many object emojis matched to the story's noun (🍎/🎈/🍬…). A wrong answer costs 25% AND reveals the derived DIGIT equation (5−3) to retry (graded 100/75/50/0). Mixed into אַלּוּפָה (mulc).
-├─ triple_sum.ex.js   INTERACTIVE __+__+__ = 20 — three CHOSEN addends; 0 and 10 are DISALLOWED (a 0/10 answer is praised, costs nothing, but must be re-tried with other numbers). Mixed into אַלּוּפָה (mulc).
+├─ triple_sum.ex.js   INTERACTIVE __+__+__ = N — three CHOSEN addends; the target N VARIES 6..12; 0 and 10 are DISALLOWED (a 0/10 answer is praised, costs nothing, but must be re-tried with other numbers). Woven into Queen (mx) + Superman (sup) + אַלּוּפָה (mulc).
 ├─ half.ex.js         INTERACTIVE "כַּמָּה זֶה חֵצִי" — two friends share 4/6/8/10 items EQUALLY; tap the items → a golden MIDDLE line splits them into 2 equal groups. First DIVISION intuition. Mixed into אַלּוּפָה (mulc).
 └─ plates.ex.js       INTERACTIVE "צַלָּחוֹת" — g plates × s items each (2..4 × 2..4), find the TOTAL; tap → the items POUR into one countable row. The multiplication-story inverse of half. Mixed into אַלּוּפָה (mulc).
 ```
@@ -126,7 +126,7 @@ A registered type is an object of this exact shape:
 | `mult_champ`| `{t:TMK, a, b}`  (`a` = small multiplicand, `b` = count; both ∈ {2,3,4}) | `a × b = □` shown FIRST; a wrong answer reveals the `a+a+…+a = □` chain (the mult_chain scaffold) + a 🔁 SWITCH that flips the repeated number (3×4: `3+3+3+3` ↔ `4+4+4`). Answer `a·b` ≤ 16, interactive |
 | `perimeter` | `{t:TPP, shape:'square'|'rect'|'tri', sides:[…], a}`  (rect also `w,h`; `a` = perimeter) | a to-scale shape with a length **1..4** by each side; type the SUM of the sides. Interactive |
 | `compare`   | `{t:TCP, a, b}`  (sign derived: `a<b`→‹ , `a>b`→› , `a===b`→=) | DRAG the correct comparison sign (`<`/`>`/`=`) into the empty slot between the two numbers. Interactive |
-| `triple_sum`| `{t:TTS, a}`  (`a` = the target sum, 20) | `__ + __ + __ = a` — pick THREE addends that sum to `a`; **0 and 10 are disallowed** (a 0/10 answer is praised, costs nothing, but must be re-tried). Interactive |
+| `triple_sum`| `{t:TTS, a}`  (`a` = the target sum, VARIES 6..12) | `__ + __ + __ = a` — pick THREE addends that sum to `a`; **0 and 10 are disallowed** (a 0/10 answer is praised, costs nothing, but must be re-tried). Interactive |
 | `half`      | `{t:THF, n, a, item, itemName, names:[g1,g2]}`  (`n` = total 4/6/8/10, `a` = n÷2) | a word problem: two friends share `n` items EQUALLY; tap the items → a golden MIDDLE line splits them into 2 equal groups; type how many EACH gets. Interactive |
 | `plates`    | `{t:TPL, g, s, a, item, itemName, name}`  (`g` = plates, `s` = per plate, both 2..4; `a` = g·s) | a word problem: `g` plates each holding `s` items; type the TOTAL. Tap → the items pour into one countable row. Interactive |
 
@@ -157,7 +157,7 @@ ptype constants (`game/js/data.js`):
 | `coin_mul.ex.js`| `TCM`          | `'sup'`                 | Interactive **first multiplication**: "how many `b`-coins fit in `a`". `make('sup')` → `makePool()` = **3** problems, ONE of EACH coin value — ₪2 (targets 4/6/8/10), ₪5 (10..35), ₪10 (20..90), so a/b ∈ 2..9 coins. The answer is `a/b` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
 | `perimeter.ex.js`| `TPP`         | `'perim','mulc'`        | Interactive polygon **perimeter**. `make('mulc')` → **5** (cycles square/rect/triangle); `make('perim')` → 9 (tester handle). Each shape is drawn **to scale** (triangle via `triVerts`, law-of-cosines) with a length 1..4 by each side; answer = sum of sides. `aidsReveal:'always'`; the number line is hidden until a WRONG answer, then shown so she can hop the sides. See §4f. |
 | `compare.ex.js`  | `TCP`         | `'cmp','mulc'`          | Interactive **drag-the-sign** comparison. `make('mulc')` → **5** (always ≥1 of each relation `<`/`>`/`=`; `make('cmp')` → 9). Numbers 1..99; the child DRAGS the correct sign into the slot between them. `aidsReveal:'always'` (no number line). See §4g. |
-| `triple_sum.ex.js`| `TTS`        | `'trip','mulc'`         | Interactive **three-addends-to-a-target** `__+__+__=20`. `make('mulc')` → **3** (`make('trip')` → 6), all target 20. Any triple that sums to 20 is accepted **except that 0 and 10 are disallowed** — a sum-correct 0/10 answer is praised, costs NOTHING and does NOT complete (retry with other numbers). `aidsReveal:'always'`. See §4h. |
+| `triple_sum.ex.js`| `TTS`        | `'trip','mx','sup','mulc'` | Interactive **three-addends-to-a-target** `__+__+__=N`. The target **VARIES 6..12** (distinct per pool). `make('mulc')` → **3**, `make('sup')` → 2, `make('mx')` → 1 (Queen is saturated — woven post-cap), `make('trip')` → 6. Any triple that sums to N is accepted **except that 0 and 10 are disallowed** — a sum-correct 0/10 answer is praised, costs NOTHING and does NOT complete (retry). `aidsReveal:'always'`. See §4h. |
 | `half.ex.js`     | `THF`         | `'hlf','mulc'`          | Interactive **share-equally-between-two** (first division). `make('mulc')` → **4** (one per total 4/6/8/10, all even → exact halves; `make('hlf')` → 6). Rotating item emoji + girl-pair names make each card a fresh mini word problem. `aidsReveal:'always'` (the split-in-two picture is the aid; a wrong answer auto-opens it). See §4i. |
 | `plates.ex.js`   | `TPL`         | `'plt','mulc'`          | Interactive **equal-groups→total** (the multiplication story, inverse of half). `make('mulc')` → **3** (`make('plt')` → 6), plates `g` and per-plate `s` both 2..4 (product ≤16). Tap → the items POUR into ONE countable row (tap again → back on the plates); a wrong answer auto-pours. `aidsReveal:'always'`. See §4j. |
 
@@ -631,19 +631,29 @@ empties `root`. CSS namespaced `cp-*` (`#cp-style`).
 
 ## 4h. `triple_sum.ex.js` in depth — three addends to a target (➕➕)
 
-A self-mounting type (`t:TTS`, `modes:['trip','mulc']`) mixed into אַלּוּפָה.
-`__ + __ + __ = 20`: the child fills THREE addends of her own choosing that sum to
-the target. Any triple that reaches the target is accepted — **except that 0 and
-10 may not be used** as an addend. No number line (`aidsReveal:'always'`).
+A self-mounting type (`t:TTS`, `modes:['trip','mx','sup','mulc']`) woven into
+Queen, Superman AND אַלּוּפָה. `__ + __ + __ = N`: the child fills THREE addends of
+her own choosing that sum to the target N. Any triple that reaches N is accepted —
+**except that 0 and 10 may not be used** as an addend. No number line
+(`aidsReveal:'always'`).
 
 ```js
-return { t:TTS, modes:['trip','mulc'], aidsReveal:'always', make(mode){…}, mount };
+return { t:TTS, modes:['trip','mx','sup','mulc'], aidsReveal:'always', make(mode){…}, mount };
 ```
 
 ### Data side — `make(mode)`
-`makePool(n,target)` emits `n` copies of `{t:TTS, a:target}` (target `20`);
-`make('mulc')` → **3**, `make('trip')` → 6 (tester handle). Every card is the same
-target — the challenge is finding a FRESH non-0/non-10 triple each time.
+The TARGET **varies per card** — a number **6..12** (not always the same;
+`TARGETS=[6..12]`, shuffled so a pool's targets are DISTINCT). Every target has a
+no-0/no-10 triple; the "no 10" rule only bites at 11/12 (where `10+1+1` is the
+shortcut). `make('mulc')` → **3**, `make('sup')` → 2, `make('mx')` → **1** (Queen
+is a saturated pool — see below), `make('trip')` → 6 (tester handle). Each card
+carries `{t:TTS, a:N}`; `a` is read as `num1` for the host report.
+
+**Queen (mx) is saturated** (17 curated types already fill its coverage floor of
+18, +2 woven extras = 20). So `makePool('mx')` caps the curated base to 18, then
+weaves ONE polygon + ONE triple_sum POST-cap at mid-deck slots — so neither
+crowds a core type out of the coverage cap, and slot 0 stays an `#ans` card.
+Superman/אַלּוּפָה have room, so their TTS go straight into the shuffled+capped mix.
 
 ### Interactive side — `mount({root,a,b,api})`
 Reads the target from `ctx.a` (falls back to `ctx.p.a` / 20). Renders three

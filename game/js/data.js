@@ -41,7 +41,7 @@ const EXERCISE_INDEX=[
   {file:'perimeter', modes:['perim','mulc']},    // polygon PERIMETER (sum of side lengths <5) — mixed into אַלּוּפָה. 'perim' is an INTERNAL handle only (tester / direct setMode).
   {file:'compare',   modes:['cmp','mulc']},      // DRAG the ‹ › = sign between two numbers — mixed into אַלּוּפָה. 'cmp' is an INTERNAL handle only (tester / direct setMode).
   {file:'word_prob', modes:['wp','mulc']},       // בְּעָיוֹת מִלּוּלִיּוֹת עַד 10 (nikud short stories) — mixed into אַלּוּפָה. On a mistake: −25% + the derived equation (5−3) revealed + a retry. 'wp' is an INTERNAL handle only (tester / direct setMode).
-  {file:'triple_sum',modes:['trip','mulc']},     // __+__+__ = 20 — three CHOSEN addends; 0 and 10 are disallowed (a 0/10 answer is praised with NO penalty but must be re-tried with other numbers). Mixed into אַלּוּפָה. 'trip' is an INTERNAL handle only.
+  {file:'triple_sum',modes:['trip','mx','sup','mulc']},  // __+__+__ = N (target VARIES 6..12) — three CHOSEN addends; 0 and 10 are disallowed (a 0/10 answer is praised with NO penalty but must be re-tried with other numbers). Woven into Queen/Superman/אַלּוּפָה. 'trip' is an INTERNAL handle only.
   {file:'half',      modes:['hlf','mulc']},      // "כַּמָּה זֶה חֵצִי" — share 4/6/8/10 items EQUALLY between two friends; tap the items → a golden middle line splits them in two. First DIVISION intuition, mixed into אַלּוּפָה. 'hlf' is an INTERNAL handle only.
   {file:'plates',    modes:['plt','mulc']},      // "צַלָּחוֹת" — g plates × s items each (2..4×2..4), find the TOTAL; tap → the items POUR into one countable row. Multiplication-story inverse of half, mixed into אַלּוּפָה. 'plt' is an INTERNAL handle only.
 ];

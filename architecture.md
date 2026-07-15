@@ -109,9 +109,10 @@ subtraction_game/
 │  ├─ compare.ex.js                TCP DRAG a < / > / = sign into the slot between
 │  │                                 two numbers (pointer-drag). אַלּוּפָה
 │  │                                 (interactive mount module, #colx-root)
-│  ├─ triple_sum.ex.js             TTS __+__+__ = 20 — three CHOSEN addends; 0 and
-│  │                                 10 disallowed (a 0/10 answer is praised, no
-│  │                                 penalty, must retry). אַלּוּפָה
+│  ├─ triple_sum.ex.js             TTS __+__+__ = N (target VARIES 6..12) — three
+│  │                                 CHOSEN addends; 0 and 10 disallowed (a 0/10
+│  │                                 answer is praised, no penalty, must retry).
+│  │                                 Queen + Superman + אַלּוּפָה
 │  │                                 (interactive mount module, #colx-root)
 │  ├─ half.ex.js                   THF "כַּמָּה זֶה חֵצִי" — two friends share
 │  │                                 4/6/8/10 items EQUALLY; tap → a golden middle
@@ -477,6 +478,7 @@ Each ships a thin dev harness (single source of truth) — e.g.
 | New אַלּוּפָה type **`half`/THF — "כַּמָּה זֶה חֵצִי"** (first DIVISION): a word problem — two girls share 4/6/8/10 items EQUALLY; TAPPING the items toggles a golden MIDDLE line that splits them into 2 equal halves sliding toward each girl; the child types how many EACH gets (n÷2). A wrong answer auto-opens the split ("count one side"). Rotating item emoji + girl-name pairs. 5 new tests (`TestHalfSplit` in tests/test_champion.py: mount/halves, tap-toggles-split, correct→full 20, wrong→auto-split→13, pool = even totals only) | **+5 new (half), all pass** |
 | **Success screen now skips on TAP/CLICK (mobile/tablet parity).** The per-answer celebration only dismissed on Enter/Space; `showFw` now also registers a document `pointerdown` listener (`_fwTap` → `fwClose`, removed in `_fwDone`) and its backdrop is `pointer-events:auto`, so a tap on phone/tablet skips it immediately and advances — like the desktop click. 1 new test (`TestSuccessDuration::test_tap_or_click_dismisses_immediately`); verified under real touch emulation (`has_touch` context, `touchscreen.tap` → `_fwOn` false + `idx`+1) | **+1 new, all pass** |
 | **Two multiplication VISUALS** (the "half" tap-mechanic applied to ×): (1) **`mult_champ` tap-to-group picture** — the product drawn as a·b real objects under `a × b = □`; a TAP drops golden divider lines grouping them (3×4 → 4 groups of 3, one per chain term); follows the chain's `flip`, so 🔁 regroups it (commutativity made visible); a wrong product auto-groups. (2) New אַלּוּפָה type **`plates`/TPL — "צַלָּחוֹת"** (equal groups → TOTAL, the inverse of `half`): g CSS plates × s items (2..4×2..4); a TAP POURS the items into one countable row and back; a wrong answer auto-pours. 7 new tests (2 in `TestChampMultiplication` + `TestPlates` 5) | **+7 new (mult visuals), all pass** |
+| **`triple_sum` (TTS) — target now VARIES 6..12 (was always 20), woven into Queen + Superman too** (was mulc-only). `TARGETS=[6..12]` shuffled (distinct per pool). Queen was a saturated 20-card pool, so `makePool('mx')` caps the curated base to 18 then weaves 1 polygon + 1 TTS post-cap (no core type dropped, slot 0 stays `#ans`); `tri_unknown`/TRA stays in Queen (its test still passes). 2 new TripleSum tests (varied-target range, in-mx/sup pools) + the existing 5 retargeted to N=12 | **all pass (mx/sup/game_flow regressions fixed)** |
 
 ## 5. Next steps (not yet done)
 

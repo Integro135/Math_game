@@ -1,29 +1,33 @@
 /* ── Three-addends-to-a-target exercise (חִבּוּר שְׁלוֹשָׁה מִסְפָּרִים ➕➕) ──────────
-   `__ + __ + __ = 20` — the child fills THREE addends of her own choosing that
-   sum to the target (20). Any triple that sums to the target is accepted — EXCEPT
-   that **0 and 10 may not be used** as an addend. A sum-correct answer that leans
-   on a 0 or a 10 is praised ("נָכוֹן!") and costs NO points, but does NOT complete
-   the problem — she is asked to find OTHER numbers (this pushes real number-bond
-   practice past the trivial 20+0+0 / 10+10+0 / 10+9+1 shortcuts). A wrong SUM is a
-   normal mistake (host penalty).
+   `__ + __ + __ = N` — the child fills THREE addends of her own choosing that
+   sum to the target N. The target VARIES per card — a number 6..12 (not always
+   the same). Any triple that sums to N is accepted — EXCEPT that **0 and 10 may
+   not be used** as an addend. A sum-correct answer that leans on a 0 or a 10 is
+   praised ("נָכוֹן!") and costs NO points, but does NOT complete the problem —
+   she is asked to find OTHER numbers (this pushes real number-bond practice past
+   the trivial N+0+0 / 10+1+1 shortcuts). A wrong SUM is a normal mistake (host
+   penalty).
 
    Self-contained interactive type, mounted by core.js _colxMount into #colx-root
    (same host path as perimeter/compare/column modules); self-checks via
-   api.solved()/api.wrong(). Mixed into the אַלּוּפָה (mulc) set; the 'trip' handle
-   is for the manual tester / direct setMode.
+   api.solved()/api.wrong(). Woven into Queen (mx), Superman (sup) AND אַלּוּפָה
+   (mulc); the 'trip' handle is for the manual tester / direct setMode.
    Problem shape: { t:TTS, a:target }  (a = the sum the three addends must reach). */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.triple_sum=(()=>{
 
-  const TARGET_DEFAULT=20;
   const BANNED=[0,10];                       // may NOT be used as an addend
   const isBanned=v=>BANNED.indexOf(v)!==-1;
 
-  // Every card is the same target (the child's challenge is finding a fresh
-  // NON-0/NON-10 triple each time). `a` = target so the host's num1 carries it.
-  function makePool(n,target){
-    n=n||3;target=target||TARGET_DEFAULT;
-    const out=[];for(let i=0;i<n;i++)out.push({t:TTS,a:target});
+  // The TARGET varies per card — a number 6..12 (every one has a no-0/no-10
+  // triple; the "no 10" rule bites only at 11/12, where 10+1+1 is the shortcut).
+  // Targets are DISTINCT across a pool so the same total doesn't repeat.
+  const TARGETS=[6,7,8,9,10,11,12];
+  function makePool(n){
+    n=n||3;
+    const bag=TARGETS.slice();
+    for(let i=bag.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[bag[i],bag[j]]=[bag[j],bag[i]];}
+    const out=[];for(let i=0;i<n;i++)out.push({t:TTS,a:bag[i%bag.length]});
     return out;
   }
 
@@ -63,7 +67,7 @@ window.EXERCISES.types.triple_sum=(()=>{
   function mount(ctx){
     injectStyle();
     const {root,api}=ctx;
-    const target=(typeof ctx.a==='number'&&ctx.a)||(ctx.p&&ctx.p.a)||TARGET_DEFAULT;
+    const target=(typeof ctx.a==='number'&&ctx.a)||(ctx.p&&ctx.p.a)||9;
     const uid=++_uid;
     let done=false;
     const timers=[];const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
@@ -140,9 +144,14 @@ window.EXERCISES.types.triple_sum=(()=>{
 
   return{
     t:TTS,
-    modes:['trip','mulc'],
+    modes:['trip','mx','sup','mulc'],
     aidsReveal:'always',            // abstract number-bonds task — no number-line aid
-    make(mode){return (mode==='trip'||mode==='mulc')?makePool(mode==='trip'?6:3):[];},
+    make(mode){
+      return mode==='trip'?makePool(6)
+            :mode==='mulc'?makePool(3)
+            :mode==='sup'?makePool(2)
+            :mode==='mx'?makePool(1):[];   // Queen weaves just one (saturated pool)
+    },
     mount,
   };
 })();

@@ -500,15 +500,16 @@ class TestStagedColumnSub:
 # and does NOT complete — she must retry with other numbers.
 # ─────────────────────────────────────────────────────────
 
-def _enter_triple(page):
+def _enter_triple(page, target=12):
     """Enter אַלּוּפָה, wait for the triple_sum type + built pool, then force ONE
-    `__+__+__=20` problem and wait for its board."""
+    `__+__+__=target` problem and wait for its board (the real game target varies
+    6..12; tests pin it for determinism)."""
     page.evaluate("setMode('mulc')")
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.triple_sum==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
         timeout=TIMEOUT)
-    page.evaluate("mode='mulc';score=0;problems=[{t:TTS,a:20}];idx=0;loadProblem();")
+    page.evaluate(f"mode='mulc';score=0;problems=[{{t:TTS,a:{target}}}];idx=0;loadProblem();")
     page.wait_for_selector(".tsm-inp", timeout=TIMEOUT)
     page.wait_for_timeout(120)
 
@@ -526,21 +527,35 @@ def _triple_submit(page, a, b, c):
 
 class TestTripleSum:
     def test_triple_sum_loads_and_mounts(self, page):
-        """Forcing TTS mounts three addend boxes + the target 20; no host check
+        """Forcing TTS mounts three addend boxes + the target; no host check
         button, no number line."""
-        _enter_triple(page)
+        _enter_triple(page, 12)
         assert page.evaluate("ptype === TTS")
         assert page.evaluate("document.querySelectorAll('.tsm-inp').length") == 3
-        assert page.evaluate("(document.querySelector('.tsm-target')||{}).textContent") == "20"
+        assert page.evaluate("(document.querySelector('.tsm-target')||{}).textContent") == "12"
         assert page.evaluate(
             "getComputedStyle(document.getElementById('nl-panel')).display === 'none'")
         assert page.evaluate(
             "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
 
-    def test_triple_sum_valid_triple_scores_full(self, page):
-        """A triple that sums to 20 with no 0 and no 10 completes and scores full 20."""
+    def test_triple_sum_target_varies_and_is_6_to_12(self, page):
+        """The target is NOT always the same — make() spreads it over 6..12, and
+        the three cards in one pool carry DISTINCT targets."""
         _enter_triple(page)
-        _triple_submit(page, 7, 8, 5)
+        seen = set(page.evaluate(
+            "(()=>{const s={};for(let i=0;i<40;i++)"
+            "EXERCISES.types.triple_sum.make('mulc').forEach(p=>s[p.a]=1);"
+            "return Object.keys(s).map(Number);})()"))
+        assert len(seen) > 1, f"the target must vary, saw only {seen}"
+        assert seen and all(6 <= t <= 12 for t in seen), f"targets must be 6..12, saw {seen}"
+        one = page.evaluate("EXERCISES.types.triple_sum.make('mulc').map(p=>p.a)")
+        assert len(set(one)) == len(one), f"one pool's targets must be distinct, got {one}"
+
+    def test_triple_sum_valid_triple_scores_full(self, page):
+        """A triple that sums to the target with no 0 and no 10 completes and
+        scores full 20."""
+        _enter_triple(page, 12)
+        _triple_submit(page, 5, 4, 3)            # = 12, no 0/10
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 20
         assert page.evaluate("report[0].gotCorrect") is True
@@ -548,8 +563,8 @@ class TestTripleSum:
     def test_triple_sum_wrong_sum_is_a_mistake(self, page):
         """A triple that does NOT sum to the target is a normal mistake (penalty,
         not done)."""
-        _enter_triple(page)
-        _triple_submit(page, 5, 5, 5)            # = 15 ≠ 20
+        _enter_triple(page, 12)
+        _triple_submit(page, 5, 5, 5)            # = 15 ≠ 12
         page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
         assert page.evaluate("done") is False
         assert page.evaluate("score") == 0
@@ -557,30 +572,47 @@ class TestTripleSum:
     def test_triple_sum_zero_correct_but_not_accepted_no_penalty(self, page):
         """A sum-correct answer using 0 is praised but NOT completed and costs NO
         points — a later valid triple still scores the FULL 20."""
-        _enter_triple(page)
-        _triple_submit(page, 20, 0, 0)           # sums to 20 but uses 0
+        _enter_triple(page, 12)
+        _triple_submit(page, 8, 4, 0)            # sums to 12 but uses 0
         page.wait_for_timeout(300)
         assert page.evaluate("done") is False, "a 0 answer must not complete the problem"
         assert page.evaluate("tryFirst") == 0, "a 0 answer must NOT be penalised"
         assert page.evaluate("score") == 0
         page.wait_for_function(                  # boxes clear (~1.5s) for a retry
             "document.querySelector('.tsm-inp').value===''", timeout=TIMEOUT)
-        _triple_submit(page, 6, 9, 5)
+        _triple_submit(page, 5, 4, 3)
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 20, "no points may be lost on the 0 attempt"
 
     def test_triple_sum_ten_correct_but_not_accepted_no_penalty(self, page):
-        """Same soft rule for a 10: praised, no penalty, must retry with others."""
-        _enter_triple(page)
-        _triple_submit(page, 10, 9, 1)           # sums to 20 but uses 10
+        """Same soft rule for a 10 (the shortcut at target 12): praised, no penalty,
+        must retry with others."""
+        _enter_triple(page, 12)
+        _triple_submit(page, 10, 1, 1)           # sums to 12 but uses 10
         page.wait_for_timeout(300)
         assert page.evaluate("done") is False
         assert page.evaluate("tryFirst") == 0
         page.wait_for_function(
             "document.querySelector('.tsm-inp').value===''", timeout=TIMEOUT)
-        _triple_submit(page, 7, 8, 5)
+        _triple_submit(page, 5, 4, 3)
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 20
+
+    def test_triple_sum_in_queen_and_superman_pools(self, page):
+        """triple_sum is now woven into Queen (mx) and Superman (sup) too, not just
+        אַלּוּפָה — and mx never leaves it (a self-mounting type) at slot 0."""
+        for mode in ("mx", "sup", "mulc"):
+            page.evaluate(f"setMode('{mode}')")
+            page.wait_for_function(
+                "typeof problems!=='undefined' && problems.length>0"
+                " && typeof EXERCISES.types.triple_sum==='object'", timeout=TIMEOUT)
+            assert page.evaluate("problems.some(p=>p.t===TTS)"), \
+                f"triple_sum (TTS) must appear in the '{mode}' pool"
+        # mx guard: a self-mounting type must never sit at slot 0
+        assert page.evaluate(
+            "(()=>{for(let i=0;i<25;i++){const p=makePool('mx');"
+            "if([TCS,TMC,TPG,TTS].includes(p[0].t))return false;}return true;})()"), \
+            "mx must never leave a self-mounting type (incl. TTS) at slot 0"
 
 
 # ─────────────────────────────────────────────────────────

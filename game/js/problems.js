@@ -96,13 +96,24 @@ function _capPool(pool,n,minKeep){
 
 function makePool(m){
   if(m===0)return EX('add').make(0);                 // the full 1+1 ladder
-  if(m==='mx')return _withPolygons(makeMxPool(),QUEEN_SUPER_COUNT,{[TT]:2});   // Queen — curated mix + shapes, 20 shown (keep ≥2 round-tens)
+  if(m==='mx'){
+    // Queen is a SATURATED 20-card pool (17 curated types fill the coverage floor
+    // of 18, +2 woven extras). Cap the curated base to 18 (its floor, ≥2 round-tens),
+    // then weave ONE polygon + ONE triple_sum (`__+__+__`) POST-cap — at mid-deck
+    // slots, never slot 0 — so neither extra crowds a core type out of the cap.
+    const base=_capPool(makeMxPool(),QUEEN_SUPER_COUNT-2,{[TT]:2});   // 18
+    const extras=[];
+    if(EX('polygon')){const pg=shuffle(EX('polygon').make('poly'))[0];if(pg)extras.push(pg);}
+    if(EX('triple_sum')){const ts=EX('triple_sum').make('mx')[0];if(ts)extras.push(ts);}
+    let at=8;for(const ex of extras){base.splice(Math.min(at,base.length),0,ex);at+=8;}
+    return base;
+  }
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
   if(m==='b20')return makeBridge20Pool();            // bridge-20 curriculum (two alternating sets)
   // Superman — an EQUAL 3-per-type mix: column addition + big-number subtraction
   // + coin-multiplication + bagel-cost (×5 in shekels) + column subtraction
   // + whole-hundreds + multiplication chains, shuffled then capped to 20 shown
-  if(m==='sup')return _withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[])]),QUEEN_SUPER_COUNT);
+  if(m==='sup')return _withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])]),QUEEN_SUPER_COUNT);
   if(m==='big')return EX('big_step').make('big');    // big number ± step game
   if(m==='poly')return EX('polygon')?EX('polygon').make('poly'):[];   // count-the-sides shapes game
   if(m==='mul')return EX('mult_chain')?EX('mult_chain').make('mul'):[];// multiplication as repeated addition (2×3 → 2+2+2)
@@ -162,8 +173,9 @@ function makeMxPool(){
   ]);
   // Self-mounting modules render their OWN UI (not the #ans box), so never let one
   // sit at slot 0 — the first card must show a normal input. Covers column
-  // subtraction (TCS) and the multiplication chain (TMC).
-  const _noAns=p=>p.t===TCS||p.t===TMC||p.t===TPG;
+  // subtraction (TCS), the multiplication chain (TMC), polygon (TPG) and the
+  // three-addends box (TTS, woven post-cap in the makePool('mx') branch).
+  const _noAns=p=>p.t===TCS||p.t===TMC||p.t===TPG||p.t===TTS;
   if(pool.length&&_noAns(pool[0])){
     for(let j=1;j<pool.length;j++){if(!_noAns(pool[j])){const t=pool[0];pool[0]=pool[j];pool[j]=t;break;}}
   }
