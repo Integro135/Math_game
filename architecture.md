@@ -109,10 +109,14 @@ subtraction_game/
 │  ├─ compare.ex.js                TCP DRAG a < / > / = sign into the slot between
 │  │                                 two numbers (pointer-drag). אַלּוּפָה
 │  │                                 (interactive mount module, #colx-root)
-│  └─ triple_sum.ex.js             TTS __+__+__ = 20 — three CHOSEN addends; 0 and
-│                                    10 disallowed (a 0/10 answer is praised, no
-│                                    penalty, must retry). אַלּוּפָה
-│                                    (interactive mount module, #colx-root)
+│  ├─ triple_sum.ex.js             TTS __+__+__ = 20 — three CHOSEN addends; 0 and
+│  │                                 10 disallowed (a 0/10 answer is praised, no
+│  │                                 penalty, must retry). אַלּוּפָה
+│  │                                 (interactive mount module, #colx-root)
+│  └─ half.ex.js                   THF "כַּמָּה זֶה חֵצִי" — two friends share
+│                                    4/6/8/10 items EQUALLY; tap → a golden middle
+│                                    line splits them in two (first division).
+│                                    אַלּוּפָה (interactive mount module, #colx-root)
 │
 ├─ backgrounds/
 │  ├─ README.md                    ★ per-background docs (scene inventory, timers,
@@ -354,7 +358,8 @@ Current recipes:
   (multiplication up to 4, product first), `perimeter.make('mulc')` (polygon
   perimeter, §3.6 list), `column_sub.make('mulc')` (the STAGED subtraction),
   `compare.make('mulc')` (drag-the-sign), `word_prob.make('mulc')` (short nikud
-  word problems) and `triple_sum.make('mulc')` (`__+__+__=20`, no 0/10).
+  word problems), `triple_sum.make('mulc')` (`__+__+__=20`, no 0/10) and
+  `half.make('mulc')` (share 4/6/8/10 items equally between two — first division).
   `modePts('mulc')=20`.
 
 **Staged (horizontal-first, graded) column subtraction.** In Superman and
@@ -392,7 +397,7 @@ window.EXERCISES.types.column_add = {
 `EXERCISE_OF_TYPE` (data.js) maps a ptype to its file —
 `{ [TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul', [TBC]:'bagel_cost',
 [TPG]:'polygon', [TMC]:'mult_chain', [TMK]:'mult_champ', [TPP]:'perimeter',
-[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum' }`. `renderEq` emits a
+[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half' }`. `renderEq` emits a
 single `<div id="colx-root">` for any of them and calls `_colxMount` (core.js).
 `_colxMount` injects `exercises/<name>.ex.js` on demand (bg-loader
 .loadExercise) and mounts it into that root. Its async load callback re-checks
@@ -406,7 +411,7 @@ global `ans-inp` class so the green/red answer-border contract applies
 automatically.
 
 The interactive types served by this `#colx-root` host (the newer ones —
-`mult_chain`, `mult_champ`, `perimeter`, `compare`, `word_prob`, `triple_sum` — share the same
+`mult_chain`, `mult_champ`, `perimeter`, `compare`, `word_prob`, `triple_sum`, `half` — share the same
 mount contract; a few are detailed in `exercises/README.md`):
 
 - **column addition** (`column_add.ex.js`, TCA) — units first, a carried 1
@@ -463,6 +468,7 @@ Each ships a thin dev harness (single source of truth) — e.g.
 | Fixed the number-line ←/→ arrow keys in the column exercise: the handler was gated on `tryFirst>0` (dead on an always-on line) and ignored non-`type=number` inputs (the column boxes are `type=text`). Arrows now drive the rider whenever the line is visible and pass through from any `.ans-inp` answer box; drag gated on visibility too. Added a regression test | **127 passed / 0 failed / 7 skips** (135 collected) |
 | Three אַלּוּפָה additions covered: **`perimeter`/TPP** (sum a to-scale polygon's 1–4 side labels; drawn-to-scale triangle via `triVerts`), **`compare`/TCP** (DRAG a `<`/`>`/`=` sign into the slot; real `page.mouse` pointer-drag), and the **STAGED horizontal-first column subtraction** now in **Superman + אַלּוּפָה** (graded ladder 100/75/50/0 on the mode base — mulc 20/15/10/0, sup 15/11/8/0 — number line opens on the 2nd mistake). 17 new tests (`TestPerimeter`, `TestCompare`, `TestStagedColumnSub`) | **+17 new (perimeter/compare/staged-sub), all pass** |
 | New אַלּוּפָה type **`triple_sum`/TTS** — `__+__+__ = 20`, the child picks three addends; **0 and 10 are disallowed** — a sum-correct 0/10 answer is PRAISED, costs NO points and does NOT complete (retry with other numbers), a wrong sum is a normal mistake. Self-mounting, wired like the other mulc types. 5 new tests (`TestTripleSum`: mount, valid→full 20, wrong-sum→penalty, 0→no-penalty-must-retry, 10→no-penalty-must-retry) | **+5 new (triple_sum), all pass** |
+| New אַלּוּפָה type **`half`/THF — "כַּמָּה זֶה חֵצִי"** (first DIVISION): a word problem — two girls share 4/6/8/10 items EQUALLY; TAPPING the items toggles a golden MIDDLE line that splits them into 2 equal halves sliding toward each girl; the child types how many EACH gets (n÷2). A wrong answer auto-opens the split ("count one side"). Rotating item emoji + girl-name pairs. 5 new tests (`TestHalfSplit` in tests/test_champion.py: mount/halves, tap-toggles-split, correct→full 20, wrong→auto-split→13, pool = even totals only) | **+5 new (half), all pass** |
 | **Success screen now skips on TAP/CLICK (mobile/tablet parity).** The per-answer celebration only dismissed on Enter/Space; `showFw` now also registers a document `pointerdown` listener (`_fwTap` → `fwClose`, removed in `_fwDone`) and its backdrop is `pointer-events:auto`, so a tap on phone/tablet skips it immediately and advances — like the desktop click. 1 new test (`TestSuccessDuration::test_tap_or_click_dismisses_immediately`); verified under real touch emulation (`has_touch` context, `touchscreen.tap` → `_fwOn` false + `idx`+1) | **+1 new, all pass** |
 
 ## 5. Next steps (not yet done)

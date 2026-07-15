@@ -2,7 +2,7 @@
    A new exercise for the אַלּוּפָה category (mode 'mulc'). A SHORT vowelled
    (מְנֻקָּד) story up to 10, e.g.:
 
-       לְיוֹסִי 5 תַּפּוּחִים. רוֹעִי לָקַח לוֹ 3 תַּפּוּחִים.
+       לְיוֹסִי חֲמִשָּׁה תַּפּוּחִים. רוֹעִי לָקַח לוֹ שְׁלֹשָׁה תַּפּוּחִים.
        כַּמָּה תַּפּוּחִים נִשְׁאֲרוּ לְיוֹסִי?
 
    The child types the answer. Correct on the first try → full points.
@@ -12,10 +12,19 @@
    host's graded api.penalize / api.solvedFrac hooks (the same staged scoring
    the אַלּוּפָה column-subtraction uses).
 
-   Numbers are shown as DIGITS (as in the example), so the fixed nikud story
-   text never has to agree with a spelled-out Hebrew numeral — only the two
-   operands vary. Every template keeps its name/noun/verb FIXED so the grammar
-   + nikud are always correct; operands stay ≥ 2 so the plural noun agrees.
+   Numbers in the STORY are spelled out as gender-agreeing Hebrew words (e.g.
+   "חֲמִשָּׁה תַּפּוּחִים", "שָׁלֹשׁ עֻגִיּוֹת") — the bare digits appear only in the
+   derived equation (5 − 3 =) revealed after a mistake. Hebrew number–noun
+   agreement is polar: the ־ָה form (שְׁלֹשָׁה) goes with MASCULINE nouns, the
+   short form (שָׁלֹשׁ) with FEMININE ones; 2 uses the construct שְׁנֵי/שְׁתֵּי.
+   Each template therefore carries its counted noun's gender `g`, and its
+   name/noun/verb stay FIXED so the grammar + nikud are always correct.
+   Operands stay ≥ 2, so 0/1 (with their extra agreement quirks) never appear.
+
+   Each number word is UNDERLINED and interactive: hovering (desktop) or tapping
+   (touch) it pops a tooltip with that many object emojis (🍎/🎈/🍬…, matched to
+   the story's noun via the template's `e`), so the child can count the quantity
+   the word stands for. Data lives on the <b class="wp-num" data-n data-emoji>.
 
    Problem shape: { t:TWP, a, b, op:'sub'|'add', story } (story = pre-rendered
    nikud HTML). Interactive: mounted by core.js _colxMount into #colx-root;
@@ -25,32 +34,47 @@ window.EXERCISES.types.word_prob=(()=>{
 
   const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
   const irnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
-  const N=v=>'<b class="wp-num">'+v+'</b>';   // a highlighted digit inside the story
+  /* Hebrew number WORDS (2..10) with nikud, in the two counting forms.
+     m = the ־ָה form used with MASCULINE nouns · f = the short form used with
+     FEMININE nouns · 2 is the construct שְׁנֵי/שְׁתֵּי. */
+  const WORDS={
+    m:{2:'שְׁנֵי',3:'שְׁלֹשָׁה',4:'אַרְבָּעָה',5:'חֲמִשָּׁה',6:'שִׁשָּׁה',7:'שִׁבְעָה',8:'שְׁמוֹנָה',9:'תִּשְׁעָה',10:'עֲשָׂרָה'},
+    f:{2:'שְׁתֵּי',3:'שָׁלֹשׁ',4:'אַרְבַּע',5:'חָמֵשׁ',6:'שֵׁשׁ',7:'שֶׁבַע',8:'שְׁמוֹנֶה',9:'תֵּשַׁע',10:'עֶשֶׂר'},
+  };
+  // the spelled numeral: highlighted + UNDERLINED, agreeing with the noun's gender g.
+  // carries data-n (the value) and data-emoji (the story's object) so hovering /
+  // tapping it pops a tooltip with that many emojis (wired in mount()).
+  const N=(v,g,e)=>'<b class="wp-num" data-n="'+v+'" data-emoji="'+e+'">'
+                   +(((WORDS[g]||WORDS.m)[v])||v)+'</b>';
 
   /* SUBTRACTION stories — answer = a − b (a = start, b = taken away). Each is a
-     complete, grammatically-fixed nikud sentence; only the two digits change. */
+     complete, grammatically-fixed nikud sentence; `g` = the counted noun's gender
+     so the spelled numeral agrees, `e` = the object emoji shown on hover. A/B are
+     the pre-rendered numeral words. */
   const SUB=[
-    (a,b)=>'לְיוֹסִי '+N(a)+' תַּפּוּחִים. רוֹעִי לָקַח לוֹ '+N(b)+' תַּפּוּחִים. כַּמָּה תַּפּוּחִים נִשְׁאֲרוּ לְיוֹסִי?',
-    (a,b)=>'לְדָנָה הָיוּ '+N(a)+' בָּלוֹנִים. '+N(b)+' בָּלוֹנִים הִתְפּוֹצְצוּ. כַּמָּה בָּלוֹנִים נִשְׁאֲרוּ לְדָנָה?',
-    (a,b)=>'לְנֹעַם הָיוּ '+N(a)+' סֻכָּרִיּוֹת. הוּא אָכַל '+N(b)+' מֵהֶן. כַּמָּה סֻכָּרִיּוֹת נִשְׁאֲרוּ לוֹ?',
-    (a,b)=>'עַל הָעֵץ יָשְׁבוּ '+N(a)+' צִפּוֹרִים. '+N(b)+' צִפּוֹרִים עָפוּ. כַּמָּה צִפּוֹרִים נִשְׁאֲרוּ עַל הָעֵץ?',
-    (a,b)=>'לְמַיָּה הָיוּ '+N(a)+' עֻגִיּוֹת. הִיא נָתְנָה '+N(b)+' עֻגִיּוֹת לַחֲבֵרָה. כַּמָּה עֻגִיּוֹת נִשְׁאֲרוּ לָהּ?',
+    {g:'m',e:'🍎',t:(A,B)=>'לְיוֹסִי '+A+' תַּפּוּחִים. רוֹעִי לָקַח לוֹ '+B+' תַּפּוּחִים. כַּמָּה תַּפּוּחִים נִשְׁאֲרוּ לְיוֹסִי?'},
+    {g:'m',e:'🎈',t:(A,B)=>'לְדָנָה הָיוּ '+A+' בָּלוֹנִים. '+B+' בָּלוֹנִים הִתְפּוֹצְצוּ. כַּמָּה בָּלוֹנִים נִשְׁאֲרוּ לְדָנָה?'},
+    {g:'f',e:'🍬',t:(A,B)=>'לְנֹעַם הָיוּ '+A+' סֻכָּרִיּוֹת. הוּא אָכַל '+B+' מֵהֶן. כַּמָּה סֻכָּרִיּוֹת נִשְׁאֲרוּ לוֹ?'},
+    {g:'f',e:'🐦',t:(A,B)=>'עַל הָעֵץ יָשְׁבוּ '+A+' צִפּוֹרִים. '+B+' צִפּוֹרִים עָפוּ. כַּמָּה צִפּוֹרִים נִשְׁאֲרוּ עַל הָעֵץ?'},
+    {g:'f',e:'🍪',t:(A,B)=>'לְמַיָּה הָיוּ '+A+' עֻגִיּוֹת. הִיא נָתְנָה '+B+' עֻגִיּוֹת לַחֲבֵרָה. כַּמָּה עֻגִיּוֹת נִשְׁאֲרוּ לָהּ?'},
   ];
   /* ADDITION stories — answer = a + b. */
   const ADD=[
-    (a,b)=>'לְאִיתַי הָיוּ '+N(a)+' גֻּלּוֹת. הוּא קִבֵּל עוֹד '+N(b)+' גֻּלּוֹת. כַּמָּה גֻּלּוֹת יֵשׁ לוֹ עַכְשָׁיו?',
-    (a,b)=>'רוֹנִי קָטְפָה '+N(a)+' פְּרָחִים, וְאַחַר כָּךְ עוֹד '+N(b)+' פְּרָחִים. כַּמָּה פְּרָחִים קָטְפָה רוֹנִי?',
-    (a,b)=>'בַּבְּרֵכָה הָיוּ '+N(a)+' דָּגִים. הוֹסִיפוּ עוֹד '+N(b)+' דָּגִים. כַּמָּה דָּגִים יֵשׁ עַכְשָׁיו בַּבְּרֵכָה?',
-    (a,b)=>'לְעֹמֶר הָיוּ '+N(a)+' מַדְבֵּקוֹת. הוּא קָנָה עוֹד '+N(b)+' מַדְבֵּקוֹת. כַּמָּה מַדְבֵּקוֹת יֵשׁ לוֹ?',
+    {g:'f',e:'🔵',t:(A,B)=>'לְאִיתַי הָיוּ '+A+' גֻּלּוֹת. הוּא קִבֵּל עוֹד '+B+' גֻּלּוֹת. כַּמָּה גֻּלּוֹת יֵשׁ לוֹ עַכְשָׁיו?'},
+    {g:'m',e:'🌸',t:(A,B)=>'רוֹנִי קָטְפָה '+A+' פְּרָחִים, וְאַחַר כָּךְ עוֹד '+B+' פְּרָחִים. כַּמָּה פְּרָחִים קָטְפָה רוֹנִי?'},
+    {g:'m',e:'🐟',t:(A,B)=>'בַּבְּרֵכָה הָיוּ '+A+' דָּגִים. הוֹסִיפוּ עוֹד '+B+' דָּגִים. כַּמָּה דָּגִים יֵשׁ עַכְשָׁיו בַּבְּרֵכָה?'},
+    {g:'f',e:'⭐',t:(A,B)=>'לְעֹמֶר הָיוּ '+A+' מַדְבֵּקוֹת. הוּא קָנָה עוֹד '+B+' מַדְבֵּקוֹת. כַּמָּה מַדְבֵּקוֹת יֵשׁ לוֹ?'},
   ];
 
-  /* one problem: pick an op, pick operands (≤10, both ≥2), render a story */
+  /* one problem: pick an op, pick operands (≤10, both ≥2), render the story with
+     the operands spelled out as gender-agreeing Hebrew words (underlined + tappable) */
   function makeOne(op){
     let a,b;
     if(op==='add'){ a=irnd(2,8); b=irnd(2,10-a); }          // sum 4..10
     else          { b=irnd(2,6); a=irnd(b+2,10); }          // a 4..10, answer a−b ≥ 2
-    const tpl=(op==='add'?ADD:SUB)[irnd(0,(op==='add'?ADD:SUB).length-1)];
-    return {t:TWP,a,b,op,story:tpl(a,b)};
+    const list=(op==='add'?ADD:SUB);
+    const tpl=list[irnd(0,list.length-1)];
+    return {t:TWP,a,b,op,story:tpl.t(N(a,tpl.g,tpl.e),N(b,tpl.g,tpl.e))};
   }
 
   /* a de-duplicated batch, roughly half subtraction / half addition, shuffled */
@@ -76,8 +100,26 @@ window.EXERCISES.types.word_prob=(()=>{
     text-shadow:0 0 12px rgba(160,190,255,.25);
     background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);
     border-radius:16px;padding:16px 20px;animation:wpFade .35s ease}
-  .wp-story .wp-num{color:var(--skin-accent,#ffd27d);font-weight:700;font-size:1.15em;margin:0 1px}
+  .wp-story .wp-num{color:var(--skin-accent,#ffd27d);font-weight:700;font-size:1.15em;margin:0 1px;
+    cursor:pointer;text-decoration:underline;text-decoration-thickness:2px;
+    text-underline-offset:4px;text-decoration-color:var(--skin-accent,#ffd27d);
+    border-radius:6px;transition:filter .12s,text-shadow .12s}
+  .wp-story .wp-num:hover{filter:brightness(1.18);text-shadow:0 0 12px var(--skin-accent,#ffd27d)}
   @keyframes wpFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  /* emoji quantity tooltip — pops N object-emojis when a number word is hovered/tapped */
+  .wp-tip{position:fixed;z-index:99999;display:none;flex-wrap:wrap;gap:6px 8px;
+    max-width:212px;justify-content:center;align-items:center;padding:12px 14px;
+    border-radius:16px;pointer-events:none;direction:ltr;
+    background:rgba(28,22,52,.94);border:2px solid var(--skin-accent,#ffd27d);
+    box-shadow:0 10px 28px rgba(0,0,0,.45);
+    opacity:0;transform:translateY(6px) scale(.96);transition:opacity .16s ease,transform .16s ease}
+  .wp-tip.show{opacity:1;transform:none}
+  .wp-tip::after{content:'';position:absolute;bottom:-8px;left:calc(50% - 8px);
+    width:0;height:0;border:8px solid transparent;border-bottom:0;
+    border-top-color:var(--skin-accent,#ffd27d)}
+  .wp-tip.below::after{top:-8px;bottom:auto;border-top:0;border-bottom:8px solid var(--skin-accent,#ffd27d);border-top-color:transparent}
+  .wp-tip .wp-tip-e{font-size:1.75rem;line-height:1;animation:wpPop .3s ease both}
+  @keyframes wpPop{from{opacity:0;transform:scale(.35)}to{opacity:1;transform:none}}
   .wp-ansrow,.wp-eqrow{display:flex;align-items:center;justify-content:center;gap:12px;direction:ltr}
   .wp-eq{font-family:'Fredoka One',cursive;font-size:1.9rem;color:var(--skin-text,#fff);letter-spacing:.03em}
   #colx-root .ans-inp.wp-inp,#colx-root .ans-inp.wp-inp2{width:74px;height:58px;font-size:2rem;border-radius:12px;text-align:center;padding:0}
@@ -140,6 +182,46 @@ window.EXERCISES.types.word_prob=(()=>{
 
     fb('📖 קִרְאִי אֶת הַסִּפּוּר וְכִתְבִי כַּמָּה יָצָא 💗');
 
+    // ── underlined number words → emoji-quantity tooltip ──
+    // Hover (desktop) or tap (touch) a spelled number to see that many object
+    // emojis, so the child can literally count the quantity the word stands for.
+    document.querySelectorAll('.wp-tip').forEach(t=>t.remove());   // drop any stray tip
+    const tip=document.createElement('div');tip.className='wp-tip';document.body.appendChild(tip);
+    function showTip(el){
+      const n=parseInt(el.getAttribute('data-n'),10)||0;
+      const emo=el.getAttribute('data-emoji')||'⭐';
+      if(!n)return;
+      tip.innerHTML='';
+      for(let i=0;i<n;i++){
+        const s=document.createElement('span');s.className='wp-tip-e';s.textContent=emo;
+        s.style.animationDelay=(i*45)+'ms';tip.appendChild(s);
+      }
+      tip.classList.remove('below','show');tip.style.display='flex';tip.style.visibility='hidden';
+      tip.style.left='0px';tip.style.top='0px';                 // reset before measuring
+      const r=el.getBoundingClientRect();
+      const tw=tip.offsetWidth, th=tip.offsetHeight;
+      const below=(window.innerHeight-r.bottom) >= th+16;       // prefer BELOW the word (clears the header); flip up only if no room
+      let left=Math.max(8,Math.min(r.left+r.width/2-tw/2, window.innerWidth-tw-8));
+      let top=below?r.bottom+12:r.top-th-12;
+      top=Math.max(8,Math.min(top, window.innerHeight-th-8));    // always keep on-screen
+      tip.classList.toggle('below',below);
+      tip.style.left=left+'px';tip.style.top=top+'px';tip.style.visibility='';tip._for=el;
+      requestAnimationFrame(()=>tip.classList.add('show'));
+    }
+    function hideTip(){tip.classList.remove('show');tip.style.display='none';tip._for=null;}
+    root.querySelectorAll('.wp-story .wp-num').forEach(el=>{
+      el.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')showTip(el);});
+      el.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')hideTip();});
+    });
+    // touch: tap a word to toggle its tooltip; tap elsewhere to dismiss (mouse uses hover)
+    function onDocDown(e){
+      if(e.pointerType==='mouse')return;
+      const el=e.target.closest&&e.target.closest('.wp-story .wp-num');
+      if(el&&root.contains(el)){(tip._for===el&&tip.classList.contains('show'))?hideTip():showTip(el);}
+      else hideTip();
+    }
+    document.addEventListener('pointerdown',onDocDown);
+
     function grade(box){
       if(solved)return;solved=true;
       if(box){box.classList.remove('blink','ans-err');box.classList.add('ans-ok');}
@@ -194,7 +276,12 @@ window.EXERCISES.types.word_prob=(()=>{
     wire(inp2,chk2,try2);
 
     requestAnimationFrame(()=>{try{inp1.focus();}catch(e){}});
-    return function cleanup(){timers.forEach(clearTimeout);root.innerHTML='';};
+    return function cleanup(){
+      timers.forEach(clearTimeout);
+      document.removeEventListener('pointerdown',onDocDown);
+      if(tip&&tip.parentNode)tip.parentNode.removeChild(tip);
+      root.innerHTML='';
+    };
   }
 
   return{

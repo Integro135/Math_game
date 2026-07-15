@@ -42,14 +42,16 @@ exercises/
 ├─ mult_champ.ex.js   INTERACTIVE אַלּוּפָה 🏆 multiplication (קָשֶׁה tier, factors ≤4) — product FIRST, chain-on-mistake + 🔁 switch
 ├─ perimeter.ex.js    INTERACTIVE polygon PERIMETER (הֶקֵּף) — sum the 1..4 side labels of a to-scale square/rect/triangle
 ├─ compare.ex.js      INTERACTIVE DRAG the comparison sign (< / > / =) into the slot between two numbers
-├─ word_prob.ex.js    INTERACTIVE בְּעָיוֹת מִלּוּלִיּוֹת עַד 10 — a short NIKUD word story (digits, up to 10); a wrong answer costs 25% AND reveals the derived equation (5−3) to retry (graded 100/75/50/0). Mixed into אַלּוּפָה (mulc).
-└─ triple_sum.ex.js   INTERACTIVE __+__+__ = 20 — three CHOSEN addends; 0 and 10 are DISALLOWED (a 0/10 answer is praised, costs nothing, but must be re-tried with other numbers). Mixed into אַלּוּפָה (mulc).
+├─ word_prob.ex.js    INTERACTIVE בְּעָיוֹת מִלּוּלִיּוֹת עַד 10 — a short NIKUD word story with the numbers SPELLED OUT as gender-agreeing Hebrew words (חֲמִשָּׁה תַּפּוּחִים / שָׁלֹשׁ עֻגִיּוֹת), up to 10. Each number word is UNDERLINED; hovering (desktop) / tapping (touch) it pops a tooltip of that many object emojis matched to the story's noun (🍎/🎈/🍬…). A wrong answer costs 25% AND reveals the derived DIGIT equation (5−3) to retry (graded 100/75/50/0). Mixed into אַלּוּפָה (mulc).
+├─ triple_sum.ex.js   INTERACTIVE __+__+__ = 20 — three CHOSEN addends; 0 and 10 are DISALLOWED (a 0/10 answer is praised, costs nothing, but must be re-tried with other numbers). Mixed into אַלּוּפָה (mulc).
+└─ half.ex.js         INTERACTIVE "כַּמָּה זֶה חֵצִי" — two friends share 4/6/8/10 items EQUALLY; tap the items → a golden MIDDLE line splits them into 2 equal groups. First DIVISION intuition. Mixed into אַלּוּפָה (mulc).
 ```
 
 (A few later type files — `bagel_cost`, `polygon`, `mult_chain`, `mult_champ`,
-`perimeter`, `compare`, and the `var_one`/`tri_unknown`/`hundreds` data types —
-are newer than some tables below; `mult_chain` is documented in §4d,
-`mult_champ` in §4e, `perimeter` in §4f, `compare` in §4g. The `column_sub`
+`perimeter`, `compare`, `triple_sum`, `half`, and the
+`var_one`/`tri_unknown`/`hundreds` data types — are newer than some tables below;
+`mult_chain` is documented in §4d, `mult_champ` in §4e, `perimeter` in §4f,
+`compare` in §4g, `triple_sum` in §4h, `half` in §4i. The `column_sub`
 STAGED (horizontal-first) flow used by Superman + אַלּוּפָה is in §4b.)
 
 Every file opens with the same idempotent guard and self-registration:
@@ -124,13 +126,14 @@ A registered type is an object of this exact shape:
 | `perimeter` | `{t:TPP, shape:'square'|'rect'|'tri', sides:[…], a}`  (rect also `w,h`; `a` = perimeter) | a to-scale shape with a length **1..4** by each side; type the SUM of the sides. Interactive |
 | `compare`   | `{t:TCP, a, b}`  (sign derived: `a<b`→‹ , `a>b`→› , `a===b`→=) | DRAG the correct comparison sign (`<`/`>`/`=`) into the empty slot between the two numbers. Interactive |
 | `triple_sum`| `{t:TTS, a}`  (`a` = the target sum, 20) | `__ + __ + __ = a` — pick THREE addends that sum to `a`; **0 and 10 are disallowed** (a 0/10 answer is praised, costs nothing, but must be re-tried). Interactive |
+| `half`      | `{t:THF, n, a, item, itemName, names:[g1,g2]}`  (`n` = total 4/6/8/10, `a` = n÷2) | a word problem: two friends share `n` items EQUALLY; tap the items → a golden MIDDLE line splits them into 2 equal groups; type how many EACH gets. Interactive |
 
 ptype constants (`game/js/data.js`):
 `TM='missing'`, `TS='sub'`, `TA='add'`, `TX='mixed'`, `TZ='triple'`,
 `TW='twin_sub'`, `TDA='dbl_add'`, `TDS='dbl_sub'`, `TC='coins'`, `TT='tens'`,
 `TCA='col_add'`, `TCS='col_sub'`, `TBG='big_step'`, `TCM='coin_mul'`,
 `TMC='mult_chain'`, `TMK='mult_champ'`, `TPP='perimeter'`, `TCP='compare'`,
-`TTS='triple_sum'`
+`TTS='triple_sum'`, `THF='half'`
 (+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TWP='word_prob'`, `TVA`/`TVS`/`TRA`/`TH`).
 
 ---
@@ -153,6 +156,7 @@ ptype constants (`game/js/data.js`):
 | `perimeter.ex.js`| `TPP`         | `'perim','mulc'`        | Interactive polygon **perimeter**. `make('mulc')` → **5** (cycles square/rect/triangle); `make('perim')` → 9 (tester handle). Each shape is drawn **to scale** (triangle via `triVerts`, law-of-cosines) with a length 1..4 by each side; answer = sum of sides. `aidsReveal:'always'`; the number line is hidden until a WRONG answer, then shown so she can hop the sides. See §4f. |
 | `compare.ex.js`  | `TCP`         | `'cmp','mulc'`          | Interactive **drag-the-sign** comparison. `make('mulc')` → **5** (always ≥1 of each relation `<`/`>`/`=`; `make('cmp')` → 9). Numbers 1..99; the child DRAGS the correct sign into the slot between them. `aidsReveal:'always'` (no number line). See §4g. |
 | `triple_sum.ex.js`| `TTS`        | `'trip','mulc'`         | Interactive **three-addends-to-a-target** `__+__+__=20`. `make('mulc')` → **3** (`make('trip')` → 6), all target 20. Any triple that sums to 20 is accepted **except that 0 and 10 are disallowed** — a sum-correct 0/10 answer is praised, costs NOTHING and does NOT complete (retry with other numbers). `aidsReveal:'always'`. See §4h. |
+| `half.ex.js`     | `THF`         | `'hlf','mulc'`          | Interactive **share-equally-between-two** (first division). `make('mulc')` → **4** (one per total 4/6/8/10, all even → exact halves; `make('hlf')` → 6). Rotating item emoji + girl-pair names make each card a fresh mini word problem. `aidsReveal:'always'` (the split-in-two picture is the aid; a wrong answer auto-opens it). See §4i. |
 
 Notes:
 - `add`/`sub`/`missing`/`double` share the same `pick(arr,n)` Fisher–Yates
@@ -644,6 +648,47 @@ walks box→box→check. `check()` has THREE outcomes:
 
 ---
 
+## 4i. `half.ex.js` in depth — "כַּמָּה זֶה חֵצִי" (share equally ✂️➗)
+
+The gentlest first taste of DIVISION, framed as a mini word problem: two girls
+have `n` items (4/6/8/10 — always EVEN) and must share them שָׁוֶה בְּשָׁוֶה; the
+child types how many EACH gets (`n ÷ 2`). Self-mounting (`t:THF`,
+`modes:['hlf','mulc']`), mixed into אַלּוּפָה.
+
+```js
+return { t:THF, modes:['hlf','mulc'], aidsReveal:'always', make(mode){…}, mount };
+```
+
+### Data side — `make(mode)`
+`makePool(ns)` builds one problem per total: `{t:THF, n, a:n/2, item, itemName,
+names:[g1,g2]}` — `a` carries the ANSWER so the host `_cor`/report stay correct.
+`make('mulc')` → **4** (totals 4/6/8/10 shuffled); `make('hlf')` → 6 (tester
+handle). `ITEMS` rotates emoji + niqqud plurals (🍎 תַּפּוּחִים, 🍪 עוּגִיּוֹת,
+🎈 בַּלּוֹנִים, 🍓 תּוּתִים, 🌸 פְּרָחִים, 🍬 סֻכָּרִיּוֹת); `PAIRS` rotates
+girl-name pairs (דָּנָה/נֹעָה …) so every card reads like a fresh story.
+
+### Interactive side — `mount({root,a,b,api})`
+Reads the full problem via `ctx.p`. Renders the story line ("לְדָנָה וּלְנֹעָה
+יֵשׁ 8 תַּפּוּחִים 🍎 — אֵיךְ הֵן יִתְחַלְּקוּ שָׁוֶה בְּשָׁוֶה?"), then the
+stage: 👧🏻 · the items · 👧🏽. The items are PRE-GROUPED in the DOM as two equal
+`.hf-half` wrappers with a `.hf-line` divider between them (`scaleY(0)`, hidden).
+
+**The tap-to-split aid.** Clicking the stage toggles `hf-split` on the root: the
+golden middle line drops (`scaleY(1)` + glow), the two halves PART (translate ±8px
+toward their girls, dashed borders + soft background group each side) and the
+girls scale up — the child literally sees the equal 2-way share and can count one
+side. Pure aid, toggleable, no effect on scoring.
+
+**Answering** ("כַּמָּה תְּקַבֵּל כָּל אַחַת?" + `.hf-inp` + ✓): correct →
+`forceSplit()` + the story line becomes the explanation ("כָּל אַחַת מְקַבֶּלֶת
+4 — כִּי חֵצִי מִ־8 זֶה 4!") + `api.solved()`. Wrong → `api.wrong(v)` AND the
+split auto-opens (the "aid appears on a mistake" convention, like perimeter's
+number line) with a count-one-side hint, then clears for a retry. Standard
+try-first scoring. No number line. **Cleanup** clears timers and empties `root`.
+CSS namespaced `hf-*` (`#hf-style`).
+
+---
+
 ## 5. Integration into the game
 
 ```
@@ -693,13 +738,13 @@ boot / setMode(m) / restart()
 - **`EXERCISE_OF_TYPE`** (`data.js`) maps a ptype → its interactive file:
   `{[TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul', [TBC]:'bagel_cost',
   [TPG]:'polygon', [TMC]:'mult_chain', [TMK]:'mult_champ', [TPP]:'perimeter',
-  [TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum'}`.
+  [TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half'}`.
   - `'mulc'` (אַלּוּפָה, the `hard`/קָשֶׁה tier) is a **MIXED pool**, capped at 20:
     `mult_champ.make('mulc')` (multiplication-up-to-4, product first) +
     `perimeter.make('mulc')` (§4f) + `column_sub.make('mulc')` (the staged
     subtraction, §4b) + `compare.make('mulc')` (§4g) + `word_prob.make('mulc')` +
-    `triple_sum.make('mulc')` (§4h), shuffled then coverage-capped (`_capPool`); a
-    guard keeps a `mult_champ` (TMK) card at slot 0.
+    `triple_sum.make('mulc')` (§4h) + `half.make('mulc')` (§4i), shuffled then
+    coverage-capped (`_capPool`); a guard keeps a `mult_champ` (TMK) card at slot 0.
 - **`api`** — the host object handed to `mount()`. Base: `wrong(v)` (log a mistake
   + sad modal + try-first unlock), `solved()` (award `_tfPts()` + celebrate),
   `nl(anchor)` (park the number-line rider). The **staged** column-subtraction adds

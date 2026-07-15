@@ -118,6 +118,7 @@ function makePool(m){
       ...(EX('compare')?EX('compare').make('mulc'):[]),
       ...(EX('word_prob')?EX('word_prob').make('mulc'):[]),   // בעיות מילוליות עד 10
       ...(EX('triple_sum')?EX('triple_sum').make('mulc'):[]), // __+__+__ = 20 (בלי 0/10)
+      ...(EX('half')?EX('half').make('mulc'):[]),             // כמה זה חצי — חלוקה שווה ל-2 (ראשית החילוק)
     ]),QUEEN_SUPER_COUNT);
     // the אַלּוּפָה game OPENS on its flagship multiplication card (TMK): keep a
     // mult_champ problem at slot 0 (the rest — perimeter / column-sub / compare /
@@ -316,4 +317,4 @@ function makeBridge20Pool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='trip'?15:mode==='mulc'?20:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='trip'?15:mode==='hlf'?15:mode==='mulc'?20:mode||5;}

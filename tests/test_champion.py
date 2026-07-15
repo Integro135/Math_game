@@ -543,3 +543,83 @@ class TestTripleSum:
         _triple_submit(page, 7, 8, 5)
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 20
+
+
+# ─────────────────────────────────────────────────────────
+# "כַּמָּה זֶה חֵצִי" (half / THF) — the first taste of DIVISION: two friends
+# share 4/6/8/10 items EQUALLY. Tapping the items toggles a golden MIDDLE line
+# that splits them into two equal halves (each sliding toward its girl); the
+# child types how many EACH gets (n ÷ 2). A wrong answer auto-opens the split.
+# ─────────────────────────────────────────────────────────
+
+def _enter_half(page, n=8):
+    """Enter אַלּוּפָה, wait for the half type + built pool, then force ONE
+    share-equally problem and wait for its board."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.half==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate(
+        f"mode='mulc';score=0;problems=[{{t:THF,n:{n},a:{n//2},item:'🍎',"
+        f"itemName:'תַּפּוּחִים',names:['דָּנָה','נֹעָה']}}];idx=0;loadProblem();")
+    page.wait_for_selector(".hf-inp", timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
+class TestHalfSplit:
+    def test_half_loads_and_mounts(self, page):
+        """Forcing THF mounts the story + n items pre-grouped in two equal halves,
+        split line hidden; no host check button, no number line."""
+        _enter_half(page, 8)
+        assert page.evaluate("ptype === THF")
+        assert page.evaluate("document.querySelectorAll('.hf-item').length") == 8
+        halves = page.evaluate("[...document.querySelectorAll('.hf-half')].map(h=>h.children.length)")
+        assert halves == [4, 4], f"items must sit in two equal halves, got {halves}"
+        assert not page.evaluate("!!document.querySelector('.hf-root.hf-split')"), \
+            "the split line must start hidden"
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'")
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
+
+    def test_half_tap_toggles_the_middle_split(self, page):
+        """Tapping the items shows the golden middle line (splits into 2 groups);
+        tapping again hides it."""
+        _enter_half(page, 6)
+        page.click(".hf-stage")
+        page.wait_for_function("!!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
+        page.click(".hf-stage")
+        page.wait_for_function("!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
+
+    def test_half_correct_scores_full(self, page):
+        """Typing n/2 on the first try scores full 20 and reveals the split."""
+        _enter_half(page, 10)
+        _dispatch_enter(page, ".hf-inp", 5)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+        assert page.evaluate("report[0].gotCorrect") is True
+        assert page.evaluate("!!document.querySelector('.hf-root.hf-split')"), \
+            "the correct answer celebrates by showing the equal split"
+
+    def test_half_wrong_auto_splits_then_correct_is_partial(self, page):
+        """A wrong share logs a mistake AND auto-opens the split (so she can count
+        one side); the follow-up correct answer scores 67% of 20 = 13."""
+        _enter_half(page, 8)
+        _dispatch_enter(page, ".hf-inp", 6)           # wrong (correct is 4)
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("done") is False
+        assert page.evaluate("!!document.querySelector('.hf-root.hf-split')"), \
+            "a mistake must auto-open the middle split"
+        page.wait_for_function("document.querySelector('.hf-inp').value===''", timeout=TIMEOUT)
+        _dispatch_enter(page, ".hf-inp", 4)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+    def test_half_pool_is_even_totals_only(self, page):
+        """make('mulc') builds one problem per total 4/6/8/10 — every total EVEN,
+        answer exactly half."""
+        _enter_half(page)   # ensures the half type file is loaded
+        pool = page.evaluate("EXERCISES.types.half.make('mulc').map(p=>({n:p.n,a:p.a}))")
+        assert sorted(p["n"] for p in pool) == [4, 6, 8, 10]
+        assert all(p["a"] * 2 == p["n"] for p in pool), f"answers must be exact halves: {pool}"
