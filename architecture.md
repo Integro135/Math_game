@@ -113,9 +113,14 @@ subtraction_game/
 │  │                                 10 disallowed (a 0/10 answer is praised, no
 │  │                                 penalty, must retry). אַלּוּפָה
 │  │                                 (interactive mount module, #colx-root)
-│  └─ half.ex.js                   THF "כַּמָּה זֶה חֵצִי" — two friends share
-│                                    4/6/8/10 items EQUALLY; tap → a golden middle
-│                                    line splits them in two (first division).
+│  ├─ half.ex.js                   THF "כַּמָּה זֶה חֵצִי" — two friends share
+│  │                                 4/6/8/10 items EQUALLY; tap → a golden middle
+│  │                                 line splits them in two (first division).
+│  │                                 אַלּוּפָה (interactive mount module, #colx-root)
+│  └─ plates.ex.js                 TPL "צַלָּחוֹת" — g plates × s items each
+│                                    (2..4×2..4), find the TOTAL; tap → the items
+│                                    pour into one countable row (multiplication
+│                                    story, inverse of half).
 │                                    אַלּוּפָה (interactive mount module, #colx-root)
 │
 ├─ backgrounds/
@@ -359,7 +364,8 @@ Current recipes:
   perimeter, §3.6 list), `column_sub.make('mulc')` (the STAGED subtraction),
   `compare.make('mulc')` (drag-the-sign), `word_prob.make('mulc')` (short nikud
   word problems), `triple_sum.make('mulc')` (`__+__+__=20`, no 0/10) and
-  `half.make('mulc')` (share 4/6/8/10 items equally between two — first division).
+  `half.make('mulc')` (share 4/6/8/10 items equally between two — first division)
+  and `plates.make('mulc')` (g plates × s items → total, the multiplication story).
   `modePts('mulc')=20`.
 
 **Staged (horizontal-first, graded) column subtraction.** In Superman and
@@ -397,7 +403,7 @@ window.EXERCISES.types.column_add = {
 `EXERCISE_OF_TYPE` (data.js) maps a ptype to its file —
 `{ [TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul', [TBC]:'bagel_cost',
 [TPG]:'polygon', [TMC]:'mult_chain', [TMK]:'mult_champ', [TPP]:'perimeter',
-[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half' }`. `renderEq` emits a
+[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half', [TPL]:'plates' }`. `renderEq` emits a
 single `<div id="colx-root">` for any of them and calls `_colxMount` (core.js).
 `_colxMount` injects `exercises/<name>.ex.js` on demand (bg-loader
 .loadExercise) and mounts it into that root. Its async load callback re-checks
@@ -411,7 +417,7 @@ global `ans-inp` class so the green/red answer-border contract applies
 automatically.
 
 The interactive types served by this `#colx-root` host (the newer ones —
-`mult_chain`, `mult_champ`, `perimeter`, `compare`, `word_prob`, `triple_sum`, `half` — share the same
+`mult_chain`, `mult_champ`, `perimeter`, `compare`, `word_prob`, `triple_sum`, `half`, `plates` — share the same
 mount contract; a few are detailed in `exercises/README.md`):
 
 - **column addition** (`column_add.ex.js`, TCA) — units first, a carried 1
@@ -470,6 +476,7 @@ Each ships a thin dev harness (single source of truth) — e.g.
 | New אַלּוּפָה type **`triple_sum`/TTS** — `__+__+__ = 20`, the child picks three addends; **0 and 10 are disallowed** — a sum-correct 0/10 answer is PRAISED, costs NO points and does NOT complete (retry with other numbers), a wrong sum is a normal mistake. Self-mounting, wired like the other mulc types. 5 new tests (`TestTripleSum`: mount, valid→full 20, wrong-sum→penalty, 0→no-penalty-must-retry, 10→no-penalty-must-retry) | **+5 new (triple_sum), all pass** |
 | New אַלּוּפָה type **`half`/THF — "כַּמָּה זֶה חֵצִי"** (first DIVISION): a word problem — two girls share 4/6/8/10 items EQUALLY; TAPPING the items toggles a golden MIDDLE line that splits them into 2 equal halves sliding toward each girl; the child types how many EACH gets (n÷2). A wrong answer auto-opens the split ("count one side"). Rotating item emoji + girl-name pairs. 5 new tests (`TestHalfSplit` in tests/test_champion.py: mount/halves, tap-toggles-split, correct→full 20, wrong→auto-split→13, pool = even totals only) | **+5 new (half), all pass** |
 | **Success screen now skips on TAP/CLICK (mobile/tablet parity).** The per-answer celebration only dismissed on Enter/Space; `showFw` now also registers a document `pointerdown` listener (`_fwTap` → `fwClose`, removed in `_fwDone`) and its backdrop is `pointer-events:auto`, so a tap on phone/tablet skips it immediately and advances — like the desktop click. 1 new test (`TestSuccessDuration::test_tap_or_click_dismisses_immediately`); verified under real touch emulation (`has_touch` context, `touchscreen.tap` → `_fwOn` false + `idx`+1) | **+1 new, all pass** |
+| **Two multiplication VISUALS** (the "half" tap-mechanic applied to ×): (1) **`mult_champ` tap-to-group picture** — the product drawn as a·b real objects under `a × b = □`; a TAP drops golden divider lines grouping them (3×4 → 4 groups of 3, one per chain term); follows the chain's `flip`, so 🔁 regroups it (commutativity made visible); a wrong product auto-groups. (2) New אַלּוּפָה type **`plates`/TPL — "צַלָּחוֹת"** (equal groups → TOTAL, the inverse of `half`): g CSS plates × s items (2..4×2..4); a TAP POURS the items into one countable row and back; a wrong answer auto-pours. 7 new tests (2 in `TestChampMultiplication` + `TestPlates` 5) | **+7 new (mult visuals), all pass** |
 
 ## 5. Next steps (not yet done)
 

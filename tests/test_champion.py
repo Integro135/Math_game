@@ -139,6 +139,44 @@ class TestChampMultiplication:
         assert "פעמים ארבע" in bare2 and "שתיים" not in bare2, \
             f"a 2× problem must read 'פעמיים ארבע' (twice four), got: {bare2}"
 
+    def test_items_picture_groups_on_tap(self, page):
+        """The product is drawn as real objects; a TAP groups them with golden
+        divider lines — 3×4 → 4 groups of 3 (one group per chain term) — and a
+        second tap ungroups."""
+        _enter_mulc(page)
+        page.evaluate("problems[0]={t:TMK,a:3,b:4};idx=0;loadProblem();")
+        page.wait_for_function(
+            "!!document.getElementById('mk-items') && num1===3 && num2===4", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        assert page.evaluate("document.querySelectorAll('.mk-it').length") == 12
+        groups = page.evaluate("[...document.querySelectorAll('.mkg')].map(g=>g.children.length)")
+        assert groups == [3, 3, 3, 3], f"3×4 must draw 4 groups of 3, got {groups}"
+        assert not page.evaluate("!!document.querySelector('.mk-root.mk-grouped')"), \
+            "the divider lines must start hidden"
+        page.click("#mk-stage")
+        page.wait_for_function("!!document.querySelector('.mk-root.mk-grouped')", timeout=TIMEOUT)
+        page.click("#mk-stage")
+        page.wait_for_function("!document.querySelector('.mk-root.mk-grouped')", timeout=TIMEOUT)
+
+    def test_items_picture_follows_mistake_and_switch(self, page):
+        """A wrong product auto-groups the picture, and the 🔁 switch regroups it
+        to the OTHER orientation (4 groups of 3 ↔ 3 groups of 4)."""
+        _enter_mulc(page)
+        page.evaluate("problems[0]={t:TMK,a:3,b:4};idx=0;loadProblem();")
+        page.wait_for_function(
+            "!!document.getElementById('mk-ans') && num1===3 && num2===4", timeout=TIMEOUT)
+        page.evaluate("""() => {
+            const inp=document.getElementById('mk-ans');
+            inp.value='11';
+            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+        }""")
+        page.wait_for_function("!!document.querySelector('.mk-root.mk-grouped')", timeout=TIMEOUT)
+        assert page.evaluate("document.querySelectorAll('.mkg').length") == 4
+        page.click("#mk-switch")
+        page.wait_for_function("document.querySelectorAll('.mkg').length === 3", timeout=TIMEOUT)
+        per = page.evaluate("[...document.querySelectorAll('.mkg')].map(g=>g.children.length)")
+        assert per == [4, 4, 4], f"after 🔁 the picture must regroup to 3 groups of 4, got {per}"
+
 
 # =============================================================================
 # אַלּוּפָה 🏆 — the three additions of 2026-07 (perimeter, compare, staged sub).
@@ -623,3 +661,80 @@ class TestHalfSplit:
         pool = page.evaluate("EXERCISES.types.half.make('mulc').map(p=>({n:p.n,a:p.a}))")
         assert sorted(p["n"] for p in pool) == [4, 6, 8, 10]
         assert all(p["a"] * 2 == p["n"] for p in pool), f"answers must be exact halves: {pool}"
+
+
+# ─────────────────────────────────────────────────────────
+# "צַלָּחוֹת" (plates / TPL) — equal groups → TOTAL, the multiplication story
+# (the inverse of half): g plates (2..4) each holding s items (2..4); the child
+# types the total (g×s). Tapping the plates POURS the items into one countable
+# row; tapping again puts them back. A wrong answer auto-pours.
+# ─────────────────────────────────────────────────────────
+
+def _enter_plates(page, g=3, s=4):
+    """Enter אַלּוּפָה, wait for the plates type + built pool, then force ONE
+    groups→total problem and wait for its board."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.plates==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate(
+        f"mode='mulc';score=0;problems=[{{t:TPL,g:{g},s:{s},a:{g*s},item:'🍎',"
+        f"itemName:'תַּפּוּחִים',name:'דָּנָה'}}];idx=0;loadProblem();")
+    page.wait_for_selector(".pl-inp", timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
+class TestPlates:
+    def test_plates_loads_and_mounts(self, page):
+        """Forcing TPL mounts the story + g plates each holding s items; no host
+        check button, no number line."""
+        _enter_plates(page, 3, 4)
+        assert page.evaluate("ptype === TPL")
+        per = page.evaluate("[...document.querySelectorAll('.pl-plate')].map(p=>p.children.length)")
+        assert per == [4, 4, 4], f"3 plates of 4 items expected, got {per}"
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'")
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
+
+    def test_plates_tap_pours_into_one_row(self, page):
+        """Tapping the plates pours ALL the items into one countable row; tapping
+        again puts them back on the plates."""
+        _enter_plates(page, 2, 3)
+        page.click(".pl-stage")
+        page.wait_for_function(
+            "document.querySelector('.pl-rowv') && document.querySelector('.pl-rowv').children.length===6",
+            timeout=TIMEOUT)
+        page.click(".pl-stage")
+        page.wait_for_function("document.querySelectorAll('.pl-plate').length===2", timeout=TIMEOUT)
+
+    def test_plates_correct_scores_full(self, page):
+        """Typing g×s on the first try scores full 20."""
+        _enter_plates(page, 4, 3)
+        _dispatch_enter(page, ".pl-inp", 12)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+        assert page.evaluate("report[0].gotCorrect") is True
+
+    def test_plates_wrong_auto_pours_then_correct_is_partial(self, page):
+        """A wrong total logs a mistake AND auto-pours the row (count them all);
+        the follow-up correct answer scores 67% of 20 = 13."""
+        _enter_plates(page, 3, 4)
+        _dispatch_enter(page, ".pl-inp", 7)           # wrong (correct is 12)
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("done") is False
+        assert page.evaluate("!!document.querySelector('.pl-rowv')"), \
+            "a mistake must auto-pour the items into the countable row"
+        page.wait_for_function("document.querySelector('.pl-inp').value===''", timeout=TIMEOUT)
+        _dispatch_enter(page, ".pl-inp", 12)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+    def test_plates_pool_is_products_up_to_16(self, page):
+        """make('mulc') builds 3 problems, plates/per-plate both 2..4, answer g×s."""
+        _enter_plates(page)   # ensures the plates type file is loaded
+        pool = page.evaluate("EXERCISES.types.plates.make('mulc').map(p=>({g:p.g,s:p.s,a:p.a}))")
+        assert len(pool) == 3
+        assert all(2 <= p["g"] <= 4 and 2 <= p["s"] <= 4 and p["a"] == p["g"] * p["s"]
+                   for p in pool), f"bad pool: {pool}"
