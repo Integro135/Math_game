@@ -139,43 +139,17 @@ class TestChampMultiplication:
         assert "פעמים ארבע" in bare2 and "שתיים" not in bare2, \
             f"a 2× problem must read 'פעמיים ארבע' (twice four), got: {bare2}"
 
-    def test_items_picture_groups_on_tap(self, page):
-        """The product is drawn as real objects; a TAP groups them with golden
-        divider lines — 3×4 → 4 groups of 3 (one group per chain term) — and a
-        second tap ungroups."""
-        _enter_mulc(page)
-        page.evaluate("problems[0]={t:TMK,a:3,b:4};idx=0;loadProblem();")
-        page.wait_for_function(
-            "!!document.getElementById('mk-items') && num1===3 && num2===4", timeout=TIMEOUT)
-        page.wait_for_timeout(120)
-        assert page.evaluate("document.querySelectorAll('.mk-it').length") == 12
-        groups = page.evaluate("[...document.querySelectorAll('.mkg')].map(g=>g.children.length)")
-        assert groups == [3, 3, 3, 3], f"3×4 must draw 4 groups of 3, got {groups}"
-        assert not page.evaluate("!!document.querySelector('.mk-root.mk-grouped')"), \
-            "the divider lines must start hidden"
-        page.click("#mk-stage")
-        page.wait_for_function("!!document.querySelector('.mk-root.mk-grouped')", timeout=TIMEOUT)
-        page.click("#mk-stage")
-        page.wait_for_function("!document.querySelector('.mk-root.mk-grouped')", timeout=TIMEOUT)
-
-    def test_items_picture_follows_mistake_and_switch(self, page):
-        """A wrong product auto-groups the picture, and the 🔁 switch regroups it
-        to the OTHER orientation (4 groups of 3 ↔ 3 groups of 4)."""
+    def test_no_countable_objects_shown(self, page):
+        """The multiplication card must NOT draw the product as countable objects
+        (that would give away the answer before she recalls it) — only the bare
+        `a × b = □` and, after a mistake, the repeated-addition chain."""
         _enter_mulc(page)
         page.evaluate("problems[0]={t:TMK,a:3,b:4};idx=0;loadProblem();")
         page.wait_for_function(
             "!!document.getElementById('mk-ans') && num1===3 && num2===4", timeout=TIMEOUT)
-        page.evaluate("""() => {
-            const inp=document.getElementById('mk-ans');
-            inp.value='11';
-            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
-        }""")
-        page.wait_for_function("!!document.querySelector('.mk-root.mk-grouped')", timeout=TIMEOUT)
-        assert page.evaluate("document.querySelectorAll('.mkg').length") == 4
-        page.click("#mk-switch")
-        page.wait_for_function("document.querySelectorAll('.mkg').length === 3", timeout=TIMEOUT)
-        per = page.evaluate("[...document.querySelectorAll('.mkg')].map(g=>g.children.length)")
-        assert per == [4, 4, 4], f"after 🔁 the picture must regroup to 3 groups of 4, got {per}"
+        page.wait_for_timeout(80)
+        assert page.evaluate("document.querySelectorAll('.mk-it, .mkg, #mk-items, #mk-stage').length") == 0, \
+            "no items/groups picture may be shown in the multiplication exercise"
 
 
 # =============================================================================
@@ -653,6 +627,26 @@ class TestHalfSplit:
         assert page.evaluate(
             "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
 
+    def test_half_items_start_as_one_continuous_row(self, page):
+        """Before any tap/mistake the n items must read as ONE unbroken row —
+        the middle gap equals the regular in-row gap (a visible grouping would
+        give the halves away); the tap opens a clearly wider middle gap."""
+        _enter_half(page, 8)
+        gaps_js = ("(() => {const r=[...document.querySelectorAll('.hf-item')]"
+                   ".map(el=>el.getBoundingClientRect());"
+                   "return r.slice(1).map((b,i)=>b.left-r[i].right);})()")
+        gaps = page.evaluate(gaps_js)
+        assert len(gaps) == 7
+        assert max(gaps) - min(gaps) <= 3, \
+            f"pre-split the row must look continuous (uniform gaps), got {gaps}"
+        page.click(".hf-stage")
+        page.wait_for_function("!!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
+        page.wait_for_timeout(700)                    # let the .45s split settle
+        gaps = page.evaluate(gaps_js)
+        mid, rest = gaps[3], gaps[:3] + gaps[4:]
+        assert mid > max(rest) + 8, \
+            f"after the tap the MIDDLE gap must be clearly wider, got mid={mid}, rest={rest}"
+
     def test_half_tap_toggles_the_middle_split(self, page):
         """Tapping the items shows the golden middle line (splits into 2 groups);
         tapping again hides it."""
@@ -696,13 +690,15 @@ class TestHalfSplit:
 
 
 # ─────────────────────────────────────────────────────────
-# "צַלָּחוֹת" (plates / TPL) — equal groups → TOTAL, the multiplication story
-# (the inverse of half): g plates (2..4) each holding s items (2..4); the child
-# types the total (g×s). Tapping the plates POURS the items into one countable
-# row; tapping again puts them back. A wrong answer auto-pours.
+# "צַלָּחוֹת" (plates / TPL) — equal groups → TOTAL, the multiplication word
+# problem (the inverse of half): g plates (2..4) each holding s items (2..4),
+# only products ≤ 10 (the first multiplication facts). The child solves from the
+# WORDS alone (try-first); the picture is HIDDEN until a mistake. The 1st mistake
+# REVEALS the plates, the 2nd POURS them into one countable row. Once revealed,
+# tapping toggles plates ↔ row.
 # ─────────────────────────────────────────────────────────
 
-def _enter_plates(page, g=3, s=4):
+def _enter_plates(page, g=2, s=3):
     """Enter אַלּוּפָה, wait for the plates type + built pool, then force ONE
     groups→total problem and wait for its board."""
     page.evaluate("setMode('mulc')")
@@ -719,21 +715,56 @@ def _enter_plates(page, g=3, s=4):
 
 class TestPlates:
     def test_plates_loads_and_mounts(self, page):
-        """Forcing TPL mounts the story + g plates each holding s items; no host
-        check button, no number line."""
-        _enter_plates(page, 3, 4)
+        """Forcing TPL mounts the story + answer input; no host check button, no
+        number line."""
+        _enter_plates(page, 2, 3)
         assert page.evaluate("ptype === TPL")
-        per = page.evaluate("[...document.querySelectorAll('.pl-plate')].map(p=>p.children.length)")
-        assert per == [4, 4, 4], f"3 plates of 4 items expected, got {per}"
+        assert page.evaluate("!!document.querySelector('.pl-inp')")
         assert page.evaluate(
             "getComputedStyle(document.getElementById('nl-panel')).display === 'none'")
         assert page.evaluate(
             "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
 
-    def test_plates_tap_pours_into_one_row(self, page):
-        """Tapping the plates pours ALL the items into one countable row; tapping
-        again puts them back on the plates."""
+    def test_plates_picture_hidden_until_mistake(self, page):
+        """The equal-groups picture is HIDDEN at first — the child must solve from
+        the words alone (try-first). No plates, no poured row on load."""
         _enter_plates(page, 2, 3)
+        assert page.evaluate(
+            "getComputedStyle(document.querySelector('.pl-stage')).display === 'none'"), \
+            "the plate stage must be hidden until a mistake"
+        assert page.evaluate("document.querySelectorAll('.pl-plate').length === 0")
+        assert page.evaluate("!document.querySelector('.pl-rowv')")
+
+    def test_plates_first_mistake_reveals_plates(self, page):
+        """The 1st wrong answer REVEALS the g plates (each holding s items) — the
+        equal groups — but does NOT yet pour them into a row."""
+        _enter_plates(page, 2, 3)
+        _dispatch_enter(page, ".pl-inp", 5)           # wrong (correct is 6)
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        page.wait_for_function("document.querySelectorAll('.pl-plate').length===2", timeout=TIMEOUT)
+        per = page.evaluate("[...document.querySelectorAll('.pl-plate')].map(p=>p.children.length)")
+        assert per == [3, 3], f"2 plates of 3 items expected, got {per}"
+        assert page.evaluate("!document.querySelector('.pl-rowv')"), \
+            "the 1st mistake reveals plates, it must not pour the row yet"
+
+    def test_plates_second_mistake_pours_row(self, page):
+        """After the plates are shown, a 2nd wrong answer POURS all items into one
+        countable row (count them one by one)."""
+        _enter_plates(page, 2, 3)
+        _dispatch_enter(page, ".pl-inp", 5)           # 1st wrong → reveal plates
+        page.wait_for_function("document.querySelectorAll('.pl-plate').length===2", timeout=TIMEOUT)
+        page.wait_for_function("document.querySelector('.pl-inp').value===''", timeout=TIMEOUT)
+        _dispatch_enter(page, ".pl-inp", 4)           # 2nd wrong → pour the row
+        page.wait_for_function(
+            "document.querySelector('.pl-rowv') && document.querySelector('.pl-rowv').children.length===6",
+            timeout=TIMEOUT)
+
+    def test_plates_tap_toggles_after_reveal(self, page):
+        """Once revealed (after a mistake), tapping the stage pours the items into a
+        row; tapping again puts them back on the plates."""
+        _enter_plates(page, 2, 3)
+        _dispatch_enter(page, ".pl-inp", 5)           # reveal the plates
+        page.wait_for_function("document.querySelectorAll('.pl-plate').length===2", timeout=TIMEOUT)
         page.click(".pl-stage")
         page.wait_for_function(
             "document.querySelector('.pl-rowv') && document.querySelector('.pl-rowv').children.length===6",
@@ -741,32 +772,105 @@ class TestPlates:
         page.click(".pl-stage")
         page.wait_for_function("document.querySelectorAll('.pl-plate').length===2", timeout=TIMEOUT)
 
-    def test_plates_correct_scores_full(self, page):
-        """Typing g×s on the first try scores full 20."""
-        _enter_plates(page, 4, 3)
-        _dispatch_enter(page, ".pl-inp", 12)
+    def test_plates_correct_first_try_scores_full(self, page):
+        """Typing g×s on the first try (no picture needed) scores full 20."""
+        _enter_plates(page, 4, 2)
+        assert page.evaluate(
+            "getComputedStyle(document.querySelector('.pl-stage')).display === 'none'")
+        _dispatch_enter(page, ".pl-inp", 8)
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 20
         assert page.evaluate("report[0].gotCorrect") is True
 
-    def test_plates_wrong_auto_pours_then_correct_is_partial(self, page):
-        """A wrong total logs a mistake AND auto-pours the row (count them all);
-        the follow-up correct answer scores 67% of 20 = 13."""
-        _enter_plates(page, 3, 4)
-        _dispatch_enter(page, ".pl-inp", 7)           # wrong (correct is 12)
+    def test_plates_wrong_then_correct_is_partial(self, page):
+        """One wrong answer (reveals the plates) then the correct total scores 67%
+        of 20 = 13."""
+        _enter_plates(page, 2, 3)
+        _dispatch_enter(page, ".pl-inp", 5)           # wrong (correct is 6)
         page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
         assert page.evaluate("done") is False
-        assert page.evaluate("!!document.querySelector('.pl-rowv')"), \
-            "a mistake must auto-pour the items into the countable row"
         page.wait_for_function("document.querySelector('.pl-inp').value===''", timeout=TIMEOUT)
-        _dispatch_enter(page, ".pl-inp", 12)
+        _dispatch_enter(page, ".pl-inp", 6)
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13
 
-    def test_plates_pool_is_products_up_to_16(self, page):
-        """make('mulc') builds 3 problems, plates/per-plate both 2..4, answer g×s."""
+    def test_plates_pool_is_products_up_to_10(self, page):
+        """make('mulc') builds 3 problems, plates/per-plate both 2..4, product ≤ 10
+        (the first multiplication facts), answer g×s."""
         _enter_plates(page)   # ensures the plates type file is loaded
         pool = page.evaluate("EXERCISES.types.plates.make('mulc').map(p=>({g:p.g,s:p.s,a:p.a}))")
         assert len(pool) == 3
         assert all(2 <= p["g"] <= 4 and 2 <= p["s"] <= 4 and p["a"] == p["g"] * p["s"]
+                   and p["a"] <= 10
                    for p in pool), f"bad pool: {pool}"
+
+
+# ─────────────────────────────────────────────────────────
+# "בְּעָיוֹת מִלּוּלִיּוֹת" (word_prob / TWP) — short nikud story problems. Numbers are
+# spelled out with gender agreement. Hebrew number grammar for 2 is POLAR:
+#   • before a counted noun → the CONSTRUCT form (שְׁתֵּי / שְׁנֵי)
+#   • standing ALONE (e.g. "אָכַל … מֵהֶן") → the ABSOLUTE form (שְׁתַּיִם / שְׁנַיִם)
+# Only the candies story ("… אָכַל B מֵהֶן") puts B in a standalone slot; every
+# other operand sits directly before its noun. NOTE: the niqqud below is
+# load-bearing — without it the construct שְׁתֵּי is a substring of the absolute
+# שְׁתַּיִם and the two can't be told apart.
+# ─────────────────────────────────────────────────────────
+
+def _load_wordprob(page):
+    """Enter אַלּוּפָה (mulc) so the word_prob type file loads, then wait for it."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.word_prob==='object'",
+        timeout=TIMEOUT)
+
+
+class TestWordProblems:
+    def test_two_before_mehen_uses_absolute_form(self, page):
+        """After 'אָכַל … מֵהֶן' the number 2 stands ALONE → it must render the
+        ABSOLUTE שְׁתַּיִם, never the construct שְׁתֵּי (which only fits before a noun)."""
+        _load_wordprob(page)
+        res = page.evaluate("""() => {
+            const P=EXERCISES.types.word_prob, tmp=document.createElement('div');
+            let mehenB2=0, absolute=0, badConstruct=0;
+            for(let k=0;k<400;k++){
+                for(const pr of P.make('wp')){
+                    tmp.innerHTML=pr.story; const t=tmp.textContent;
+                    if(t.indexOf('מֵהֶן')<0) continue;              // only the candies story
+                    if(pr.op==='sub' && pr.b===2){
+                        mehenB2++;
+                        if(t.indexOf('שְׁתַּיִם')>=0) absolute++;
+                        if(t.indexOf('שְׁתֵּי')>=0) badConstruct++;
+                    }
+                }
+            }
+            return {mehenB2, absolute, badConstruct};
+        }""")
+        assert res["mehenB2"] > 0, "the candies (b=2) story must actually occur in the pool"
+        assert res["badConstruct"] == 0, \
+            f"שְׁתֵּי (construct) must never precede מֵהֶן, found {res['badConstruct']}"
+        assert res["absolute"] == res["mehenB2"], \
+            f"every candies b=2 story must render שְׁתַּיִם, got {res['absolute']}/{res['mehenB2']}"
+
+    def test_two_before_noun_stays_construct(self, page):
+        """The fix must not leak the absolute form into the ordinary 'number + noun'
+        slot: whenever 2 sits directly before its counted noun the construct
+        שְׁתֵּי / שְׁנֵי must stay (the absolute שְׁתַּיִם / שְׁנַיִם must not appear)."""
+        _load_wordprob(page)
+        res = page.evaluate("""() => {
+            const P=EXERCISES.types.word_prob, tmp=document.createElement('div');
+            let nounTwo=0, absoluteLeak=0;
+            for(let k=0;k<400;k++){
+                for(const pr of P.make('wp')){
+                    tmp.innerHTML=pr.story; const t=tmp.textContent;
+                    if(t.indexOf('מֵהֶן')>=0) continue;            // skip the one standalone slot
+                    if(pr.a===2 || pr.b===2){                      // an operand of 2 before its noun
+                        nounTwo++;
+                        if(t.indexOf('שְׁתַּיִם')>=0 || t.indexOf('שְׁנַיִם')>=0) absoluteLeak++;
+                    }
+                }
+            }
+            return {nounTwo, absoluteLeak};
+        }""")
+        assert res["nounTwo"] > 0, "a 2-before-noun story must occur (operands can be 2)"
+        assert res["absoluteLeak"] == 0, \
+            f"the absolute form must not appear before a noun, leaked {res['absoluteLeak']}"

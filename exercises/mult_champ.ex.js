@@ -37,16 +37,6 @@ window.EXERCISES.types.mult_champ=(()=>{
   // spoken form of the displayed product a×b → "<a-times> <b>" (4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ")
   const spoken=(a,b)=>timesW(a)+' '+(NUM[b]||b);
 
-  // item emoji for the tap-to-group picture (one kind picked per problem)
-  const ITEMS=[
-    {e:'⭐',name:'כּוֹכָבִים'},
-    {e:'🍎',name:'תַּפּוּחִים'},
-    {e:'🍬',name:'סֻכָּרִיּוֹת'},
-    {e:'🎈',name:'בַּלּוֹנִים'},
-    {e:'💗',name:'לְבָבוֹת'},
-    {e:'🍪',name:'עוּגִיּוֹת'},
-  ];
-
   /* champion grid: factors up to 4 — a∈{2,3,4} × b∈{2,3,4} (product ≤ 16).
      `a` (the number repeated by default) and `b` (the count) both stay ≤ 4, so
      the whole 2×/3×/4× fact set is covered and EITHER orientation is a short
@@ -105,25 +95,6 @@ window.EXERCISES.types.mult_champ=(()=>{
   @keyframes mkBlink{
     from{border-color:var(--skin-primary,#c77dff);box-shadow:0 0 6px rgba(157,78,221,.6)}
     to{border-color:var(--skin-accent,#ffe28a);box-shadow:0 0 20px var(--skin-accent,#ffd27d)}}
-  /* ── the product drawn as REAL OBJECTS — tap to group (same visual language as
-     half.ex.js: golden divider lines + dashed group frames) ── */
-  .mk-stage{width:100%;overflow:hidden;display:flex;justify-content:center;cursor:pointer;user-select:none;
-    padding:2px 0;border-radius:16px;transition:background .3s}
-  .mk-stage:hover{background:rgba(255,255,255,.05)}
-  .mk-items{display:flex;align-items:center;gap:2px;direction:ltr;white-space:nowrap;transform-origin:center center}
-  .mkg{display:flex;align-items:center;gap:2px;padding:5px 3px;border-radius:12px;
-    border:2px dashed transparent;transition:border-color .35s,background .35s}
-  .mk-it{font-size:1.35rem;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
-  .mk-gline{width:4px;height:36px;border-radius:3px;align-self:center;margin:0 1px;
-    background:linear-gradient(180deg,var(--skin-accent,#ffd27d),#ffb02e);
-    box-shadow:0 0 10px var(--skin-accent,#ffd27d);
-    transform:scaleY(0);transition:transform .4s cubic-bezier(.3,1.3,.5,1),margin .4s}
-  .mk-root.mk-grouped .mk-gline{transform:scaleY(1);margin:0 7px}
-  .mk-root.mk-grouped .mkg{border-color:rgba(255,210,125,.55);background:rgba(255,255,255,.07)}
-  .mk-stage-tip{font-family:'Fredoka One',cursive;font-size:.9rem;color:var(--skin-text,#fff);
-    opacity:.7;transition:opacity .3s}
-  .mk-root.mk-grouped .mk-stage-tip{opacity:0}
-  @media(max-width:480px){.mk-it{font-size:1rem}.mkg{padding:4px 2px}.mk-gline{height:28px}}
   `;
 
   function injectStyle(){
@@ -145,9 +116,6 @@ window.EXERCISES.types.mult_champ=(()=>{
         '<div class="mk-title" id="mk-title"><b>'+A+'</b><span class="mk-x">×</span><b>'+B+'</b>'+
           '<span class="mk-eq">=</span>'+
           '<input class="ans-inp mk-ans blink" id="mk-ans" type="text" inputmode="numeric" maxlength="2" aria-label="הַתְּשׁוּבָה"></div>'+
-        '<div class="mk-stage" id="mk-stage" role="button" aria-label="קִבּוּץ לִקְבוּצוֹת">'+
-          '<div class="mk-items" id="mk-items"></div></div>'+
-        '<div class="mk-stage-tip" id="mk-stage-tip"></div>'+
         '<div class="mk-chain" id="mk-chain" style="display:none">'+
           '<div class="mk-sep"></div>'+
           '<div class="mk-like-row"><span class="mk-like">זֶה כְּמוֹ</span>'+
@@ -156,54 +124,22 @@ window.EXERCISES.types.mult_champ=(()=>{
         '</div>'+
       '</div>';
 
-    const rootDiv=root.querySelector('.mk-root');
     const titleEl=root.querySelector('#mk-title');
     const ansInp=root.querySelector('#mk-ans');
     const chainWrap=root.querySelector('#mk-chain');
     const scroll=root.querySelector('.mk-scroll');
     const switchBtn=root.querySelector('#mk-switch');
     const rowEl=root.querySelector('#mk-row');
-    const stageEl=root.querySelector('#mk-stage');
-    const itemsEl=root.querySelector('#mk-items');
-    const IT=ITEMS[(Math.random()*ITEMS.length)|0];
-    root.querySelector('#mk-stage-tip').textContent=
-      '👆 לַחֲצִי עַל הַ'+IT.name+' לִרְאוֹת אֶת הַקְּבוּצוֹת';
 
     fb('✖️ כַּמָּה זֶה '+spoken(A,B)+'? כִּתְבִי אֶת הַתְּשׁוּבָה 💗');   // e.g. 4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ"
 
-    // keep a chain (and the items picture) on ONE line — scale down on overflow
+    // keep the chain on ONE line — scale the row down if it overflows
     function fit(){
-      if(rowEl){
-        rowEl.style.transform='';
-        const cw=scroll.clientWidth, rw=rowEl.scrollWidth;
-        if(rw>cw+1){const s=Math.max(0.4,cw/rw);rowEl.style.transform='scale('+s+')';}
-      }
-      fitItems();
+      if(!rowEl)return;
+      rowEl.style.transform='';
+      const cw=scroll.clientWidth, rw=rowEl.scrollWidth;
+      if(rw>cw+1){const s=Math.max(0.4,cw/rw);rowEl.style.transform='scale('+s+')';}
     }
-    function fitItems(){
-      if(!itemsEl)return;
-      itemsEl.style.transform='';
-      const cw=stageEl.clientWidth, iw=itemsEl.scrollWidth;
-      if(iw>cw+1){const s=Math.max(0.45,cw/iw);itemsEl.style.transform='scale('+s+')';}
-    }
-
-    // ── the product as REAL OBJECTS: `times` groups of `rep` items with golden
-    // divider lines between the groups (hidden until grouped). Follows the SAME
-    // flip orientation as the chain, so the 🔁 switch regroups the picture too;
-    // each group is literally one term of the a+a+… chain.
-    function renderItems(){
-      const rep=flip?B:A, times=flip?A:B;
-      let h='';
-      for(let g=0;g<times;g++){
-        if(g)h+='<span class="mk-gline"></span>';
-        h+='<span class="mkg">'+new Array(rep).fill('<span class="mk-it">'+IT.e+'</span>').join('')+'</span>';
-      }
-      itemsEl.innerHTML=h;
-      requestAnimationFrame(fitItems);
-    }
-    // tap the picture → toggle the group frames + divider lines (pure aid)
-    stageEl.addEventListener('click',()=>{if(!done)rootDiv.classList.toggle('mk-grouped');});
-    renderItems();
 
     // build the repeated-addition chain: `rep` added `times` times.
     // The first term, then middle terms 2..times-1 (each "+rep" over an optional
@@ -268,13 +204,11 @@ window.EXERCISES.types.mult_champ=(()=>{
       requestAnimationFrame(()=>{fit();try{finalInp.focus();}catch(e){}});
     }
 
-    // open the scaffold (once) after the first wrong product; the item picture
-    // groups itself too (the "aid appears on a mistake" convention)
+    // open the scaffold (once) after the first wrong product
     function reveal(){
       if(revealed)return;revealed=true;
       chainWrap.style.display='';
       titleEl.classList.add('mk-answered');
-      rootDiv.classList.add('mk-grouped');
       fb('✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! סְפְרִי אֶת הַחִבּוּר — אוֹ לַחֲצִי 🔁 לְהַחְלִיף 💗');
       renderChain();
     }
@@ -309,7 +243,7 @@ window.EXERCISES.types.mult_champ=(()=>{
       }
     });
 
-    switchBtn.addEventListener('click',function(){flip=!flip;renderChain();renderItems();});
+    switchBtn.addEventListener('click',function(){flip=!flip;renderChain();});
 
     requestAnimationFrame(()=>{try{ansInp.focus();}catch(e){}});
     window.addEventListener('resize',fit);

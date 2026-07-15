@@ -52,24 +52,30 @@ window.EXERCISES.types.half=(()=>{
     padding:12px 6px;border-radius:20px;transition:background .3s;user-select:none}
   .hf-stage:hover{background:rgba(255,255,255,.05)}
   .hf-kid{font-size:2.6rem;line-height:1;transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
-  .hf-items{display:flex;align-items:center;gap:7px}
-  .hf-half{display:flex;align-items:center;gap:7px;padding:8px 6px;border-radius:14px;
+  .hf-items{display:flex;align-items:center}
+  /* pre-split the two halves must read as ONE continuous row: no horizontal
+     padding, and the (transparent) 2px borders + the collapsed line's margins
+     add up to exactly the 7px in-row gap */
+  .hf-half{display:flex;align-items:center;gap:7px;padding:8px 0;border-radius:14px;
     border:2px dashed transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),
-      border-color .35s,background .35s}
+      border-color .35s,background .35s,padding .45s}
   .hf-item{font-size:2rem;line-height:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
-  /* the golden divider — drops down the middle when split */
-  .hf-line{width:5px;height:74px;border-radius:4px;margin:0 2px;align-self:center;
+  /* the golden divider — zero-width until the split drops it down the middle */
+  .hf-line{width:0;height:74px;border-radius:4px;margin:0 1.5px;align-self:center;
     background:linear-gradient(180deg,var(--skin-accent,#ffd27d),#ffb02e);
     box-shadow:0 0 14px var(--skin-accent,#ffd27d);
-    transform:scaleY(0);transform-origin:center top;transition:transform .45s cubic-bezier(.3,1.3,.5,1),margin .45s}
-  .hf-root.hf-split .hf-line{transform:scaleY(1);margin:0 12px}
+    transform:scaleY(0);transform-origin:center top;
+    transition:transform .45s cubic-bezier(.3,1.3,.5,1),margin .45s,width .45s}
+  .hf-root.hf-split .hf-line{transform:scaleY(1);width:5px;margin:0 12px}
+  .hf-root.hf-split .hf-half{padding:8px 6px}
   .hf-root.hf-split .hf-half-a{transform:translateX(-8px);border-color:rgba(255,210,125,.55);background:rgba(255,255,255,.07)}
   .hf-root.hf-split .hf-half-b{transform:translateX(8px);border-color:rgba(255,210,125,.55);background:rgba(255,255,255,.07)}
   .hf-root.hf-split .hf-kid{transform:scale(1.15)}
   .hf-tip{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--skin-text,#fff);opacity:.75;
     display:flex;align-items:center;gap:6px;transition:opacity .3s}
   .hf-root.hf-split .hf-tip{opacity:0}
-  .hf-ans-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+  /* rtl: the host .equation forces ltr — rtl puts the Hebrew label RIGHT of the input */
+  .hf-ans-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;direction:rtl}
   .hf-lbl{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--skin-text,#fff)}
   #colx-root .ans-inp.hf-inp{width:76px;height:60px;font-size:2.1rem;border-radius:14px;text-align:center}
   #colx-root .hf-inp.hf-ready{animation:hfReady 1s ease-in-out infinite alternate}
@@ -82,9 +88,10 @@ window.EXERCISES.types.half=(()=>{
   .hf-btn:disabled{opacity:.4;cursor:default;box-shadow:none}
   @media(max-width:480px){
     .hf-item{font-size:1.45rem}
-    .hf-items,.hf-half{gap:4px}
+    .hf-half{gap:4px}
     .hf-kid{font-size:2rem}
-    .hf-line{height:56px}
+    .hf-line{height:56px;margin:0}   /* 2px+2px borders alone = the 4px gap */
+    .hf-root.hf-split .hf-line{margin:0 8px}
     .hf-stage{gap:8px}
   }`;
   function injectStyle(){
@@ -124,8 +131,8 @@ window.EXERCISES.types.half=(()=>{
         '<div class="hf-tip">👆 לַחֲצִי עַל הַ'+itemName+' כְּדֵי לְחַלֵּק אוֹתָם לִשְׁנַיִם</div>'+
         '<div class="hf-ans-row">'+
           '<span class="hf-lbl">כַּמָּה תְּקַבֵּל כָּל אַחַת?</span>'+
-          '<button class="hf-btn" id="hf-chk-'+uid+'" aria-label="בְּדִיקָה">✓</button>'+
           '<input class="ans-inp hf-inp" id="hf-ans-'+uid+'" type="text" inputmode="numeric" maxlength="2" aria-label="כַּמָּה כָּל אַחַת">'+
+          '<button class="hf-btn" id="hf-chk-'+uid+'" aria-label="בְּדִיקָה">✓</button>'+
         '</div>'+
       '</div>';
 

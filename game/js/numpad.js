@@ -76,9 +76,13 @@
     if (k === '✔') {
       active.dispatchEvent(new KeyboardEvent('keydown',
         { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }));
-      /* Enter may have chained focus to the next answer box (ans1→ans2,
-         sub→final) — follow it; if focus left the boxes, close the pad */
+      /* Enter may have SOLVED the problem (→ celebration) or chained focus to the
+         next answer box (ans1→ans2, sub→final). SOLVED → close the pad so it never
+         covers the celebration screen. Otherwise follow focus to the next box; if
+         focus genuinely left the boxes, close. (A wrong answer keeps `done` false
+         and the box focused, so the pad stays for the retry.) */
       setTimeout(function () {
+        if (typeof done !== 'undefined' && done) { hide(); return; }
         var f = document.activeElement;
         if (f && f.matches && f.matches(SEL) && !f.disabled) active = f;
         else hide();
@@ -104,7 +108,13 @@
       show(t);
       return;
     }
-    hide();                                        // tapping anywhere else closes
+    /* tapping ELSEWHERE no longer closes the pad — it stays open (user request:
+       the dedicated keypad must persist while solving, e.g. when tapping an
+       exercise's shape/tiles/items). The ONE exception: if the tap opened a
+       blocking screen (settings/report/parent-gate), close the pad once it's up
+       (re-checked after the tap's own click handler runs — this also covers the
+       case where the input was already blurred, so no focusout fires). */
+    if (isOpen()) setTimeout(function () { if (blockingScreenUp()) hide(); }, 60);
   }, true);
 
   /* each problem's auto-focus opens the pad (and follows Enter-chains) */
@@ -115,10 +125,32 @@
     show(t);
   });
 
+  /* A full-screen screen where the pad must NOT linger (it sits above them): the
+     settings / report / parent-gate modals, or a celebration / gift / intro
+     screen. */
+  function blockingScreenUp() {
+    var ids = ['settings-ov', 'report-ov', 'parent-ov'], i, el;
+    for (i = 0; i < ids.length; i++) {
+      el = document.getElementById(ids[i]);
+      if (el && el.style && el.style.display && el.style.display !== 'none') return true;
+    }
+    return (typeof _fwOn !== 'undefined' && _fwOn) ||
+           (typeof _giftOn !== 'undefined' && _giftOn) ||
+           (typeof _introOn !== 'undefined' && _introOn);
+  }
+  /* Focus leaving the answer boxes no longer closes the pad by itself. On touch,
+     tapping an exercise manipulative (a shape / tile / item) BLURS the input, but
+     the problem still needs its answer — so keep the pad open. Close ONLY when
+     there is genuinely nothing to type into: the problem is solved (`done`), the
+     active box is gone/disabled, or a blocking screen is up. */
   document.addEventListener('focusout', function () {
     setTimeout(function () {
+      if (!isOpen()) return;
       var f = document.activeElement;
-      if (isOpen() && !(f && f.matches && f.matches(SEL))) hide();
+      if (f && f.matches && f.matches(SEL)) return;          // focus still on a box
+      if (!blockingScreenUp() && !(typeof done !== 'undefined' && done) &&
+          active && document.contains(active) && !active.disabled && !active.readOnly) return;
+      hide();
     }, 200);
   });
 

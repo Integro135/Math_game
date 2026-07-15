@@ -181,11 +181,18 @@ body.theme-maldives .b-try,body.theme-maldives .b-nxt{border-color:rgba(111,230,
 body.theme-maldives .b-try:hover,body.theme-maldives .b-try:active,
 body.theme-maldives .b-nxt:hover,body.theme-maldives .b-nxt:active{
   background:rgba(80,200,205,.16);box-shadow:0 0 22px rgba(100,215,210,.5)}
+/* play-again / continue is the terminal call-to-action — a SOLID sunset button
+   (not a ghost bubble) so it stays legible over the bright lagoon, sand and the
+   Pokémon walkers behind the near-transparent end card */
 body.theme-maldives .b-rpl{
-  background:rgba(255,194,77,.12);border-color:rgba(255,194,77,.85);color:#FFC24D;
-  text-shadow:0 0 8px rgba(255,190,80,.4);box-shadow:0 0 16px rgba(255,190,80,.3)}
-body.theme-maldives .b-rpl:hover,body.theme-maldives .b-rpl:active{
-  background:rgba(255,194,77,.2);box-shadow:0 0 26px rgba(255,194,77,.5)}
+  background:linear-gradient(150deg,#FFEAB0,#FFC24D 55%,#FF8A00);
+  border:1.5px solid rgba(255,244,214,.92);color:#5A2E00;
+  text-shadow:0 1px 0 rgba(255,255,255,.45);font-weight:900;
+  box-shadow:0 6px 0 #B85C00,0 10px 28px rgba(255,150,20,.55),inset 0 1px 0 rgba(255,255,255,.55)}
+body.theme-maldives .b-rpl:hover{
+  box-shadow:0 8px 0 #B85C00,0 14px 34px rgba(255,150,20,.7),inset 0 1px 0 rgba(255,255,255,.6)}
+body.theme-maldives .b-rpl:active{
+  box-shadow:0 2px 0 #B85C00,0 4px 16px rgba(255,150,20,.5),inset 0 1px 0 rgba(255,255,255,.5)!important}
 
 /* utility buttons — faint bubbles */
 body.theme-maldives .games-drop-btn,body.theme-maldives .theme-toggle-btn{

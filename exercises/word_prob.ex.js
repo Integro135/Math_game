@@ -46,6 +46,13 @@ window.EXERCISES.types.word_prob=(()=>{
   // tapping it pops a tooltip with that many emojis (wired in mount()).
   const N=(v,g,e)=>'<b class="wp-num" data-n="'+v+'" data-emoji="'+e+'">'
                    +(((WORDS[g]||WORDS.m)[v])||v)+'</b>';
+  /* ABSOLUTE (independent) numeral forms — used when the number stands ALONE
+     (e.g. "אָכַל שְׁתַּיִם מֵהֶן"), NOT directly before its counted noun. Only 2
+     differs from the counting forms above (שְׁנַיִם/שְׁתַּיִם vs the construct
+     שְׁנֵי/שְׁתֵּי); 3..10 are identical, so we override just 2. */
+  const ABS={m:{2:'שְׁנַיִם'},f:{2:'שְׁתַּיִם'}};
+  const NA=(v,g,e)=>'<b class="wp-num" data-n="'+v+'" data-emoji="'+e+'">'
+                   +((ABS[g]&&ABS[g][v])||((WORDS[g]||WORDS.m)[v])||v)+'</b>';
 
   /* SUBTRACTION stories — answer = a − b (a = start, b = taken away). Each is a
      complete, grammatically-fixed nikud sentence; `g` = the counted noun's gender
@@ -54,7 +61,7 @@ window.EXERCISES.types.word_prob=(()=>{
   const SUB=[
     {g:'m',e:'🍎',t:(A,B)=>'לְיוֹסִי '+A+' תַּפּוּחִים. רוֹעִי לָקַח לוֹ '+B+' תַּפּוּחִים. כַּמָּה תַּפּוּחִים נִשְׁאֲרוּ לְיוֹסִי?'},
     {g:'m',e:'🎈',t:(A,B)=>'לְדָנָה הָיוּ '+A+' בָּלוֹנִים. '+B+' בָּלוֹנִים הִתְפּוֹצְצוּ. כַּמָּה בָּלוֹנִים נִשְׁאֲרוּ לְדָנָה?'},
-    {g:'f',e:'🍬',t:(A,B)=>'לְנֹעַם הָיוּ '+A+' סֻכָּרִיּוֹת. הוּא אָכַל '+B+' מֵהֶן. כַּמָּה סֻכָּרִיּוֹת נִשְׁאֲרוּ לוֹ?'},
+    {g:'f',e:'🍬',bAbs:true,t:(A,B)=>'לְנֹעַם הָיוּ '+A+' סֻכָּרִיּוֹת. הוּא אָכַל '+B+' מֵהֶן. כַּמָּה סֻכָּרִיּוֹת נִשְׁאֲרוּ לוֹ?'},
     {g:'f',e:'🐦',t:(A,B)=>'עַל הָעֵץ יָשְׁבוּ '+A+' צִפּוֹרִים. '+B+' צִפּוֹרִים עָפוּ. כַּמָּה צִפּוֹרִים נִשְׁאֲרוּ עַל הָעֵץ?'},
     {g:'f',e:'🍪',t:(A,B)=>'לְמַיָּה הָיוּ '+A+' עֻגִיּוֹת. הִיא נָתְנָה '+B+' עֻגִיּוֹת לַחֲבֵרָה. כַּמָּה עֻגִיּוֹת נִשְׁאֲרוּ לָהּ?'},
   ];
@@ -74,7 +81,10 @@ window.EXERCISES.types.word_prob=(()=>{
     else          { b=irnd(2,6); a=irnd(b+2,10); }          // a 4..10, answer a−b ≥ 2
     const list=(op==='add'?ADD:SUB);
     const tpl=list[irnd(0,list.length-1)];
-    return {t:TWP,a,b,op,story:tpl.t(N(a,tpl.g,tpl.e),N(b,tpl.g,tpl.e))};
+    // `bAbs` templates use B in a STANDALONE position ("… מֵהֶן") → absolute form
+    // for 2 (שְׁתַּיִם/שְׁנַיִם); A always precedes its noun, so it stays construct.
+    const Bstr=tpl.bAbs?NA(b,tpl.g,tpl.e):N(b,tpl.g,tpl.e);
+    return {t:TWP,a,b,op,story:tpl.t(N(a,tpl.g,tpl.e),Bstr)};
   }
 
   /* a de-duplicated batch, roughly half subtraction / half addition, shuffled */

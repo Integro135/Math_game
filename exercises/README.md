@@ -45,7 +45,7 @@ exercises/
 ├─ word_prob.ex.js    INTERACTIVE בְּעָיוֹת מִלּוּלִיּוֹת עַד 10 — a short NIKUD word story with the numbers SPELLED OUT as gender-agreeing Hebrew words (חֲמִשָּׁה תַּפּוּחִים / שָׁלֹשׁ עֻגִיּוֹת), up to 10. Each number word is UNDERLINED; hovering (desktop) / tapping (touch) it pops a tooltip of that many object emojis matched to the story's noun (🍎/🎈/🍬…). A wrong answer costs 25% AND reveals the derived DIGIT equation (5−3) to retry (graded 100/75/50/0). Mixed into אַלּוּפָה (mulc).
 ├─ triple_sum.ex.js   INTERACTIVE __+__+__ = N — three CHOSEN addends; the target N VARIES 6..12; 0 and 10 are DISALLOWED (a 0/10 answer is praised, costs nothing, but must be re-tried with other numbers). Woven into Queen (mx) + Superman (sup) + אַלּוּפָה (mulc).
 ├─ half.ex.js         INTERACTIVE "כַּמָּה זֶה חֵצִי" — two friends share 4/6/8/10 items EQUALLY; tap the items → a golden MIDDLE line splits them into 2 equal groups. First DIVISION intuition. Mixed into אַלּוּפָה (mulc).
-└─ plates.ex.js       INTERACTIVE "צַלָּחוֹת" — g plates × s items each (2..4 × 2..4), find the TOTAL; tap → the items POUR into one countable row. The multiplication-story inverse of half. Mixed into אַלּוּפָה (mulc).
+└─ plates.ex.js       INTERACTIVE "צַלָּחוֹת" — g plates × s items each (2..4 × 2..4, product ≤10), find the TOTAL from the WORDS; the picture is hidden until a mistake reveals it. The multiplication-story inverse of half. Mixed into אַלּוּפָה (mulc).
 ```
 
 (A few later type files — `bagel_cost`, `polygon`, `mult_chain`, `mult_champ`,
@@ -128,7 +128,7 @@ A registered type is an object of this exact shape:
 | `compare`   | `{t:TCP, a, b}`  (sign derived: `a<b`→‹ , `a>b`→› , `a===b`→=) | DRAG the correct comparison sign (`<`/`>`/`=`) into the empty slot between the two numbers. Interactive |
 | `triple_sum`| `{t:TTS, a}`  (`a` = the target sum, VARIES 6..12) | `__ + __ + __ = a` — pick THREE addends that sum to `a`; **0 and 10 are disallowed** (a 0/10 answer is praised, costs nothing, but must be re-tried). Interactive |
 | `half`      | `{t:THF, n, a, item, itemName, names:[g1,g2]}`  (`n` = total 4/6/8/10, `a` = n÷2) | a word problem: two friends share `n` items EQUALLY; tap the items → a golden MIDDLE line splits them into 2 equal groups; type how many EACH gets. Interactive |
-| `plates`    | `{t:TPL, g, s, a, item, itemName, name}`  (`g` = plates, `s` = per plate, both 2..4; `a` = g·s) | a word problem: `g` plates each holding `s` items; type the TOTAL. Tap → the items pour into one countable row. Interactive |
+| `plates`    | `{t:TPL, g, s, a, item, itemName, name}`  (`g` = plates, `s` = per plate, both 2..4, product ≤10; `a` = g·s) | a word problem: `g` plates each holding `s` items; type the TOTAL from the words. Picture hidden until a mistake reveals it (then tap toggles plates ↔ row). Interactive |
 
 ptype constants (`game/js/data.js`):
 `TM='missing'`, `TS='sub'`, `TA='add'`, `TX='mixed'`, `TZ='triple'`,
@@ -159,7 +159,7 @@ ptype constants (`game/js/data.js`):
 | `compare.ex.js`  | `TCP`         | `'cmp','mulc'`          | Interactive **drag-the-sign** comparison. `make('mulc')` → **5** (always ≥1 of each relation `<`/`>`/`=`; `make('cmp')` → 9). Numbers 1..99; the child DRAGS the correct sign into the slot between them. `aidsReveal:'always'` (no number line). See §4g. |
 | `triple_sum.ex.js`| `TTS`        | `'trip','mx','sup','mulc'` | Interactive **three-addends-to-a-target** `__+__+__=N`. The target **VARIES 6..12** (distinct per pool). `make('mulc')` → **3**, `make('sup')` → 2, `make('mx')` → 1 (Queen is saturated — woven post-cap), `make('trip')` → 6. Any triple that sums to N is accepted **except that 0 and 10 are disallowed** — a sum-correct 0/10 answer is praised, costs NOTHING and does NOT complete (retry). `aidsReveal:'always'`. See §4h. |
 | `half.ex.js`     | `THF`         | `'hlf','mulc'`          | Interactive **share-equally-between-two** (first division). `make('mulc')` → **4** (one per total 4/6/8/10, all even → exact halves; `make('hlf')` → 6). Rotating item emoji + girl-pair names make each card a fresh mini word problem. `aidsReveal:'always'` (the split-in-two picture is the aid; a wrong answer auto-opens it). See §4i. |
-| `plates.ex.js`   | `TPL`         | `'plt','mulc'`          | Interactive **equal-groups→total** (the multiplication story, inverse of half). `make('mulc')` → **3** (`make('plt')` → 6), plates `g` and per-plate `s` both 2..4 (product ≤16). Tap → the items POUR into ONE countable row (tap again → back on the plates); a wrong answer auto-pours. `aidsReveal:'always'`. See §4j. |
+| `plates.ex.js`   | `TPL`         | `'plt','mulc'`          | Interactive **equal-groups→total** (the multiplication story, inverse of half). `make('mulc')` → **3** (`make('plt')` → 6), plates `g` and per-plate `s` both 2..4, **product ≤10** (the first facts). The picture is **hidden** — the child solves from the WORDS; the 1st mistake reveals the plates, the 2nd pours them into ONE countable row (once shown, tap toggles). `aidsReveal:'always'` (module drives its own reveal). See §4j. |
 
 Notes:
 - `add`/`sub`/`missing`/`double` share the same `pick(arr,n)` Fisher–Yates
@@ -528,17 +528,14 @@ the standard `_tfPts` ladder applies (full → 67% → 0). No number-line/jar ai
 for `TMK` like the other self-hosting types. **Cleanup** removes the resize
 listener, clears timers, empties `root`.
 
-**The tap-to-group items picture** (same visual language as `half.ex.js`). Under
-the product a `#mk-stage` draws it as REAL objects — a·b emoji (`.mk-it`, one kind
-per problem from `ITEMS`) pre-wrapped in `times` `.mkg` group spans with a
-`.mk-gline` golden divider between groups (`scaleY(0)`, hidden → the row reads as
-one continuous line). **Tapping** toggles `mk-grouped` on the root: the dividers
-drop + each group gets a dashed frame — 3×4 literally shows 4 groups of 3, one
-group per chain term. The picture follows the SAME `flip` orientation as the
-chain, so the 🔁 switch regroups it (4 groups of 3 ↔ 3 groups of 4 — commutativity
-made visible); a WRONG product auto-groups it (`reveal()` adds `mk-grouped`).
-`fitItems()` scales the row down on overflow (≤16 items). Pure aid — no effect on
-scoring.
+**No countable-objects picture.** The multiplication card deliberately shows only
+the bare `a × b = □` (and, after a mistake, the repeated-addition chain — which
+requires ADDING, not counting). An earlier tap-to-group emoji picture (v8.98) was
+REMOVED (v9.00, user request): drawing a·b discrete objects let the child just
+COUNT them and read off the product before recalling it, defeating the
+"product-first" pedagogy. The "count the equal groups" idea lives in the separate
+`plates` exercise — and there too the objects stay hidden until a mistake, so the
+child first tries the product from the words alone.
 
 ---
 
@@ -725,29 +722,33 @@ return { t:TPL, modes:['plt','mulc'], aidsReveal:'always', make(mode){…}, moun
 ```
 
 ### Data side — `make(mode)`
-`makePool(n)` deals distinct `(g,s)` pairs from the 2..4 × 2..4 grid (product ≤16
-— the same fact range as `mult_champ`): `{t:TPL, g, s, a:g*s, item, itemName,
-name}` — `a` carries the ANSWER so the host `_cor`/report stay correct.
-`make('mulc')` → **3**; `make('plt')` → 6 (tester handle). `ITEMS` rotates
-plate-friendly emoji + niqqud plurals (🍎 🍪 🍓 🍬 🥨); `NAMES` rotates a girl
-name, so every card reads like a fresh little story.
+`makePool(n)` deals distinct `(g,s)` pairs from the 2..4 × 2..4 grid but keeps
+only **products ≤ 10** — the FIRST multiplication facts (6 pairs: 2×2, 2×3, 2×4,
+3×2, 3×3, 4×2): `{t:TPL, g, s, a:g*s, item, itemName, name}` — `a` carries the
+ANSWER so the host `_cor`/report stay correct. `make('mulc')` → **3**;
+`make('plt')` → 6 (tester handle). `ITEMS` rotates plate-friendly emoji + niqqud
+plurals (🍎 🍪 🍓 🍬 🥨); `NAMES` rotates a girl name, so every card reads like a
+fresh little story.
 
 ### Interactive side — `mount({root,a,b,api})`
-Reads the full problem via `ctx.p`. Renders the story ("לְדָנָה יֵשׁ 3 צַלָּחוֹת,
-בְּכָל צַלַּחַת 4 תַּפּוּחִים 🍎 — כַּמָּה בְּסַךְ הַכֹּל?"), then the `#pl-stage`
-picture in ONE of two views, re-rendered on toggle (`plFade` pop-in):
-- **plates view** (default — the story): `g` CSS "dishes" (`.pl-plate`, soft
-  ellipse with a radial sheen) each holding `s` `.pl-it` emoji.
+Reads the full problem via `ctx.p`. Renders the story ("לְדָנָה יֵשׁ 2 צַלָּחוֹת,
+בְּכָל צַלַּחַת 3 תַּפּוּחִים 🍎 — כַּמָּה בְּסַךְ הַכֹּל?") and the answer row —
+but the `#pl-stage` picture starts **HIDDEN** (`display:none`): the child solves
+from the WORDS alone (try-first, the staged-column convention). Two views exist,
+re-rendered on toggle (`plFade` pop-in):
+- **plates view**: `g` CSS "dishes" (`.pl-plate`, soft ellipse with a radial
+  sheen) each holding `s` `.pl-it` emoji — the equal groups.
 - **poured view**: all `g·s` items in ONE straight countable row (`.pl-rowv`).
 
-**Tapping the stage** toggles between them — pouring the plates into a row she can
-count one-by-one, and back. Pure aid. `fitStage()` scales the picture down on
-overflow. **Answering** ("כַּמָּה בְּסַךְ הַכֹּל?" + `.pl-inp` + ✓): correct →
-the story becomes the explanation ("3 צַלָּחוֹת שֶׁל 4 — בְּסַךְ הַכֹּל 12!") +
-`api.solved()`. Wrong → `api.wrong(v)` AND the row auto-pours ("סִפְרִי אֶת
-כֻּלָּם בַּשּׁוּרָה") then clears for a retry. Standard try-first scoring. No
-number line. **Cleanup** removes the resize listener, clears timers, empties
-`root`. CSS namespaced `pl-*` (`#pl-style`).
+**Answering** ("כַּמָּה בְּסַךְ הַכֹּל?" + `.pl-inp` + ✓): correct → the story
+becomes the explanation ("2 צַלָּחוֹת שֶׁל 3 — בְּסַךְ הַכֹּל 6!") + `api.solved()`.
+Wrong → `api.wrong(v)` plus a staged reveal: the **1st mistake** reveals the
+plates ("הִנֵּה הַצַּלָּחוֹת — סִפְרִי…"); the **2nd** pours them into the row
+("סִפְרִי אֶת כֻּלָּם בַּשּׁוּרָה"). Once revealed, **tapping the stage** toggles
+plates ↔ row (pure aid); `fitStage()` scales the picture down on overflow.
+Standard try-first scoring (20 / 13 / 0). No number line. **Cleanup** removes the
+resize listener, clears timers, empties `root`. CSS namespaced `pl-*`
+(`#pl-style`).
 
 ---
 

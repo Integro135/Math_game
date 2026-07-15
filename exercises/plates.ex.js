@@ -3,15 +3,16 @@
    the child SEES equal groups and finds the TOTAL — the first multiplication
    word problem:
 
-      "לְדָנָה יֵשׁ 3 צַלָּחוֹת, בְּכָל צַלַּחַת 4 תַּפּוּחִים — כַּמָּה בְּסַךְ הַכֹּל?"
+      "לְדָנָה יֵשׁ 2 צַלָּחוֹת, בְּכָל צַלַּחַת 3 תַּפּוּחִים — כַּמָּה בְּסַךְ הַכֹּל?"
 
-   • g plates (2..4), each holding s items (2..4), are drawn on screen — the
-     equal groups ARE the story (product ≤ 16, the mult_champ fact range).
-   • TAPPING the plates "POURS" all the items into ONE straight row so she can
-     count them one by one; tapping again puts them back on the plates.
-     Pure aid, toggleable.
-   • A wrong answer auto-pours the row ("count them all"), standard host
-     penalty. Correct → the explanation "3 צַלָּחוֹת שֶׁל 4 = 12".
+   • g plates (2..4), each holding s items (2..4), only products ≤ 10 — the
+     very first multiplication facts.
+   • The picture starts HIDDEN: she solves from the WORDS alone (try-first,
+     the staged-column convention). The 1st mistake REVEALS the plates — the
+     equal groups ARE the story; the 2nd mistake "POURS" all the items into
+     ONE straight row so she can count them one by one.
+   • Once revealed, TAPPING toggles plates ↔ poured row (pure aid).
+     Correct → the explanation "2 צַלָּחוֹת שֶׁל 3 = 6".
 
    Self-contained interactive type, mounted by core.js _colxMount into
    #colx-root; self-checks via api.solved()/api.wrong(). Mixed into the
@@ -33,10 +34,11 @@ window.EXERCISES.types.plates=(()=>{
   ];
   const NAMES=['דָּנָה','נֹעָה','רוֹנִי','מַיָּה','תָּמָר','יָעֵל'];
 
-  // one problem per (g,s) pair — plates 2..4 × per-plate 2..4 (product ≤ 16)
+  // one problem per (g,s) pair — plates 2..4 × per-plate 2..4, but only
+  // products ≤ 10 (the first multiplication facts): 6 pairs
   function makePool(n){
     const pairs=[];
-    for(let g=2;g<=4;g++)for(let s=2;s<=4;s++)pairs.push([g,s]);
+    for(let g=2;g<=4;g++)for(let s=2;s<=4;s++)if(g*s<=10)pairs.push([g,s]);
     const its=sh(ITEMS.slice());
     return sh(pairs).slice(0,n).map(([g,s],i)=>{
       const it=its[i%its.length];
@@ -67,7 +69,8 @@ window.EXERCISES.types.plates=(()=>{
   @keyframes plFade{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
   .pl-tip{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--skin-text,#fff);opacity:.75;
     transition:opacity .3s;text-align:center}
-  .pl-ans-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+  /* rtl: the host .equation forces ltr — rtl puts the Hebrew label RIGHT of the input */
+  .pl-ans-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;direction:rtl}
   .pl-lbl{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--skin-text,#fff)}
   #colx-root .ans-inp.pl-inp{width:76px;height:60px;font-size:2.1rem;border-radius:14px;text-align:center}
   #colx-root .pl-inp.pl-ready{animation:plReady 1s ease-in-out infinite alternate}
@@ -94,11 +97,11 @@ window.EXERCISES.types.plates=(()=>{
   function mount(ctx){
     injectStyle();
     const {root,api}=ctx;
-    const p=ctx.p||{g:3,s:4,a:12,item:'🍎',itemName:'תַּפּוּחִים',name:'דָּנָה'};
-    const g=p.g||3, s=p.s||4, total=g*s;
+    const p=ctx.p||{g:2,s:3,a:6,item:'🍎',itemName:'תַּפּוּחִים',name:'דָּנָה'};
+    const g=p.g||2, s=p.s||3, total=g*s;
     const item=p.item||'🍎', itemName=p.itemName||'פְּרִיטִים', name=p.name||'דָּנָה';
     const uid=++_uid;
-    let done=false, poured=false;
+    let done=false, poured=false, shown=false;
     const timers=[];const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
     const hint=msg=>{const h=document.getElementById('hint');if(h)h.textContent=msg;};
 
@@ -106,18 +109,18 @@ window.EXERCISES.types.plates=(()=>{
       '<div class="pl-root" id="pl-root-'+uid+'">'+
         '<div class="pl-q" id="pl-q-'+uid+'">לְ<b>'+name+'</b> יֵשׁ <b>'+g+'</b> צַלָּחוֹת, בְּכָל צַלַּחַת <b>'+s+'</b> '+itemName+' '+item+
           ' — כַּמָּה '+itemName+' יֵשׁ <b>בְּסַךְ הַכֹּל</b>?</div>'+
-        '<div class="pl-stage" id="pl-stage-'+uid+'" role="button" aria-label="שִׁפְכִי לְשׁוּרָה"></div>'+
-        '<div class="pl-tip" id="pl-tip-'+uid+'"></div>'+
+        '<div class="pl-stage" id="pl-stage-'+uid+'" role="button" aria-label="שִׁפְכִי לְשׁוּרָה" style="display:none"></div>'+
+        '<div class="pl-tip" id="pl-tip-'+uid+'" style="display:none"></div>'+
         '<div class="pl-ans-row">'+
           '<span class="pl-lbl">כַּמָּה בְּסַךְ הַכֹּל?</span>'+
-          '<button class="pl-btn" id="pl-chk-'+uid+'" aria-label="בְּדִיקָה">✓</button>'+
           '<input class="ans-inp pl-inp" id="pl-ans-'+uid+'" type="text" inputmode="numeric" maxlength="2" aria-label="בְּסַךְ הַכֹּל">'+
+          '<button class="pl-btn" id="pl-chk-'+uid+'" aria-label="בְּדִיקָה">✓</button>'+
         '</div>'+
       '</div>';
 
     const $=id=>root.querySelector('#'+id+'-'+uid);
     const stage=$('pl-stage'),tip=$('pl-tip'),inp=$('pl-ans'),chk=$('pl-chk'),qEl=$('pl-q');
-    hint('🍽️ כַּמָּה '+itemName+' בְּסַךְ הַכֹּל? אֶפְשָׁר לִלְחֹץ עַל הַצַּלָּחוֹת!');
+    hint('🍽️ כַּמָּה '+itemName+' בְּסַךְ הַכֹּל? נַסִּי בָּרֹאשׁ 🏆');
 
     const itemSpans=c=>new Array(c).fill('<span class="pl-it">'+item+'</span>').join('');
     // render the CURRENT view: plates (the story's equal groups) or the poured row
@@ -140,10 +143,15 @@ window.EXERCISES.types.plates=(()=>{
       const cw=stage.clientWidth, iw=inner.scrollWidth;
       if(iw>cw+1){const sc=Math.max(0.45,cw/iw);inner.style.transform='scale('+sc+')';}
     }
-    // tap → pour into one row / back onto the plates (pure aid)
-    stage.addEventListener('click',()=>{if(done)return;poured=!poured;renderStage();});
+    // reveal the picture (equal groups) — only after a mistake; the child first
+    // solves from the WORDS alone (try-first, like the staged column exercise)
+    function reveal(){
+      if(!shown){shown=true;stage.style.display='';tip.style.display='';}
+      renderStage();
+    }
+    // once revealed, tap → pour into one row / back onto the plates (pure aid)
+    stage.addEventListener('click',()=>{if(done||!shown)return;poured=!poured;renderStage();});
     window.addEventListener('resize',fitStage);
-    renderStage();
 
     function check(){
       if(done)return;
@@ -158,8 +166,15 @@ window.EXERCISES.types.plates=(()=>{
       }else{
         inp.classList.remove('pl-ready');inp.classList.add('ans-err');
         api.wrong(v);
-        if(!poured){poured=true;renderStage();}   // a mistake pours the row — count them all
-        hint('סִפְרִי אֶת כֻּלָּם בַּשּׁוּרָה — אֶחָד אֶחָד 💗');
+        if(!shown){                       // 1st mistake — reveal the equal groups
+          poured=false;reveal();
+          hint('הִנֵּה הַצַּלָּחוֹת — סִפְרִי כַּמָּה '+itemName+' יֵשׁ 💗');
+        }else if(!poured){                // 2nd mistake — pour into one countable row
+          poured=true;renderStage();
+          hint('סִפְרִי אֶת כֻּלָּם בַּשּׁוּרָה — אֶחָד אֶחָד 💗');
+        }else{
+          hint('סִפְרִי אֶת כֻּלָּם בַּשּׁוּרָה — אֶחָד אֶחָד 💗');
+        }
         later(()=>{if(!done){inp.value='';inp.classList.remove('ans-err');inp.focus();}},1000);
       }
     }
@@ -177,7 +192,8 @@ window.EXERCISES.types.plates=(()=>{
   return{
     t:TPL,
     modes:['plt','mulc'],
-    aidsReveal:'always',            // no number line — the plates/row picture IS the aid
+    aidsReveal:'always',            // no HOST aid (no number line); the module drives
+                                    // its own picture reveal on a mistake (try-first)
     make(mode){return mode==='mulc'?makePool(3):mode==='plt'?makePool(6):[];},
     mount,
   };

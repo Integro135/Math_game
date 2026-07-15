@@ -12,58 +12,43 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "galaxy"                # dark space backdrop — the spec's primary case
+THEME    = "maldives"              # the beach theme that hosts the Pokémon walkers
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
 STANDALONE = ""                    # "" → drive the real game (index.html)
 VIEW     = {"width": 1280, "height": 800}   # viewport
-# THREE NEW SUCCESS SCREENS (ferris-wheel / moon-swing / star-train — standard
-# dark-backdrop batch): confirm they registered, exercise each show()+cleanup()
-# (cleanup must leave the root EMPTY), then leave all three running side by
-# side (super variant) for one mid-animation screenshot.
-EVAL = r"""(function(){
-  var NEW=['ferris-wheel','moon-swing','star-train'];
-  var names=(window.SUCCESS&&SUCCESS.styles||[]).map(function(s){return s.name;});
-  var out={total:names.length,
-    registered:NEW.map(function(n){return n+':'+(names.indexOf(n)>=0);})};
-  var pal={primary:'#C77DFF',accent:'#FFD27D',glow:'#7DC4FF',text:'#FFFFFF'};
-  // cleanup test: show → immediately cleanup → root must be empty
-  out.cleanupOk=NEW.map(function(n){
-    var st=SUCCESS.styles.filter(function(s){return s.name===n;})[0];
-    if(!st)return n+':missing';
-    var r=document.createElement('div');
-    r.style.cssText='position:fixed;inset:0;z-index:60;pointer-events:none';
-    document.body.appendChild(r);
-    var c=st.show({root:r,isSuper:true,durationMs:4500,points:20,palette:pal,praise:'כָּל הַכָּבוֹד!'});
-    c();
-    var empty=r.childElementCount===0;
-    r.remove();
-    return n+':'+(empty?'clean':'LEFTOVER('+r.childElementCount+')');
-  });
-  // now run all three side by side for the screenshot (thirds of the screen)
-  window.__cleanups=[];
-  NEW.forEach(function(n,i){
-    var st=SUCCESS.styles.filter(function(s){return s.name===n;})[0];
-    var r=document.createElement('div');
-    r.className='__suc_probe';
-    r.style.cssText='position:fixed;top:0;bottom:0;left:'+(i*33.3)+'%;width:33.3%;z-index:60;pointer-events:none;overflow:hidden';
-    document.body.appendChild(r);
-    window.__cleanups.push({c:st.show({root:r,isSuper:true,durationMs:4500,points:20,palette:pal,praise:'כָּל הַכָּבוֹד!'}),r:r});
-  });
-  return JSON.stringify(out);
-})();"""
+# END-SCREEN "play again" contrast: on the maldives (Pokémon) theme the end card
+# is near-transparent, so the old ghost-bubble .b-rpl vanished over the bright
+# lagoon/sand + walkers. Force the end screen (non-zero mode → "שַׂחֲקִי שׁוּב"), then
+# confirm the button now paints a SOLID gradient fill + dark text and shoot it.
+EVAL = r""""""
 POST_EVAL = r"""(function(){
-  // NON-destructive (the screenshot is taken AFTER this): each probe should be
-  // mid-animation with a canvas + the praise text mounted
-  var probes=Array.prototype.slice.call(document.querySelectorAll('.__suc_probe'));
-  return JSON.stringify({probes:probes.length,
-    canvases:probes.map(function(p){return p.querySelectorAll('canvas').length;}),
-    texts:probes.map(function(p){return p.querySelectorAll('div').length;})});
+  // Inject the EXACT "play again" end-screen markup (the mode≠0 branch of
+  // endGame()) so the maldives .b-rpl rule paints against the real beach bg.
+  var card=document.getElementById('card');
+  card.innerHTML='<div class="end-scr"><div class="end-uni">🦄</div>'
+    +'<div class="end-ttl">🎊 סִיַּמְתְּ! 🎊</div>'
+    +'<div class="end-grade-num">870</div>'
+    +'<div class="end-grade-max">מִתּוֹךְ 1000</div>'
+    +'<div class="end-grade-msg">כָּל הַכָּבוֹד! ⭐</div>'
+    +'<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:4px">'
+    +'<button class="btn b-rpl">שַׂחֲקִי שׁוּב 🔄</button>'
+    +'<button class="btn b-rep">📊 סִיכּוּם</button></div></div>';
+  var b=card.querySelector('.b-rpl');
+  var cs=getComputedStyle(b), r=b.getBoundingClientRect();
+  return JSON.stringify({
+    hasGradientFill: cs.backgroundImage.indexOf('gradient')>=0,   // solid, not a bare translucent color
+    color: cs.color,
+    borderTopWidth: cs.borderTopWidth,
+    boxShadowLen: cs.boxShadow.length,
+    w: Math.round(r.width), h: Math.round(r.height),
+    onScreen: r.width>0 && r.height>0
+  });
 })();"""
 CLICKS   = []
-WAIT_MS   = 2600   # mid-animation for the super variants (4500ms) → screenshot
+WAIT_MS   = 1200   # let the maldives bg settle before forcing the end screen
 SHOTS    = [
-    {"path": r"c:\tmp\success_new3.png", "clip": None},
+    {"path": r"c:\tmp\maldives_playagain.png", "clip": {"x": 280, "y": 110, "width": 720, "height": 620}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 
