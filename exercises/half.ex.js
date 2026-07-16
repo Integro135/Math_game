@@ -33,7 +33,7 @@ window.EXERCISES.types.half=(()=>{
   ];
   const PAIRS=[['דָּנָה','נֹעָה'],['רוֹנִי','מַיָּה'],['תָּמָר','יָעֵל']];
 
-  // one problem per n — every total is EVEN (4/6/8/10) so the share is exact
+  // one problem per n — every total is EVEN (4..14) so the share is exact
   function makePool(ns){
     const its=sh(ITEMS.slice());
     return sh(ns.slice()).map((n,i)=>{
@@ -43,23 +43,26 @@ window.EXERCISES.types.half=(()=>{
   }
 
   const CSS=`
-  .hf-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:20px;width:100%}
+  .hf-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;
+    --hf-isz:2rem;--hf-ksz:2.6rem;--hf-gap:7px;--hf-sgap:16px}
   .hf-q{font-family:'Fredoka One',cursive;font-size:1.25rem;color:var(--skin-text,#fff);text-align:center;
     line-height:1.5;min-height:1.4em;text-shadow:0 0 12px rgba(160,190,255,.35);padding:0 8px}
   .hf-q b{color:var(--skin-accent,#ffd27d)}
   /* the stage: girl · items · girl. LTR so the two halves map cleanly to sides */
-  .hf-stage{direction:ltr;display:flex;align-items:center;justify-content:center;gap:16px;cursor:pointer;
+  .hf-stage{direction:ltr;display:flex;align-items:center;justify-content:center;gap:var(--hf-sgap,16px);cursor:pointer;
     padding:12px 6px;border-radius:20px;transition:background .3s;user-select:none}
   .hf-stage:hover{background:rgba(255,255,255,.05)}
-  .hf-kid{font-size:2.6rem;line-height:1;transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+  /* item/kid/gap sizes ride CSS vars so the JS auto-fit (mount) can shrink them
+     when many items (12/14) would overflow the card — desktop keeps full size */
+  .hf-kid{font-size:var(--hf-ksz,2.6rem);line-height:1;transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
   .hf-items{display:flex;align-items:center}
   /* pre-split the two halves must read as ONE continuous row: no horizontal
      padding, and the (transparent) 2px borders + the collapsed line's margins
      add up to exactly the 7px in-row gap */
-  .hf-half{display:flex;align-items:center;gap:7px;padding:8px 0;border-radius:14px;
+  .hf-half{display:flex;align-items:center;gap:var(--hf-gap,7px);padding:8px 0;border-radius:14px;
     border:2px dashed transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),
       border-color .35s,background .35s,padding .45s}
-  .hf-item{font-size:2rem;line-height:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
+  .hf-item{font-size:var(--hf-isz,2rem);line-height:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
   /* the golden divider — zero-width until the split drops it down the middle */
   .hf-line{width:0;height:74px;border-radius:4px;margin:0 1.5px;align-self:center;
     background:linear-gradient(180deg,var(--skin-accent,#ffd27d),#ffb02e);
@@ -87,12 +90,9 @@ window.EXERCISES.types.half=(()=>{
   .hf-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
   .hf-btn:disabled{opacity:.4;cursor:default;box-shadow:none}
   @media(max-width:480px){
-    .hf-item{font-size:1.45rem}
-    .hf-half{gap:4px}
-    .hf-kid{font-size:2rem}
+    .hf-root{--hf-isz:1.45rem;--hf-ksz:2rem;--hf-gap:4px;--hf-sgap:8px}
     .hf-line{height:56px;margin:0}   /* 2px+2px borders alone = the 4px gap */
     .hf-root.hf-split .hf-line{margin:0 8px}
-    .hf-stage{gap:8px}
   }`;
   function injectStyle(){
     if(document.getElementById('hf-style'))return;
@@ -140,6 +140,44 @@ window.EXERCISES.types.half=(()=>{
     const rootEl=$('hf-root'),stage=$('hf-stage'),inp=$('hf-ans'),chk=$('hf-chk'),qEl=$('hf-q');
     hint('✂️ חַלְּקִי שָׁווֶה בְּשָׁווֶה בֵּין שְׁתֵּיהֶן — אֶפְשָׁר לִלְחֹץ עַל הַ'+itemName+'!');
 
+    // AUTO-FIT: the items live in ONE non-wrapping row (the two halves must stay
+    // left/right of the middle line). With many items (12/14) that row can be
+    // wider than the CARD on small screens — and since #colx-root/.equation have
+    // no width cap they'd just expand and overflow the card. So measure the
+    // CARD's stable inner width and shrink the emoji/kid/gap CSS vars until the
+    // row fits inside it. We RESET the vars first (recomputes from the CSS base,
+    // incl. the ≤480px block after a resize) and only ever go SMALLER. Desktop,
+    // where the full-size row already fits, barely shrinks; the loop measures the
+    // REAL rendered width each step, so it's correct regardless of emoji glyph
+    // width or font load timing.
+    const cardEl=document.getElementById('card');
+    function fitRow(){
+      rootEl.style.removeProperty('--hf-isz');
+      rootEl.style.removeProperty('--hf-gap');
+      rootEl.style.removeProperty('--hf-ksz');
+      rootEl.style.removeProperty('--hf-sgap');
+      const box=cardEl||rootEl, cs=getComputedStyle(box);
+      // RESERVE the extra width the SPLIT state adds (each half gains ~12px
+      // padding, the divider grows to width+margins ~26px) so the row still fits
+      // the card AFTER a tap / on solve — measured on the collapsed row here, so
+      // no need to toggle the (visible, transitioned) hf-split class.
+      const SPLIT_RESERVE=44;
+      const avail=box.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-6-SPLIT_RESERVE;
+      let isz=parseFloat(getComputedStyle(stage.querySelector('.hf-item')).fontSize);
+      let guard=0;
+      while(stage.scrollWidth>avail && isz>9 && guard++<90){
+        isz-=1;
+        rootEl.style.setProperty('--hf-isz',isz+'px');
+        rootEl.style.setProperty('--hf-gap',Math.max(1,Math.round(isz*0.14))+'px');
+        rootEl.style.setProperty('--hf-ksz',Math.round(isz*1.45)+'px');  // kids stay a touch bigger than items
+        rootEl.style.setProperty('--hf-sgap',Math.max(4,Math.round(isz*0.5))+'px');
+      }
+    }
+    requestAnimationFrame(fitRow);
+    later(fitRow,180);          // re-fit once fonts/layout settle (only shrinks)
+    let rzT=0;const onResize=()=>{clearTimeout(rzT);rzT=setTimeout(fitRow,120);};
+    window.addEventListener('resize',onResize);
+
     // tap the items → toggle the middle split line (the halves part visually)
     stage.addEventListener('click',()=>{if(!done)rootEl.classList.toggle('hf-split');});
     function forceSplit(){rootEl.classList.add('hf-split');}
@@ -169,14 +207,14 @@ window.EXERCISES.types.half=(()=>{
     inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check();}});
     later(()=>{inp.classList.add('hf-ready');try{inp.focus();}catch(e){}},350);
 
-    return function cleanup(){timers.forEach(clearTimeout);root.innerHTML='';};
+    return function cleanup(){window.removeEventListener('resize',onResize);clearTimeout(rzT);timers.forEach(clearTimeout);root.innerHTML='';};
   }
 
   return{
     t:THF,
     modes:['hlf','mulc'],
     aidsReveal:'always',            // no number line — the split-in-two picture IS the aid
-    make(mode){return mode==='mulc'?makePool([4,6,8,10]):mode==='hlf'?makePool([4,6,8,10,6,8]):[];},
+    make(mode){return mode==='mulc'?makePool([4,6,8,10,12,14]):mode==='hlf'?makePool([4,6,8,10,12,14,8,10]):[];},
     mount,
   };
 })();

@@ -115,9 +115,10 @@ subtraction_game/
 │  │                                 Queen + Superman + אַלּוּפָה
 │  │                                 (interactive mount module, #colx-root)
 │  ├─ half.ex.js                   THF "כַּמָּה זֶה חֵצִי" — two friends share
-│  │                                 4/6/8/10 items EQUALLY; tap → a golden middle
-│  │                                 line splits them in two (first division).
-│  │                                 אַלּוּפָה (interactive mount module, #colx-root)
+│  │                                 4/6/8/10/12/14 items EQUALLY; tap → a golden
+│  │                                 middle line splits them in two (first division;
+│  │                                 a JS auto-fit shrinks the row to the card when
+│  │                                 many items). אַלּוּפָה (mount module, #colx-root)
 │  └─ plates.ex.js                 TPL "צַלָּחוֹת" — g plates × s items each
 │                                    (2..4×2..4), find the TOTAL; tap → the items
 │                                    pour into one countable row (multiplication
@@ -365,7 +366,7 @@ Current recipes:
   perimeter, §3.6 list), `column_sub.make('mulc')` (the STAGED subtraction),
   `compare.make('mulc')` (drag-the-sign), `word_prob.make('mulc')` (short nikud
   word problems), `triple_sum.make('mulc')` (`__+__+__=20`, no 0/10) and
-  `half.make('mulc')` (share 4/6/8/10 items equally between two — first division)
+  `half.make('mulc')` (share 4/6/8/10/12/14 items equally between two — first division)
   and `plates.make('mulc')` (g plates × s items → total, the multiplication story),
   plus the two basic-multiplication exercises borrowed from Superman —
   `coin_mul.make('mulc')` (how many ₪2/₪5/₪10 coins fit in X) and

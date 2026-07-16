@@ -164,6 +164,10 @@ window.EXERCISES.types.column_sub=(()=>{
   .colxs-intro{display:flex;flex-direction:column;align-items:center;gap:22px;padding:14px 0}
   .colxs-intro-eq{direction:ltr;font-family:'Fredoka One',cursive;font-size:3.2rem;
     color:var(--skin-text,#fff);text-shadow:0 0 18px rgba(160,190,255,.35);letter-spacing:3px}
+  /* both operands are hoverable (the global #num-tt handler picks up .eq-n[data-num]):
+     hover shows that many objects. Normalise the base .eq-n look so they blend into
+     the equation; the base hover glow/scale stays as the affordance. */
+  .colxs-intro-eq .eq-n{font-size:inherit;min-width:0;color:inherit;text-shadow:inherit;padding:0 2px}
   .colxs-show-btn{display:inline-flex;align-items:center;gap:12px;font-family:'Fredoka One',cursive;
     font-size:1.4rem;color:#fff;cursor:pointer;
     background:linear-gradient(135deg,var(--skin-glow,#7dc4ff),var(--skin-primary,#c77dff) 58%,var(--skin-accent,#ffd27d));
@@ -233,7 +237,7 @@ window.EXERCISES.types.column_sub=(()=>{
     function revealColumn(){ if(live||solved)return; root.innerHTML=''; live=build({root,a,b,api,flow}); }
     root.innerHTML=`
       <div class="colxs-intro">
-        <div class="colxs-intro-eq">${a} − ${b} =</div>
+        <div class="colxs-intro-eq"><span class="eq-n" data-num="${a}">${a}</span> − <span class="eq-n" data-num="${b}">${b}</span> =</div>
         <div class="colxs-solve-row">
           <button type="button" class="colxs-solve-btn" id="colxs-solvebtn" aria-label="בְּדִיקָה">✓</button>
           <input class="ans-inp colxs-solve-inp blink" id="colxs-solveinp" type="text" inputmode="numeric" maxlength="3" aria-label="הַתְּשׁוּבָה">

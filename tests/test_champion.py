@@ -585,6 +585,22 @@ class TestStagedColumnSub:
             "EXERCISES.types.column_sub.make('mx').every(p=>!p.staged)"), \
             "Queen (mx) column-subtraction must stay non-staged"
 
+    def test_staged_horizontal_operands_hover_shows_objects(self, page):
+        """In the אַלּוּפָה horizontal-first stage (before any mistake) BOTH operands
+        are hoverable (.eq-n[data-num]); hovering shows that many objects in the
+        #num-tt tooltip."""
+        _enter_staged_sub(page, "mulc", a=8, b=5)     # small so the tooltip is tidy
+        assert page.evaluate(
+            "document.querySelectorAll('.colxs-intro-eq .eq-n[data-num]').length") == 2, \
+            "both operands must be hoverable"
+        page.hover(".colxs-intro-eq .eq-n[data-num='8']")   # the minuend → 8 objects
+        page.wait_for_function(
+            "getComputedStyle(document.getElementById('num-tt')).display!=='none'"
+            " && document.querySelectorAll('#num-tt .ntt-group > span').length===8", timeout=TIMEOUT)
+        page.hover(".colxs-intro-eq .eq-n[data-num='5']")   # the subtrahend → 5 objects
+        page.wait_for_function(
+            "document.querySelectorAll('#num-tt .ntt-group > span').length===5", timeout=TIMEOUT)
+
 
 # ─────────────────────────────────────────────────────────
 # Three-addends-to-a-target (triple_sum / TTS) — `__ + __ + __ = 20`, the child
@@ -799,13 +815,43 @@ class TestHalfSplit:
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13
 
-    def test_half_pool_is_even_totals_only(self, page):
-        """make('mulc') builds one problem per total 4/6/8/10 — every total EVEN,
-        answer exactly half."""
+    def test_half_pool_is_even_totals_up_to_14(self, page):
+        """make('mulc') builds one problem per total 4/6/8/10/12/14 — every total
+        EVEN (so the share is exact), reaching up to 14, answer exactly half."""
         _enter_half(page)   # ensures the half type file is loaded
         pool = page.evaluate("EXERCISES.types.half.make('mulc').map(p=>({n:p.n,a:p.a}))")
-        assert sorted(p["n"] for p in pool) == [4, 6, 8, 10]
+        assert sorted(p["n"] for p in pool) == [4, 6, 8, 10, 12, 14]
         assert all(p["a"] * 2 == p["n"] for p in pool), f"answers must be exact halves: {pool}"
+
+    def test_half_14_splits_into_two_sevens_and_solves(self, page):
+        """A total of 14 mounts 7 items each side; typing 7 solves it (full 20)."""
+        _enter_half(page, 14)
+        assert page.evaluate("document.querySelectorAll('.hf-item').length") == 14
+        halves = page.evaluate("[...document.querySelectorAll('.hf-half')].map(h=>h.children.length)")
+        assert halves == [7, 7], f"14 must split into two equal halves of 7, got {halves}"
+        _dispatch_enter(page, ".hf-inp", 7)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+
+    def test_half_14_fits_the_card_on_a_narrow_phone(self, page):
+        """The 14-item row (no wrap — the halves must flank the middle line) must
+        auto-shrink to fit the card on a narrow phone, with no horizontal
+        overflow. The auto-fit runs on mount; desktop keeps full-size emoji."""
+        page.set_viewport_size({"width": 360, "height": 780})
+        _enter_half(page, 14)
+        page.wait_for_timeout(150)   # let the rAF auto-fit settle
+        fit = page.evaluate("""() => {
+            const stage=document.querySelector('.hf-stage');
+            const root=document.querySelector('.hf-root');
+            return {stage: stage.getBoundingClientRect().width,
+                    root: root.clientWidth,
+                    pageScroll: document.documentElement.scrollWidth,
+                    win: window.innerWidth};
+        }""")
+        assert fit["stage"] <= fit["root"] + 1, \
+            f"the 14-item stage must fit within the card, got {fit}"
+        assert fit["pageScroll"] <= fit["win"] + 2, \
+            f"the 14-item board must not cause horizontal page scroll, got {fit}"
 
 
 # ─────────────────────────────────────────────────────────
