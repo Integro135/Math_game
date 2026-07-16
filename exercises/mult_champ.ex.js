@@ -119,7 +119,9 @@ window.EXERCISES.types.mult_champ=(()=>{
         '<div class="mk-chain" id="mk-chain" style="display:none">'+
           '<div class="mk-sep"></div>'+
           '<div class="mk-like-row"><span class="mk-like">זֶה כְּמוֹ</span>'+
-            '<button class="mk-switch" id="mk-switch" type="button" title="הַחְלִיפִי אֶת הַמִּסְפָּר שֶׁחוֹזֵר"></button></div>'+
+            /* the 🔁 switch flips WHICH factor repeats — pointless when both are
+               equal (3+3+3 flips to the same 3+3+3), so omit it for a×a */
+            (A===B?'':'<button class="mk-switch" id="mk-switch" type="button" title="הַחְלִיפִי אֶת הַמִּסְפָּר שֶׁחוֹזֵר"></button>')+'</div>'+
           '<div class="mk-scroll"><div class="mk-row" id="mk-row"></div></div>'+
         '</div>'+
       '</div>';
@@ -198,8 +200,11 @@ window.EXERCISES.types.mult_champ=(()=>{
       const rep=flip?B:A, times=flip?A:B;
       rowEl.innerHTML=chainHtml(rep,times);
       // the SWITCH button previews the OTHER orientation, e.g. "🔁 6 + 6"
-      const oRep=flip?A:B, oTimes=flip?B:A;
-      switchBtn.innerHTML='🔁 '+new Array(oTimes).fill(oRep).join(' + ');
+      // (absent when A===B — nothing to flip to)
+      if(switchBtn){
+        const oRep=flip?A:B, oTimes=flip?B:A;
+        switchBtn.innerHTML='🔁 '+new Array(oTimes).fill(oRep).join(' + ');
+      }
       const finalInp=wireChain();
       requestAnimationFrame(()=>{fit();try{finalInp.focus();}catch(e){}});
     }
@@ -243,7 +248,7 @@ window.EXERCISES.types.mult_champ=(()=>{
       }
     });
 
-    switchBtn.addEventListener('click',function(){flip=!flip;renderChain();});
+    if(switchBtn)switchBtn.addEventListener('click',function(){flip=!flip;renderChain();});
 
     requestAnimationFrame(()=>{try{ansInp.focus();}catch(e){}});
     window.addEventListener('resize',fit);

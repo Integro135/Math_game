@@ -18,6 +18,19 @@ def _enter_mulc(page):
         timeout=TIMEOUT)
 
 
+def _force_mulc_tmk(page, a, b):
+    """Enter אַלּוּפָה, then force ONE mult_champ problem a×b and wait for its card
+    (so factor choice is deterministic — needed for the 🔁-switch tests)."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.mult_champ==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate(f"mode='mulc';score=0;problems=[{{t:TMK,a:{a},b:{b}}}];idx=0;loadProblem();")
+    page.wait_for_selector("#mk-ans", timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
 class TestChampMultiplication:
     def test_product_is_shown_first_chain_hidden(self, page):
         """Phase 1: only the bare product a×b=□ is on screen; the chain is hidden."""
@@ -49,8 +62,9 @@ class TestChampMultiplication:
 
     def test_switch_flips_which_number_repeats(self, page):
         """🔁 switch flips a-repeated-b-times ↔ b-repeated-a-times; flips back;
-        the answer (final box) stays the product either way."""
-        _enter_mulc(page)
+        the answer (final box) stays the product either way. Uses DISTINCT factors
+        (3×4) — equal factors hide the switch (see test_equal_factors_hide_switch)."""
+        _force_mulc_tmk(page, 3, 4)
         res = page.evaluate("""() => {
             const a=num1,b=num2,product=a*b;
             const inp=document.getElementById('mk-ans');
@@ -69,6 +83,26 @@ class TestChampMultiplication:
             f"after switch must be {res['b']} repeated {res['a']} times, got {res['flipped']}"
         assert res["flippedExp"] == res["product"], "the answer must stay the product after a switch"
         assert res["back"] == [res["a"]] * res["b"], "switching back must restore the default"
+
+    def test_equal_factors_hide_switch(self, page):
+        """Equal factors (a×a) — flipping 3+3+3 gives the same 3+3+3, so the 🔁
+        switch is NOT rendered; the repeated-addition chain still opens on a
+        mistake (user: 'אין צורך להציג את כפתור השחלוף בין מספרים זהים')."""
+        _force_mulc_tmk(page, 3, 3)
+        res = page.evaluate("""() => {
+            const inp=document.getElementById('mk-ans');
+            inp.value=String(3*3+1);
+            inp.dispatchEvent(new Event('input',{bubbles:true}));
+            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+            return {
+                shown:getComputedStyle(document.getElementById('mk-chain')).display!=='none',
+                hasSwitch:!!document.getElementById('mk-switch'),
+                terms:[...document.querySelectorAll('#mk-row .mk-term')].map(e=>+e.textContent),
+            };
+        }""")
+        assert res["shown"], "a wrong product must still open the chain for equal factors"
+        assert res["hasSwitch"] is False, "equal factors must NOT render the 🔁 switch"
+        assert res["terms"] == [3, 3, 3], "the chain is still 3 repeated 3 times"
 
     def test_correct_product_scores_full_without_chain(self, page):
         """A correct product in phase 1 scores full points (modePts=20) and never
