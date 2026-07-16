@@ -131,6 +131,8 @@ function makePool(m){
       ...(EX('triple_sum')?EX('triple_sum').make('mulc'):[]), // __+__+__ = 20 (בלי 0/10)
       ...(EX('half')?EX('half').make('mulc'):[]),             // כמה זה חצי — חלוקה שווה ל-2 (ראשית החילוק)
       ...(EX('plates')?EX('plates').make('mulc'):[]),         // צלחות — קבוצות שוות → סך הכל (סיפור הכפל)
+      ...(EX('coin_mul')?EX('coin_mul').make('mulc'):[]),     // כמה מטבעות (₪2/₪5/₪10) נכנסים ב-X — ראשית הכפל (מסופרמן)
+      ...(EX('bagel_cost')?EX('bagel_cost').make('mulc'):[]), // כמה עולים X בייגלה (×₪5) — ראשית הכפל בשקלים (מסופרמן)
     ]),QUEEN_SUPER_COUNT);
     // the אַלּוּפָה game OPENS on its flagship multiplication card (TMK): keep a
     // mult_champ problem at slot 0 (the rest — perimeter / column-sub / compare /

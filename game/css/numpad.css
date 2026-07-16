@@ -23,6 +23,16 @@
 }
 #game-numpad.np-show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
 
+/* TABLET ONLY: when the number line is on screen (JS adds .np-nl), slide the pad
+   to the RIGHT edge so it stops covering the (centred) number line. Phones
+   (≤480px) keep it centred — there's no room to shift and the line spans the
+   whole width anyway. The pad only exists on touch devices (JS gate), so a plain
+   min-width query is enough to mean "tablet, not phone". */
+@media (min-width:481px){
+  #game-numpad.np-nl{left:auto;right:16px;transform:translateX(0) translateY(18px)}
+  #game-numpad.np-nl.np-show{transform:translateX(0) translateY(0)}
+}
+
 #game-numpad .np-key{
   height:56px;border:none;border-radius:14px;cursor:pointer;
   font-family:'Fredoka One',cursive;font-size:1.55rem;line-height:1;

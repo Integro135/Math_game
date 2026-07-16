@@ -182,9 +182,9 @@ window.EXERCISES.types.coin_mul=(()=>{
 
   return{
     t:TCM,
-    modes:['sup'],
+    modes:['sup','mulc'],   // Superman + אַלּוּפָה (basic multiplication)
     aidsReveal:'always',   // no number-line aid — the tray is the manipulative
-    make(mode){return mode==='sup'?makePool():[];},
+    make(mode){return (mode==='sup'||mode==='mulc')?makePool():[];},
     mount,
   };
 })();

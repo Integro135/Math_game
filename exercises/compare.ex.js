@@ -25,13 +25,35 @@ window.EXERCISES.types.compare=(()=>{
   const ESC={lt:'&lt;',gt:'&gt;',eq:'='};    // op-token → HTML-escaped glyph (for innerHTML)
   const opOf=(a,b)=>a<b?'lt':a>b?'gt':'eq';
 
-  // one problem; optionally FORCE a relation so the pool covers ‹ , › and = .
+  /* ── the little "sub-exercise" woven into ONE operand ─────────────────────
+     To compare, the child must FIRST work out a small calculation on one side
+     (e.g. "6 − 1" instead of a bare 5) and only THEN decide < / > / =. It's a
+     difficulty LADDER: we start at the gentlest step and can raise it later. The
+     comparison logic never changes — a/b always hold the already-COMPUTED values,
+     so the derived sign, the report row and num1/num2 stay correct; the `sub`
+     only says how to DISPLAY (and mentally re-compute) that one side.
+       level 0 (initial): subtract 1.   future: −2, +1, +2, … */
+  const SUB_LADDER=[{op:'-',k:1}];
+  let _subLevel=0;                                  // bump to make the sub harder
+  const curSub=()=>SUB_LADDER[Math.min(_subLevel,SUB_LADDER.length-1)];
+  // DISPLAY base for a side whose computed value is `val` (base op k === val):
+  // '-' → base = val + k;  '+' → base = val − k.
+  const baseFor=(sub,val)=>sub.op==='+'?val-sub.k:val+sub.k;
+
+  // one problem; optionally FORCE a relation so the pool covers < , > and = .
+  // A sub-exercise (curSub) is attached to a random side; its base resolves back
+  // to that side's value, so nothing downstream changes.
   function makeOne(force){
-    if(force==='eq'){const v=ri(1,99);return{t:TCP,a:v,b:v};}
-    let a=ri(1,99),b=ri(1,99);while(a===b)b=ri(1,99);
-    if(force==='lt'&&a>b){const t=a;a=b;b=t;}
-    if(force==='gt'&&a<b){const t=a;a=b;b=t;}
-    return{t:TCP,a,b};
+    let a,b;
+    if(force==='eq'){a=b=ri(1,99);}
+    else{a=ri(1,99);b=ri(1,99);while(a===b)b=ri(1,99);
+      if(force==='lt'&&a>b){const t=a;a=b;b=t;}
+      if(force==='gt'&&a<b){const t=a;a=b;b=t;}}
+    let sub=curSub();
+    const side=Math.random()<0.5?'a':'b';
+    let base=baseFor(sub,side==='a'?a:b);
+    if(base<1){sub={op:'-',k:sub.k};base=(side==='a'?a:b)+sub.k;}  // keep display valid (never on level 0)
+    return{t:TCP,a,b,sub:{side,op:sub.op,k:sub.k,base}};
   }
   // a varied pool that ALWAYS contains at least one of each relation
   function makePool(n){
@@ -51,6 +73,9 @@ window.EXERCISES.types.compare=(()=>{
   .cp-num{font-family:'Fredoka One',cursive;font-size:4.6rem;line-height:1;color:var(--skin-text,#fff);
     text-shadow:0 0 20px rgba(160,190,255,.4);animation:cpBob 3.4s ease-in-out infinite}
   @keyframes cpBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  /* one operand can be a little sub-exercise ("6 − 1") the child computes first */
+  .cp-num.cp-expr{font-size:3.5rem;display:inline-flex;align-items:baseline;letter-spacing:.01em}
+  .cp-expr .cp-mini-op{margin:0 .12em;opacity:.9}
   .cp-slot{position:relative;width:104px;height:104px;border-radius:22px;display:flex;align-items:center;
     justify-content:center;font-family:'Fredoka One',cursive;font-size:4.4rem;line-height:1;
     color:var(--skin-accent,#ffd27d);background:rgba(255,255,255,.06);border:4px dashed rgba(255,255,255,.5);
@@ -90,6 +115,7 @@ window.EXERCISES.types.compare=(()=>{
     box-shadow:0 12px 28px rgba(0,0,0,.42)}
   @media(max-width:480px){
     .cp-num{font-size:3.4rem}
+    .cp-num.cp-expr{font-size:2.5rem}
     .cp-eq{gap:14px}
     .cp-slot{width:80px;height:80px;font-size:3.2rem}
     .cp-tile{width:72px;height:72px;font-size:2.3rem}
@@ -107,8 +133,14 @@ window.EXERCISES.types.compare=(()=>{
     const p=ctx.p||{a:3,b:4};
     const a=(typeof ctx.a==='number')?ctx.a:p.a;
     const b=(typeof ctx.b==='number')?ctx.b:p.b;
-    const want=opOf(a,b);
+    const sub=p.sub||null;          // {side,op,k,base} — a small calc on ONE side
+    const want=opOf(a,b);           // relation of the COMPUTED values (unchanged)
     const uid=++_uid;
+    // render a side as a plain number, or — if the sub sits here — as "base op k"
+    const opGlyph=o=>o==='-'?'−':'+';
+    const sideHtml=(which,val)=>(sub&&sub.side===which)
+      ? '<span class="cp-num cp-expr">'+sub.base+'<span class="cp-mini-op">'+opGlyph(sub.op)+'</span>'+sub.k+'</span>'
+      : '<span class="cp-num">'+val+'</span>';
     let done=false,placed=false;
     const timers=[];const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
     const hint=msg=>{const h=document.getElementById('hint');if(h)h.textContent=msg;};
@@ -119,11 +151,11 @@ window.EXERCISES.types.compare=(()=>{
 
     root.innerHTML=`
       <div class="cp-root">
-        <div class="cp-q" id="cp-q-${uid}">גָּרְרִי אֶת הַסִּימָן הַנָּכוֹן לַתֵּבָה בֵּין הַמִּסְפָּרִים ⚖️</div>
+        <div class="cp-q" id="cp-q-${uid}">${sub?'חַשְּׁבִי וְגָרְרִי אֶת הַסִּימָן הַנָּכוֹן לַתֵּבָה ⚖️':'גָּרְרִי אֶת הַסִּימָן הַנָּכוֹן לַתֵּבָה בֵּין הַמִּסְפָּרִים ⚖️'}</div>
         <div class="cp-eq">
-          <span class="cp-num">${a}</span>
+          ${sideHtml('a',a)}
           <span class="cp-slot" id="cp-slot-${uid}"><span class="cp-slot-q">?</span></span>
-          <span class="cp-num">${b}</span>
+          ${sideHtml('b',b)}
         </div>
         <div class="cp-tray" id="cp-tray-${uid}">
           ${signs.map(k=>`<button class="cp-tile" type="button" data-op="${k}" aria-label="${G[k]}">${ESC[k]}</button>`).join('')}
@@ -133,7 +165,8 @@ window.EXERCISES.types.compare=(()=>{
     const slot=root.querySelector('#cp-slot-'+uid);
     const tray=root.querySelector('#cp-tray-'+uid);
     const qEl=root.querySelector('#cp-q-'+uid);
-    hint('גָּרְרִי אֶת הַסִּימָן שֶׁמַּתְאִים בֵּין הַמִּסְפָּרִים 👉');
+    hint(sub?'חַשְּׁבִי כַּמָּה יוֹצֵא, וְגָרְרִי אֶת הַסִּימָן הַמַּתְאִים 👉'
+            :'גָּרְרִי אֶת הַסִּימָן שֶׁמַּתְאִים בֵּין הַמִּסְפָּרִים 👉');
 
     const overSlot=(x,y)=>{const r=slot.getBoundingClientRect();
       return x>=r.left-16&&x<=r.right+16&&y>=r.top-16&&y<=r.bottom+16;};

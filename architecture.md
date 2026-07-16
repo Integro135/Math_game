@@ -94,7 +94,7 @@ subtraction_game/
 │  │                                 GRADED flow in Superman + אַלּוּפָה (§3.6)
 │  │                                 (interactive mount module, #colx-root)
 │  ├─ coin_mul.ex.js               TCM "how many ₪2/₪5/₪10 coins fit in X" — first
-│  │                                 multiplication, Superman 🦸
+│  │                                 multiplication, Superman 🦸 + אַלּוּפָה 🏆
 │  │                                 (interactive mount module, #colx-root)
 │  ├─ mult_champ.ex.js             TMK אַלּוּפָה 🏆 multiplication (the קָשֶׁה tier,
 │  │                                 factors ≤4) — the bare product a×b shown
@@ -366,8 +366,11 @@ Current recipes:
   `compare.make('mulc')` (drag-the-sign), `word_prob.make('mulc')` (short nikud
   word problems), `triple_sum.make('mulc')` (`__+__+__=20`, no 0/10) and
   `half.make('mulc')` (share 4/6/8/10 items equally between two — first division)
-  and `plates.make('mulc')` (g plates × s items → total, the multiplication story).
-  `modePts('mulc')=20`.
+  and `plates.make('mulc')` (g plates × s items → total, the multiplication story),
+  plus the two basic-multiplication exercises borrowed from Superman —
+  `coin_mul.make('mulc')` (how many ₪2/₪5/₪10 coins fit in X) and
+  `bagel_cost.make('mulc')` (X bagels × ₪5). `coins.ex.js` is loaded in `mulc`
+  too so those two get the real coin art (`tcCoinSVG`). `modePts('mulc')=20`.
 
 **Staged (horizontal-first, graded) column subtraction.** In Superman and
 אַלּוּפָה any TCS problem tagged `staged` is mounted by `mountStaged`: the fact is

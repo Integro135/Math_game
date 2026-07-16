@@ -24,13 +24,13 @@ const EXERCISE_INDEX=[
   {file:'sub',       modes:[5,10,20,'br','b20','mx']},
   {file:'missing',   modes:[5,10,20,'mx']},
   {file:'double',    modes:[5,10,20,'mx']},
-  {file:'coins',     modes:[5,10,20,'mx','sup']},
+  {file:'coins',     modes:[5,10,20,'mx','sup','mulc']},   // mulc = אַלּוּפָה: loaded so tcCoinSVG (the real coin art) is available to coin_mul + bagel_cost
   {file:'chain',     modes:['mx']},
   {file:'tens',      modes:['mx']},
   {file:'column_add',modes:['sup','mulc']},   // mulc = אַלּוּפָה: horizontal-first GRADED flow (staged 25% penalties, number line on 2nd mistake) — mirrors column_sub
   {file:'column_sub',modes:['mx','sup','mulc']},   // mulc = אַלּוּפָה: horizontal-first GRADED flow (staged 25% penalties, number line on 2nd mistake)
-  {file:'coin_mul',  modes:['sup']},
-  {file:'bagel_cost',modes:['sup']},
+  {file:'coin_mul',  modes:['sup','mulc']},   // mulc = אַלּוּפָה: first multiplication (how many ₪2/₪5/₪10 coins fit in X)
+  {file:'bagel_cost',modes:['sup','mulc']},   // mulc = אַלּוּפָה: first multiplication in shekels (X bagels × ₪5)
   {file:'big_step',  modes:['big','mx','sup']},
   {file:'var_one',   modes:['br','b20','mx']},   // shape-variable add/sub with one unknown (⃝ = N, then a ± ⃝ = ?)
   {file:'tri_unknown',modes:['mx']},             // three unknowns adding to a target (__+__+__ = R, R ≤ 20)

@@ -182,9 +182,9 @@ window.EXERCISES.types.bagel_cost=(()=>{
 
   return{
     t:TBC,
-    modes:['sup'],
+    modes:['sup','mulc'],   // Superman + אַלּוּפָה (basic multiplication in shekels)
     aidsReveal:'always',   // no number-line aid — the coin tray is the manipulative
-    make(mode){return mode==='sup'?makePool():[];},
+    make(mode){return (mode==='sup'||mode==='mulc')?makePool():[];},
     mount,
   };
 })();

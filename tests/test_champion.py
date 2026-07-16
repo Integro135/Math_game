@@ -151,6 +151,38 @@ class TestChampMultiplication:
             ".filter(p => p.a<2 || p.a>4 || p.b<2 || p.b>4)")
         assert bad == [], f"all factors must be 2..4, offenders: {bad}"
 
+    def test_superman_coin_multiplication_exercises_in_mulc_pool(self, page):
+        """The two basic-multiplication exercises borrowed from Superman —
+        coin_mul (how many ₪2/₪5/₪10 coins fit in X) and bagel_cost (X bagels ×
+        ₪5) — are now woven into the אַלּוּפָה (mulc) pool too. Each type's
+        make('mulc') matches make('sup'), and both land in the built deck (the
+        20-cap preserves ≥1 of every type)."""
+        _enter_mulc(page)   # ensures the mulc type files are loaded
+        for t in ("coin_mul", "bagel_cost"):
+            n = page.evaluate(f"EXERCISES.types.{t}.make('mulc').length")
+            assert n == 3, f"{t}.make('mulc') must yield 3 problems (like sup), got {n}"
+        # both self-mounting coin types appear in the built mulc deck
+        page.evaluate("setMode('mulc')")
+        page.wait_for_function(
+            "typeof problems!=='undefined' && problems.length>0"
+            " && typeof EXERCISES.types.coin_mul==='object'"
+            " && typeof EXERCISES.types.bagel_cost==='object'", timeout=TIMEOUT)
+        assert page.evaluate("problems.some(p=>p.t===TCM)"), \
+            "coin_mul (TCM) must appear in the אַלּוּפָה pool"
+        assert page.evaluate("problems.some(p=>p.t===TBC)"), \
+            "bagel_cost (TBC) must appear in the אַלּוּפָה pool"
+        # coins.ex.js must load in mulc too, so the REAL coin (an <svg>) renders in
+        # the tray — not the plain silver fallback (.colm-coin-fallback)
+        assert page.evaluate("typeof tcCoinSVG === 'function'"), \
+            "tcCoinSVG (coins.ex.js) must be loaded in אַלּוּפָה for the coin art"
+        page.evaluate("problems[0]={t:TCM,a:10,b:5};idx=0;loadProblem();")
+        page.wait_for_selector(".colm-inp", timeout=TIMEOUT)
+        page.click("#colm-add")   # drop one coin into the tray
+        assert page.evaluate("!!document.querySelector('.colm-tray .colm-coin svg')"), \
+            "the real coin SVG must render in the אַלּוּפָה coin tray"
+        assert not page.evaluate("!!document.querySelector('.colm-coin-fallback')"), \
+            "the silver fallback must NOT be used (coins.ex.js is loaded in mulc)"
+
     def test_hint_reads_the_product_in_hebrew_words(self, page):
         """The text below the exercise reads the product in WORDS with niqqud —
         4×3 → 'כמה זה ארבע פעמים שלוש?' (a '2' factor reads 'פעמיים')."""
@@ -328,6 +360,21 @@ def _drag_sign(page, op, to_sel=".cp-slot"):
     page.mouse.up()
 
 
+def _enter_compare_sub(page, a, b, side, op, k, base):
+    """Enter אַלּוּפָה, then force ONE compare problem whose `side` carries a
+    sub-exercise (`base op k`, resolving to that side's value a/b)."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.compare==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate(
+        f"mode='mulc';score=0;problems=[{{t:TCP,a:{a},b:{b},"
+        f"sub:{{side:'{side}',op:'{op}',k:{k},base:{base}}}}}];idx=0;loadProblem();")
+    page.wait_for_selector(".cp-tile", timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
 class TestCompare:
     def test_compare_loads_and_mounts(self, page):
         """Forcing TCP mounts two numbers, an empty slot and three sign tiles; no
@@ -384,6 +431,44 @@ class TestCompare:
         assert page.evaluate("tryFirst") == 0
         assert page.evaluate("!!document.querySelector('.cp-slot .cp-slot-q')"), \
             "the slot must still be empty after a drop outside it"
+
+    def test_compare_pool_weaves_a_sub_exercise_into_one_side(self, page):
+        """Every generated compare problem now carries a '-1' sub-exercise on ONE
+        operand; its base resolves back to that side's value (so the compared
+        values — and thus the derived sign / report — are unchanged)."""
+        _enter_compare(page, 3, 7)                    # just to load the type in mulc
+        pool = page.evaluate("EXERCISES.types.compare.make('mulc')")
+        assert len(pool) == 5
+        for pr in pool:
+            sub = pr["sub"]
+            assert sub["side"] in ("a", "b")
+            assert sub["op"] == "-" and sub["k"] == 1, "the initial step is subtract 1"
+            val = pr["a"] if sub["side"] == "a" else pr["b"]
+            assert sub["base"] - sub["k"] == val, "base − k must equal the side's value"
+
+    def test_compare_sub_expression_renders_and_solves(self, page):
+        """A '6 − 1' sub on side a (value 5) vs a bare 3: that side renders as an
+        expression, so the child must compute 5 and compare 5 > 3; dragging '>'
+        (derived from the COMPUTED values) scores full 20."""
+        _enter_compare_sub(page, 5, 3, "a", "-", 1, 6)
+        assert page.evaluate("!!document.querySelector('.cp-num.cp-expr')"), \
+            "the sub side must render as an expression, not a bare number"
+        expr = page.evaluate("document.querySelector('.cp-num.cp-expr').textContent")
+        assert "6" in expr and "1" in expr, f"the expression must show base and k, got {expr!r}"
+        nums = page.evaluate(
+            "[...document.querySelectorAll('.cp-num')].map(e=>e.textContent.replace(/\\s/g,''))")
+        assert "3" in nums, f"the other side stays a bare 3, got {nums!r}"
+        _drag_sign(page, "gt")                        # 5 > 3
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+
+    def test_compare_sub_expression_equal_after_computing(self, page):
+        """Equal AFTER computing: '6 − 1' (=5) vs a bare 5 accepts only '=' — the
+        child must resolve the sub-exercise to see the equality."""
+        _enter_compare_sub(page, 5, 5, "a", "-", 1, 6)
+        _drag_sign(page, "eq")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
 
 
 # ─────────────────────────────────────────────────────────

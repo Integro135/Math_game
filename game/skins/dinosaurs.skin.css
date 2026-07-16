@@ -135,6 +135,33 @@ body.theme-dinosaurs .div{background:linear-gradient(90deg,transparent,rgba(255,
 body.theme-dinosaurs .fb-ok{color:#BDED8E;text-shadow:0 0 16px rgba(150,230,110,.5)}
 body.theme-dinosaurs .fb-err{color:#FF9D8A;text-shadow:0 0 16px rgba(255,130,100,.45)}
 
+/* ════ EXERCISE-CARD TEXT — the self-mounting exercises (word problems, plates,
+   multiplication, perimeter, compare, triple-sum…) tint their question
+   numbers/operators with --skin-accent, which on THIS theme is leaf-green
+   (#7FB84E) — invisible over the grassy, green-dino valley. Repaint that accent
+   TEXT the theme's warm gold so it reads (the green accent still serves the
+   number-line / progress-bar / subtract-side gradients, which are not fonts). ══ */
+body.theme-dinosaurs .colm-q b,
+body.theme-dinosaurs .hf-q b,
+body.theme-dinosaurs .cp-q b,
+body.theme-dinosaurs .cp-slot,
+body.theme-dinosaurs .mc-title b,
+body.theme-dinosaurs .mc-op,
+body.theme-dinosaurs .mc-eq,
+body.theme-dinosaurs .mk-title b,
+body.theme-dinosaurs .mk-title .mk-eq,
+body.theme-dinosaurs .mk-op,
+body.theme-dinosaurs .mk-eq,
+body.theme-dinosaurs .pm-q b,
+body.theme-dinosaurs .pl-q b,
+body.theme-dinosaurs .pg-q b,
+body.theme-dinosaurs .tsm-q b,
+body.theme-dinosaurs .tsm-target,
+body.theme-dinosaurs .wp-story .wp-num{
+  color:#FFD27D;
+  text-decoration-color:#FFD27D;
+}
+
 /* ════ ACTION BUTTONS — warm outlines that fill softly on press ════ */
 body.theme-dinosaurs .btn{
   background:rgba(38,20,9,.42);text-shadow:none;border:1px solid rgba(255,185,105,.45);color:#FFF3E0;

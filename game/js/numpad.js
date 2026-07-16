@@ -63,12 +63,35 @@
   function show(inp) {
     active = inp;
     build().classList.add('np-show');
+    watchNl();
   }
   function hide() {
     active = null;
     if (pad) pad.classList.remove('np-show');
   }
   function isOpen() { return !!(pad && pad.classList.contains('np-show')); }
+
+  /* On TABLETS, when the number line (#nl-panel) is on screen the bottom-CENTRE
+     pad would cover it — tag the pad so CSS can slide it to the RIGHT edge. Uses
+     computed display so it's right whether the line is hidden inline (style) or
+     by a body class (tf-locked-nl). */
+  function syncNlShift() {
+    if (!pad) return;
+    var nlp = document.getElementById('nl-panel');
+    var vis = !!(nlp && getComputedStyle(nlp).display !== 'none');
+    pad.classList.toggle('np-nl', vis);
+  }
+  /* switching mode/problem REBUILDS the card, so #nl-panel is a fresh node each
+     time — re-point the observer at the CURRENT one (and re-sync now). Within a
+     problem the node is stable, so a mid-problem reveal (a mistake showing the
+     line) still fires it. Called on every show() = every problem's auto-focus. */
+  var nlObs = new MutationObserver(syncNlShift);
+  function watchNl() {
+    nlObs.disconnect();
+    var nlp = document.getElementById('nl-panel');
+    if (nlp) nlObs.observe(nlp, { attributes: true, attributeFilter: ['style', 'class'] });
+    syncNlShift();
+  }
 
   function press(k) {
     if (!active || !document.contains(active) || active.disabled || active.readOnly) return;
@@ -170,4 +193,9 @@
         arm(node);
       }
   }).observe(document.body, { childList: true, subtree: true });
+
+  /* the number line's live node is watched per-problem by watchNl() (the card is
+     rebuilt each mode/problem). The body class (tf-locked-nl) can hide the line
+     too, and body is stable — watch it here to re-sync. */
+  new MutationObserver(syncNlShift).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 })();
