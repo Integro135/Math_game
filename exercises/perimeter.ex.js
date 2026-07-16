@@ -167,7 +167,7 @@ window.EXERCISES.types.perimeter=(()=>{
 
     root.innerHTML=`
       <div class="pm-root">
-        <div class="pm-q" id="pm-q-${uid}">כַּמָּה זֶה <b>הַהֶקֵּף</b>? (סְכוּם כָּל הַצְּלָעוֹת)</div>
+        <div class="pm-q" id="pm-q-${uid}">חַשְּׁבִי אֶת <b>הַהֶקֵּף</b> (סְכוּם כָּל הַצְּלָעוֹת)</div>
         <div class="pm-stage">
           <svg class="pm-svg" viewBox="0 0 320 320" aria-label="צוּרָה">
             <polygon class="pm-body" points="${ptsAttr}"/>
