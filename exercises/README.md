@@ -486,7 +486,7 @@ return { t:TMK, modes:['mulc'], aidsReveal:'always', make(mode){…}, mount };
 
 It is the sole game in the **`hard` tier** (`DIFFICULTY_GROUPS`, tier label
 `קָשֶׁה`, game tile `אַלּוּפָה 🏆`, `modePts('mulc')=20`,
-`DEFAULT_GIFT_GOALS.mulc=900`).
+`DEFAULT_GIFT_GOALS.mulc=600`).
 
 ### Data side — `make('mulc')`
 `makePool()` → the complete `a∈{2,3,4} × b∈{2,3,4}` grid (9 problems), shuffled —
@@ -822,9 +822,9 @@ boot / setMode(m) / restart()
   ptype is on screen, so one field in a type file changes when its aids appear.
   It may be PER-MODE (an object keyed by mode) — e.g. `column_sub` is
   `{mx:'always',sup:'always',mulc:'always'}`.
-- **Gift goals.** `DEFAULT_GIFT_GOALS` (`core.js`) = `{br:900, mx:900, sup:825}`
-  — the three reward modes; the basic modes (`0/5/10/20/big`) have no prize
-  threshold.
+- **Gift goals.** `DEFAULT_GIFT_GOALS` (`core.js`) = `{sup:800, mulc:600}`
+  — only Superman + אַלּוּפָה carry a prize; every other game (incl. `b20`/`mx`/`br`
+  and the basic `0/5/10/20/big`) has no prize threshold by default.
 
 ---
 

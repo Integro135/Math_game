@@ -5,7 +5,7 @@
    means NO prize for that game — no 🎁 badge on its picker button, no gift
    screen on completion. GIFT_GOALS holds ONLY the games that currently have a
    prize (a game with no prize is absent), so `GIFT_GOALS[mode]` is falsy then. */
-const DEFAULT_GIFT_GOALS={b20:900,mx:900,sup:900,mulc:500};   // br (גֶּשֶׁר 10) absent → no prize
+const DEFAULT_GIFT_GOALS={sup:800,mulc:600};   // ONLY Superman (800) + אַלּוּפָה (600) carry a prize; every other game absent → no prize
 const GIFT_GOALS={};
 function _savedGiftGoals(){try{return JSON.parse(localStorage.getItem('giftGoals')||'{}')||{};}catch(e){return {};}}
 function _rebuildGiftGoals(){

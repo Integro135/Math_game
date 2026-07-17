@@ -512,10 +512,11 @@ class TestBridge20:
                     f"subtraction {a}-{b} must cross 20 from a low-20s minuend (result <20)"
 
     def test_b20_pts_and_prize(self, page):
-        """b20 scores 15 per answer and has its own prize goal (like גָּשֵׁר 10)."""
+        """b20 scores 15 per answer and, by default, carries NO prize (only
+        Superman + אַלּוּפָה do)."""
         self._switch(page)
         assert page.evaluate("modePts()") == 15
-        assert page.evaluate("GIFT_GOALS['b20']") == 900
+        assert page.evaluate("GIFT_GOALS['b20'] == null"), "b20 has no default prize"
 
     def test_b20_active_button_marker(self, page):
         self._switch(page)

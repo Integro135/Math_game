@@ -150,8 +150,8 @@ This is the largest file and owns nearly all gameplay state and logic.
   `GIFT_GOALS`/`GIFT_MODE_LABELS` and `GL` (=12).
 - **Per-game prize levels** (settings): `GIFT_GOALS` is a live object built by
   `_rebuildGiftGoals()` from `DEFAULT_GIFT_GOALS`
-  (`{br:900, mx:900, sup:825}` — **only the reward games**; the
-  basic modes `0/5/10/20/big` ship with no default prize) merged with per-game
+  (`{sup:800, mulc:600}` — **only Superman + אַלּוּפָה** carry a prize; every
+  other game, incl. `b20`/`mx`/`br` and the basic modes, ships with none) merged with per-game
   overrides persisted in `localStorage.giftGoals`. A game with **level 0 / empty
   has no prize** (absent from `GIFT_GOALS`, no 🎁 badge, no gift screen).
   `setGiftGoal(mode, val)` saves an override (0 clears it, capped at 1000) and
@@ -254,8 +254,8 @@ This is the largest file and owns nearly all gameplay state and logic.
 - **`report` & `endGame`**: `calcGrade()` scores out of 1000 (100 per
   clean-first-try problem, floored at 101). `endGame()` renders the end screen,
   logs the set via `recordHistory()`, and if the grade clears the game's prize
-  level (`GIFT_GOALS[mode] > 0`, parent-configurable — defaults `br:900, mx:900,
-  sup:825`) shows the 🎁 badge + schedules `showGiftScreen()`.
+  level (`GIFT_GOALS[mode] > 0`, parent-configurable — defaults `sup:800,
+  mulc:600`) shows the 🎁 badge + schedules `showGiftScreen()`.
 - **number-hover tooltip** (`#num-tt`): hovering any `.eq-n`/`.eq-res` renders
   that number as **objects borrowed from the active aid variant's jar art**
   (`AIDS.current.jar.itemSVG`), grouped in fives, positioned below (flips above
