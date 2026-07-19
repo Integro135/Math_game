@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -44,9 +44,11 @@ const EXERCISE_INDEX=[
   {file:'triple_sum',modes:['trip','mx','sup','mulc']},  // __+__+__ = N (target VARIES 6..12) — three CHOSEN addends; 0 and 10 are disallowed (a 0/10 answer is praised with NO penalty but must be re-tried with other numbers). Woven into Queen/Superman/אַלּוּפָה. 'trip' is an INTERNAL handle only.
   {file:'half',      modes:['hlf','mulc']},      // "כַּמָּה זֶה חֵצִי" — share 4/6/8/10 items EQUALLY between two friends; tap the items → a golden middle line splits them in two. First DIVISION intuition, mixed into אַלּוּפָה. 'hlf' is an INTERNAL handle only.
   {file:'plates',    modes:['plt','mulc']},      // "צַלָּחוֹת" — g plates × s items each (2..4×2..4), find the TOTAL; tap → the items POUR into one countable row. Multiplication-story inverse of half, mixed into אַלּוּפָה. 'plt' is an INTERNAL handle only.
+  {file:'ice_cream', modes:['ice','mulc']},      // "חֲנוּת הַגְּלִידָה" — she HAS ₪budget, each ice cream costs ₪2/₪5/₪10; BUY (＋) within the budget and type how many fit (budget÷price — division as "how many groups"). Mixed into אַלּוּפָה. 'ice' is an INTERNAL handle only.
+  {file:'mult_unknown',modes:['mulu','mulc']},   // כֶּפֶל בְּנֶעְלָם — 3 × □ = 9, find the hidden factor; the SKIP-COUNTING number line (jumps of a) is shown from the START. Mixed into אַלּוּפָה. 'mulu' is an INTERNAL handle only.
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates'};
+const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config

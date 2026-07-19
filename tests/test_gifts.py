@@ -92,11 +92,13 @@ class TestGiftReward:
 
 class TestPrizeConfig:
     def test_prize_inputs_render_one_per_game(self, page):
-        """Settings shows a prize-level input for every game."""
+        """Settings shows a prize-level (goal) input for every game — plus the
+        🎁× count input beside it (counted separately in TestPrizeCount)."""
         open_settings_via_gate(page)
         games = page.evaluate("DIFFICULTY_GROUPS.flatMap(g => g.modes).length")
-        inputs = page.evaluate("document.querySelectorAll('#prize-row .prize-inp').length")
-        assert inputs == games and inputs >= 5, f"expected {games} prize inputs, got {inputs}"
+        inputs = page.evaluate(
+            "document.querySelectorAll('#prize-row .prize-inp:not(.prize-cnt)').length")
+        assert inputs == games and inputs >= 5, f"expected {games} goal inputs, got {inputs}"
 
     def test_default_thresholds_only_reward_games(self, page):
         """Out of the box only Superman (sup=800) and אַלּוּפָה (mulc=600) carry a
@@ -161,3 +163,85 @@ class TestPrizeConfig:
         """)
         assert page.evaluate("!!document.querySelector('.end-gift')"), \
             "a game with a configured prize shows 🎁 when cleared"
+
+
+# ─────────────────────────────────────────────────────────
+# Per-game prize COUNT (×N) — a win can award X prizes instead of 1 (settings,
+# the 🎁× input next to the goal). Shown as 🎁×N on the picker button + the
+# header indicator, written on the end-of-set screen, and recorded in history.
+# ─────────────────────────────────────────────────────────
+
+class TestPrizeCount:
+    def test_default_count_is_one_plain_badge(self, page):
+        """Out of the box every game awards ONE prize: giftCount()=1 and the
+        picker badge is the plain 🎁 (no ×N multiplier)."""
+        assert page.evaluate("giftCount('sup')") == 1
+        assert page.evaluate("giftCount('mulc')") == 1
+        badge = page.evaluate("document.getElementById('lbsup').textContent")
+        assert "🎁" in badge and "×" not in badge, f"plain 🎁 expected, got {badge!r}"
+
+    def test_set_count_shows_multiplier_on_badge_and_indicator(self, page):
+        """setGiftCount('sup',3) → the picker button reads 🎁×3 and the header
+        gift indicator shows the multiplier; other games stay plain."""
+        page.evaluate("setGiftCount('sup', 3)")
+        assert page.evaluate("giftCount('sup')") == 3
+        assert "🎁×3" in page.evaluate("document.getElementById('lbsup').textContent")
+        assert "×" not in page.evaluate("document.getElementById('lbmulc').textContent"), \
+            "mulc keeps the plain 🎁 (its count is still 1)"
+        page.evaluate("setMode('sup')")
+        page.wait_for_function("typeof problems!=='undefined' && problems.length>0", timeout=TIMEOUT)
+        assert "🎁×3" in page.evaluate("document.getElementById('gift-next').textContent")
+        page.evaluate("setGiftCount('sup', 1)")        # back to 1 → plain badge
+        badge = page.evaluate("document.getElementById('lbsup').textContent")
+        assert "🎁" in badge and "×" not in badge
+
+    def test_winning_set_writes_prize_count_on_end_screen_and_history(self, page):
+        """With sup configured to 3 prizes, a clearing run writes ×3 on the end
+        screen (🎁×3 + 'זכית ב־3 פרסים!') and records prizes=3 in history —
+        rendered as 🎁×3 next to the grade."""
+        page.wait_for_function(
+            "window.SUCCESS && SUCCESS.special && SUCCESS.special.gift", timeout=TIMEOUT)
+        page.evaluate("setGiftCount('sup', 3)")
+        page.evaluate("""
+            mode = 'sup';
+            report = Array.from({length: 15}, () => ({ptype:'x', correct:0, wrongs:[], gotCorrect:true}));
+            idx = 15; done = false; endGame();
+        """)
+        assert page.evaluate("(document.querySelector('.end-gift')||{}).textContent") == "🎁×3"
+        cnt = page.evaluate("(document.querySelector('.end-gift-count')||{}).textContent")
+        assert "3" in cnt and "פְּרָסִים" in cnt, f"the end screen must WRITE the prize count, got {cnt!r}"
+        assert page.evaluate("JSON.parse(localStorage.getItem('scoreHistory'))[0].prizes") == 3
+        page.evaluate("renderHistory()")
+        assert "🎁×3" in page.evaluate("(document.querySelector('.hist-row .hist-grade')||{}).textContent")
+
+    def test_single_prize_win_stays_plain(self, page):
+        """A win with the default count (1) keeps the plain 🎁 (no ×1 noise) and
+        records prizes=1."""
+        page.wait_for_function(
+            "window.SUCCESS && SUCCESS.special && SUCCESS.special.gift", timeout=TIMEOUT)
+        page.evaluate("""
+            mode = 'sup';
+            report = Array.from({length: 15}, () => ({ptype:'x', correct:0, wrongs:[], gotCorrect:true}));
+            idx = 15; done = false; endGame();
+        """)
+        assert page.evaluate("(document.querySelector('.end-gift')||{}).textContent") == "🎁"
+        assert page.evaluate("JSON.parse(localStorage.getItem('scoreHistory'))[0].prizes") == 1
+
+    def test_count_persists_across_reload(self, page):
+        """A configured prize count survives a page reload (localStorage)."""
+        page.evaluate("setGiftCount('sup', 4)")
+        page.reload()
+        page.wait_for_function("typeof giftCount!=='undefined'", timeout=TIMEOUT)
+        assert page.evaluate("giftCount('sup')") == 4
+        assert "🎁×4" in page.evaluate("document.getElementById('lbsup').textContent")
+
+    def test_prizes_tab_renders_count_input(self, page):
+        """The settings prizes tab renders a 🎁× count input next to every goal
+        input, prefilled with the game's current count."""
+        page.evaluate("setGiftCount('sup', 2)")
+        page.evaluate("renderPrizeConfig()")
+        games = page.evaluate("DIFFICULTY_GROUPS.flatMap(g => g.modes).length")
+        cnts = page.evaluate("document.querySelectorAll('#prize-row .prize-cnt').length")
+        assert cnts == games, f"expected {games} count inputs, got {cnts}"
+        assert page.evaluate("document.getElementById('pcsup').value") == "2"
+        assert page.evaluate("document.getElementById('pcmulc').value") == "1"

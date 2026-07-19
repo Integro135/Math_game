@@ -11,7 +11,8 @@
 #game-numpad{
   position:fixed;left:50%;bottom:12px;
   transform:translateX(-50%) translateY(18px);
-  display:grid;grid-template-columns:repeat(3,64px);gap:8px;padding:10px;
+  /* COMPACT 3-row layout: 1-5 / 6-0 / [space ×3, ⌫, ✔] over 5 columns */
+  display:grid;grid-template-columns:repeat(5,54px);gap:8px;padding:10px;
   direction:ltr;z-index:1200;
   background:var(--np-panel,rgba(18,14,48,.82));
   border:1px solid var(--np-border,rgba(255,255,255,.28));
@@ -23,18 +24,22 @@
 }
 #game-numpad.np-show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
 
-/* TABLET ONLY: when the number line is on screen (JS adds .np-nl), slide the pad
-   to the RIGHT edge so it stops covering the (centred) number line. Phones
-   (≤480px) keep it centred — there's no room to shift and the line spans the
-   whole width anyway. The pad only exists on touch devices (JS gate), so a plain
-   min-width query is enough to mean "tablet, not phone". */
+/* TABLET ONLY: when the number line is on screen (JS adds .np-nl), DOCK the pad
+   flush against the RIGHT edge of the screen (right:0, squared right corners)
+   so it stops covering the (centred) number line. Phones (≤480px) keep it
+   centred — there's no room to shift and the line spans the whole width anyway.
+   The pad only exists on touch devices (JS gate), so a plain min-width query is
+   enough to mean "tablet, not phone". */
 @media (min-width:481px){
-  #game-numpad.np-nl{left:auto;right:16px;transform:translateX(0) translateY(18px)}
+  #game-numpad.np-nl{
+    left:auto;right:0;transform:translateX(0) translateY(18px);
+    border-top-right-radius:0;border-bottom-right-radius:0;border-right:none;
+  }
   #game-numpad.np-nl.np-show{transform:translateX(0) translateY(0)}
 }
 
 #game-numpad .np-key{
-  height:56px;border:none;border-radius:14px;cursor:pointer;
+  height:52px;border:none;border-radius:14px;cursor:pointer;
   font-family:'Fredoka One',cursive;font-size:1.55rem;line-height:1;
   color:var(--np-ink,#fff);
   background:var(--np-key,rgba(255,255,255,.15));
@@ -50,10 +55,25 @@
 }
 #game-numpad .np-ok:active{background:var(--np-ok-hi,linear-gradient(135deg,#25cf6c,#6ae59b))}
 
-/* small phones — slightly tighter keys, still ≥48px touch targets */
+/* the SPACE bar — a real-keyboard-style blank wide key, 3 of the 5 columns of
+   the bottom row (beside ⌫ and ✔). Behaves like the desktop spacebar: hops
+   the number-line rider / feeds the jar / drops a coin. Blank face with a
+   centred dash, like a physical space bar. */
+#game-numpad .np-space{
+  grid-column:span 3;
+  display:flex;align-items:center;justify-content:center;
+}
+#game-numpad .np-space::before{
+  content:'';width:52px;height:5px;border-radius:3px;
+  background:var(--np-ink,#fff);opacity:.5;
+  transition:opacity .1s,width .1s;
+}
+#game-numpad .np-space:active::before{opacity:.9;width:60px}
+
+/* small phones — slightly tighter keys, still ≥44px touch targets */
 @media (max-width:480px){
-  #game-numpad{grid-template-columns:repeat(3,56px);gap:7px;padding:8px;bottom:8px}
-  #game-numpad .np-key{height:50px;font-size:1.4rem}
+  #game-numpad{grid-template-columns:repeat(5,50px);gap:6px;padding:8px;bottom:8px}
+  #game-numpad .np-key{height:46px;font-size:1.4rem}
 }
 
 /* ── per-theme palettes (body.theme-* is set by themes.js) ─────────────── */

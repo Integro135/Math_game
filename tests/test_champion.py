@@ -42,9 +42,11 @@ class TestChampMultiplication:
 
     def test_wrong_product_reveals_repeated_addition_chain(self, page):
         """A wrong product opens the chain = the small number `a` repeated `b` times,
-        and the chain's final box expects the product."""
+        and the chain's final box expects the product. (Mistake aids ALTERNATE
+        line↔chain across cards — pin the chain turn for determinism.)"""
         _enter_mulc(page)
         res = page.evaluate("""() => {
+            window.__mkAidTurn=1;              // odd turn → the CHAIN aid
             const a=num1,b=num2,product=a*b;
             const inp=document.getElementById('mk-ans');
             inp.value=String(product+1);
@@ -66,6 +68,7 @@ class TestChampMultiplication:
         (3×4) — equal factors hide the switch (see test_equal_factors_hide_switch)."""
         _force_mulc_tmk(page, 3, 4)
         res = page.evaluate("""() => {
+            window.__mkAidTurn=1;              // pin the CHAIN aid turn
             const a=num1,b=num2,product=a*b;
             const inp=document.getElementById('mk-ans');
             inp.value=String(product+1);
@@ -90,6 +93,7 @@ class TestChampMultiplication:
         mistake (user: 'אין צורך להציג את כפתור השחלוף בין מספרים זהים')."""
         _force_mulc_tmk(page, 3, 3)
         res = page.evaluate("""() => {
+            window.__mkAidTurn=1;              // pin the CHAIN aid turn
             const inp=document.getElementById('mk-ans');
             inp.value=String(3*3+1);
             inp.dispatchEvent(new Event('input',{bubbles:true}));
@@ -121,6 +125,7 @@ class TestChampMultiplication:
         scores the try-first-1 rate (67% of 20 = 13) and completes the problem."""
         _enter_mulc(page)
         page.evaluate("""() => {
+            window.__mkAidTurn=1;              // pin the CHAIN aid turn
             const inp=document.getElementById('mk-ans');
             inp.value=String(num1*num2+1);
             inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
@@ -217,6 +222,178 @@ class TestChampMultiplication:
         assert page.evaluate("document.querySelectorAll('.mk-it, .mkg, #mk-items, #mk-stage').length") == 0, \
             "no items/groups picture may be shown in the multiplication exercise"
 
+    def _wrong_product(self, page):
+        """Submit a wrong product into the phase-1 box."""
+        page.evaluate("""() => {
+            const inp=document.getElementById('mk-ans');
+            inp.value=String(num1*num2+1);
+            inp.dispatchEvent(new Event('input',{bubbles:true}));
+            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+        }""")
+
+    def test_mistake_aids_alternate_line_then_chain(self, page):
+        """Mistake aids take TURNS across cards: the 1st mistake-card reveals the
+        SKIP-COUNTING number line (jumps of the repeated factor, chain row hidden),
+        the next reveals the repeated-addition CHAIN (line hidden)."""
+        _force_mulc_tmk(page, 3, 4)
+        page.evaluate("window.__mkAidTurn=0")          # start of the rotation
+        self._wrong_product(page)
+        page.wait_for_function("tryFirst===1", timeout=TIMEOUT)
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display !== 'none'"), \
+            "card 1 must reveal the NUMBER LINE aid"
+        ticks = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert ticks == [0, 3, 6, 9, 12, 15], f"jumps of 3 expected, got {ticks}"
+        assert page.evaluate(
+            "getComputedStyle(document.querySelector('.mk-scroll')).display === 'none'"), \
+            "the chain row stays hidden on a line card"
+        # next card → the CHAIN turn
+        page.evaluate("score=0;problems=[{t:TMK,a:3,b:4}];idx=0;loadProblem();")
+        page.wait_for_selector("#mk-ans", timeout=TIMEOUT); page.wait_for_timeout(120)
+        self._wrong_product(page)
+        page.wait_for_function("!!document.querySelector('#mk-row .mk-final')", timeout=TIMEOUT)
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'"), \
+            "card 2 must reveal the CHAIN, not the line"
+        assert page.evaluate(
+            "getComputedStyle(document.querySelector('.mk-scroll')).display !== 'none'")
+
+    def test_line_aid_follows_the_switch_and_solves_in_place(self, page):
+        """On a line card, 🔁 RE-CONFIGURES the line to the other factor's jumps
+        (3×4: jumps of 3 ↔ jumps of 4), and the ORIGINAL product box still
+        accepts the answer (13 after the one mistake)."""
+        _force_mulc_tmk(page, 3, 4)
+        page.evaluate("window.__mkAidTurn=0")          # line turn
+        self._wrong_product(page)
+        page.wait_for_function("tryFirst===1", timeout=TIMEOUT)
+        ticks = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert ticks == [0, 3, 6, 9, 12, 15]
+        page.evaluate("document.getElementById('mk-switch').click()")
+        page.wait_for_timeout(120)
+        ticks = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert ticks == [0, 4, 8, 12, 16, 20], f"after 🔁 the line must jump by 4, got {ticks}"
+        page.wait_for_function("document.getElementById('mk-ans').value===''", timeout=TIMEOUT)
+        page.evaluate("""() => {
+            const inp=document.getElementById('mk-ans');
+            inp.value='12';
+            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+        }""")
+        page.wait_for_function("done===true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+    def test_line_aid_moves_with_arrow_and_space(self, page):
+        """On the skip-counting line-aid card the rider hops on ←/→ AND on SPACE
+        (each NL.step adds an arc). Space is only checked after the sad modal
+        clears — it's intentionally inert while #sad-ov is up, like every mode."""
+        _force_mulc_tmk(page, 3, 4)
+        page.evaluate("window.__mkAidTurn=0")          # line-aid turn
+        self._wrong_product(page)
+        page.wait_for_function(
+            "tryFirst===1 && getComputedStyle(document.getElementById('nl-panel')).display!=='none'",
+            timeout=TIMEOUT)
+        page.eval_on_selector("#mk-ans", "el=>el.focus()")
+        a0 = page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length")
+        page.keyboard.press("ArrowRight"); page.wait_for_timeout(120)
+        assert page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length") == a0 + 1, \
+            "→ arrow must hop the rider (add an arc)"
+        page.wait_for_function(
+            "getComputedStyle(document.getElementById('sad-ov')).display==='none'", timeout=TIMEOUT)
+        page.eval_on_selector("#mk-ans", "el=>el.focus()")
+        a1 = page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length")
+        page.keyboard.press("Space"); page.wait_for_timeout(120)
+        assert page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length") == a1 + 1, \
+            "space must hop the rider once the sad modal has cleared"
+        assert page.evaluate("document.getElementById('mk-ans').value.indexOf(' ')<0"), \
+            "space must NOT type into the answer box (preventDefault)"
+
+
+# ─────────────────────────────────────────────────────────
+# Multiplication with ONE UNKNOWN (mult_unknown / TMU) — `a × □ = product`, the
+# child types the missing factor. The SKIP-COUNTING number line (jumps of a,
+# 0..a·5) is shown from the START — before any mistake (explicit user request).
+# ─────────────────────────────────────────────────────────
+
+def _enter_mult_unknown(page, a=3, b=3):
+    """Enter אַלּוּפָה, wait for the mult_unknown type + built pool, then force ONE
+    a × □ = a·b problem and wait for its card."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.mult_unknown==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate(f"mode='mulc';score=0;problems=[{{t:TMU,a:{a},b:{b}}}];idx=0;loadProblem();")
+    page.wait_for_selector("#mu-ans", timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
+class TestMultUnknown:
+    def test_mult_unknown_loads_with_number_line_from_start(self, page):
+        """Forcing TMU mounts `a × □ = product` AND the skip-counting number line
+        is already VISIBLE (before any mistake), configured to jumps of `a`
+        (ticks 0, a, 2a, … a·5); no host check button."""
+        _enter_mult_unknown(page, 3, 3)
+        assert page.evaluate("ptype === TMU")
+        assert page.evaluate("!!document.getElementById('mu-ans')")
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display !== 'none'"), \
+            "the number line must be visible from the START (before any mistake)"
+        ticks = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert ticks == [0, 3, 6, 9, 12, 15], f"skip-counting ticks of 3 expected, got {ticks}"
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
+
+    def test_mult_unknown_correct_scores_full(self, page):
+        """Typing the missing factor on the first try scores full 20 and the
+        report row records it (correct = the hidden factor)."""
+        _enter_mult_unknown(page, 4, 2)                # 4 × □ = 8
+        _dispatch_enter(page, "#mu-ans", 2)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+        assert page.evaluate("report[0].gotCorrect") is True
+        assert page.evaluate("report[0].correct") == 2
+
+    def test_mult_unknown_wrong_then_correct_is_partial(self, page):
+        """A wrong factor logs a mistake (line stays up); the follow-up correct
+        answer scores 67% of 20 = 13."""
+        _enter_mult_unknown(page, 3, 4)                # 3 × □ = 12
+        _dispatch_enter(page, "#mu-ans", 5)
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("done") is False
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display !== 'none'"), \
+            "the number line stays visible through the retry"
+        page.wait_for_function("document.getElementById('mu-ans').value===''", timeout=TIMEOUT)
+        _dispatch_enter(page, "#mu-ans", 4)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+    def test_mult_unknown_pool_and_mulc_deck(self, page):
+        """make('mulc') yields 3 problems on the champion grid (a,b ∈ 2..4) and
+        the type lands in the built אַלּוּפָה deck."""
+        _enter_mult_unknown(page)   # ensures the type file is loaded
+        pool = page.evaluate("EXERCISES.types.mult_unknown.make('mulc')")
+        assert len(pool) == 3
+        assert all(2 <= p["a"] <= 4 and 2 <= p["b"] <= 4 for p in pool), f"bad pool: {pool}"
+        page.evaluate("setMode('mulc')")
+        page.wait_for_function("problems.length>0", timeout=TIMEOUT)
+        assert page.evaluate("problems.some(p=>p.t===TMU)"), \
+            "mult_unknown (TMU) must appear in the אַלּוּפָה pool"
+
+    def test_line_moves_with_arrow_and_space(self, page):
+        """The skip-counting line (shown from the start) responds to ←/→ AND to
+        SPACE — each NL.step adds an arc; space must not type into the box."""
+        _enter_mult_unknown(page, 3, 3)
+        page.eval_on_selector("#mu-ans", "el=>el.focus()")
+        a0 = page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length")
+        page.keyboard.press("ArrowRight"); page.wait_for_timeout(120)
+        assert page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length") == a0 + 1, \
+            "→ arrow must hop the rider"
+        page.keyboard.press("Space"); page.wait_for_timeout(120)
+        assert page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length") == a0 + 2, \
+            "space must hop the rider"
+        assert page.evaluate("document.getElementById('mu-ans').value.indexOf(' ')<0"), \
+            "space must NOT type into the answer box"
+
 
 # =============================================================================
 # אַלּוּפָה 🏆 — the three additions of 2026-07 (perimeter, compare, staged sub).
@@ -270,6 +447,17 @@ class TestPerimeter:
         assert page.evaluate(
             "getComputedStyle(document.getElementById('chk-btn')).display === 'none'"), \
             "the host check button must be hidden (the module self-checks)"
+
+    def test_perimeter_input_autofocused_on_mount(self, page):
+        """The answer box is focused as soon as the exercise mounts, so the child
+        can type the perimeter without clicking it first (user request)."""
+        _enter_perim(page, "{t:TPP,shape:'square',sides:[3,3,3,3],a:12}")
+        page.wait_for_function(
+            "document.activeElement === document.querySelector('.pm-inp')", timeout=TIMEOUT)
+        # a keystroke lands in the box with no prior click
+        page.keyboard.type("12")
+        assert page.evaluate("document.querySelector('.pm-inp').value") == "12", \
+            "typing right after mount must fill the focused answer box"
 
     def test_perimeter_labels_match_sides(self, page):
         """Every side label equals the problem's side length, so the picture never
@@ -469,6 +657,42 @@ class TestCompare:
         _drag_sign(page, "eq")
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 20
+
+    def test_hover_a_sign_shows_its_meaning_as_circles(self, page):
+        """Pointing at a sign tile shows a hover hint drawing its meaning as two
+        circles — a BIG one on the greater side, a SMALL one on the lesser side
+        (O > o), so the child grasps what each sign means. `<` mirrors it (o < O);
+        `=` shows two equal circles."""
+        _enter_compare(page, 7, 3)
+        def circles(op):
+            page.eval_on_selector(f'.cp-tile[data-op="{op}"]',
+                                  "el=>el.dispatchEvent(new MouseEvent('mouseenter'))")
+            page.wait_for_function(
+                "document.querySelector('.cp-sign-tip').classList.contains('cp-tip-show')",
+                timeout=TIMEOUT)
+            sizes = page.evaluate(
+                "[...document.querySelectorAll('.cp-sign-tip .cp-c')].map(c=>"
+                "c.classList.contains('cp-big')?'big':c.classList.contains('cp-small')?'small':'mid')")
+            page.eval_on_selector(f'.cp-tile[data-op="{op}"]',
+                                  "el=>el.dispatchEvent(new MouseEvent('mouseleave'))")
+            return sizes
+        assert circles("gt") == ["big", "small"], "'>' → big on the left, small on the right"
+        assert circles("lt") == ["small", "big"], "'<' → small on the left, big on the right"
+        assert circles("eq") == ["mid", "mid"], "'=' → two equal circles"
+        # the hint sits BELOW the button so it never covers it
+        page.eval_on_selector('.cp-tile[data-op="gt"]', "el=>el.dispatchEvent(new MouseEvent('mouseenter'))")
+        page.wait_for_function(
+            "document.querySelector('.cp-sign-tip').classList.contains('cp-tip-show')", timeout=TIMEOUT)
+        below = page.evaluate(
+            "(()=>{const t=document.querySelector('.cp-tile[data-op=\"gt\"]').getBoundingClientRect();"
+            "const p=document.querySelector('.cp-sign-tip').getBoundingClientRect();"
+            "return p.top >= t.bottom;})()")
+        assert below, "the hover hint must sit BELOW the button (not cover it)"
+        page.eval_on_selector('.cp-tile[data-op="gt"]', "el=>el.dispatchEvent(new MouseEvent('mouseleave'))")
+        # leaving hides the hint
+        page.eval_on_selector('.cp-tile[data-op="eq"]', "el=>el.dispatchEvent(new MouseEvent('mouseleave'))")
+        assert page.evaluate(
+            "document.querySelector('.cp-sign-tip').classList.contains('cp-tip-show')") is False
 
 
 # ─────────────────────────────────────────────────────────
@@ -677,6 +901,29 @@ class TestTripleSum:
         page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
         assert page.evaluate("done") is False
         assert page.evaluate("score") == 0
+
+    def test_triple_sum_wrong_keeps_numbers_and_lets_her_fix(self, page):
+        """A wrong sum must NOT erase what she typed (user request): the boxes keep
+        their values + turn red (sad emoji shown), and she can FIX one number and
+        submit again to solve — scoring the try-first-1 rate (13)."""
+        _enter_triple(page, 12)
+        _triple_submit(page, 5, 5, 5)            # = 15 ≠ 12
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        # the numbers she entered are STILL in the boxes (nothing wiped)
+        page.wait_for_timeout(1300)              # well past the old 1.1s wipe timer
+        vals = page.evaluate("[...document.querySelectorAll('.tsm-inp')].map(i=>i.value)")
+        assert vals == ["5", "5", "5"], f"the entered numbers must be kept, got {vals}"
+        assert page.evaluate("document.querySelectorAll('.tsm-inp.ans-err').length") == 3, \
+            "the boxes must show the red error state"
+        assert page.evaluate("done") is False
+        # fix the last box 5 → 2 (5+5+2 = 12) and re-check
+        page.evaluate("""() => {
+            const ins=[...document.querySelectorAll('.tsm-inp')];
+            ins[2].value='2'; ins[2].dispatchEvent(new Event('input',{bubbles:true}));
+            ins[2].dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+        }""")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13, "fixing after one mistake scores 67% (13)"
 
     def test_triple_sum_zero_correct_but_not_accepted_no_penalty(self, page):
         """A sum-correct answer using 0 is praised but NOT completed and costs NO
@@ -968,6 +1215,156 @@ class TestPlates:
         assert all(2 <= p["g"] <= 4 and 2 <= p["s"] <= 4 and p["a"] == p["g"] * p["s"]
                    and p["a"] <= 10
                    for p in pool), f"bad pool: {pool}"
+
+
+# ─────────────────────────────────────────────────────────
+# "חֲנוּת הַגְּלִידָה" (ice_cream / TIC) — she HAS ₪budget and buys accordingly:
+# every ice cream costs ₪2/₪5/₪10; ＋ buys one (it lands in the tray WITH its
+# price coin, so the spending is skip-countable) and she types how many fit
+# in the budget (budget ÷ price — division as "how many groups").
+# ─────────────────────────────────────────────────────────
+
+def _enter_ice(page, budget=12, price=2):
+    """Enter אַלּוּפָה, wait for the ice_cream type + built pool, then force ONE
+    shop problem and wait for its board."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.ice_cream==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate(
+        f"mode='mulc';score=0;problems=[{{t:TIC,a:{budget},b:{price},name:'דָּנָה'}}];"
+        f"idx=0;loadProblem();")
+    page.wait_for_selector(".ic-inp", timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
+class TestIceCreamShop:
+    def test_ice_cream_in_mulc_pool(self, page):
+        """make('mulc') yields 3 TIC problems — one of EACH price (₪2/₪5/₪10),
+        budget divisible by the price (2..10 ice creams) — and TIC lands in the
+        built אַלּוּפָה deck."""
+        _enter_ice(page)   # ensures the ice_cream type file is loaded
+        pool = page.evaluate("EXERCISES.types.ice_cream.make('mulc').map(p=>({a:p.a,b:p.b}))")
+        assert len(pool) == 3
+        assert sorted(p["b"] for p in pool) == [2, 5, 10], f"one problem per price: {pool}"
+        assert all(p["a"] % p["b"] == 0 and 2 <= p["a"] // p["b"] <= 10
+                   for p in pool), f"budget must divide exactly into 2..10: {pool}"
+        page.evaluate("setMode('mulc')")
+        page.wait_for_function(
+            "typeof problems!=='undefined' && problems.length>0", timeout=TIMEOUT)
+        assert page.evaluate("problems.some(p=>p.t===TIC)"), \
+            "ice_cream (TIC) must appear in the אַלּוּפָה pool"
+
+    def test_ice_cream_loads_and_mounts(self, page):
+        """Forcing TIC mounts the shop: budget in the title, price coin, empty
+        tray, buy/refund controls; no host check button, no number line."""
+        _enter_ice(page, 12, 2)
+        assert page.evaluate("ptype === TIC")
+        assert page.evaluate("document.querySelector('.ic-q').textContent").find("₪12") >= 0
+        assert page.evaluate("document.querySelectorAll('.ic-buy').length") == 0
+        assert page.evaluate("!!document.getElementById('ic-add')")
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'")
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
+
+    def test_ice_cream_buy_adds_scoop_with_its_price_coin(self, page):
+        """＋ buys one ice cream — it lands in the tray WITH the price coin under
+        it (the real SVG coin, so the spending is skip-countable); − refunds it."""
+        _enter_ice(page, 12, 2)
+        page.click("#ic-add")
+        assert page.evaluate("document.querySelectorAll('.ic-buy').length") == 1
+        assert page.evaluate("!!document.querySelector('.ic-buy svg')"), \
+            "each bought ice cream must carry the real price-coin SVG"
+        assert not page.evaluate("!!document.querySelector('.ic-coin-fallback')"), \
+            "the real coin art (coins.ex.js) must be loaded in mulc"
+        page.click("#ic-rem")
+        assert page.evaluate("document.querySelectorAll('.ic-buy').length") == 0
+
+    def test_ice_cream_plus_allows_overshoot_past_answer(self, page):
+        """＋ must NOT disable at the correct count (that would reveal the answer);
+        it allows ordering up to need+3."""
+        _enter_ice(page, 12, 2)          # need = 6
+        for _ in range(9):
+            page.click("#ic-add")
+        assert page.evaluate("document.querySelectorAll('.ic-buy').length") == 9, \
+            "the shop must allow over-ordering past the answer (6) up to 9"
+        assert page.evaluate("document.getElementById('ic-add').disabled") is True
+
+    def test_ice_cream_space_buys(self, page):
+        """Pressing SPACE buys an ice cream (touch/keyboard parity with the other
+        coin exercises)."""
+        _enter_ice(page, 10, 5)
+        page.keyboard.press("Space")
+        page.wait_for_function(
+            "document.querySelectorAll('.ic-buy').length === 1", timeout=TIMEOUT)
+
+    def test_ice_cream_correct_count_solves_full(self, page):
+        """The answer is the COUNT of ice creams (budget ÷ price) — 12÷2=6 solves
+        with full mulc points (20). Typing the budget itself is NOT the answer."""
+        _enter_ice(page, 12, 2)
+        _dispatch_enter(page, ".ic-inp", 6)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+        assert page.evaluate("report[0].gotCorrect") is True
+
+    def test_ice_cream_wrong_directional_then_partial(self, page):
+        """Too many → 'not enough money' feedback + a logged mistake; the follow-up
+        correct answer scores 67% of 20 = 13."""
+        _enter_ice(page, 20, 5)          # need = 4
+        _dispatch_enter(page, ".ic-inp", 6)   # she can't afford 6
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("done") is False
+        hint = page.evaluate("document.getElementById('hint').textContent")
+        assert "כֶּסֶף" in hint, f"feedback must talk about the money, got: {hint}"
+        page.wait_for_function("document.querySelector('.ic-inp').value===''", timeout=TIMEOUT)
+        _dispatch_enter(page, ".ic-inp", 4)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+    def test_ice_cream_mistake_opens_xprice_number_line(self, page):
+        """A wrong answer opens the multiplication number line with jumps of the
+        PRICE (₪10 → 0,10,20,…, one jump past the budget) so she can skip-count
+        the spending. Hidden until the mistake."""
+        _enter_ice(page, 40, 10)          # ₪40, ₪10 each → 4 ice creams
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'"), \
+            "the number line must be hidden until a mistake"
+        _dispatch_enter(page, ".ic-inp", 7)
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display !== 'none'"), \
+            "a wrong answer must reveal the number line"
+        ticks = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert ticks == [0, 10, 20, 30, 40, 50], f"jumps of the ₪10 price expected, got {ticks}"
+
+    def test_ice_cream_mistake_clears_the_tray(self, page):
+        """When the number line appears (on a mistake), the bought ice creams are
+        wiped so she re-counts from zero on the line; SPACE then adds the first
+        ice cream again."""
+        _enter_ice(page, 40, 10)          # ₪40, ₪10 each → 4 ice creams
+        for _ in range(5):                # buy a few (an overshoot)
+            page.click("#ic-add")
+        page.wait_for_function("document.querySelectorAll('.ic-buy').length === 5", timeout=TIMEOUT)
+        _dispatch_enter(page, ".ic-inp", 7)   # wrong
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        # tray emptied to zero, and the empty tray goes back to its blank state
+        assert page.evaluate("document.querySelectorAll('.ic-buy').length") == 0, \
+            "a mistake must clear the bought ice creams"
+        assert page.evaluate("document.querySelector('.ic-tray').classList.contains('ic-tray-blank')"), \
+            "the emptied tray returns to its blank (invisible) state"
+        # SPACE now adds the FIRST ice cream again
+        page.keyboard.press("Space")
+        page.wait_for_function(
+            "document.querySelectorAll('.ic-buy').length === 1", timeout=TIMEOUT)
+
+    def test_ice_cream_input_focused_on_load(self, page):
+        """The answer box is focused when the shop loads (so typing / the mobile
+        numpad work at once) — not the ＋ button. SPACE still buys."""
+        _enter_ice(page, 30, 10)
+        assert page.evaluate("document.activeElement && document.activeElement.id === 'ic-ans'"), \
+            "the answer input must be focused on load"
 
 
 # ─────────────────────────────────────────────────────────

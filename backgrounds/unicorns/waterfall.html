@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>💧 Waterfall — standalone workshop</title>
+<!--
+  WATERFALL FX — a self-contained canvas waterfall, extracted and rebuilt from the
+  CodePen dump in `watefall.html` (which was a raw CSS+JS paste with no markup).
+
+  It is packaged to the SAME contract a background scene module uses
+  (see ../../NEW_BACKGROUND_GUIDE.md "Piece 1"):
+
+      const cleanup = WaterfallFX.init({ stage, opts });   // mounts a <canvas> in `stage`
+      ...                                                  // runs its own rAF loop
+      cleanup();                                           // stops the loop, removes listeners, empties stage
+
+  So porting into `backgrounds/<name>.bg.js` is mechanical — call WaterfallFX.init
+  from the module's init({stage}) (or drop the whole IIFE in) and return its cleanup.
+  `opts` (all optional) let a world recolor / reshape the fall:
+      { hueMin, hueMax, saturation:[lo,hi], lightness:[lo,hi],
+        gravity, ratePerPx, margin, poolY, band:{cx,halfWidth} }
+  `band` restricts the spout to a vertical column (for a cliff/castle waterfall);
+  omit it to fill the whole canvas.
+
+  Everything is global-scope, file://-ready, no external dependencies.
+-->
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#05070d;font-family:Arial,Helvetica,sans-serif}
+
+  /* the demo backdrop: a dark cave/cliff so the water reads as a waterfall.
+     In the game this is replaced by the world's own scene behind the canvas. */
+  #scene{position:fixed;inset:0;
+    background:
+      radial-gradient(120% 90% at 50% -10%, #16233b 0%, #0a1120 55%, #05070d 100%);
+  }
+
+  /* the "stage" = the element the FX mounts its canvas into (== #stars-layer in
+     the game). Here it's a centred chute so the fall looks like a waterfall
+     rather than rain; toggle "Full screen" to see it fill the viewport. */
+  #stage{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);
+    width:min(240px,42vw);
+    box-shadow:0 0 60px 10px rgba(80,150,255,.10) inset;
+    transition:width .35s ease}
+  #stage.full{width:100%;box-shadow:none}
+  #stage canvas{display:block;width:100%;height:100%}
+
+  /* a soft pool glow at the base */
+  #pool{position:absolute;left:0;right:0;bottom:0;height:70px;pointer-events:none;
+    background:radial-gradient(60% 100% at 50% 100%, rgba(120,180,255,.30), rgba(120,180,255,0) 70%)}
+
+  .toolbar{position:fixed;left:14px;top:14px;z-index:10;display:flex;gap:8px;flex-wrap:wrap;
+    align-items:center}
+  .toolbar button{cursor:pointer;border:1px solid rgba(255,255,255,.25);border-radius:8px;
+    background:rgba(20,32,58,.75);color:#dbe7ff;font-size:13px;padding:7px 12px;
+    backdrop-filter:blur(4px)}
+  .toolbar button:hover{background:rgba(40,60,100,.85)}
+  .toolbar button.on{background:#3a6cff;border-color:#7aa2ff;color:#fff}
+  .toolbar .sep{width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 2px}
+  .title{position:fixed;right:16px;bottom:12px;z-index:10;color:rgba(219,231,255,.5);font-size:12px}
+</style>
+</head>
+<body>
+
+<div id="scene">
+  <div id="stage"></div>
+  <div id="pool"></div>
+</div>
+
+<div class="toolbar">
+  <button id="restart">↺ Restart</button>
+  <span class="sep"></span>
+  <button id="btn-column" class="on">Column</button>
+  <button id="btn-full">Full screen</button>
+  <span class="sep"></span>
+  <button id="hue-blue" class="on">Blue</button>
+  <button id="hue-pastel">Pastel</button>
+  <button id="hue-aqua">Aqua</button>
+</div>
+<div class="title">💧 waterfall — WaterfallFX.init({stage, opts})</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────
+   WaterfallFX — reusable canvas waterfall engine + scene mounter.
+   Faithful to the original CodePen physics (falling water columns under gravity
+   that pool into bubbles at the base, drawn additively over a fading trail), but
+   resolution-independent and packaged with an init/cleanup lifecycle.
+   ───────────────────────────────────────────────────────────────────────── */
+window.WaterfallFX = (function(){
+  "use strict";
+
+  var rand = function(mi, ma){ return ~~((Math.random()*(ma-mi+1))+mi); };
+
+  /* The engine: draws onto a 2D context whose logical size is read live via
+     getW()/getH() (so it survives resizes). Returns { step, reset }. */
+  function create(ctx, getW, getH, opts){
+    opts = opts || {};
+    var gravity   = opts.gravity   != null ? opts.gravity   : 0.15;
+    var hueMin    = opts.hueMin    != null ? opts.hueMin    : 200;
+    var hueMax    = opts.hueMax    != null ? opts.hueMax    : 220;
+    var satLo     = opts.saturation ? opts.saturation[0] : 30;
+    var satHi     = opts.saturation ? opts.saturation[1] : 60;
+    var litLo     = opts.lightness  ? opts.lightness[0]  : 30;
+    var litHi     = opts.lightness  ? opts.lightness[1]  : 60;
+    var margin    = opts.margin    != null ? opts.margin    : 10;   // px inset from the spout edges
+    var poolY     = opts.poolY     != null ? opts.poolY     : 20;   // px above the bottom where water pools
+    // original spawned 6 columns/frame across a 100px canvas → density per px:
+    var ratePerPx = opts.ratePerPx != null ? opts.ratePerPx : 6/100;
+    var band      = opts.band || null;   // {cx:0..1, halfWidth:px} → restrict the spout to a column
+
+    var particles = [];
+
+    function spawnBounds(cw){
+      if(band){
+        var c = band.cx != null ? band.cx*cw : cw/2;
+        var hw = band.halfWidth != null ? band.halfWidth : cw/2;
+        return { lo: Math.max(margin, c-hw), hi: Math.min(cw-margin, c+hw) };
+      }
+      return { lo: margin, hi: cw-margin };
+    }
+
+    function Particle(cw){
+      var w = rand(1,20), h = rand(1,45);
+      var b = spawnBounds(cw);
+      this.x = rand(b.lo + w/2, Math.max(b.lo + w/2, b.hi - w/2));
+      this.y = -h;
+      this.vy = 0;
+      this.width = w;
+      this.height = h;
+      this.hue = rand(hueMin, hueMax);
+      this.sat = rand(satLo, satHi);
+      this.light = rand(litLo, litHi);
+    }
+    Particle.prototype.update = function(){ this.vy += gravity; this.y += this.vy; };
+    Particle.prototype.render = function(){
+      ctx.strokeStyle = 'hsla('+this.hue+','+this.sat+'%,'+this.light+'%,.05)';
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x, this.y + this.height);
+      ctx.lineWidth = this.width/2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    };
+    Particle.prototype.renderBubble = function(ch){
+      ctx.fillStyle = 'hsla('+this.hue+','+this.sat+'%,'+this.light+'%,.3)';
+      ctx.beginPath();
+      ctx.arc(this.x + this.width/2, ch - poolY - rand(0,10), rand(1,8), 0, Math.PI*2, false);
+      ctx.fill();
+    };
+
+    // fade the previous frame slightly (trail), then draw additively
+    function fadeAndPrime(cw, ch){
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = 'rgba(255,255,255,.06)';
+      ctx.fillRect(0,0,cw,ch);
+      ctx.globalCompositeOperation = 'lighter';
+    }
+
+    function step(){
+      var cw = getW(), ch = getH();
+      if(!cw || !ch) return;
+      fadeAndPrime(cw, ch);
+
+      var b = spawnBounds(cw);
+      var n = Math.max(1, Math.round((b.hi - b.lo) * ratePerPx));
+      while(n--) particles.push(new Particle(cw));
+
+      for(var i=particles.length; i--;) particles[i].update();
+      for(var j=particles.length; j--;) particles[j].render();
+      for(var k=particles.length; k--;){
+        var p = particles[k];
+        if(p.y > ch - poolY - p.height){ p.renderBubble(ch); particles.splice(k,1); }
+      }
+    }
+
+    function reset(){ particles.length = 0; if(getW() && getH()) ctx.clearRect(0,0,getW(),getH()); }
+
+    return { step: step, reset: reset };
+  }
+
+  /* Mount a canvas inside `stage`, run the rAF loop, and wire a resize handler.
+     Returns cleanup() — the exact teardown a .bg.js must return. */
+  function init(cfg){
+    cfg = cfg || {};
+    var stage = cfg.stage;
+    if(!stage) throw new Error('WaterfallFX.init needs { stage }');
+
+    var canvas = document.createElement('canvas');
+    canvas.style.display = 'block';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    stage.innerHTML = '';
+    stage.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+
+    function sizeCanvas(){
+      canvas.width  = stage.clientWidth  || window.innerWidth;
+      canvas.height = stage.clientHeight || window.innerHeight;
+    }
+    sizeCanvas();
+
+    var fx = create(ctx, function(){ return canvas.width; }, function(){ return canvas.height; }, cfg.opts);
+
+    var stopped = false, raf = 0;
+    function loop(){ if(stopped) return; fx.step(); raf = requestAnimationFrame(loop); }
+    loop();
+
+    var onResize = function(){ sizeCanvas(); fx.reset(); };
+    window.addEventListener('resize', onResize);
+
+    return function cleanup(){
+      stopped = true;
+      if(raf) cancelAnimationFrame(raf);
+      window.removeEventListener('resize', onResize);
+      if(canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    };
+  }
+
+  return { init: init, create: create };
+})();
+
+
+/* ── demo / workshop harness (NOT part of the FX — the game supplies its own) ── */
+(function(){
+  var stage = document.getElementById('stage');
+  var HUES = {
+    blue:   { hueMin:200, hueMax:220 },                                   // original
+    pastel: { hueMin:280, hueMax:330, saturation:[45,80], lightness:[55,80] }, // unicorn
+    aqua:   { hueMin:160, hueMax:190, saturation:[45,75], lightness:[45,70] }
+  };
+  var hue = 'blue';
+  var cleanup = null;
+
+  function boot(){
+    if(cleanup) cleanup();
+    cleanup = window.WaterfallFX.init({ stage: stage, opts: HUES[hue] });
+  }
+  boot();
+
+  function pick(id, group, fn){
+    document.getElementById(id).onclick = function(){
+      group.forEach(function(g){ document.getElementById(g).classList.remove('on'); });
+      this.classList.add('on');
+      fn();
+    };
+  }
+  document.getElementById('restart').onclick = boot;
+  pick('btn-column', ['btn-column','btn-full'], function(){ stage.classList.remove('full'); boot(); });
+  pick('btn-full',   ['btn-column','btn-full'], function(){ stage.classList.add('full');    boot(); });
+  pick('hue-blue',   ['hue-blue','hue-pastel','hue-aqua'], function(){ hue='blue';   boot(); });
+  pick('hue-pastel', ['hue-blue','hue-pastel','hue-aqua'], function(){ hue='pastel'; boot(); });
+  pick('hue-aqua',   ['hue-blue','hue-pastel','hue-aqua'], function(){ hue='aqua';   boot(); });
+})();
+</script>
+</body>
+</html>

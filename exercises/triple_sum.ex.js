@@ -103,13 +103,15 @@ window.EXERCISES.types.triple_sum=(()=>{
       if(vals.some(v=>isNaN(v))){hint('כִּתְבִי שְׁלוֹשָׁה מִסְפָּרִים 💗');return;}
       const sum=vals[0]+vals[1]+vals[2];
       if(sum!==target){
-        // a real mistake — the sum is wrong
+        // a real mistake — the sum is wrong. Per the user's request, DON'T erase
+        // what she typed: mark the boxes red + show the sad emoji (api.wrong), but
+        // LEAVE the numbers in place so she can FIX them (typing clears the red via
+        // the global .ans-inp handler; then check again). No box-wiping timer.
         clearMarks();inps.forEach(i=>i.classList.add('ans-err'));
-        hint(sum<target?`הַסְּכוּם ${sum} — קְצָת קָטָן, צָרִיךְ ${target} 💗`
-                       :`הַסְּכוּם ${sum} — קְצָת גָּדוֹל, צָרִיךְ ${target} 💗`);
+        hint(sum<target?`הַסְּכוּם ${sum} — קְצָת קָטָן, תַּקְּנִי כְּדֵי לְהַגִּיעַ לְ-${target} 💗`
+                       :`הַסְּכוּם ${sum} — קְצָת גָּדוֹל, תַּקְּנִי כְּדֵי לְהַגִּיעַ לְ-${target} 💗`);
         api.wrong(sum);
-        later(()=>{if(!done){inps.forEach(i=>{i.value='';i.classList.remove('ans-err');});inps[0].focus();}},1100);
-        return;
+        return;   // numbers stay; she edits a box and checks again
       }
       // sum is CORRECT — but 0 and 10 are not allowed. Praise, DO NOT penalize,
       // DO NOT complete: ask for other numbers (per spec).

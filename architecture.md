@@ -119,11 +119,16 @@ subtraction_game/
 │  │                                 middle line splits them in two (first division;
 │  │                                 a JS auto-fit shrinks the row to the card when
 │  │                                 many items). אַלּוּפָה (mount module, #colx-root)
-│  └─ plates.ex.js                 TPL "צַלָּחוֹת" — g plates × s items each
-│                                    (2..4×2..4), find the TOTAL; tap → the items
-│                                    pour into one countable row (multiplication
-│                                    story, inverse of half).
-│                                    אַלּוּפָה (interactive mount module, #colx-root)
+│  ├─ plates.ex.js                 TPL "צַלָּחוֹת" — g plates × s items each
+│  │                                 (2..4×2..4), find the TOTAL; tap → the items
+│  │                                 pour into one countable row (multiplication
+│  │                                 story, inverse of half).
+│  │                                 אַלּוּפָה (interactive mount module, #colx-root)
+│  └─ ice_cream.ex.js              TIC "חֲנוּת הַגְּלִידָה" — she HAS ₪budget, every
+│                                    ice cream costs ₪2/₪5/₪10; ＋ buys one (with
+│                                    its price coin — skip-countable spending);
+│                                    answer = budget÷price (division as "how many
+│                                    groups"). אַלּוּפָה (mount module, #colx-root)
 │
 ├─ backgrounds/
 │  ├─ README.md                    ★ per-background docs (scene inventory, timers,
@@ -370,8 +375,10 @@ Current recipes:
   and `plates.make('mulc')` (g plates × s items → total, the multiplication story),
   plus the two basic-multiplication exercises borrowed from Superman —
   `coin_mul.make('mulc')` (how many ₪2/₪5/₪10 coins fit in X) and
-  `bagel_cost.make('mulc')` (X bagels × ₪5). `coins.ex.js` is loaded in `mulc`
-  too so those two get the real coin art (`tcCoinSVG`). `modePts('mulc')=20`.
+  `bagel_cost.make('mulc')` (X bagels × ₪5), and `ice_cream.make('mulc')` (the
+  shop: she HAS ₪budget, each ice cream costs ₪2/₪5/₪10 — how many can she buy;
+  division as "how many groups fit"). `coins.ex.js` is loaded in `mulc`
+  too so the coin family gets the real coin art (`tcCoinSVG`). `modePts('mulc')=20`.
 
 **Staged (horizontal-first, graded) column subtraction.** In Superman and
 אַלּוּפָה any TCS problem tagged `staged` is mounted by `mountStaged`: the fact is
@@ -408,7 +415,7 @@ window.EXERCISES.types.column_add = {
 `EXERCISE_OF_TYPE` (data.js) maps a ptype to its file —
 `{ [TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul', [TBC]:'bagel_cost',
 [TPG]:'polygon', [TMC]:'mult_chain', [TMK]:'mult_champ', [TPP]:'perimeter',
-[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half', [TPL]:'plates' }`. `renderEq` emits a
+[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half', [TPL]:'plates', [TIC]:'ice_cream' }`. `renderEq` emits a
 single `<div id="colx-root">` for any of them and calls `_colxMount` (core.js).
 `_colxMount` injects `exercises/<name>.ex.js` on demand (bg-loader
 .loadExercise) and mounts it into that root. Its async load callback re-checks

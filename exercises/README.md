@@ -129,13 +129,14 @@ A registered type is an object of this exact shape:
 | `triple_sum`| `{t:TTS, a}`  (`a` = the target sum, VARIES 6..12) | `__ + __ + __ = a` — pick THREE addends that sum to `a`; **0 and 10 are disallowed** (a 0/10 answer is praised, costs nothing, but must be re-tried). Interactive |
 | `half`      | `{t:THF, n, a, item, itemName, names:[g1,g2]}`  (`n` = total 4/6/8/10, `a` = n÷2) | a word problem: two friends share `n` items EQUALLY; tap the items → a golden MIDDLE line splits them into 2 equal groups; type how many EACH gets. Interactive |
 | `plates`    | `{t:TPL, g, s, a, item, itemName, name}`  (`g` = plates, `s` = per plate, both 2..4, product ≤10; `a` = g·s) | a word problem: `g` plates each holding `s` items; type the TOTAL from the words. Picture hidden until a mistake reveals it (then tap toggles plates ↔ row). Interactive |
+| `ice_cream` | `{t:TIC, a, b, name}`  (`a` = the budget ₪, `b` = price per ice cream 2/5/10, `name` = the shopper) | a shop story: she HAS `₪a` and every ice cream costs `₪b` — how many CAN she buy? ＋ buys one (lands in the tray WITH its price coin, so the spending is skip-countable); answer `a/b` (division as "how many groups fit"). Interactive |
 
 ptype constants (`game/js/data.js`):
 `TM='missing'`, `TS='sub'`, `TA='add'`, `TX='mixed'`, `TZ='triple'`,
 `TW='twin_sub'`, `TDA='dbl_add'`, `TDS='dbl_sub'`, `TC='coins'`, `TT='tens'`,
 `TCA='col_add'`, `TCS='col_sub'`, `TBG='big_step'`, `TCM='coin_mul'`,
 `TMC='mult_chain'`, `TMK='mult_champ'`, `TPP='perimeter'`, `TCP='compare'`,
-`TTS='triple_sum'`, `THF='half'`, `TPL='plates'`
+`TTS='triple_sum'`, `THF='half'`, `TPL='plates'`, `TIC='ice_cream'`
 (+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TWP='word_prob'`, `TVA`/`TVS`/`TRA`/`TH`).
 
 ---
@@ -154,12 +155,13 @@ ptype constants (`game/js/data.js`):
 | `big_step.ex.js`| `TBG`          | `'big','mx','sup'`      | **Add 1–2** to / **subtract 1–4** from a two-digit number (21–89). Generated **without carry/borrow** — only the ONES digit changes (`u<b` rejected for sub, `u+b>9` rejected for add), so a subtraction never crosses the ten below (85−4 ok, 82−3 never). `'big'`: `build(12)` balanced sub/add then shuffled. `'mx'`: `build(2)` (2 mixed problems). `'sup'`: `buildSubs(3)` — **3 big-number SUBTRACTIONS only**. |
 | `column_add.ex.js`| `TCA`        | `'sup'`                 | The **Superman** interactive column-addition module. `make('sup')` → `makePool(2,1)` = **3 problems** (2 with a units carry + 1 without; `a=11..29`, `b=2..19`, largest result 29+19 = **48**), shuffled. Declares `aidsReveal:'always'` and provides `mount()`. See §4. |
 | `column_sub.ex.js`| `TCS`        | `'mx','sup','mulc'`     | Interactive column **subtraction** with BORROW (פְּרִיטָה). `'mx'` (Queen) → `makeNoBorrow(2)` (NO-borrow only, teen minuends `a≤19`, non-staged). `'sup'`/`'mulc'` → `makeStaged(makeSup())` = the two-digit set **TAGGED `staged`** → the horizontal-first GRADED flow (§4b). `aidsReveal:{mx:'always',sup:'always',mulc:'always'}`; provides `mount()`. See §4b. |
-| `coin_mul.ex.js`| `TCM`          | `'sup'`                 | Interactive **first multiplication**: "how many `b`-coins fit in `a`". `make('sup')` → `makePool()` = **3** problems, ONE of EACH coin value — ₪2 (targets 4/6/8/10), ₪5 (10..35), ₪10 (20..90), so a/b ∈ 2..9 coins. The answer is `a/b` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
+| `coin_mul.ex.js`| `TCM`          | `'sup','mulc'`          | Interactive **first multiplication**: "how many `b`-coins fit in `a`". `make('sup'/'mulc')` → `makePool()` = **3** problems, ONE of EACH coin value — ₪2 (targets 4/6/8/10), ₪5 (10..35), ₪10 (20..90), so a/b ∈ 2..9 coins. The answer is `a/b` (the COUNT of coins). `aidsReveal:'always'` (no number line — the coin tray IS the manipulative); provides `mount()`. See §4c. |
 | `perimeter.ex.js`| `TPP`         | `'perim','mulc'`        | Interactive polygon **perimeter**. `make('mulc')` → **5** (cycles square/rect/triangle); `make('perim')` → 9 (tester handle). Each shape is drawn **to scale** (triangle via `triVerts`, law-of-cosines) with a length 1..4 by each side; answer = sum of sides. `aidsReveal:'always'`; the number line is hidden until a WRONG answer, then shown so she can hop the sides. See §4f. |
 | `compare.ex.js`  | `TCP`         | `'cmp','mulc'`          | Interactive **drag-the-sign** comparison. `make('mulc')` → **5** (always ≥1 of each relation `<`/`>`/`=`; `make('cmp')` → 9). Numbers 1..99; the child DRAGS the correct sign into the slot between them. `aidsReveal:'always'` (no number line). See §4g. |
 | `triple_sum.ex.js`| `TTS`        | `'trip','mx','sup','mulc'` | Interactive **three-addends-to-a-target** `__+__+__=N`. The target **VARIES 6..12** (distinct per pool). `make('mulc')` → **3**, `make('sup')` → 2, `make('mx')` → 1 (Queen is saturated — woven post-cap), `make('trip')` → 6. Any triple that sums to N is accepted **except that 0 and 10 are disallowed** — a sum-correct 0/10 answer is praised, costs NOTHING and does NOT complete (retry). `aidsReveal:'always'`. See §4h. |
-| `half.ex.js`     | `THF`         | `'hlf','mulc'`          | Interactive **share-equally-between-two** (first division). `make('mulc')` → **4** (one per total 4/6/8/10, all even → exact halves; `make('hlf')` → 6). Rotating item emoji + girl-pair names make each card a fresh mini word problem. `aidsReveal:'always'` (the split-in-two picture is the aid; a wrong answer auto-opens it). See §4i. |
+| `half.ex.js`     | `THF`         | `'hlf','mulc'`          | Interactive **share-equally-between-two** (first division). `make('mulc')` → **6** (one per total 4/6/8/10/12/14, all even → exact halves; `make('hlf')` → 8). Rotating item emoji + girl-pair names make each card a fresh mini word problem; a JS auto-fit shrinks the row to the card when many items. `aidsReveal:'always'` (the split-in-two picture is the aid; a wrong answer auto-opens it). See §4i. |
 | `plates.ex.js`   | `TPL`         | `'plt','mulc'`          | Interactive **equal-groups→total** (the multiplication story, inverse of half). `make('mulc')` → **3** (`make('plt')` → 6), plates `g` and per-plate `s` both 2..4, **product ≤10** (the first facts). The picture is **hidden** — the child solves from the WORDS; the 1st mistake reveals the plates, the 2nd pours them into ONE countable row (once shown, tap toggles). `aidsReveal:'always'` (module drives its own reveal). See §4j. |
+| `ice_cream.ex.js`| `TIC`         | `'ice','mulc'`          | Interactive **shop / budget division** ("how many groups fit" — the quotative mirror of `half`'s sharing). `make('mulc')` → **3**, ONE of EACH price — ₪2 (budgets 4..20), ₪5 (10..35), ₪10 (20..90) — budget always divisible, 2..10 ice creams. ＋ BUYS an ice cream (it lands with its price COIN so the spending is skip-countable, 2-4-6…), − refunds; ＋ allows a +3 overshoot so it never reveals the answer; wrong-answer feedback is directional off the TYPED value ("not enough money" / "money left"). `aidsReveal:'always'` (the tray is the manipulative). See §4k. |
 
 Notes:
 - `add`/`sub`/`missing`/`double` share the same `pick(arr,n)` Fisher–Yates
@@ -749,6 +751,47 @@ plates ↔ row (pure aid); `fitStage()` scales the picture down on overflow.
 Standard try-first scoring (20 / 13 / 0). No number line. **Cleanup** removes the
 resize listener, clears timers, empties `root`. CSS namespaced `pl-*`
 (`#pl-style`).
+
+---
+
+## 4k. `ice_cream.ex.js` in depth — "חֲנוּת הַגְּלִידָה" (buy within a budget 🍦👛)
+
+Division as **"how many groups fit"** (quotative) — the deliberate mirror of
+`half`'s sharing (partitive): she HAS `₪a` and every ice cream costs the same
+`₪b` (2/5/10, all real coins); how many CAN she buy? Story-wrapped `coin_mul`.
+Self-mounting (`t:TIC`, `modes:['ice','mulc']`), mixed into אַלּוּפָה.
+
+```js
+return { t:TIC, modes:['ice','mulc'], aidsReveal:'always', make(mode){…}, mount };
+```
+
+### Data side — `make(mode)`
+`makePool()` → **3** problems, ONE of EACH price with a random budget from its
+range — ₪2 (4..20), ₪5 (10..35), ₪10 (20..90) — every budget divisible by its
+price, count `a/b` ∈ 2..10: `{t:TIC, a:budget, b:price, name}` (`name` rotates a
+girl name; the scoop emoji 🍦/🍨 rotates per mount). Handles: `'mulc'` (game) and
+`'ice'` (tester).
+
+### Interactive side — `mount({root,a,b,p,api})`
+Renders the story ("לְ­דָּנָה יֵשׁ **₪12** 👛 — כַּמָּה גְּלִידוֹת 🍦 הִיא תּוּכַל
+לִקְנוֹת?"), a price line with the real inline coin (`tcCoinSVG(b)` from
+`coins.ex.js`, loaded in `'mulc'`; silver fallback otherwise), a tray, − / ＋
+buttons and the answer row (✓ + `.ic-inp`).
+
+- **＋ buys** one ice cream — a `.ic-buy` stack (scoop over its price COIN)
+  drops into the tray, so the spending is **skip-countable** (2, 4, 6…);
+  **−** refunds. SPACE buys too (parity with `coin_mul`/`bagel_cost`).
+- ＋ never disables AT the answer (that would reveal it) — the shop lets her
+  order up to `need+3`; the tray starts invisible-but-reserved
+  (`.ic-tray-blank`) so ＋ never shifts.
+- **Answering**: the answer is the COUNT `a/b`. Wrong → `api.wrong(v)` +
+  directional feedback off the TYPED value — too many: "אֵין לָהּ מַסְפִּיק
+  כֶּסֶף", too few: "נִשְׁאַר לָהּ עוֹד כֶּסֶף". Correct → the hint becomes the
+  explanation (`need × ₪b = ₪a`) + `api.solved()`.
+
+Standard try-first scoring (20 / 13 / 0). No number line — the tray is the
+manipulative. **Cleanup** removes the SPACE listener, clears timers, empties
+`root`. CSS namespaced `ic-*` (`#ic-style`). Report row: `🍦 need × ₪b = ₪a`.
 
 ---
 

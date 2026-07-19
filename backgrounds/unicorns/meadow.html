@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌈 Unicorn Valley — base scene (workshop)</title>
+<!--
+  Thin workshop harness. The scene itself lives in meadow.scene.js as the
+  reusable, cleanup-able module window.UnicornMeadow.init({stage, base}) — the
+  SAME module the in-game background (../unicorns.bg.js) mounts, so there is a
+  single source of truth (nothing is copied between page and game).
+
+  Here we simply mount it full-page into document.body. Day-cycle hooks stay on
+  window.__meadow (seek / play / phase / fx), exactly as before.
+-->
+<style>html,body{margin:0;height:100%;overflow:hidden}body{position:relative}</style>
+</head>
+<body>
+<script src="meadow.scene.js"></script>
+<script>
+  // sibling item modules (unicorn.item.js / fairy.item.js) load from this folder
+  window.UnicornMeadow.init({ stage: document.body, base: '' });
+</script>
+</body>
+</html>

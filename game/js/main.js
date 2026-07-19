@@ -51,13 +51,27 @@ document.addEventListener('keydown',e=>{
   if(typeof _fwOn!=='undefined'&&_fwOn)return;
   const panels=['sad-ov','report-ov'];
   if(panels.some(id=>{const el=document.getElementById(id);return el&&el.style.display&&el.style.display!=='none';}))return;
-  // TCA/TCS (column add/subtract): spacebar hops the kangaroo NL — forward for
-  // addition, BACK for subtraction (count-back). The focused digit box is a TEXT
-  // input and the NL is interactive from the start, so handle it BEFORE the
-  // text-field / try-first guards.
-  if(ptype===TCA||ptype===TCS){
+  // TCA/TCS (column add/subtract) + TMU (mult with an unknown) + TMK (אַלּוּפָה
+  // multiplication, on its skip-counting line-aid card): spacebar hops the
+  // kangaroo NL — forward for addition/skip-counting, BACK for subtraction
+  // (count-back). The focused answer box is a TEXT input and the NL is
+  // interactive, so handle it BEFORE the text-field / try-first guards. The
+  // #nl-panel visibility check keeps TMK inert on its phase-1 / chain-aid cards
+  // (the line is hidden there).
+  if(ptype===TCA||ptype===TCS||ptype===TMU||ptype===TMK){
     const nlp=document.getElementById('nl-panel');
     if(!done&&nlp&&nlp.style.display!=='none'){e.preventDefault();NL.step(ptype===TCS?-1:1);}
+    return;
+  }
+  // TCM/TBC/TIC (coins / bagels / ice-cream): the exercise's OWN space handler
+  // drops a coin; here we ALSO hop the skip-counting number line FORWARD when it
+  // is showing (it appears after a mistake) — so ONE space press does BOTH: adds
+  // a coin AND advances the rider. Handled before the text-field guard (the answer
+  // box is a text input); no `return` on the hidden-line path so nothing else runs
+  // either way (both listeners fire independently).
+  if(ptype===TCM||ptype===TBC||ptype===TIC){
+    const nlp=document.getElementById('nl-panel');
+    if(!done&&nlp&&nlp.style.display!=='none'){e.preventDefault();NL.step(1);}
     return;
   }
   const ae=document.activeElement;
@@ -77,10 +91,12 @@ document.addEventListener('keydown',e=>{
   if(ptype===TBG){e.preventDefault();if(!done){NL.step(bgOp==='add'?1:-1);}return;}
   // TH (whole hundreds): always addition → spacebar hops the NL FORWARD (right)
   if(ptype===TH){e.preventDefault();if(!done){NL.step(1);}return;}
-  // Kangaroo NL (kang mode): spacebar moves kangaroo forward (add) or backward (sub)
+  // Kangaroo NL (kang mode): spacebar moves kangaroo forward (add) or backward (sub).
+  // TPP (polygon perimeter) is a pure SUM of the sides → forward, like the other
+  // addition types (otherwise it fell through to the count-back default).
   if(aidMode==='kang'&&document.getElementById('nl-panel')?.style.display!=='none'){
     e.preventDefault();
-    if(!done){const _add=ptype===TA||ptype===TCA||ptype===TZ||ptype===TVA||(ptype===TX&&tzAddMode());NL.step(_add?1:-1);}
+    if(!done){const _add=ptype===TA||ptype===TCA||ptype===TZ||ptype===TVA||ptype===TPP||(ptype===TX&&tzAddMode());NL.step(_add?1:-1);}
     return;
   }
   if(done)return;

@@ -113,6 +113,24 @@ window.EXERCISES.types.compare=(()=>{
     transform:translate(-50%,-50%) scale(1.12) rotate(-4deg);
     background:linear-gradient(160deg,var(--skin-glow,#7dc4ff),var(--skin-primary,#c77dff) 90%);
     box-shadow:0 12px 28px rgba(0,0,0,.42)}
+  /* HOVER HELP: pointing at a sign shows what it MEANS as two circles — a big one
+     on the "greater" side, a small one on the "smaller" side (O > o), so the child
+     grasps that the open mouth faces the bigger number. */
+  /* sits BELOW the button (grows downward) so it never covers the button itself */
+  .cp-sign-tip{position:fixed;z-index:9998;pointer-events:none;display:none;direction:ltr;
+    align-items:center;gap:9px;padding:10px 14px;border-radius:16px;
+    background:rgba(20,16,40,.94);border:1px solid rgba(255,255,255,.28);
+    box-shadow:0 10px 26px rgba(0,0,0,.45);transform:translate(-50%,0)}
+  .cp-sign-tip.cp-tip-show{display:flex}
+  .cp-sign-tip::after{content:'';position:absolute;left:50%;top:-7px;transform:translateX(-50%);
+    border:7px solid transparent;border-bottom-color:rgba(20,16,40,.94)}
+  .cp-c{border-radius:50%;flex:0 0 auto;
+    background:radial-gradient(circle at 35% 30%,#fff,var(--skin-accent,#ffd27d) 95%);
+    border:2px solid rgba(255,255,255,.65);box-shadow:0 2px 6px rgba(0,0,0,.35)}
+  .cp-big{width:38px;height:38px}
+  .cp-small{width:13px;height:13px}
+  .cp-mid{width:24px;height:24px}
+  .cp-tip-op{font-family:'Fredoka One',cursive;font-size:2rem;color:#fff;line-height:1}
   @media(max-width:480px){
     .cp-num{font-size:3.4rem}
     .cp-num.cp-expr{font-size:2.5rem}
@@ -210,8 +228,29 @@ window.EXERCISES.types.compare=(()=>{
       window.addEventListener('pointerup',onUp);
       window.addEventListener('pointercancel',onCancel);
     }
+
+    // ── HOVER HELP — pointing at a sign shows its meaning as circles ──
+    // > → big○ small○ ; < → small○ big○ ; = → equal○ equal○
+    const signTip=document.createElement('div');signTip.className='cp-sign-tip';
+    root.appendChild(signTip);
+    const TIP={
+      gt:'<span class="cp-c cp-big"></span><span class="cp-tip-op">&gt;</span><span class="cp-c cp-small"></span>',
+      lt:'<span class="cp-c cp-small"></span><span class="cp-tip-op">&lt;</span><span class="cp-c cp-big"></span>',
+      eq:'<span class="cp-c cp-mid"></span><span class="cp-tip-op">=</span><span class="cp-c cp-mid"></span>'
+    };
+    function showTip(tile){
+      signTip.innerHTML=TIP[tile.dataset.op]||'';
+      const r=tile.getBoundingClientRect();
+      signTip.style.left=(r.left+r.width/2)+'px';
+      signTip.style.top=(r.bottom+12)+'px';        // BELOW the button (never covers it)
+      signTip.classList.add('cp-tip-show');
+    }
+    function hideTip(){signTip.classList.remove('cp-tip-show');}
+
     root.querySelectorAll('.cp-tile').forEach(tile=>{
-      tile.addEventListener('pointerdown',e=>onDown(tile,e));
+      tile.addEventListener('pointerdown',e=>{hideTip();onDown(tile,e);});
+      tile.addEventListener('mouseenter',()=>{if(!active&&!tile.disabled)showTip(tile);});
+      tile.addEventListener('mouseleave',hideTip);
     });
 
     function place(op){

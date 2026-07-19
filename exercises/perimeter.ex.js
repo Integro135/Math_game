@@ -46,11 +46,16 @@ window.EXERCISES.types.perimeter=(()=>{
   }
 
   const CSS=`
-  .pm-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%}
+  .pm-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
   .pm-q{font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--skin-text,#fff);
     text-align:center;line-height:1.4;text-shadow:0 0 12px rgba(160,190,255,.35);min-height:1.5em}
   .pm-q b{color:var(--skin-accent,#ffd27d)}
-  .pm-stage{position:relative;width:min(300px,72vw);height:min(300px,72vw);
+  /* the answer input sits to the LEFT of the shape (not below it) — side-by-side
+     saves the wasted vertical band under the tall shape that used to force a page
+     scrollbar. direction:ltr → the answer (first child) lands on the physical left. */
+  .pm-main{display:flex;flex-direction:row;align-items:center;justify-content:center;
+    gap:14px;width:100%;direction:ltr}
+  .pm-stage{position:relative;width:min(250px,54vw);height:min(250px,54vw);flex:0 0 auto;
     display:flex;align-items:center;justify-content:center;animation:pmBob 3.4s ease-in-out infinite}
   @keyframes pmBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   .pm-svg{width:100%;height:100%;overflow:visible;animation:pmPop .5s cubic-bezier(.2,1.4,.4,1) both}
@@ -70,7 +75,8 @@ window.EXERCISES.types.perimeter=(()=>{
     border:3px solid rgba(255,255,255,.9);box-shadow:0 0 16px rgba(160,200,255,.85)}
   .pmfx-star{position:absolute;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
     background:var(--c,#fff);filter:drop-shadow(0 0 5px var(--c,#fff))}
-  .pm-ans-row{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:2px;direction:ltr}
+  /* stacked (input over ✓) so the answer column stays NARROW beside the shape */
+  .pm-ans-row{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;flex:0 0 auto;direction:ltr}
   .pm-btn{font-family:'Fredoka One',cursive;font-size:1.15rem;border:0;border-radius:14px;padding:11px 22px;
     cursor:pointer;color:#fff;background:linear-gradient(160deg,#86E29B,#2FA257 85%);
     border:2px solid rgba(255,255,255,.5);box-shadow:0 3px 0 rgba(0,0,0,.28)}
@@ -168,16 +174,18 @@ window.EXERCISES.types.perimeter=(()=>{
     root.innerHTML=`
       <div class="pm-root">
         <div class="pm-q" id="pm-q-${uid}">חַשְּׁבִי אֶת <b>הַהֶקֵּף</b> (סְכוּם כָּל הַצְּלָעוֹת)</div>
-        <div class="pm-stage">
-          <svg class="pm-svg" viewBox="0 0 320 320" aria-label="צוּרָה">
-            <polygon class="pm-body" points="${ptsAttr}"/>
-            <g>${edges}</g><g>${his}</g><g>${hits}</g><g>${lbls}</g>
-          </svg>
-          <div class="pm-fx" id="pm-fx-${uid}"></div>
-        </div>
-        <div class="pm-ans-row">
-          <button class="pm-btn" id="pm-chk-${uid}" aria-label="בְּדִיקָה">✓</button>
-          <input class="ans-inp pm-inp" id="pm-ans-${uid}" type="text" inputmode="numeric" maxlength="2" aria-label="הֶקֵּף">
+        <div class="pm-main">
+          <div class="pm-ans-row">
+            <input class="ans-inp pm-inp" id="pm-ans-${uid}" type="text" inputmode="numeric" maxlength="2" aria-label="הֶקֵּף">
+            <button class="pm-btn" id="pm-chk-${uid}" aria-label="בְּדִיקָה">✓</button>
+          </div>
+          <div class="pm-stage">
+            <svg class="pm-svg" viewBox="0 0 320 320" aria-label="צוּרָה">
+              <polygon class="pm-body" points="${ptsAttr}"/>
+              <g>${edges}</g><g>${his}</g><g>${hits}</g><g>${lbls}</g>
+            </svg>
+            <div class="pm-fx" id="pm-fx-${uid}"></div>
+          </div>
         </div>
       </div>`;
 
@@ -228,7 +236,9 @@ window.EXERCISES.types.perimeter=(()=>{
     chk.addEventListener('click',check);
     inp.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
     inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check();}});
-    later(()=>inp.classList.add('pm-ready'),400);
+    // focus the answer box on mount so she can type right away (no click needed);
+    // on touch this also auto-opens the number pad
+    later(()=>{inp.classList.add('pm-ready');try{inp.focus();}catch(e){}},400);
 
     return function cleanup(){timers.forEach(clearTimeout);root.innerHTML='';};
   }

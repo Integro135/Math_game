@@ -22,6 +22,12 @@
    optional running-sum helper boxes + diagonal guide (like chain/mult_chain);
    only the FINAL box scores.
 
+   MISTAKE AIDS ALTERNATE (user request): each mistake-card reveals ONE aid, in
+   strict turns across cards (window.__mkAidTurn) — the SKIP-COUNTING NUMBER
+   LINE (jumps of the repeated number, 0..rep·5; the product box itself retries)
+   or the repeated-addition CHAIN above. The 🔁 switch follows the shown aid:
+   on a line card it RE-CONFIGURES the line to the other factor's jumps.
+
    Problem shape: { t:TMK, a:base, b:count } → `a` repeated `b` times by default
    (a = the small multiplicand). Factors reach up to 4 (a,b ∈ {2,3,4}).
    Interactive: mounted by core.js _colxMount into #colx-root; self-checks via
@@ -106,7 +112,7 @@ window.EXERCISES.types.mult_champ=(()=>{
   function mount({root,a,b,api}){
     injectStyle();
     const A=Math.max(2,a||2), B=Math.max(2,b||2), product=A*B;
-    let done=false, revealed=false, flip=false;
+    let done=false, revealed=false, flip=false, aidKind=null;
     const timers=[]; const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
     const H=()=>document.getElementById('hint');
     const fb=msg=>{const h=H();if(h)h.textContent=msg;};
@@ -209,13 +215,38 @@ window.EXERCISES.types.mult_champ=(()=>{
       requestAnimationFrame(()=>{fit();try{finalInp.focus();}catch(e){}});
     }
 
-    // open the scaffold (once) after the first wrong product
+    // the skip-counting NUMBER-LINE aid: jumps of `rep` (the repeated number)
+    // over 0..rep·5 — one step beyond the largest product for that rep, so the
+    // line's right edge never spells out the answer. Re-configured on every 🔁
+    // switch (user request: the line must follow the factor swap).
+    function renderNlAid(){
+      const rep=flip?B:A, times=flip?A:B;
+      if(switchBtn){
+        const oRep=flip?A:B, oTimes=flip?B:A;
+        switchBtn.innerHTML='🔁 '+new Array(oTimes).fill(oRep).join(' + ');
+      }
+      const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='';
+      if(typeof NL!=='undefined'){NL.configure(rep*5,rep);NL.init(0);}
+      fb('✖️ כֶּפֶל זֶה קְפִיצוֹת שָׁווֹת! קִפְצִי '+times+' קְפִיצוֹת שֶׁל '+rep+' עַל הַיָּשָׁר 💗');
+    }
+
+    // open ONE aid (once) after the first wrong product — the skip-counting
+    // number line OR the repeated-addition chain, strictly ALTERNATING across
+    // mistake-exercises (user request: one aid per exercise, taking turns).
+    // window.__mkAidTurn carries the turn across cards (and lets tests pin it).
     function reveal(){
       if(revealed)return;revealed=true;
+      if(typeof window.__mkAidTurn!=='number')window.__mkAidTurn=0;
+      aidKind=(window.__mkAidTurn++%2===0)?'nl':'chain';
       chainWrap.style.display='';
       titleEl.classList.add('mk-answered');
-      fb('✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! סְפְרִי אֶת הַחִבּוּר — אוֹ לַחֲצִי 🔁 לְהַחְלִיף 💗');
-      renderChain();
+      if(aidKind==='nl'){
+        scroll.style.display='none';   // the chain row stays hidden — the LINE is this card's aid
+        renderNlAid();
+      }else{
+        fb('✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! סְפְרִי אֶת הַחִבּוּר — אוֹ לַחֲצִי 🔁 לְהַחְלִיף 💗');
+        renderChain();
+      }
     }
 
     function solve(box){
@@ -237,18 +268,28 @@ window.EXERCISES.types.mult_champ=(()=>{
       this.classList.remove('ans-err');
     });
     ansInp.addEventListener('keydown',function(e){
-      if(e.key!=='Enter'||done||revealed)return;e.preventDefault();
+      if(e.key!=='Enter'||done)return;e.preventDefault();
+      if(revealed&&aidKind==='chain')return;   // the chain's FINAL box owns the answer now
       const v=parseInt(this.value,10);
       if(this.value===''||isNaN(v)){fb('כִּתְבִי אֶת הַתְּשׁוּבָה 💗');return;}
       if(v===product){this.classList.remove('blink');solve(this);}
       else{
-        this.classList.remove('blink');this.classList.add('ans-err');this.disabled=true;
-        api.wrong(v);   // host: penalty + sad modal (there is no number-line aid to reveal here)
-        reveal();       // open the repeated-addition scaffold beneath the product
+        this.classList.remove('blink');this.classList.add('ans-err');
+        api.wrong(v);          // host: penalty + sad modal
+        const first=!revealed;
+        reveal();              // 1st mistake opens this card's aid (line OR chain, in turn)
+        if(aidKind==='chain'){this.disabled=true;return;}   // chain: its final box takes over
+        // line aid: the SAME product box retries (there is no other box)
+        if(!first)fb('כִּמְעַט! קִפְצִי עַל הַיָּשָׁר בִּקְפִיצוֹת שֶׁל '+(flip?B:A)+' וְסִפְרִי 💗');
+        later(()=>{if(!done){this.value='';this.classList.remove('ans-err');this.classList.add('blink');try{this.focus();}catch(e){}}},1000);
       }
     });
 
-    if(switchBtn)switchBtn.addEventListener('click',function(){flip=!flip;renderChain();});
+    // 🔁 re-renders whichever aid this card revealed (chain re-built / LINE re-configured)
+    if(switchBtn)switchBtn.addEventListener('click',function(){
+      flip=!flip;
+      if(aidKind==='nl')renderNlAid(); else renderChain();
+    });
 
     requestAnimationFrame(()=>{try{ansInp.focus();}catch(e){}});
     window.addEventListener('resize',fit);
@@ -259,7 +300,7 @@ window.EXERCISES.types.mult_champ=(()=>{
   return{
     t:TMK,
     modes:['mulc'],           // the אַלּוּפָה category's multiplication game
-    aidsReveal:'always',      // no number-line aid — the scaffold IS revealed by the exercise itself on a mistake
+    aidsReveal:'always',      // the exercise reveals its OWN aid on a mistake (line/chain, alternating) — no try-first lock
     make(mode){ return mode==='mulc'?makePool(12):[]; },
     mount,
   };

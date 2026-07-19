@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🏰✨ Enchanted Castle — unicorns workshop</title>
+<style>
+/* ── Enchanted twilight castle ───────────────────────────────────────────────
+   Standalone workshop scene for the future unicorns theme. Geometry is the
+   Cinderella-castle CSS-art template (credit:
+   https://dribbble.com/shots/2226079-Disney-World-Cinderella-Castle),
+   re-imagined at dusk: violet sky, orchid roofs, lit golden windows, waving
+   flags, moon + twinkling stars, a pastel rainbow, mist and fairy sparkles.
+   Pure CSS, file://-safe, everything scales in vmin.
+   ──────────────────────────────────────────────────────────────────────── */
+
+html, body {
+  --background: #54398f;
+  margin: 0; height: 100%; overflow: hidden;
+  background: linear-gradient(180deg,
+    #171040 0%, #2c1b62 30%, #54398f 55%,
+    #9a4f9d 75%, #e589a8 92%, #ffc9a3 100%);
+}
+/* soft vignette for depth */
+body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(20,10,45,.35) 100%);
+}
+
+.cartoon {
+  --white: #fff;
+  --light: #f0d4ea;
+  --blue: #b678ea;      /* light roof orchid  */
+  --bluedark: #8b48c8;  /* deep roof violet   */
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vmin; height: 90vmin;
+}
+
+.cartoon div { position: absolute; box-sizing: border-box; }
+
+.b { border: 1vmin solid black; }
+.r { border-radius: 100%; }
+
+.hb::before, .ha::after {
+  content: ""; display: block; position: absolute;
+}
+
+/* ════ FAR SKY — moon, stars, rainbow, halo (painted behind the castle) ════ */
+
+.halo {
+  width: 44%; height: 44%; top: 13%; left: 28%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,190,240,.30), rgba(170,120,235,.14) 55%, transparent 72%);
+  animation: haloPulse 8s ease-in-out infinite alternate;
+}
+@keyframes haloPulse {
+  from { opacity: .65; transform: scale(1); }
+  to   { opacity: 1;   transform: scale(1.06); }
+}
+
+.rainbow { top: 27%; left: 17%; width: 62%; height: 36%; overflow: hidden; opacity: .45; }
+.rainbow::after {
+  content: ""; position: absolute;
+  width: 100%; aspect-ratio: 1; top: 0; left: 0; border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1.2vmin rgba(255,110,150,.60),
+    inset 0 0 0 2.4vmin rgba(255,180,90,.55),
+    inset 0 0 0 3.6vmin rgba(255,235,130,.50),
+    inset 0 0 0 4.8vmin rgba(140,225,160,.45),
+    inset 0 0 0 6.0vmin rgba(120,190,255,.42),
+    inset 0 0 0 7.2vmin rgba(190,140,255,.40);
+  filter: blur(.4vmin);
+}
+
+.stars {
+  width: .45vmin; height: .45vmin; border-radius: 50%;
+  background: #fff; color: #fff;
+  top: 3%; left: 2%;
+}
+.stars-a {
+  box-shadow: 6vmin 2vmin, 13vmin 8vmin 0 .15vmin, 21vmin 1vmin, 29vmin 6vmin,
+    37vmin 3vmin 0 .15vmin, 45vmin 9vmin, 52vmin 2vmin, 60vmin 7vmin 0 .1vmin,
+    67vmin 1vmin, 74vmin 5vmin, 81vmin 2vmin 0 .15vmin, 10vmin 15vmin,
+    26vmin 13vmin, 41vmin 17vmin 0 .1vmin, 57vmin 14vmin, 72vmin 18vmin, 84vmin 12vmin;
+  animation: twinkle 3.4s ease-in-out infinite;
+}
+.stars-b {
+  box-shadow: 3vmin 6vmin, 11vmin 11vmin, 18vmin 4vmin 0 .15vmin, 25vmin 9vmin,
+    33vmin 1vmin, 40vmin 7vmin 0 .1vmin, 49vmin 12vmin, 56vmin 5vmin,
+    64vmin 10vmin 0 .15vmin, 71vmin 3vmin, 79vmin 9vmin, 86vmin 6vmin,
+    16vmin 20vmin, 35vmin 22vmin 0 .1vmin, 63vmin 21vmin, 80vmin 23vmin;
+  animation: twinkle 3.4s ease-in-out infinite;
+  animation-delay: -1.7s;
+}
+@keyframes twinkle { 0%,100% { opacity: .95; } 50% { opacity: .25; } }
+
+.moon {
+  width: 11%; height: 11%; border-radius: 50%;
+  top: 7%; left: 8%;
+  background: radial-gradient(circle at 38% 35%, #fffdf4 0%, #ffeec4 55%, #f5d792 100%);
+  box-shadow: 0 0 4vmin rgba(255,240,190,.9), 0 0 12vmin rgba(255,220,150,.5),
+              0 0 24vmin rgba(255,200,140,.25);
+  animation: moonGlow 6s ease-in-out infinite alternate;
+}
+.moon::after {
+  content: ""; position: absolute;
+  width: 18%; height: 18%; border-radius: 50%;
+  background: rgba(214,178,120,.38); color: rgba(214,178,120,.30);
+  top: 28%; left: 52%;
+  box-shadow: -2.2vmin 2.4vmin 0 .3vmin, 1vmin 3.4vmin 0 -.1vmin, -1vmin -1.6vmin 0 -.15vmin;
+}
+@keyframes moonGlow {
+  from { box-shadow: 0 0 4vmin rgba(255,240,190,.9), 0 0 12vmin rgba(255,220,150,.5), 0 0 24vmin rgba(255,200,140,.25); }
+  to   { box-shadow: 0 0 5vmin rgba(255,240,190,1),  0 0 16vmin rgba(255,220,150,.65), 0 0 30vmin rgba(255,200,140,.35); }
+}
+
+.shooting {
+  width: 13vmin; height: .24vmin; border-radius: .2vmin;
+  top: 7%; left: 55%;
+  background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,0) 100%);
+  opacity: 0;
+  transform: rotate(-14deg) translateX(6vmin);
+  animation: shoot 9s linear infinite;
+}
+@keyframes shoot {
+  0%, 90% { opacity: 0; transform: rotate(-14deg) translateX(6vmin); }
+  92%     { opacity: 1; }
+  99.9%   { opacity: 0; transform: rotate(-14deg) translateX(-40vmin); }
+  100%    { opacity: 0; transform: rotate(-14deg) translateX(6vmin); }
+}
+
+/* ════ SKY PUFFS + CLOUDS (template geometry, twilight tints) ════ */
+
+.sky {
+  color: transparent;      /* hides the template's bg-colored dot clusters; the #fff centers stay as star-dots */
+  width: 9.5%; height: 9.5%;
+  background: #ffe9f6;
+  top: 37.25%; left: 17%;
+  opacity: .5;             /* the old flat cloud-puffs become soft dream-bokeh orbs */
+  filter: blur(.7vmin);
+  box-shadow: 0 0 0 2vmin #f0d4ea, 10.75vmin -17.5vmin 0 -3.5vmin #ffe9f6, 48.75vmin -7vmin 0 -3.5vmin #ffe9f6, -7.75vmin 26.125vmin 0 -3.5vmin #ffe9f6,
+    -8vmin 15vmin, -8vmin 22vmin, -16vmin 15vmin, -16vmin 22vmin, -12vmin 18.5vmin #fff,
+    59vmin 19vmin, 59vmin 26vmin, 51vmin 19vmin, 51vmin 26vmin, 55vmin 22.5vmin #fff,
+    62vmin -17vmin, 62vmin -10vmin, 54vmin -17vmin, 54vmin -10vmin, 58vmin -13.5vmin #fff;
+}
+
+.shadow {
+  width: 53.75%; height: 3%;
+  background: linear-gradient(90deg, rgba(77,52,128,0), rgba(77,52,128,.85) 20% 80%, rgba(77,52,128,0));
+  border-radius: 10vmin;
+  top: 84.5%; left: 22.75%;
+  box-shadow: 0 .5vmin 2.5vmin rgba(150,90,230,.45);
+}
+
+.cloud { width: 80%; height: 20%; overflow: hidden; }
+
+.cloud-1 { top: 64.5%; left: 10%; animation: drift 26s ease-in-out infinite alternate; }
+.cloud-1::after {
+  color: #a487d1;
+  border-radius: 50%;
+  width: 11%; height: 44%;
+  background: #a487d1;
+  bottom: -20%; left: 5%;
+  box-shadow: 5.5vmin -3.5vmin, 5.5vmin 0, 59vmin 0, 50vmin -4vmin 0 3.75vmin;
+}
+
+.cloud-2 { top: 37.33%; left: 50%; animation: drift 34s ease-in-out infinite alternate-reverse; }
+.cloud-2::after {
+  color: #f0d4ea;
+  border-radius: 50%;
+  width: 12%; height: 48%;
+  background: #f0d4ea;
+  bottom: -20%; left: 2%;
+  box-shadow: 9vmin -4.25vmin 0 3.75vmin, 18.5vmin -1.5vmin, 23.5vmin 0.25vmin 0 -2.5vmin;
+}
+@keyframes drift { from { transform: translateX(-1.5vmin); } to { transform: translateX(2.5vmin); } }
+
+/* ════ THE CASTLE (template geometry; orchid roofs, moonlit stone) ════ */
+
+.wall {
+  height: 12.25%; width: 44%;
+  top: 73.75%; left: 28.125%;
+  background: linear-gradient(to bottom, transparent 12.5%, #c9bad5 0), linear-gradient(to right, transparent 50%, #c9bad5 0), linear-gradient(to right, #82739a 50%, transparent 0);
+  background-size: 6% 100%, 6% 100%, 100% 100%;
+  background-position: -3.75vmin 0;
+}
+
+.wall::after {
+  height: 14%; width: 40%;
+  background: var(--bluedark);
+  top: -13%; left: 0;
+  clip-path: polygon(0% 100%, 8% 0%, 100% 0%, 100% 100%);
+}
+
+.tower {
+  height: 19.75%; width: 6.25%;
+  top: 66.25%;
+  clip-path: polygon(12% 0%, 88% 0%, 88% 9%, 84% 9%, 84% 15%, 100% 20%, 100% 32%, 87% 39%, 87% 100%, 12% 100%, 12% 39%, 0% 32%, 0% 20%, 16% 15%, 16% 9%, 12% 9%, 12% 0);
+  background: linear-gradient(to bottom, #ffffff 9%, #d7d1cb 0 15%, #f7f4f0 0 20%, #ffffff 0 32%, #ebe7e1 0 39%, #ffffff 0 45.75%, transparent 0), linear-gradient(to right, #f7f4f0 27%, #ebe7e1 0 65%, #d7d1cb 0);
+}
+
+.tower-1 { left: 33.75%; }
+.tower-2 { left: 51.5%; }
+.tower-3 { width: 7.25%; left: 24.5%; }
+
+.tower-3a {
+  clip-path: polygon(16% 0%, 84% 0%, 84% 9%, 84% 15%, 100% 20%, 100% 32%, 87% 39%, 87% 100%, 12% 100%, 12% 39%, 0% 32%, 0% 20%, 16% 15%, 16% 9%, 16% 0);
+}
+
+.tower-3b { clip-path: polygon(16% 45.75%, 84% 45.75%, 84% 100%, 16% 100%); }
+
+.tower-4 {
+  width: 6.66%; left: 60.125%;
+  clip-path: polygon(16% 29.5%, 84% 30.5%, 84% 100%, 16% 100%);
+  background: linear-gradient(to bottom, #ebe7e1 0 45.75%, transparent 0), linear-gradient(to right, #f7f4f0 27%, #ebe7e1 0 65%, #d7d1cb 0);
+}
+
+.tower-5 {
+  left: 67%; width: 8.66%;
+  clip-path: polygon(0% 20.5%, 100% 20.5%, 100% 39%, 85% 45%, 85% 100%, 15% 100%, 15% 45%, 0% 39%);
+  background: linear-gradient(transparent 30%, #ffffff 0 39%, #c9bad5 0 45%, #ebe7e1 0), linear-gradient(to right, white 50%, #c9bad5 0);
+  background-size: 100% 100%, 40% 100%;
+}
+
+.tower-6 {
+  clip-path: polygon(0% 3%, 100% 3%, 100% 40%, 0% 40%);
+  background-image: linear-gradient(transparent 13%, #ffffff 0 21%, #c9bad5 0), linear-gradient(to right, white 50%, #c9bad5 0);
+  transform: scale(0.85);
+  left: 66.4%; top: 64.8%;
+}
+
+.tower-7 { top: 62.66%; left: 58.5% }
+
+.brick {
+  color: #bfaed0;
+  background: #bfaed0;
+  top: 78%; left: 27.25%;
+  width: 1.35%; height: 0.9%;
+  box-shadow: -0.8vmin -0.85vmin, -0.8vmin 5.25vmin, 0.6vmin 3.5vmin, 1.75vmin 2.6vmin, 7.5vmin -1.8vmin, 7.5vmin 4vmin, 8vmin 4.8vmin, 9.5vmin 0.7vmin, 23.4vmin 1.9vmin, 24.33vmin -0.5vmin, 25.6vmin -1.3vmin, 24.33vmin 4.75vmin, 25.6vmin 5.5vmin, 31.25vmin -1.75vmin, 31.25vmin 5vmin, 32.25vmin 2vmin, 33.5vmin 1.2vmin, 36.75vmin 1vmin, 37.66vmin 1.8vmin, 40vmin -1.5vmin, 40.125vmin 4.25vmin, 41.25vmin 3.4vmin, 36.75vmin 5.25vmin;
+}
+
+/* lit windows — warm gold, breathing glow */
+.window {
+  color: #ffd77e;
+  background: #ffd77e;
+  width: 1.25%; height: 1.25%;
+  top: 70.25%; left: 26.2%;
+  box-shadow: 2.25vmin 0, 8vmin 0, 10.25vmin 0, 24vmin 0, 26.125vmin 0, 4.6vmin -4vmin 0 -0.125vmin, 4.6vmin -4.5vmin 0 -0.125vmin, 12.75vmin -15vmin 0 -0.125vmin, 12.75vmin -15.75vmin 0 -0.125vmin, 12.75vmin -16.5vmin 0 -0.125vmin, 12.75vmin -17.25vmin 0 -0.125vmin, 17vmin -22.125vmin 0 0.125vmin, 17vmin -19.33vmin 0 0.125vmin, 17vmin -18.66vmin 0 0.125vmin,
+    /* small right tower windows */
+    32.125vmin 1.5vmin 0 -0.125vmin, 33.66vmin 1.5vmin 0 -0.125vmin,
+    /* tower windows */
+    0.25vmin -3.66vmin 0 -0.125vmin, 2vmin -3.66vmin 0 -0.125vmin,
+    8.125vmin -3.66vmin 0 -0.125vmin, 9.875vmin -3.66vmin 0 -0.125vmin,
+    24.125vmin -3.66vmin 0 -0.125vmin, 25.75vmin -3.66vmin 0 -0.125vmin
+    ;
+  animation: windowFlicker 4.5s ease-in-out infinite;
+}
+@keyframes windowFlicker {
+  0%, 100% { filter: drop-shadow(0 0 .55vmin rgba(255,200,90,.7)); }
+  50%      { filter: drop-shadow(0 0 1.1vmin rgba(255,210,110,1)); }
+}
+
+.roof {
+  color: #8b48c8;
+  width: 4.75%; height: 5%;
+  border: 2vmin solid transparent;
+  border-top: 8vmin solid transparent;
+  border-bottom: 7.5vmin solid #8b48c8;
+}
+
+.roof-1 {
+  top: 49.125%; left: 34.5%;
+  filter: drop-shadow(-7.8vmin 0) drop-shadow(23.8vmin 0);
+  clip-path: polygon(-400% 0%, 500% 0%, 500% 100%, -400% 100%);
+}
+
+.roof-2 {
+  top: 49.75%; left: 69.75%;
+  filter: drop-shadow(-7.8vmin 4.75vmin) drop-shadow(-8.75vmin -2vmin);
+  clip-path: polygon(-220% 0%, 100% 0%, 100% 200%, -220% 200%);
+}
+
+.flag-pole {
+  width: 0.8%; height: 5.5%;
+  background: #fff5cf; color: #fff5cf;
+  top: 53.25%; left: 27.8%;
+  box-shadow: 7.8vmin 0, 23.75vmin 0, 39.55vmin 0.9vmin, 31.7vmin 5.5vmin, 30.7vmin -1.25vmin, 3.33vmin 4.5vmin 0 -0.125vmin;
+}
+
+.flag-pole-top {
+  width: 0.5%; height: 3%;
+  background: #fff5cf; color: #fff5cf;
+  top: 41%; left: 40.8%;
+  box-shadow: 6.5vmin -14vmin, 6.5vmin -14.5vmin, 14.9vmin -8.5vmin, 8.75vmin -14vmin, 10vmin -14vmin;
+}
+
+.house-roof {
+  left: 30.5%; top: 61.25%;
+  width: 2.8%; height: 3.5%;
+  background: #8b48c8;
+  clip-path: polygon(0% 100%, 40% 0%, 60% 0%, 100% 100%);
+}
+
+.house {
+  background: #cec6be;
+  width: 40%; height: 15%;
+  left: 30.5%; top: 64.75%;
+  clip-path: polygon(0% 0%, 7% 0%, 7% 40%, 15% 40%, 50% 100%, 50% 19%, 91.5% 19%, 91.5% 64%, 90% 68%, 80% 100%, 0% 100%);
+}
+
+.house::after {
+  width: 11.5%; height: 10%;
+  background: #a89f95;
+  top: 20%; left: 76%;
+}
+
+.minar-top {
+  width: 3%; height: 8%;
+  background: #8b48c8;
+  top: 33.5%; left: 56.125%;
+  clip-path: polygon(0% 100%, 45% 0%, 55% 0%, 100% 100%);
+}
+
+.minar-top-2 { top: 27.5%; left: 46.75%; }
+
+.minar {
+  background: #ffffff;
+  width: 3%; height: 25%;
+  left: 46.75%; top: 35.25%;
+  box-shadow: 1vmin 8vmin 0 1.75vmin #ffffff, 8.5vmin 5.5vmin #f7f4f0, 6.5vmin 17vmin #f7f4f0;
+}
+
+.minar::after {
+  width: 145%; height: 1.125vmin;
+  left: 290%; top: 44%;
+  background: #fff;
+}
+
+.main-roof-behind {
+  top: 28%; left: 39.5%;
+  background: #ffeb97;
+  width: 4%; height: 21%;
+  clip-path: polygon(0% 100%, 45% 20%, 45% 0%, 55% 0%, 55% 20%, 100% 100%);
+}
+
+.main-tower-roof {
+  width: 3.75%; height: 14%;
+  top: 15%; left: 50.4%;
+  clip-path: polygon(0% 100%, 42% 35%, 42% 0%, 58% 0%, 58% 35%, 100% 100%);
+  background: linear-gradient(#fff5cf 35%, #ffeb97 0);
+}
+
+.main-roof {
+  width: 11.5%; height: 13%;
+  left: 39.5%; top: 36.5%;
+  clip-path: polygon(0% 100%, 13.5% 48%, 24% 90%, 37% 24%, 37% 0%, 45% 0%, 45% 16%, 64% 16%, 64% 0%, 72% 0%, 72% 24%, 88% 100%);
+  background: linear-gradient(#ffea97 24%, transparent 0), linear-gradient(to right, #b678ea 54%, #8b48c8 0)
+}
+
+.main-top {
+  width: 10.5%; height: 26%;
+  left: 40.5%; top: 41%;
+  background: transparent;
+  clip-path: polygon(50% 0%, 58% 13%, 58% 6%, 63% 6%, 63% 32.5%, 100% 32.5%, 100% 100%, 0% 100%, 0% 32.5%, 37% 32.5%, 37% 6%, 42% 6%, 42% 13%);
+  background-image: linear-gradient(#f7f4f0 45%, #d7d1cb 0 52%, #ebe7e1 0 58%, transparent 0 61%, #f7f4f0 0), linear-gradient(to right, #ebe7e1 50%, #f7f4f0 0);
+  background-size: 100% 100%, 20% 100%;
+  box-shadow: inset 0.75vmin 0 #fff;
+}
+
+.main {
+  width: 18.75%; height: 20%;
+  background: linear-gradient(to right, #f7f4f0 5%, #fdfdfc 0 95%, #f7f4f0 0);
+  top: 64.5%; left: 40.5%;
+}
+
+.main::after {
+  width: 104%; height: 0.5vmin;
+  left: -2%; top: -0.5vmin;
+  background: #dedbd5;
+}
+
+.main-tower {
+  width: 6%; height: 50%;
+  top: 28.5%; left: 49.25%;
+  clip-path: polygon(80% 0%, 20% 0%, 20% 7%, 5% 7%, 5% 11%, 17% 13.5%, 17% 27.5%, 10% 27.5%, 10% 40.5%, 0% 40.5%, 0% 45%, 10% 47%, 10% 100%,
+    90% 100%, 90% 47%, 100% 45%, 100% 40.5%, 90% 40.5%, 90% 27.5%, 83% 27.5%, 83% 13.5%, 95% 11%, 95% 7%, 80% 7%);
+  background: linear-gradient(#f7f4f0 7%, #ffffff 0 11%, #d7d1cb 0 13.5%, transparent 0 40.5%, #ffffff 0 45%, #cccccc 0 47%, #ffffff 0), linear-gradient(to right, transparent 7%, #fff 0 40%, #f7f4f0 0 75%, #d7d1cb 0);
+}
+
+.front-gate {
+  width: 8.5%; height: 18.5%;
+  top: 67.5%; left: 41.5%;
+  background-image: linear-gradient(#fff 33%, transparent 0 75%, #fff 0), linear-gradient(to right, #f7f4f0 11%, #fff 0 89%, #f7f4f0 0);
+}
+
+/* the round window above the gate — lit */
+.front-gate::after {
+  width: 2.5vmin; height: 2.5vmin;
+  background: #ffd77e;
+  border-radius: 50%;
+  transform: translate(-50%, -60%);
+  top: 0; left: 50%;
+  box-shadow: 0 0 1vmin rgba(255,210,120,.85);
+}
+
+/* the gate — warm light spilling out */
+.gate {
+  width: 80%; height: 50%;
+  bottom: 0; left: 10%;
+  background: linear-gradient(180deg, #ffe1a1 0%, #f7b76a 45%, #c97f4e 100%);
+  border-radius: 140% 140% 0 0;
+  border: 0.75vmin solid #f7f4f0;
+  border-bottom: 0;
+  box-shadow: 0 0 1.5vmin rgba(255,190,110,.55);
+}
+
+.balcony {
+  width: 36%; height: 20%;
+  background: #ffd77e; color: #ffd77e;
+  border-radius: 100% 100% 0 0;
+  top: 12.5%; left: 15%;
+  box-shadow: 2.66vmin 0, 1.33vmin 2vmin 0 -0.25vmin #f7f4f0, 7.25vmin -21.75vmin 0 -0.5vmin;
+}
+
+.balcony::after {
+  width: 60%; height: 30%;
+  bottom: -85%;
+  background: #f7f4f0;
+  box-shadow: 3.75vmin 0 #f7f4f0;
+}
+
+.triangle {
+  width: 100%; height: 61%;
+  top: -61%;
+  clip-path: polygon(10% 100%, 33% 25%, 33% 0%, 40% 0%, 40% 15%, 60% 15%, 60% 0%, 67% 0%, 67% 25%, 90% 100%);
+  background: linear-gradient(#ffeb98 25%, transparent 0), linear-gradient(to right, #b678ea 50%, #8b48c8 0);
+}
+
+.triangle::after {
+  width: 100%; height: 100%;
+  background: #fff;
+  clip-path: polygon(25% 100%, 50% 40%, 75% 100%);
+}
+
+.front-poles {
+  width: 10%; height: 25%;
+  background: #ffeb98;
+  top: -25%;
+  box-shadow: 6.85vmin 0 #ffeb98;
+}
+
+/* rose-pink flags, fluttering */
+.flag {
+  width: 4%; height: 3%;
+  background: #ff77b9;
+  clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+  transform-origin: 0 50%;
+  animation: wave 1.6s ease-in-out infinite;
+}
+@keyframes wave { 0%, 100% { transform: skewY(4deg); } 50% { transform: skewY(-4deg); } }
+
+.flag-1 { top: 53.6%; left: 28%; }
+.flag-2 { left: 62%; top: 53.6%; animation-delay: -.5s; }
+.flag-3 { left: 71.75%; top: 54.33%; animation-delay: -1s; }
+.flag-4 { top: 15.25%; left: 52.25%; background: #ffd36e; animation-delay: -.3s; }
+
+.room-1 {
+  width: 3%; height: 9%;
+  top: 49%; left: 39.5%;
+  clip-path: polygon(0% 4%, 100% 4%, 100% 100%, 30% 100%, 0% 80%);
+  background: linear-gradient(white 80%, #f6f4ef 0);
+}
+
+.room-2 {
+  width: 3%; height: 15%;
+  top: 45%; left: 57.25%;
+  clip-path: polygon(0% 56%, 39% 29%, 39% 0%, 62% 0%, 60% 29%, 100% 56%, 100% 86%, 50% 100%, 0% 86%);
+  background: linear-gradient(#fff5cf 29%, #8b48c8 0 56%, transparent 0 86%, #f6f4ef 0), linear-gradient(to right, #fff 72%, #d7d1ca 0);
+}
+
+.window-curved {
+  width: 0.75%; height: 1.75%;
+  background: #ffd77e; color: #ffd77e;
+  border-radius: 100% 100% 0 0;
+  top: 60%; left: 50.75%;
+  box-shadow: 2.125vmin -2.75vmin, 1vmin -6vmin;
+  animation: windowFlicker 4.5s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.room-3 {
+  width: 2%; height: 13%;
+  top: 24%; left: 52.7%;
+  clip-path: polygon(0% 35%, 50% 0%, 100% 35%, 100% 85%, 50% 100%, 0% 85%);
+  background: linear-gradient(#fff5cf 35%, #fff 0 85%, #d7d1cb 0)
+}
+
+.room-3::after {
+  width: 50%; height: 17%;
+  top: 45%; left: 25%;
+  background: #ffd77e;
+  box-shadow: 0 0 .8vmin rgba(255,210,120,.85);
+}
+
+/* ════ NEAR MAGIC — mist, fireflies, fairy sparkles (over the castle) ════ */
+
+.mist {
+  width: 70%; height: 9%;
+  top: 76.5%; left: 15%; border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(216,170,255,.42), transparent 70%);
+  filter: blur(1vmin);
+  animation: mistPulse 7s ease-in-out infinite alternate;
+}
+@keyframes mistPulse {
+  from { opacity: .35; transform: translateX(-1vmin); }
+  to   { opacity: .6;  transform: translateX(1vmin); }
+}
+
+.fireflies {
+  width: .7vmin; height: .7vmin; border-radius: 50%;
+  background: #ffe28a; color: #ffe28a;
+  top: 74%; left: 30%;
+  box-shadow: 6vmin 3vmin, 18vmin -2vmin 0 -.1vmin, 30vmin 2vmin, 42vmin -1vmin 0 -.1vmin;
+  filter: drop-shadow(0 0 .6vmin rgba(255,220,120,.9));
+  animation: fireflyFloat 5s ease-in-out infinite alternate;
+}
+@keyframes fireflyFloat {
+  0%   { transform: translate(0, 0); opacity: .55; }
+  50%  { opacity: 1; }
+  100% { transform: translate(1.5vmin, -2vmin); opacity: .7; }
+}
+
+.sparkle {
+  background: #fff;
+  clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+  filter: drop-shadow(0 0 1vmin rgba(255,255,255,.9));
+  opacity: 0;
+  animation: sparklePop 5.2s ease-in-out infinite;
+}
+@keyframes sparklePop {
+  0%   { opacity: 0; transform: scale(.15) rotate(0deg); }
+  8%   { opacity: 1; transform: scale(1)   rotate(90deg); }
+  16%  { opacity: 0; transform: scale(.2)  rotate(180deg); }
+  100% { opacity: 0; transform: scale(.2)  rotate(180deg); }
+}
+.sp1 { width: 2.4vmin; height: 2.4vmin; top: 24%; left: 31%; }
+.sp2 { width: 1.8vmin; height: 1.8vmin; top: 11%; left: 49%; background: #ffe6a8; animation-delay: .9s; }
+.sp3 { width: 2.1vmin; height: 2.1vmin; top: 40%; left: 70%; background: #ffc2e6; animation-delay: 1.7s; }
+.sp4 { width: 1.5vmin; height: 1.5vmin; top: 56%; left: 23%; animation-delay: 2.6s; }
+.sp5 { width: 2.6vmin; height: 2.6vmin; top: 33%; left: 60%; background: #ffd9f0; animation-delay: 3.4s; }
+.sp6 { width: 1.7vmin; height: 1.7vmin; top: 62%; left: 45%; background: #ffedb0; animation-delay: 4.3s; }
+
+/* ════ CLICK FIREWORKS — a rocket rises to the click point and bursts ════
+   Elements are spawned on <body> (outside .cartoon, so no absolute override),
+   positioned fixed in viewport coords, and removed when their animation ends. */
+.fw-rocket {
+  position: fixed; width: 3px; height: 18px; border-radius: 2px;
+  margin-left: -1.5px; pointer-events: none; z-index: 50;
+  background: linear-gradient(180deg, #fff, #ffd36e 60%, transparent);
+  box-shadow: 0 0 6px rgba(255,230,170,.9);
+}
+.fw-flash {
+  position: fixed; width: 110px; height: 110px; border-radius: 50%;
+  margin: -55px 0 0 -55px; pointer-events: none; z-index: 49;
+  background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,210,240,.5) 40%, transparent 70%);
+}
+.fw-spark {
+  position: fixed; width: 6px; height: 6px; border-radius: 50%;
+  margin: -3px 0 0 -3px; pointer-events: none; z-index: 51;
+}
+.fw-spark.fw-star {
+  width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 0;
+  clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+}
+</style>
+</head>
+<body>
+
+<div class="cartoon hb">
+  <!-- far sky — painted behind the castle -->
+  <div class="halo"></div>
+  <div class="rainbow"></div>
+  <div class="stars stars-a"></div>
+  <div class="stars stars-b"></div>
+  <div class="moon"></div>
+  <div class="shooting"></div>
+
+  <div class="sky r"></div>
+  <div class="cloud cloud-1 ha"></div>
+  <div class="cloud cloud-2 ha"></div>
+  <div class="shadow"></div>
+  <div class="minar-top minar-top-2"></div>
+  <div class="minar-top"></div>
+  <div class="minar ha"></div>
+  <div class="tower tower-5 tower-6 tower-7"></div>
+
+  <div class="house ha"></div>
+
+  <div class="main-roof-behind"></div>
+  <div class="main-roof ha"></div>
+  <div class="main-top"></div>
+
+  <div class="flag flag-4"></div>
+  <div class="main-tower-roof"></div>
+  <div class="main-tower"></div>
+  <div class="main ha"></div>
+  <div class="tower tower-3 tower-3a"></div>
+  <div class="wall ha"></div>
+  <div class="tower tower-1"></div>
+  <div class="tower tower-2"></div>
+  <div class="tower tower-3 tower-3b"></div>
+  <div class="tower tower-4"></div>
+  <div class="tower tower-5 tower-6"></div>
+  <div class="tower tower-5"></div>
+  <div class="brick"></div>
+
+  <div class="room-1"></div>
+  <div class="room-2"></div>
+  <div class="room-3 ha"></div>
+  <div class="window"></div>
+  <div class="window-curved"></div>
+  <div class="roof roof-1"></div>
+  <div class="roof roof-2"></div>
+  <div class="flag flag-1"></div>
+  <div class="flag flag-2"></div>
+  <div class="flag flag-3"></div>
+  <div class="flag-pole-top"></div>
+  <div class="flag-pole"></div>
+  <div class="house-roof"></div>
+  <div class="front-gate ha">
+    <div class="gate"></div>
+    <div class="balcony ha"></div>
+    <div class="triangle ha"></div>
+    <div class="front-poles"></div>
+  </div>
+
+  <!-- near magic — over the castle -->
+  <div class="mist"></div>
+  <div class="fireflies"></div>
+  <div class="sparkle sp1"></div>
+  <div class="sparkle sp2"></div>
+  <div class="sparkle sp3"></div>
+  <div class="sparkle sp4"></div>
+  <div class="sparkle sp5"></div>
+  <div class="sparkle sp6"></div>
+</div>
+
+<script>
+/* Click fireworks: pointerdown anywhere → a rocket rises from the ground to the
+   click point and bursts into a fading spark shower (scene palette). Uses the
+   Web Animations API; every node removes itself when its animation finishes.
+   Test hook: window.__fw.launch(x,y) / window.__fw.sparks() */
+(function(){
+  var PAL=['#ff77b9','#ffd36e','#b678ea','#6fe6d8','#ffffff','#ff9d6e'];
+  var active=0;
+
+  function mk(cls,x,y){
+    var d=document.createElement('div');
+    d.className=cls;
+    d.style.left=x+'px'; d.style.top=y+'px';
+    document.body.appendChild(d);
+    return d;
+  }
+
+  function burst(x,y){
+    var flash=mk('fw-flash',x,y);
+    flash.animate(
+      [{opacity:.95,transform:'scale(.2)'},{opacity:0,transform:'scale(1.4)'}],
+      {duration:420,easing:'ease-out'}
+    ).onfinish=function(){flash.remove();};
+
+    var n=26+((Math.random()*10)|0);
+    for(var i=0;i<n;i++){
+      var col=PAL[(Math.random()*PAL.length)|0];
+      var s=mk('fw-spark',x,y);
+      if(Math.random()<.2){                       // every ~5th spark is a ✦ star
+        s.classList.add('fw-star');
+        s.style.background=col;
+        s.style.filter='drop-shadow(0 0 4px '+col+')';
+      }else{
+        s.style.background=col;
+        s.style.boxShadow='0 0 6px '+col;
+      }
+      var ang=(i/n)*Math.PI*2+Math.random()*.25;
+      var r=60+Math.random()*90;
+      var dx=Math.cos(ang)*r, dy=Math.sin(ang)*r;
+      var fall=40+Math.random()*55;               // gravity droop at the tail
+      s.animate([
+        {transform:'translate(0,0)',opacity:1},
+        {transform:'translate('+(dx*.85)+'px,'+(dy*.85)+'px)',opacity:1,offset:.55},
+        {transform:'translate('+dx+'px,'+(dy+fall)+'px)',opacity:0}
+      ],{duration:950+Math.random()*450,easing:'cubic-bezier(.1,.65,.3,1)'}
+      ).onfinish=(function(el){return function(){el.remove();};})(s);
+    }
+  }
+
+  function launch(x,y){
+    if(active>=8)return;                          // cap runaway click storms
+    active++; setTimeout(function(){active--;},2000);
+    y=Math.min(y,innerHeight-60);                 // always burst above the ground
+    var rocket=mk('fw-rocket',x,innerHeight);
+    var dur=Math.min(700,300+(innerHeight-y)*.45);
+    rocket.animate(
+      [{transform:'translateY(0)'},{transform:'translateY('+(y-innerHeight)+'px)'}],
+      {duration:dur,easing:'cubic-bezier(.25,.6,.35,1)'}
+    ).onfinish=function(){rocket.remove();burst(x,y);};
+  }
+
+  document.addEventListener('pointerdown',function(e){launch(e.clientX,e.clientY);});
+  window.__fw={launch:launch,
+    sparks:function(){return document.querySelectorAll('.fw-spark').length;}};
+})();
+</script>
+
+</body>
+</html>

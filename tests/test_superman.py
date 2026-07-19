@@ -191,6 +191,48 @@ class TestCoinMul:
         page.click("#colm-chk")
         page.wait_for_function("report[0].gotCorrect === true", timeout=TIMEOUT)
 
+    def test_coin_mul_input_focused_on_load(self, page):
+        """The answer box is focused when the exercise loads (so typing / the mobile
+        numpad work at once) — not the ＋ button. SPACE still adds a coin."""
+        self._enter_cm(page, 20)
+        assert page.evaluate("document.activeElement && document.activeElement.id === 'colm-ans'"), \
+            "the answer input must be focused on load"
+
+    def test_coin_mul_mistake_opens_xcoin_number_line(self, page):
+        """A wrong count opens the multiplication number line with jumps of the
+        coin value (₪5 → 0,5,10,15,20,25, one jump past the target) so she can
+        skip-count. Hidden until the mistake."""
+        self._enter_cm(page, 20)              # ₪5 default → need 4
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'"), \
+            "the number line must be hidden until a mistake"
+        page.fill("#colm-ans", "9")
+        page.click("#colm-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display !== 'none'"), \
+            "a wrong count must reveal the number line"
+        ticks = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert ticks == [0, 5, 10, 15, 20, 25], f"jumps of ₪5 up to target+5 expected, got {ticks}"
+
+    def test_coin_mul_space_adds_coin_and_hops_the_line(self, page):
+        """After the line appears (a mistake), ONE space press does BOTH: adds a
+        coin AND advances the rider — once the sad modal clears (space is
+        suppressed while it shows, like everywhere in the game)."""
+        self._enter_cm(page, 20)
+        page.fill("#colm-ans", "9"); page.click("#colm-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        page.wait_for_function(
+            "getComputedStyle(document.getElementById('sad-ov')).display==='none'", timeout=TIMEOUT)
+        page.eval_on_selector("#colm-ans", "el=>el.focus()")
+        coins0 = page.evaluate("document.querySelectorAll('.colm-coin').length")
+        arcs0 = page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length")
+        page.keyboard.press("Space"); page.wait_for_timeout(150)
+        assert page.evaluate("document.querySelectorAll('.colm-coin').length") == coins0 + 1, \
+            "space must add a coin"
+        assert page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length") == arcs0 + 1, \
+            "space must ALSO hop the number-line rider (two actions, one press)"
+
 
 
 
@@ -313,3 +355,27 @@ class TestBagelCost:
         page.click("#colm-chk")
         page.wait_for_function(f"score === {before + 15}", timeout=TIMEOUT)
         assert page.evaluate("report[0].gotCorrect === true")
+
+    def test_bagel_cost_mistake_opens_x5_number_line(self, page):
+        """A wrong total opens the multiplication number line with jumps of ₪5
+        (0,5,10,… one jump past the total) so she can skip-count the cost. It's
+        hidden until the mistake."""
+        self._enter_bagel(page, 4)                    # 4 × ₪5 = 20
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'"), \
+            "the number line must be hidden until a mistake"
+        page.fill("#colm-ans", "18")                  # wrong
+        page.click("#colm-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display !== 'none'"), \
+            "a wrong total must reveal the number line"
+        ticks = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert ticks == [0, 5, 10, 15, 20, 25], f"jumps of 5 up to total+5 expected, got {ticks}"
+
+    def test_bagel_input_focused_on_load(self, page):
+        """The answer box is focused when the exercise loads (so typing / the mobile
+        numpad work at once) — not the ＋ button."""
+        self._enter_bagel(page, 7)
+        assert page.evaluate("document.activeElement && document.activeElement.id === 'colm-ans'"), \
+            "the answer input must be focused on load"

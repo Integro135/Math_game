@@ -103,8 +103,18 @@ window.EXERCISES.types.bagel_cost=(()=>{
     // ＋ must NEVER disable AT the correct count — that would reveal the answer. Allow a generous
     // overshoot past it (like the coin-counting exercise), capping only well beyond.
     const maxCoins=bagels+3;
-    let count=0, done=false;
+    let count=0, done=false, nlShown=false;
     const timers=[]; const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
+
+    // on a MISTAKE: open the multiplication number line with jumps of ₪5, so she
+    // can skip-count the cost (5, 10, 15 …). Ends one jump past the total so the
+    // last tick never spells the answer. (Revealed once; loadProblem re-hides it
+    // on the next card since TBC is in core.js's hide-the-line list.)
+    function revealMulNL(){
+      if(nlShown)return;nlShown=true;
+      const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='';
+      if(typeof NL!=='undefined'){NL.configure(total+COIN,COIN);NL.init(0);}
+    }
 
     root.innerHTML=`
       <div class="colm-root">
@@ -157,9 +167,10 @@ window.EXERCISES.types.bagel_cost=(()=>{
         api.solved();
       }else{
         inp.classList.remove('blink');inp.classList.add('ans-err');
-        if(v<total)fb('עוֹד קְצָת! סִפְרִי בְּחֲמִשּׁוֹת: 5, 10, 15… 🪙');
-        else fb('יוֹתֵר מִדַּי! נַסִּי מִסְפָּר קָטָן יוֹתֵר 💗');
+        if(v<total)fb('עוֹד קְצָת! סִפְרִי בְּחֲמִשּׁוֹת עַל הַיָּשָׁר: 5, 10, 15… 💰');
+        else fb('יוֹתֵר מִדַּי! סִפְרִי בְּחֲמִשּׁוֹת עַל הַיָּשָׁר 💗');
         api.wrong(v);
+        revealMulNL();          // help: the ×5 skip-counting line
         later(()=>{if(!done){inp.value='';inp.classList.remove('ans-err');inp.classList.add('blink');inp.focus();}},1000);
       }
     }
@@ -175,7 +186,9 @@ window.EXERCISES.types.bagel_cost=(()=>{
     document.addEventListener('keydown',onSpace);
 
     render();
-    requestAnimationFrame(()=>{addBtn.focus();});
+    // focus the ANSWER box (not ＋) so typing / the mobile numpad works at once;
+    // SPACE still drops a coin via the document handler regardless of focus
+    requestAnimationFrame(()=>{try{inp.focus();}catch(e){}});
 
     return function cleanup(){document.removeEventListener('keydown',onSpace);timers.forEach(clearTimeout);root.innerHTML='';};
   }

@@ -155,8 +155,13 @@ This is the largest file and owns nearly all gameplay state and logic.
   overrides persisted in `localStorage.giftGoals`. A game with **level 0 / empty
   has no prize** (absent from `GIFT_GOALS`, no 🎁 badge, no gift screen).
   `setGiftGoal(mode, val)` saves an override (0 clears it, capped at 1000) and
-  refreshes the picker + indicator; `renderPrizeConfig()` renders one editable
-  input per game in the settings modal (`#prize-row`). The 🎁 badge is appended
+  refreshes the picker + indicator. **Prize COUNT per win**: `GIFT_COUNTS` /
+  `giftCount(mode)` (default 1, persisted in `localStorage.giftCounts` via
+  `setGiftCount`) says how many prizes a winning set awards; counts > 1 show as
+  `🎁×N` on the picker button + header indicator, are written on the end screen
+  (`.end-gift-count` — "זָכִית בְּ־N פְּרָסִים!") and recorded per history entry
+  (`prizes`). `renderPrizeConfig()` renders the goal input + the 🎁× count input
+  per game in the settings modal (`#prize-row`). The 🎁 badge is appended
   to a picker button by `renderModePicker` only when `GIFT_GOALS[id] > 0` (the
   labels in `DIFFICULTY_GROUPS` no longer hard-code 🎁). `GIFT_MODE_LABELS`
   carries `{br, mx, sup}`.

@@ -9,7 +9,8 @@
    Tapping ANY answer box — core #ans / ans1-3, chain sub-answers
    (.tx-sub-inp), column-exercise digit cells and every minigame input
    (they all carry .ans-inp / .tx-sub-inp) — pops a minimal in-game
-   keypad: 1-9, 0, ⌫, ✔ (nothing more). Every answer box also gets
+   keypad, COMPACT: three rows only — 1-5 / 6-0 / [space ⌫ ✔] (the
+   space bar spans 3 of the 5 columns). Every answer box also gets
    inputmode="none", so the OS keyboard NEVER opens (tap or programmatic
    focus — it used to cover half the game); the pad fully replaces it,
    appearing on the auto-focus each problem gives its first box.
@@ -20,6 +21,10 @@
    preview) runs exactly as if typed; ✔ dispatches an Enter keydown so
    the box's own Enter behaviour (checkAns / focus-next-box / module
    check) runs unchanged, and the pad follows the focus to the next box.
+   The SPACE bar re-dispatches a real Space keydown from the focused
+   box, so every document-level desktop-spacebar behaviour runs as-is:
+   hopping the number-line rider (columns/tens/big/kang), feeding the
+   cookie jar, dropping a coin (coin_mul / bagel_cost / ice_cream).
 
    The pad element lives INSIDE .wrap: the background click-routers all
    whitelist '.wrap,button,input,…', so pad taps never reach the scene
@@ -37,18 +42,28 @@
 
   var SEL = 'input.ans-inp,input.tx-sub-inp';
   var pad = null, active = null;
+  /* a tap OUTSIDE the pad closes it — but only from a comfortable distance:
+     taps within ~2.5cm of the pad's edge (mid-solve stray fingers, nearby
+     controls) keep it open; only a clearly-away tap (3cm+) closes it.
+     1cm ≈ 37.8 CSS px. */
+  var CLOSE_DIST = 2.5 * 37.8;   // ≈ 94px
 
   function build() {
     if (pad) return pad;
     pad = document.createElement('div');
     pad.id = 'game-numpad';
-    pad.dir = 'ltr';                               // 1-2-3 rows read left-to-right
-    var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✔'], i;
+    pad.dir = 'ltr';                               // digit rows read left-to-right
+    /* grid auto-flow over 5 columns → row1 1-5, row2 6-0, row3 space(×3) ⌫ ✔ */
+    var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ' ', '⌫', '✔'], i;
     for (i = 0; i < keys.length; i++) (function (k) {
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'np-key' + (k === '✔' ? ' np-ok' : k === '⌫' ? ' np-del' : '');
-      b.textContent = k;
+      b.className = 'np-key' + (k === '✔' ? ' np-ok' : k === '⌫' ? ' np-del' :
+                                k === ' ' ? ' np-space' : '');
+      if (k === ' ') {          // the space BAR: blank like a real keyboard's —
+        b.textContent = '';     // CSS draws a centred dash on it
+        b.setAttribute('aria-label', 'רֶוַח — מַזִּיז אֶת יַשַׁר הַמִּסְפָּרִים');
+      } else b.textContent = k;
       /* act on pointerdown and swallow it — focus stays in the answer box */
       b.addEventListener('pointerdown', function (ev) {
         ev.preventDefault(); ev.stopPropagation(); press(k);
@@ -96,6 +111,16 @@
   function press(k) {
     if (!active || !document.contains(active) || active.disabled || active.readOnly) return;
     active.focus();
+    if (k === ' ') {
+      /* the desktop SPACEBAR twin: re-dispatch a REAL Space keydown from the
+         focused answer box (bubbles to document, activeElement = the box —
+         exactly the physical-keyboard situation), so every existing handler
+         runs unchanged: main.js hops the number-line rider / feeds the jar,
+         and the coin exercises (coin_mul/bagel_cost/ice_cream) drop a coin. */
+      active.dispatchEvent(new KeyboardEvent('keydown',
+        { key: ' ', code: 'Space', bubbles: true, cancelable: true }));
+      return;
+    }
     if (k === '✔') {
       active.dispatchEvent(new KeyboardEvent('keydown',
         { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }));
@@ -126,18 +151,27 @@
   document.addEventListener('pointerdown', function (e) {
     var t = e.target;
     if (t && t.closest && t.closest('#game-numpad')) return;
-    if (t && t.matches && t.matches(SEL)) {
+    /* only a LIVE box adopts the pad — tapping a disabled/readonly cell (e.g. a
+       column's not-yet-active tens digit) must not steal `active` (a disabled
+       `active` used to make the focusout pass close the pad) */
+    if (t && t.matches && t.matches(SEL) && !t.disabled && !t.readOnly) {
       t.inputMode = 'none';
       show(t);
       return;
     }
-    /* tapping ELSEWHERE no longer closes the pad — it stays open (user request:
-       the dedicated keypad must persist while solving, e.g. when tapping an
-       exercise's shape/tiles/items). The ONE exception: if the tap opened a
-       blocking screen (settings/report/parent-gate), close the pad once it's up
-       (re-checked after the tap's own click handler runs — this also covers the
-       case where the input was already blurred, so no focusout fires). */
-    if (isOpen()) setTimeout(function () { if (blockingScreenUp()) hide(); }, 60);
+    /* tapping OUTSIDE the pad closes it — but with a FORGIVING margin: a tap
+       landing within ~2.5cm of the pad's edge (a stray finger, a control right
+       beside it) keeps it open; only a clearly-away tap (3cm+) hides it. A
+       near tap that opened a blocking screen (settings/report/parent-gate)
+       still closes it (re-checked after the tap's own click handler runs —
+       also covers the input-already-blurred case where no focusout fires). */
+    if (isOpen()) {
+      var r = pad.getBoundingClientRect();
+      var dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
+      var dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+      if (Math.sqrt(dx * dx + dy * dy) > CLOSE_DIST) { hide(); return; }
+      setTimeout(function () { if (blockingScreenUp()) hide(); }, 60);
+    }
   }, true);
 
   /* each problem's auto-focus opens the pad (and follows Enter-chains) */

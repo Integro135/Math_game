@@ -27,6 +27,30 @@ function setGiftGoal(m,val){
   if(typeof updateGiftIndicator==='function')updateGiftIndicator();
 }
 const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',b20:'גָּשֵׁר 20',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן',mulc:'אַלּוּפָה'};
+/* ── Prize COUNT per win ─────────────────────────────────────────────────────
+   How many prizes a winning set awards for each game (default 1). Parent-
+   configurable from the settings prizes tab (the ×N input next to the goal),
+   persisted in localStorage 'giftCounts'. GIFT_COUNTS holds ONLY counts ≥ 2
+   (1 = the plain single prize), so giftCount(mode) is the single read point. */
+const GIFT_COUNTS={};
+function _savedGiftCounts(){try{return JSON.parse(localStorage.getItem('giftCounts')||'{}')||{};}catch(e){return {};}}
+function _rebuildGiftCounts(){
+  for(const k in GIFT_COUNTS)delete GIFT_COUNTS[k];
+  const ov=_savedGiftCounts();
+  for(const k in ov){const v=parseInt(ov[k],10);if(v>=2)GIFT_COUNTS[k]=Math.min(99,v);}
+}
+_rebuildGiftCounts();
+function giftCount(m){return GIFT_COUNTS[m]||1;}
+/* set a game's per-win prize count (1..99; 1/empty = the default single) */
+function setGiftCount(m,val){
+  const ov=_savedGiftCounts();
+  let v=parseInt(val,10);if(isNaN(v)||v<1)v=1;if(v>99)v=99;
+  ov[m]=v;
+  try{localStorage.setItem('giftCounts',JSON.stringify(ov));}catch(e){}
+  _rebuildGiftCounts();
+  if(typeof renderModePicker==='function')renderModePicker();   // refresh the 🎁×N badges
+  if(typeof updateGiftIndicator==='function')updateGiftIndicator();
+}
 function updateGiftIndicator(){
   const ind=document.getElementById('gift-indicator');
   if(!ind)return;
@@ -34,7 +58,8 @@ function updateGiftIndicator(){
   if(!goal){ind.style.display='none';return;}
   ind.style.display='flex';
   const nxt=document.getElementById('gift-next');
-  if(nxt)nxt.textContent=`🎁 המתנה הבאה: ${goal}`;
+  const c=giftCount(mode);
+  if(nxt)nxt.textContent=`🎁${c>1?'×'+c:''} המתנה הבאה: ${goal}`;
 }
 
 /* ── State ── */
@@ -110,8 +135,10 @@ function renderModePicker(){
     h+=`<div class="tier-modes${g.id===tier?' tier-active':''}" data-tier="${g.id}">`;
     for(const md of g.modes){
       const idArg=typeof md.id==='string'?`'${md.id}'`:md.id;
-      // a 🎁 badge appears only when this game currently has a prize set
-      const lbl=md.label+(GIFT_GOALS[md.id]>0?' 🎁':'');
+      // a 🎁 badge appears only when this game currently has a prize set;
+      // a configured multi-prize win shows the multiplier (🎁×3)
+      const _gc=giftCount(md.id);
+      const lbl=md.label+(GIFT_GOALS[md.id]>0?(' 🎁'+(_gc>1?'×'+_gc:'')):'');
       h+=`<button class="lvl-btn${md.id===mode?' active':''}" id="lb${md.id}" onclick="setMode(${idArg})">${lbl}</button>`;
     }
     h+='</div>';
@@ -133,8 +160,9 @@ function pickSetTab(t){
   else if(t==='prizes')renderPrizeConfig();
   _applySetTab();
 }
-/* prize-level editor (settings): one row per game with a 0–1000 input;
-   0 / empty clears that game's prize (see setGiftGoal). */
+/* prize-level editor (settings): one row per game — the 0–1000 goal input
+   (0 / empty clears that game's prize, see setGiftGoal) + the 🎁× per-win
+   prize COUNT input (1 = a single prize, see setGiftCount). */
 function renderPrizeConfig(){
   const row=document.getElementById('prize-row');
   if(!row)return;
@@ -144,8 +172,13 @@ function renderPrizeConfig(){
       const idArg=typeof md.id==='string'?`'${md.id}'`:md.id;
       const v=GIFT_GOALS[md.id]>0?GIFT_GOALS[md.id]:'';
       h+=`<label class="prize-item"><span class="prize-lbl">${md.label}</span>`+
-         `<input type="text" inputmode="numeric" class="prize-inp" id="pz${md.id}" value="${v}" placeholder="0"`+
-         ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4);setGiftGoal(${idArg},this.value)"></label>`;
+         `<span class="prize-ctl">`+
+         `<input type="text" inputmode="numeric" class="prize-inp" id="pz${md.id}" value="${v}" placeholder="0" title="גֹּבַהּ הַפְּרָס (0 = אֵין)"`+
+         ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4);setGiftGoal(${idArg},this.value)">`+
+         `<span class="prize-x">🎁×</span>`+
+         `<input type="text" inputmode="numeric" class="prize-inp prize-cnt" id="pc${md.id}" value="${giftCount(md.id)}" title="כַּמָּה פְּרָסִים בִּזְכִיָּה"`+
+         ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2);setGiftCount(${idArg},this.value)">`+
+         `</span></label>`;
     }
   }
   row.innerHTML=h;
@@ -227,7 +260,7 @@ function loadProblem(){
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
   if(ptype===TWP){wpOp=problems[idx].op||'sub';}
-  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL?num1:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -242,10 +275,12 @@ function loadProblem(){
    :ptype===TTS?('➕ חַבְּרִי שְׁלוֹשָׁה מִסְפָּרִים שֶׁיַּחַד הֵם '+num1+' — בְּלִי 0 וּבְלִי 10!')
    :ptype===THF?'✂️ חַלְּקִי שָׁווֶה בְּשָׁווֶה בֵּין שְׁתֵּי הַחֲבֵרוֹת — כַּמָּה תְּקַבֵּל כָּל אַחַת?'
    :ptype===TPL?'🍽️ קְבוּצוֹת שָׁווֹת! סִפְרִי אֶת כָּל הַצַּלָּחוֹת — כַּמָּה בְּסַךְ הַכֹּל?'
+   :ptype===TMU?'❓ אֵיזֶה מִסְפָּר חָסֵר בַּכֶּפֶל? קִפְצִי עַל הַיָּשָׁר וְסִפְרִי אֶת הַקְּפִיצוֹת!'
    :ptype===TMK?'🏆 כַּמָּה זֶה הַכֶּפֶל? כִּתְבִי אֶת הַתְּשׁוּבָה — אַתְּ אַלּוּפָה!'
    :ptype===TMC?'✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! אֶפְשָׁר לְמַלֵּא אֶת הַבֵּינַיִם — אוֹ לִכְתֹּב אֶת הַתְּשׁוּבָה בַּסּוֹף!'
    :ptype===TCM?('🪙 כַּמָּה מַטְבְּעוֹת שֶׁל '+(num2||5)+' צְרִיכִים? הוֹסִיפִי וְסִפְרִי!')
    :ptype===TBC?'🥨 כַּמָּה זֶה עוֹלֶה? הוֹסִיפִי מַטְבְּעוֹת שֶׁל 5 וְסַכְּמִי!'
+   :ptype===TIC?('🍦 יֵשׁ לָהּ ₪'+num1+' — קְנִי גְּלִידוֹת וְסִפְרִי כַּמָּה אֶפְשָׁר לִקְנוֹת!')
    :ptype===TBG?'💯 רַק סִפְרַת הָאֲחָדוֹת מִשְׁתַּנָּה — הָעֲשָׂרוֹת נִשְׁאָרוֹת!'
    :ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
    :ptype===TDA?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁווֶה לַתְּשׁוּבָה!'
@@ -301,9 +336,17 @@ function loadProblem(){
   // TCM (coin multiplication) / TBC (bagel cost) / TPG (polygon sides) / TMC
   // (multiplication chain) / TMK (אַלּוּפָה multiplication): the module owns its
   // own scaffold; no number-line aid
-  if(ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL){
+  if(ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC){
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
     const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='none';
+    chainGnMode=false;tdaJarMode=false;}
+  // TMU (multiplication with one unknown, a × □ = product): the aid is the
+  // SKIP-COUNTING number line — jumps of `a` over 0..a·5 — and it is shown
+  // from the START (user request: the aid must be there BEFORE any mistake).
+  if(ptype===TMU){
+    const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
+    const nlp=document.getElementById('nl-panel');
+    if(nlp){nlp.style.display='';NL.configure(num1*5,num1);NL.init(0);}
     chainGnMode=false;tdaJarMode=false;}
   // TBG (big ± small): the number line is WINDOWED around the big number —
   // num1 sits in the middle, with 10 below and 10 above (e.g. 75 → 65..85),
@@ -326,7 +369,7 @@ function loadProblem(){
     if(nlp){nlp.style.display='';NL.configure(num1+num2+_thStep,_thStep,num1);NL.init(num1);}
     chainGnMode=false;tdaJarMode=false;}
   // Aid display — kangaroo NL or the cookie jar, per aidMode
-  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TBG&&ptype!==TH){
+  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU&&ptype!==TBG&&ptype!==TH){
   const isTD=ptype===TDA||ptype===TDS||ptype===TRA;
   const useNL=aidMode==='nl';
   const useKang=aidMode==='kang';
@@ -353,7 +396,7 @@ function loadProblem(){
   },60);
   buildGamesMenu();
   // the aid-toggle menu is meaningless inside a self-contained exercise
-  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TBG)?'hidden':'';}
+  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU||ptype===TBG)?'hidden':'';}
   // Digit hint button — shown for TT, TBG, and for TS/TM where both nums > 10
   {const _dhBtn=document.getElementById('digit-hint-btn');
   if(_dhBtn){
@@ -386,7 +429,7 @@ function _varShapeSVG(kind,size){
 /* ── Equation ── */
 function renderEq(){
   // leaving a module-owned exercise (TCA) → release its listeners/timers
-  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TTS&&ptype!==THF&&ptype!==TPL){_colxCleanup();_colxCleanup=null;}
+  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU){_colxCleanup();_colxCleanup=null;}
   // restore hint visibility (TC hides it and embeds it inline)
   if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
   const n=t=>`<span class="eq-n" data-num="${t}">${t}</span>`;
@@ -524,7 +567,7 @@ function renderEq(){
         '</div>';
     }
   }
-  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL)h='<div id="colx-root" class="colx-root"></div>';
+  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)h='<div id="colx-root" class="colx-root"></div>';
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
   else               h=n(num1)+op('+','op-p')+nB(num2,num1,'add')+op('=','op-e')+inp;
   document.getElementById('eq').innerHTML=h;
@@ -537,7 +580,7 @@ function renderEq(){
   if(ptype!==TVA&&ptype!==TVS){const _eq=document.getElementById('eq');
    const _nums=_eq.querySelectorAll('.eq-n[data-num],.eq-res[data-num]');
    if(_nums.length>=2)_nums[0].classList.add('eq-noobj');}
-  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL)_colxMount();
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)_colxMount();
 }
 
 /* ── self-contained exercise host (TCA → column_add, TCS → column_sub) ──
@@ -552,7 +595,7 @@ function _colxMount(){
   loadExercise(exName,()=>{
     // problem changed while loading (idx moved, left colx, or now a DIFFERENT
     // colx type) → a stale async module-load must NOT clobber the live mount
-    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TTS&&ptype!==THF&&ptype!==TPL)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
+    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
     const root=document.getElementById('colx-root');
     const ex=window.EXERCISES&&EXERCISES.types[exName];
     if(!root||!ex)return;
@@ -610,7 +653,7 @@ function showBtns(s){
     btns.innerHTML='';
     btns.className='btn-row';
     // exercise modules (TCA/TCS/TCM/TBC/TPG/TMC/TMK) check themselves — no host check button
-    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL)?'none':'flex';
+    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)?'none':'flex';
   }else{
     if(cb)cb.style.display='none';
     btns.innerHTML=
@@ -634,7 +677,7 @@ document.addEventListener('input',e=>{
 });
 function checkAns(){
   if(done)return;
-  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL)return;   // the exercise module checks itself
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)return;   // the exercise module checks itself
   // ── Multi-unknown problems: two (TDA/TDS) or three (TRA) empty boxes ──
   if(ptype===TDA||ptype===TDS||ptype===TRA){
     const i1=document.getElementById('ans1'),i2=document.getElementById('ans2'),
@@ -929,7 +972,12 @@ function endGame(){
   document.getElementById('prog-bar').style.width='100%';
   document.getElementById('prog-txt').textContent='🎊 סִיַּמְתְּ!';
   const g=calcGrade();const giftGoal=GIFT_GOALS[mode];const wonGift=giftGoal>0&&g>=giftGoal;
-  recordHistory(g,wonGift);      // log this completed set (name + game + grade + prize + per-exercise detail)
+  const giftN=wonGift?giftCount(mode):0;   // how many prizes this win awards (configured per game)
+  const giftHtml=wonGift
+    ?`<span class="end-gift">🎁${giftN>1?'×'+giftN:''}</span>`+
+     `<div class="end-gift-count">${giftN>1?`זָכִית בְּ־${giftN} פְּרָסִים!`:'זָכִית בַּפְּרָס!'}</div>`
+    :'';
+  recordHistory(g,wonGift);      // log this completed set (name + game + grade + prizes won + per-exercise detail)
   if(mode===0){
     document.getElementById('card').innerHTML=`
       <div class="end-scr">
@@ -938,7 +986,7 @@ function endGame(){
         <div class="end-grade-num">${g}</div>
         <div class="end-grade-max">מִתּוֹךְ 1000</div>
         <div class="end-grade-msg">${gradeMsg(g)}</div>
-        ${wonGift?'<span class="end-gift">🎁</span>':''}
+        ${giftHtml}
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
           <button class="btn b-rpl" onclick="setMode('br')">הַמְשִׁיכִי לְגָּשֵׁר 10 🚀</button>
           <button class="btn b-rep" onclick="reportOpen()">📊 סִיכּוּם</button>
@@ -954,7 +1002,7 @@ function endGame(){
       <div class="end-grade-num">${g}</div>
       <div class="end-grade-max">מִתּוֹךְ 1000</div>
       <div class="end-grade-msg">${gradeMsg(g)}</div>
-      ${wonGift?'<span class="end-gift">🎁</span>':''}
+      ${giftHtml}
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:4px">
         <button class="btn b-rpl" onclick="restart()">שַׂחֲקִי שׁוּב 🔄</button>
         <button class="btn b-rep" onclick="reportOpen()">📊 סִיכּוּם</button>
@@ -1021,11 +1069,13 @@ function _reportRows(){
     else if(r.ptype===TCS)eq=`${r.num1} − ${r.num2} = ${r.correct}`;
     else if(r.ptype===TCM)eq=`🪙 ${r.correct} × ${r.num2||5} = ${r.num1}`;
     else if(r.ptype===TBC)eq=`🥨 ${r.num1} × ${r.num2||5} = ${r.correct}`;
+    else if(r.ptype===TIC)eq=`🍦 ${r.correct} × ₪${r.num2||2} = ₪${r.num1}`;
     else if(r.ptype===TPG)eq=`🔷 ${({3:'מְשֻׁלָּשׁ',4:'מְרֻבָּע',5:'מְחֻמָּשׁ',6:'מְשֻׁשֶּׁה',7:'מְשֻׁבָּע',8:'מְתֻמָּן',10:'כּוֹכָב',12:'כּוֹכָב'}[r.correct]||'צוּרָה')} — ${r.correct} ${p.b===1?'קֹדְקוֹדִים':'צְלָעוֹת'}`;
     else if(r.ptype===TPP)eq=`📐 ${(p.sides||[]).join('+')} = ${r.correct}`;
     else if(r.ptype===TCP)eq=`⚖️ ${r.num1} ${r.num1<r.num2?'<':r.num1>r.num2?'>':'='} ${r.num2}`;
     else if(r.ptype===TMC)eq=`✖️ ${r.num1} × ${r.num2} = ${r.correct}`;
     else if(r.ptype===TMK)eq=`🏆 ${r.num1} × ${r.num2} = ${r.correct}`;
+    else if(r.ptype===TMU)eq=`❓ ${r.num1} × ${r.correct} = ${r.num1*r.correct}`;
     else if(r.ptype===TWP)eq=`📖 ${r.num1} ${(p.op||'sub')==='add'?'+':'−'} ${r.num2} = ${r.correct}`;
     else if(r.ptype===TTS)eq=`➕ ___ + ___ + ___ = ${r.correct}`;
     else if(r.ptype===THF)eq=`${p.item||'✂️'} ${p.n||r.correct*2} ÷ 2 = ${r.correct}`;
@@ -1071,7 +1121,9 @@ function recordHistory(grade,won){
   try{
     const h=_loadHistory();
     h.unshift({name:(typeof playerName==='function'?playerName():''),mode:String(mode),
-               game:_gameLabel(mode),grade:grade,won:!!won,rows:_reportRows(),ts:Date.now()});
+               game:_gameLabel(mode),grade:grade,won:!!won,
+               prizes:won?giftCount(mode):0,   // how many prizes this win awarded (per-game config)
+               rows:_reportRows(),ts:Date.now()});
     localStorage.setItem('scoreHistory',JSON.stringify(h.slice(0,60)));
   }catch(e){}
 }
@@ -1085,7 +1137,7 @@ function renderHistory(){
     const d=new Date(e.ts||0);
     const dt=(e.ts&&!isNaN(d))?`${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:'';
     const nm=e.name?`<span class="hist-name">${_escHtml(e.name)}</span>`:'';
-    const gift=e.won?'🎁 ':'';                     // earned the prize this set
+    const gift=e.won?('🎁'+((e.prizes||1)>1?'×'+e.prizes:'')+' '):'';   // prizes earned this set (×N when multi)
     const hasDetail=!!(e.rows&&e.rows.length);
     const caret=hasDetail?'<span class="hist-caret">▾</span>':'';
     const rowAttr=hasDetail?` onclick="toggleHistDetail(${i})" style="cursor:pointer" title="הַצִּיגִי אֶת הַתַּרְגִּילִים"`:'';

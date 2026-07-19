@@ -298,15 +298,21 @@ body.theme-girls #nl-panel .btn-minus{
   border:2px solid rgba(255,255,255,.55);
   box-shadow:0 4px 0 #A93358,0 4px 12px rgba(224,85,126,.45);
 }
+/* reset ↺ / undo ↩ — a FROSTED-WHITE pill + a strong saturated icon, so they
+   stay legible over every phase of the meadow day cycle (was a translucent fill
+   with a mid-tone icon that washed out) */
 body.theme-girls #nl-panel .btn-reset{
-  background:rgba(125,196,255,.16);border:1.5px solid rgba(60,130,220,.6);color:#2A5AA8;
-  box-shadow:0 0 10px rgba(110,180,255,.3);
+  background:rgba(255,255,255,.85);border:1.5px solid #5AA0EE;color:#1657C8;
+  text-shadow:0 1px 0 rgba(255,255,255,.6);
+  box-shadow:0 2px 6px rgba(40,90,180,.35),0 0 10px rgba(110,180,255,.35);
 }
-body.theme-girls #nl-panel .btn-reset:hover{background:rgba(125,196,255,.26)}
+body.theme-girls #nl-panel .btn-reset:hover{background:#fff}
 body.theme-girls #nl-panel .btn-undo{
-  background:transparent;border:1.5px solid rgba(194,81,156,.4);color:#9A5588;
+  background:rgba(255,255,255,.85);border:1.5px solid #F07AB6;color:#C2185B;
+  text-shadow:0 1px 0 rgba(255,255,255,.6);
+  box-shadow:0 2px 6px rgba(180,40,110,.32);
 }
-body.theme-girls #nl-panel .btn-undo:hover{background:rgba(255,111,181,.12)}
+body.theme-girls #nl-panel .btn-undo:hover{background:#fff}
 
 /* ════ CHAIN MODE — mirrored ribbon + lilac/strawberry ± ════ */
 body.theme-girls .pgm-bar{

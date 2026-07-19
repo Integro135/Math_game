@@ -12,43 +12,37 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "maldives"              # the beach theme that hosts the Pokémon walkers
+THEME    = "girls"                 # the 🦄 theme → unicorns background (new meadow scene)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
-STANDALONE = ""                    # "" → drive the real game (index.html)
+STANDALONE = ""                    # "" → drive the REAL game (index.html)
 VIEW     = {"width": 1280, "height": 800}   # viewport
-# END-SCREEN "play again" contrast: on the maldives (Pokémon) theme the end card
-# is near-transparent, so the old ghost-bubble .b-rpl vanished over the bright
-# lagoon/sand + walkers. Force the end screen (non-zero mode → "שַׂחֲקִי שׁוּב"), then
-# confirm the button now paints a SOLID gradient fill + dark text and shoot it.
-EVAL = r""""""
+# IN-GAME INTEGRATION of the new unicorn meadow (unicorns.bg.js → UnicornMeadow):
+# the scene must mount INTO #stars-layer (behind the game card), roam actors
+# there, and be torn down when switching themes (then re-mount on return).
+EVAL = r"""(function(){ setMode('mulc'); return 'mulc'; })();"""
 POST_EVAL = r"""(function(){
-  // Inject the EXACT "play again" end-screen markup (the mode≠0 branch of
-  // endGame()) so the maldives .b-rpl rule paints against the real beach bg.
-  var card=document.getElementById('card');
-  card.innerHTML='<div class="end-scr"><div class="end-uni">🦄</div>'
-    +'<div class="end-ttl">🎊 סִיַּמְתְּ! 🎊</div>'
-    +'<div class="end-grade-num">870</div>'
-    +'<div class="end-grade-max">מִתּוֹךְ 1000</div>'
-    +'<div class="end-grade-msg">כָּל הַכָּבוֹד! ⭐</div>'
-    +'<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:4px">'
-    +'<button class="btn b-rpl">שַׂחֲקִי שׁוּב 🔄</button>'
-    +'<button class="btn b-rep">📊 סִיכּוּם</button></div></div>';
-  var b=card.querySelector('.b-rpl');
-  var cs=getComputedStyle(b), r=b.getBoundingClientRect();
-  return JSON.stringify({
-    hasGradientFill: cs.backgroundImage.indexOf('gradient')>=0,   // solid, not a bare translucent color
-    color: cs.color,
-    borderTopWidth: cs.borderTopWidth,
-    boxShadowLen: cs.boxShadow.length,
-    w: Math.round(r.width), h: Math.round(r.height),
-    onScreen: r.width>0 && r.height>0
-  });
+  // force a perimeter problem, get it wrong → the number line (with reset/undo)
+  // appears; report the reset/undo icon colors + fills, then screenshot them
+  mode='mulc';score=0;problems=[{t:TPP,shape:'square',sides:[3,3,3,3],a:12}];idx=0;loadProblem();
+  return new Promise(function(res){ setTimeout(function(){
+    var inp=document.querySelector('.pm-inp');
+    if(!inp) return res(JSON.stringify({error:'no perimeter board'}));
+    inp.value='10';
+    inp.dispatchEvent(new Event('input',{bubbles:true}));
+    inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+    setTimeout(function(){
+      document.getElementById('nl-panel').scrollIntoView({block:'center'});
+      var rs=document.querySelector('#nl-panel .btn-reset'), ud=document.querySelector('#nl-panel .btn-undo');
+      var cs=function(e){var c=getComputedStyle(e);return {color:c.color,bg:c.backgroundColor};};
+      res(JSON.stringify({ resetBtn:cs(rs), undoBtn:cs(ud) }));
+    }, 500);
+  }, 500); });
 })();"""
 CLICKS   = []
-WAIT_MS   = 1200   # let the maldives bg settle before forcing the end screen
+WAIT_MS   = 1600
 SHOTS    = [
-    {"path": r"c:\tmp\maldives_playagain.png", "clip": {"x": 280, "y": 110, "width": 720, "height": 620}},
+    {"path": r"c:\tmp\nl_ctrls.png", "clip": {"x": 340, "y": 470, "width": 600, "height": 250}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

@@ -188,6 +188,10 @@ body{
 }
 .prize-inp:focus{border-color:#FFD740;background:rgba(255,255,255,.18)}
 .prize-inp::placeholder{color:rgba(255,255,255,.4);font-weight:600}
+/* the goal input + the 🎁× per-win prize-count input, side by side */
+.prize-ctl{display:flex;align-items:center;gap:6px;direction:ltr}
+.prize-x{color:#ffd6ff;font-size:.85rem;font-weight:800;white-space:nowrap}
+.prize-inp.prize-cnt{width:42px;padding:5px 6px}
 
 /* ── Card ── */
 .card{border-radius:28px;padding:22px 20px;margin-top:0;position:relative}

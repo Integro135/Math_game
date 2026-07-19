@@ -233,3 +233,7 @@
   from{transform:scale(0) rotate(-20deg);opacity:0}
   to  {transform:scale(1) rotate(0);opacity:1}
 }
+/* how many prizes the win awarded (per-game ×N config) — written under the 🎁 */
+.end-gift-count{font-family:'Fredoka One',cursive;font-size:1.25rem;color:#FFD740;
+  margin:-2px 0 8px;text-shadow:0 0 12px rgba(255,200,60,.5);
+  animation:giftPop .65s .15s cubic-bezier(.17,1.5,.5,1) both}

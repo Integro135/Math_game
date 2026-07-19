@@ -102,8 +102,18 @@ window.EXERCISES.types.coin_mul=(()=>{
     // the child may add MORE coins than fit — the ＋ must never disable AT the
     // answer (that would reveal it). Cap only at a generous bound well past it.
     const maxCoins=need+3;
-    let count=0, done=false;
+    let count=0, done=false, nlShown=false;
     const timers=[]; const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
+
+    // on a MISTAKE: open the multiplication number line with jumps of the COIN
+    // value, so she can skip-count to the target (₪5 → 5,10,15…) and count the
+    // jumps. Ends one jump past the target so the last tick never spells the
+    // answer. (Revealed once; loadProblem re-hides it — TCM is in core.js's list.)
+    function revealMulNL(){
+      if(nlShown)return;nlShown=true;
+      const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='';
+      if(typeof NL!=='undefined'){NL.configure(target+COIN,COIN);NL.init(0);}
+    }
 
     root.innerHTML=`
       <div class="colm-root">
@@ -123,7 +133,7 @@ window.EXERCISES.types.coin_mul=(()=>{
     const tray=$('colm-tray'),addBtn=$('colm-add'),remBtn=$('colm-rem'),inp=$('colm-ans'),chk=$('colm-chk');
 
     function fb(msg){const h=document.getElementById('hint');if(h)h.textContent=msg;}
-    fb('🪙 הוֹסִיפִי מַטְבְּעוֹת שֶׁל '+COIN+' וְסִפְרִי כַּמָּה צְרִיכִים!');
+    fb('💰 הוֹסִיפִי מַטְבְּעוֹת שֶׁל '+COIN+' וְסִפְרִי כַּמָּה צְרִיכִים!');
 
     function render(){
       tray.classList.toggle('colm-tray-blank',count===0);  // box invisible while empty, space reserved
@@ -157,9 +167,11 @@ window.EXERCISES.types.coin_mul=(()=>{
         inp.classList.remove('blink');inp.classList.add('ans-err');
         // guide by the TYPED value vs the answer — never by the coin count
         // (the child may have added more coins than actually fit)
-        if(v<need)fb('נִכְנָסִים עוֹד! נַסִּי מִסְפָּר גָּדוֹל יוֹתֵר 🪙');
-        else fb('יוֹתֵר מִדַּי! נַסִּי מִסְפָּר קָטָן יוֹתֵר 💗');
+        if(v<need)fb('נִכְנָסִים עוֹד! סִפְרִי בִּקְפִיצוֹת שֶׁל '+COIN+' עַל הַיָּשָׁר 💰');
+        else fb('יוֹתֵר מִדַּי! סִפְרִי בִּקְפִיצוֹת שֶׁל '+COIN+' עַל הַיָּשָׁר 💗');
         api.wrong(v);
+        revealMulNL();          // help: the ×COIN skip-counting line
+
         later(()=>{if(!done){inp.value='';inp.classList.remove('ans-err');inp.classList.add('blink');inp.focus();}},1000);
       }
     }
@@ -175,7 +187,9 @@ window.EXERCISES.types.coin_mul=(()=>{
     document.addEventListener('keydown',onSpace);
 
     render();
-    requestAnimationFrame(()=>{addBtn.focus();});
+    // focus the ANSWER box (not ＋) so typing / the mobile numpad works at once;
+    // SPACE still drops a coin via the document handler regardless of focus
+    requestAnimationFrame(()=>{try{inp.focus();}catch(e){}});
 
     return function cleanup(){document.removeEventListener('keydown',onSpace);timers.forEach(clearTimeout);root.innerHTML='';};
   }

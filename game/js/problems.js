@@ -133,6 +133,8 @@ function makePool(m){
       ...(EX('plates')?EX('plates').make('mulc'):[]),         // צלחות — קבוצות שוות → סך הכל (סיפור הכפל)
       ...(EX('coin_mul')?EX('coin_mul').make('mulc'):[]),     // כמה מטבעות (₪2/₪5/₪10) נכנסים ב-X — ראשית הכפל (מסופרמן)
       ...(EX('bagel_cost')?EX('bagel_cost').make('mulc'):[]), // כמה עולים X בייגלה (×₪5) — ראשית הכפל בשקלים (מסופרמן)
+      ...(EX('ice_cream')?EX('ice_cream').make('mulc'):[]),   // חנות הגלידה — יש לה ₪X, כל גלידה ₪2/5/10; כמה אפשר לקנות (חילוק כ"כמה קבוצות")
+      ...(EX('mult_unknown')?EX('mult_unknown').make('mulc'):[]), // כפל בנעלם — 3×□=9; ישר קפיצות-של-a גלוי מההתחלה
     ]),QUEEN_SUPER_COUNT);
     // the אַלּוּפָה game OPENS on its flagship multiplication card (TMK): keep a
     // mult_champ problem at slot 0 (the rest — perimeter / column-sub / compare /
@@ -142,6 +144,8 @@ function makePool(m){
     return pool;
   }
   if(m==='wp')return EX('word_prob')?EX('word_prob').make('wp'):[];   // word-problems only (internal handle)
+  if(m==='ice')return EX('ice_cream')?EX('ice_cream').make('ice'):[]; // ice-cream shop only (internal handle)
+  if(m==='mulu')return EX('mult_unknown')?EX('mult_unknown').make('mulu'):[]; // mult-with-unknown only (internal handle)
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
   // then the coins type seeds 1-2 coin problems
   const pool=[
@@ -332,4 +336,4 @@ function makeBridge20Pool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='mulc'?20:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='mulc'?20:mode||5;}

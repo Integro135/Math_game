@@ -371,6 +371,9 @@ window.EXERCISES.types.polygon=(()=>{
     chk.addEventListener('click',check);
     inp.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
     inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check();}});
+    // focus the answer box on mount so she can type right away (no click needed);
+    // on touch this also auto-opens the number pad
+    later(()=>{try{inp.focus();}catch(e){}},350);
 
     return function cleanup(){timers.forEach(clearTimeout);root.innerHTML='';};
   }
