@@ -494,6 +494,11 @@ window.UnicornMeadow = (function () {
 .uc-meadow .tint-warm, .uc-meadow .tint-violet { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 7; }
 .uc-meadow .tint-warm { background: linear-gradient(180deg, #d64f89 0%, #fdb054 100%); }
 .uc-meadow .tint-violet { background: linear-gradient(180deg, #2a1c5e 0%, #6b4293 60%, #a4589a 100%); }
+/* narrow screens (phones): the castle shrinks so it fits its inward-shifted
+   knoll (paintMain moves the knoll centre to 72% at <640px) */
+@media (max-width: 640px){
+  .uc-meadow .cartoon{ transform: scale(.5); }
+}
 `;
   function injectCSS() {
     var st = document.getElementById('uc-meadow-style');
@@ -620,7 +625,12 @@ window.UnicornMeadow = (function () {
   var TAU = Math.PI * 2;
   var DPR = Math.min(devicePixelRatio || 1, 2);
   var CYCLE = 120000;
-  var W, H;
+  /* W/H = viewport; HM = the vertical budget the LANDSCAPE (ridges/hills/
+     waterfall/flower band) may use, measured UP from the bottom edge. On
+     landscape HM === H (pixel-identical to the original design); on a TALL
+     portrait phone HM ≈ W so the mountains stop dominating the screen and
+     the sky/rainbow get room. */
+  var W, H, HM;
 
   /* seeded prng (mulberry32) → the ridge/flower layout is identical every load */
   function mulberry32(a){
@@ -679,15 +689,16 @@ window.UnicornMeadow = (function () {
 
   function paintFar(){
     xFar.clearRect(0, 0, W, H);
-    ridge(xFar, mulberry32(1101), H * 0.52, H * 0.16, 8, '#E8BBE4', true);
+    ridge(xFar, mulberry32(1101), H - HM * 0.48, HM * 0.16, 8, '#E8BBE4', true);
   }
 
   function paintMain(){
     var c = xMain, rnd;
     c.clearRect(0, 0, W, H);
-    // middle + near pink ridges (original colours)
-    ridge(c, mulberry32(2202), H * 0.62, H * 0.17, 6, '#DD93CF', true);
-    var nearPts = ridge(c, mulberry32(3303), H * 0.72, H * 0.13, 5, '#C66BB4', false);
+    // middle + near pink ridges (original colours, bottom-anchored via HM)
+    ridge(c, mulberry32(2202), H - HM * 0.38, HM * 0.17, 6, '#DD93CF', true);
+    var nearPts = ridge(c, mulberry32(3303), H - HM * 0.28, HM * 0.13, 5, '#C66BB4', false);
+    WF.bottom = (H - HM * 0.115) / H;   // the plunge pool tracks the hills band
 
     // anchor the waterfall to the near ridge's FIRST peak (x = 0.2W, seeded →
     // deterministic): the water pours out of an ELLIPTICAL mountain spring
@@ -701,7 +712,7 @@ window.UnicornMeadow = (function () {
     stg.style.height = ((WF.bottom - WF.top) * 100 + 1.5) + '%';
 
     var wx = crest[0], wy = H * WF.top;
-    var srx = W * 0.038, sry = H * 0.016;
+    var srx = W * 0.038, sry = HM * 0.016;
     c.fillStyle = '#A8508F';                        // dark rocky rim, same family as the ridge
     c.beginPath(); c.ellipse(wx, wy, srx, sry, 0, 0, TAU); c.fill();
     c.fillStyle = rg(c, wx, wy, 1, srx * 0.8, [     // the spring water inside
@@ -710,30 +721,34 @@ window.UnicornMeadow = (function () {
     c.beginPath(); c.ellipse(wx, wy - sry * 0.15, srx * 0.78, sry * 0.62, 0, 0, TAU); c.fill();
 
     // the castle mound — a GREEN grassy knoll (original curve, widened plateau
-    // so the 2× castle sits fully on it); the castle is anchored to its top
-    var cx = W * 0.855, cs = Math.min(W, H) * 0.0016;
-    var top = H * 0.655 + 30 * cs;
+    // so the 2× castle sits fully on it); the castle is anchored to its top.
+    // NARROW screens pull the knoll (and castle) inward so it isn't clipped
+    // at the right edge (the castle itself also shrinks via a CSS media rule).
+    var cx = W * (W < 640 ? 0.72 : 0.855), cs = Math.min(W, H) * 0.0016;
+    var top = H - HM * 0.345 + 30 * cs;
     c.fillStyle = lg(c, 0, top, 0, H, [[0, '#69B857'], [1, '#3E8F41']]);
     c.beginPath();
     c.moveTo(cx - W * 0.32, H);
-    c.quadraticCurveTo(cx - W * 0.22, top + H * 0.05, cx - W * 0.10, top);
-    c.quadraticCurveTo(cx, top - H * 0.012, cx + W * 0.10, top);
-    c.quadraticCurveTo(cx + W * 0.22, top + H * 0.05, cx + W * 0.33, H);
+    c.quadraticCurveTo(cx - W * 0.22, top + HM * 0.05, cx - W * 0.10, top);
+    c.quadraticCurveTo(cx, top - HM * 0.012, cx + W * 0.10, top);
+    c.quadraticCurveTo(cx + W * 0.22, top + HM * 0.05, cx + W * 0.33, H);
     c.closePath();
     c.fill();
-    // plant the castle exactly on the knoll top (its CSS top is just a fallback)
-    document.querySelector('.cartoon').style.top = ((top - H * 0.006) / H * 100) + '%';
+    // plant the castle exactly on the knoll top + centre (CSS values are fallbacks)
+    var cart = document.querySelector('.cartoon');
+    cart.style.top = ((top - H * 0.006) / H * 100) + '%';
+    cart.style.left = (cx / W * 100) + '%';
 
-    // rolling foreground hills — the original curves, GREEN
-    c.fillStyle = lg(c, 0, H * 0.74, 0, H, [
+    // rolling foreground hills — the original curves, GREEN (bottom-anchored)
+    c.fillStyle = lg(c, 0, H - HM * 0.26, 0, H, [
       [0, '#93DB74'], [0.55, '#5DBD52'], [1, '#3F9E44'],
     ]);
     c.beginPath();
     c.moveTo(-10, H);
-    c.lineTo(-10, H * 0.84);
-    c.quadraticCurveTo(W * 0.22, H * 0.755, W * 0.46, H * 0.835);
-    c.quadraticCurveTo(W * 0.62, H * 0.885, W * 0.82, H * 0.845);
-    c.quadraticCurveTo(W * 0.94, H * 0.823, W + 10, H * 0.855);
+    c.lineTo(-10, H - HM * 0.16);
+    c.quadraticCurveTo(W * 0.22, H - HM * 0.245, W * 0.46, H - HM * 0.165);
+    c.quadraticCurveTo(W * 0.62, H - HM * 0.115, W * 0.82, H - HM * 0.155);
+    c.quadraticCurveTo(W * 0.94, H - HM * 0.177, W + 10, H - HM * 0.145);
     c.lineTo(W + 10, H);
     c.closePath();
     c.fill();
@@ -744,7 +759,7 @@ window.UnicornMeadow = (function () {
       [0, '#C9F2F8'], [0.45, '#8ADCEC'], [1, '#57C4DE'],
     ]);
     c.beginPath();
-    c.ellipse(pyx, pyy, W * 0.075, H * 0.026, 0, 0, TAU);
+    c.ellipse(pyx, pyy, W * 0.075, HM * 0.026, 0, 0, TAU);
     c.fill();
     c.strokeStyle = 'rgba(255,255,255,.55)';
     c.lineWidth = Math.max(1.5, H * 0.003);
@@ -754,7 +769,7 @@ window.UnicornMeadow = (function () {
     rnd = mulberry32(4404);
     for (var i = 0; i < 90; i++){
       var fx = rnd() * W;
-      var fy = H * (0.86 + rnd() * 0.13);
+      var fy = H - HM * 0.14 + rnd() * HM * 0.13;
       var fs = 1.2 + rnd() * 2.0;
       c.fillStyle = ['#FFE9F4', '#FFD2E8', '#FFF6CE', '#E8D8FF'][0 | rnd() * 4];
       for (var p = 0; p < 5; p++){
@@ -844,6 +859,7 @@ window.UnicornMeadow = (function () {
   /* ── boot + loops ── */
   function resize(){
     W = innerWidth; H = innerHeight;
+    HM = Math.min(H, W * 1.15);
     [cvFar, cvMain, cvClouds].forEach(function(cv){
       cv.width = W * DPR; cv.height = H * DPR;
       cv.getContext('2d').setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -896,21 +912,27 @@ window.UnicornMeadow = (function () {
     }
     var soloGate = function(){ return activeCount() < MAX_ON_STAGE; };
 
+    /* actor sizes follow the screen's SHORT side (design reference 800px):
+       desktop keeps the original 84/80/46; a 390px-wide phone gets ~half-size
+       unicorns instead of horses as wide as the whole screen */
+    var UC = Math.max(0.45, Math.min(1, Math.min(innerWidth, innerHeight) / 800));
+    var SZ = function(px){ return Math.round(px * UC); };
+
     // RUNNERS (half the herd): a medium ground galloper + a small sky flyer,
     // ×3 travel speed with a faster leg cycle to match
-    var r1 = U.place(ROOT, { size: 84, color: 'pink', z: 4 });   // medium strawberry coat 💗
+    var r1 = U.place(ROOT, { size: SZ(84), color: 'pink', z: 4 });   // medium strawberry coat 💗
     r1.el.style.setProperty('--speed', '.9s');   // unhurried leg cycle; the GROUND speed stays ×3
     r1.roam({ bandMinPct: 3, bandMaxPct: 12, speedPctPerSec: 16, waitMinSec: 2, waitMaxSec: 7, gate: soloGate });
     roamers.push(r1);
-    var r2 = U.place(ROOT, { size: 80, wings: true, gait: 'fly', color: 'sky', z: 3 });  // cloud coat 🦋, official soar
+    var r2 = U.place(ROOT, { size: SZ(80), wings: true, gait: 'fly', color: 'sky', z: 3 });  // cloud coat 🦋, official soar
     r2.roam({ fly: true, bandMinPct: 8, bandMaxPct: 28, speedPctPerSec: 14.4, waitMinSec: 3, waitMaxSec: 9, bobAmpPx: 12, gate: soloGate });   // flight speed −20%
     roamers.push(r2);
 
     /* WALKERS (the other half): mother + baby striding together at a brisk
        pace — fast walk cycle, ×3 ground speed, the baby trailing behind */
     (function pairWalk(){
-      var mom  = U.place(ROOT, { size: 84, gait: 'walk', color: 'pearl', z: 5 });
-      var baby = U.place(ROOT, { size: 46, gait: 'walk', color: 'mint', z: 5 });   // clover foal 🍀
+      var mom  = U.place(ROOT, { size: SZ(84), gait: 'walk', color: 'pearl', z: 5 });
+      var baby = U.place(ROOT, { size: SZ(46), gait: 'walk', color: 'mint', z: 5 });   // clover foal 🍀
       mom.el.style.setProperty('--speed', '.9s');       // brisk stride (default walk is 2.1s)
       baby.el.style.setProperty('--speed', '.8s');      // little legs churn a bit faster
       var rnd = function(a,b){ return a + Math.random() * (b - a); };
