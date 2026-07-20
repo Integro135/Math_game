@@ -306,6 +306,45 @@ class TestChampMultiplication:
         assert page.evaluate("document.getElementById('mk-ans').value.indexOf(' ')<0"), \
             "space must NOT type into the answer box (preventDefault)"
 
+    def test_like_chain_matches_number_line_jumps(self, page):
+        """On a LINE card the "זֶה כְּמוֹ" chain shows the CURRENT orientation —
+        the one the number line actually jumps by — and the two move TOGETHER on a
+        🔁 switch (user: the chain must not contradict the line). 3×4 turn 0: line
+        jumps of 3 → chain 3+3+3+3; after 🔁, jumps of 4 → chain 4+4+4."""
+        _force_mulc_tmk(page, 3, 4)
+        page.evaluate("window.__mkAidTurn=0")          # line-aid turn
+        self._wrong_product(page)
+        page.wait_for_function(
+            "tryFirst===1 && getComputedStyle(document.getElementById('nl-panel')).display!=='none'",
+            timeout=TIMEOUT)
+        like = lambda: page.evaluate(
+            "[...document.querySelectorAll('#mk-like-chain .mk-lc-num')].map(e=>+e.textContent)")
+        ticks = lambda: page.evaluate(
+            "[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert ticks() == [0, 3, 6, 9, 12, 15]
+        assert like() == [3, 3, 3, 3], f"jumps of 3 → 'זה כמו' chain must be 3+3+3+3, got {like()}"
+        page.evaluate("document.getElementById('mk-switch').click()")
+        page.wait_for_timeout(150)
+        assert ticks() == [0, 4, 8, 12, 16, 20]
+        assert like() == [4, 4, 4], f"after 🔁 (jumps of 4) the chain must become 4+4+4, got {like()}"
+
+    def test_floating_switch_is_separate_and_tooltip_previews_target(self, page):
+        """The 🔁 switch is a SEPARATE floating button (NOT inside the 'זה כמו'
+        text row); the swap target lives ONLY in its hover tooltip, so the visible
+        chain never shows what it would flip TO (user request)."""
+        _force_mulc_tmk(page, 3, 4)
+        page.evaluate("window.__mkAidTurn=0")          # line-aid turn
+        self._wrong_product(page)
+        page.wait_for_function(
+            "tryFirst===1 && getComputedStyle(document.getElementById('nl-panel')).display!=='none'",
+            timeout=TIMEOUT)
+        assert page.evaluate("!!document.getElementById('mk-switch')"), "the 🔁 switch must render"
+        assert page.evaluate("!document.querySelector('.mk-like-row #mk-switch')"), \
+            "the switch must be SEPARATE from the 'זה כמו' text row, not inside it"
+        tip = page.evaluate("document.querySelector('.mk-switch-tip').textContent")
+        assert tip.replace(" ", "") == "4+4+4", \
+            f"the hover tooltip must PREVIEW the other orientation (4+4+4), got: {tip!r}"
+
 
 # ─────────────────────────────────────────────────────────
 # Multiplication with ONE UNKNOWN (mult_unknown / TMU) — `a × □ = product`, the

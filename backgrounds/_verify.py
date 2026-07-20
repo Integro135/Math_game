@@ -15,29 +15,23 @@ from playwright.sync_api import sync_playwright
 THEME    = "girls"                 # the 🦄 theme → unicorns background (new meadow scene)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
-STANDALONE = r"C:\code\subtraction_game\backgrounds\unicorns\meadow.html"
+STANDALONE = r""                   # empty → drive the in-game index.html flow (girls→unicorns)
 VIEW     = {"width": 1280, "height": 800}   # viewport
-# BUNNY IN THE MEADOW (in-game, girls theme): the scene lazy-loads bunny.item.js
-# and roams one bunny off-stage-first (8-20s wait) — poll until it hops on
-# screen, confirm it travels facing its direction, then switch themes and
-# confirm the cleanup removes it (rig + timers).
-EVAL = r""
-POST_EVAL = r"""(function(){
-  return new Promise(function(res){ setTimeout(function(){
-    var out=[];
-    document.querySelectorAll('.uc-uni:not(.uc-fx-host)').forEach(function(u){
-      var c=u.querySelector('.cutie');
-      out.push({fly:u.classList.contains('uc-fly'),
-                coat:(u.className.match(/uc-c-([a-z]+)/)||[])[1],
-                cutieDisplay:getComputedStyle(c).display});
-    });
-    res(JSON.stringify(out));
-  }, 1200); });
+# IN-GAME 🦄 — after the unicorns bg mounts, freeze the day cycle at MIDDAY and
+# screenshot the castle knoll to confirm the new flowers render in-game too.
+EVAL = r"""(async function(){
+  await new Promise(function(r){var t=setInterval(function(){
+    if(window.__meadow){clearInterval(t);r();}
+  },50);});
+  window.__meadow.seek(0.33);
+  return 'day';
 })();"""
+POST_EVAL = r""
 CLICKS   = []
-WAIT_MS   = 1500
+WAIT_MS   = 1400
 SHOTS    = [
-    {"path": r"c:\tmp\cutie_walk.png", "clip": {"x": 340, "y": 200, "width": 520, "height": 420}},
+    {"path": r"c:\tmp\meadow_full.png", "clip": {"x": 0, "y": 0, "width": 1280, "height": 800}},
+    {"path": r"c:\tmp\meadow_knoll.png", "clip": {"x": 840, "y": 300, "width": 440, "height": 420}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

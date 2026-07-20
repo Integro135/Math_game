@@ -505,21 +505,32 @@ multiplicand) is the number repeated **by default**; both `a` and `b` stay ≤ 4
    פְּעָמִים שָׁלוֹשׁ?" (a factor of 2 reads "פַּעֲמַיִם", not "שְׁתֵּי פְּעָמִים";
    `NUM[]` holds the feminine number words). Submitted **only on Enter**. Correct →
    `solve()` → `api.solved()` (full points, `tryFirst=0`).
-2. **On a WRONG product** → `api.wrong(v)` (the host's penalty + sad modal — there
-   is no number-line aid to reveal here) **AND** `reveal()`: the product greys out
-   (`.mk-answered`, its box disabled) and the scaffold opens beneath a separator +
-   a `.mk-like-row` holding the 🔁 switch and the Hebrew "זֶה כְּמוֹ" label (the row
-   is `direction:rtl`, so the label sits to the **RIGHT** of the switch): then the
-   repeated-addition chain `a +a +… = □` — the **same** structure as `mult_chain`
-   (optional running-sum helper boxes `input.tx-sub-inp.mk-box` with the pulsing
-   diagonal guide `.mk-sub-row::after`, and the scoring `input.ans-inp.mk-final`
-   = `data-exp=product`). `fit()` scales the row to one line.
+2. **On a WRONG product** → `api.wrong(v)` (the host's penalty + sad modal) **AND**
+   `reveal()`: the product greys out (`.mk-answered`, its box disabled) and, in
+   strict turns across mistake-cards (`window.__mkAidTurn`), ONE aid opens beneath a
+   separator + a `.mk-like-row` (`direction:rtl` → the Hebrew "זֶה כְּמוֹ" label on
+   the **RIGHT**, and a read-only `#mk-like-chain` — the CURRENT orientation — to its
+   left). Either the **skip-counting number line** (jumps of the repeated number; the
+   product box itself retries) **or** the interactive repeated-addition chain
+   `a +a +… = □` in `.mk-scroll` (the **same** structure as `mult_chain`: optional
+   running-sum helper boxes `input.tx-sub-inp.mk-box` with the pulsing diagonal guide
+   `.mk-sub-row::after`, and the scoring `input.ans-inp.mk-final` = `data-exp=product`;
+   `fit()` scales the row to one line). On a **line card** `#mk-like-chain` shows the
+   current jumps as `rep + rep + …` so it MATCHES the line; on a **chain card** it is
+   left empty (the interactive chain below IS the current display).
 3. **The 🔁 SWITCH** (`#mk-switch`) flips which number repeats: not-flipped shows
    `a` repeated `b` times; flipped shows `b` repeated `a` times (3×4: `3+3+3+3`
-   ↔ `4+4+4`). The button always **previews the OTHER orientation** as its label
-   (e.g. `🔁 4 + 4 + 4`). `renderChain()` rebuilds + re-wires the row on every flip;
-   the final answer box always expects the **same product**, so switching never
-   changes the answer.
+   ↔ `4+4+4`). It is a **FLOATING, SEPARATE round pill** on its own line (NOT inside
+   the "זֶה כְּמוֹ" text row) — its face is a plain 🔁; the OTHER orientation is
+   previewed ONLY in its **hover tooltip** (`.mk-switch-tip`, dropping just below the
+   button). This is a deliberate fix (v9.48, user request): the always-visible
+   "זֶה כְּמוֹ" chain shows the CURRENT orientation and MOVES TOGETHER with the number
+   line on every switch, so the two never contradict — while the swap *target* stays
+   tucked in the tooltip. `updateSwitchTip()` refreshes the tooltip; `renderNlAid()`
+   re-configures the line + `#mk-like-chain`, and `renderChain()` rebuilds + re-wires
+   the interactive row, on every flip; the final answer box always expects the **same
+   product**, so switching never changes the answer. (Omitted entirely for `a===b` —
+   flipping `3+3+3` → `3+3+3` is pointless.)
 
 Only the FINAL box scores (helpers give gentle green/red feedback, no penalty,
 never required) — a correct final value on **Enter** → `api.solved()`, a wrong one

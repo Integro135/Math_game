@@ -773,13 +773,10 @@ window.UnicornMeadow = (function () {
     c.lineWidth = Math.max(1.5, H * 0.003);
     c.stroke();
 
-    // tiny meadow flowers sprinkled over the hills (original algorithm)
-    rnd = mulberry32(4404);
-    for (var i = 0; i < 90; i++){
-      var fx = rnd() * W;
-      var fy = H - HM * 0.14 + rnd() * HM * 0.13;
-      var fs = 1.2 + rnd() * 2.0;
-      c.fillStyle = ['#FFE9F4', '#FFD2E8', '#FFF6CE', '#E8D8FF'][0 | rnd() * 4];
+    // one dainty 5-petal flower with a golden centre
+    var FLOWER_COLS = ['#FFE9F4', '#FFD2E8', '#FFF6CE', '#E8D8FF', '#D8ECFF'];
+    function drawFlower(fx, fy, fs, col){
+      c.fillStyle = col;
       for (var p = 0; p < 5; p++){
         var a = p / 5 * TAU;
         c.beginPath();
@@ -789,6 +786,50 @@ window.UnicornMeadow = (function () {
       c.fillStyle = '#FFB948';
       c.beginPath(); c.arc(fx, fy, fs * 0.6, 0, TAU); c.fill();
     }
+
+    // tiny meadow flowers sprinkled over the foreground hills (original algorithm)
+    rnd = mulberry32(4404);
+    for (var i = 0; i < 90; i++){
+      var fx = rnd() * W;
+      var fy = H - HM * 0.14 + rnd() * HM * 0.13;
+      var fs = 1.2 + rnd() * 2.0;
+      drawFlower(fx, fy, fs, FLOWER_COLS[0 | rnd() * 4]);
+    }
+
+    // a little flower GARDEN on the castle knoll (user request) — sample the same
+    // 3-quadratic top curve the mound is filled with, so every bloom sits ON the
+    // grass; keep them BELOW the castle's ground line (`top`) so none peek through
+    // the tower gaps (the castle DOM sits above this canvas), spread across the
+    // plateau + its shoulders in front of the castle.
+    (function(){
+      var qc = function(p0, p1, p2, u){ var m = 1 - u; return m*m*p0 + 2*m*u*p1 + u*u*p2; };
+      var SEG = [
+        [[cx - W*0.32, H],   [cx - W*0.22, top + HM*0.05], [cx - W*0.10, top]],
+        [[cx - W*0.10, top], [cx,          top - HM*0.012],[cx + W*0.10, top]],
+        [[cx + W*0.10, top], [cx + W*0.22, top + HM*0.05], [cx + W*0.33, H]],
+      ];
+      var curve = [];
+      SEG.forEach(function(s){
+        for (var u = 0; u <= 1.0001; u += 0.04)
+          curve.push([qc(s[0][0], s[1][0], s[2][0], u), qc(s[0][1], s[1][1], s[2][1], u)]);
+      });
+      function surfaceY(x){                     // knoll-top y at x (curve is x-monotonic)
+        for (var k = 1; k < curve.length; k++){
+          if (x <= curve[k][0]){
+            var a = curve[k-1], b = curve[k], f = (x - a[0]) / ((b[0] - a[0]) || 1);
+            return a[1] + (b[1] - a[1]) * f;
+          }
+        }
+        return curve[curve.length - 1][1];
+      }
+      var kr = mulberry32(7707);
+      for (var j = 0; j < 48; j++){
+        var kx = cx - W*0.20 + kr() * (W*0.38);
+        var surf = Math.max(top, surfaceY(kx));   // never above the grass line
+        var ky = surf + HM*0.02 + kr() * HM*0.14;  // apron band in front of the castle
+        drawFlower(kx, ky, 1.0 + kr() * 1.7, FLOWER_COLS[0 | kr() * 5]);
+      }
+    })();
   }
 
   /* ── drifting candy clouds with the rosy under-light (original code) ── */

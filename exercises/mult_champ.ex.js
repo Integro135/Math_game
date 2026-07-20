@@ -8,25 +8,28 @@
 
    She types the answer. Correct → solved (full points). WRONG → the host
    penalty fires AND the game's existing "זֶה כְּמוֹ" repeated-addition scaffold
-   opens beneath the (now greyed) product (the Hebrew label sits to the RIGHT of
-   the 🔁 switch):
+   opens beneath the (now greyed) product. "זֶה כְּמוֹ" is ALWAYS followed by the
+   CURRENT orientation — the one that matches what the aid is counting:
 
-        ─────────────
-        [🔁 4 + 4 + 4]   זֶה כְּמוֹ
-        3 +3 +3 +3 = □
+        ─────────────              ┌──────┐
+        זֶה כְּמוֹ  4 + 4 + 4        │  🔁  │  ← FLOATS separately; hover
+        (line jumps of 4)          └──────┘     previews "3 + 3 + 3 + 3"
 
    The 🔁 SWITCH button flips WHICH number is repeated: 3×4 shown as
    3+3+3+3 (four 3s) ↔ 4+4+4 (three 4s). Both equal the same product, so the
-   final answer box never changes; only the visualisation does. The button
-   always PREVIEWS the other orientation ("🔁 4 + 4 + 4"). Middle terms carry the
-   optional running-sum helper boxes + diagonal guide (like chain/mult_chain);
+   final answer box never changes; only the visualisation does. The button is a
+   FLOATING, SEPARATE 🔁 at the top-right (user request) — it PREVIEWS the OTHER
+   orientation only in its HOVER tooltip, so the always-visible "זֶה כְּמוֹ" chain
+   never contradicts the number line. Middle terms of the interactive chain carry
+   the optional running-sum helper boxes + diagonal guide (like chain/mult_chain);
    only the FINAL box scores.
 
    MISTAKE AIDS ALTERNATE (user request): each mistake-card reveals ONE aid, in
    strict turns across cards (window.__mkAidTurn) — the SKIP-COUNTING NUMBER
    LINE (jumps of the repeated number, 0..rep·5; the product box itself retries)
    or the repeated-addition CHAIN above. The 🔁 switch follows the shown aid:
-   on a line card it RE-CONFIGURES the line to the other factor's jumps.
+   on a line card it RE-CONFIGURES the line to the other factor's jumps AND
+   updates the "זֶה כְּמוֹ" chain to match, so both always agree.
 
    Problem shape: { t:TMK, a:base, b:count } → `a` repeated `b` times by default
    (a = the small multiplicand). Factors reach up to 4 (a,b ∈ {2,3,4}).
@@ -68,16 +71,38 @@ window.EXERCISES.types.mult_champ=(()=>{
   @keyframes mkFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
   .mk-sep{width:60%;max-width:340px;height:0;border-top:2px solid var(--skin-accent,#ffd27d);opacity:.55;border-radius:2px}
   /* direction:rtl → the Hebrew "זֶה כְּמוֹ" (first child) sits to the RIGHT of the
-     🔁 switch button (second child), which lands to its left */
-  .mk-like-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;direction:rtl}
+     CURRENT-orientation read-only chain (second child), which lands to its left */
+  .mk-like-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;direction:rtl}
   .mk-like{font-family:'Fredoka One',cursive;font-size:1.15rem;color:var(--skin-text,#fff);opacity:.92}
-  /* the SWITCH button — previews the OTHER orientation (e.g. "🔁 6 + 6") */
-  .mk-switch{font-family:'Fredoka One',cursive;font-size:1.05rem;cursor:pointer;direction:ltr;
-    color:var(--skin-text,#fff);background:rgba(199,125,255,.22);
-    border:2px solid var(--skin-primary,#c77dff);border-radius:999px;padding:5px 14px;line-height:1;
-    box-shadow:0 2px 8px rgba(0,0,0,.2);transition:transform .12s,background .12s}
-  .mk-switch:hover{background:rgba(199,125,255,.4);transform:translateY(-1px)}
-  .mk-switch:active{transform:scale(.95)}
+  /* the CURRENT-orientation chain shown beside "זֶה כְּמוֹ" — matches the number
+     line's jumps (jumps of 4 → "4 + 4 + 4"); hidden (empty) on a chain card,
+     where the interactive chain below already IS the current display */
+  .mk-like-chain{font-family:'Fredoka One',cursive;font-size:1.4rem;display:inline-flex;align-items:center;gap:7px;direction:ltr;line-height:1}
+  .mk-like-chain .mk-lc-num{color:var(--skin-accent,#ffd27d)}
+  .mk-like-chain .mk-lc-op{color:var(--skin-primary,#c77dff)}
+  .mk-like-chain:empty{display:none}
+  /* the SWITCH button — a FLOATING, SEPARATE round pill on its own line (an
+     elevated 🔁 detached from the "זֶה כְּמוֹ" chain); position:relative anchors
+     its hover tooltip, which previews the OTHER orientation just below it */
+  .mk-switch{position:relative;margin-top:2px;cursor:pointer;line-height:1;
+    color:var(--skin-text,#fff);background:rgba(199,125,255,.24);
+    border:2px solid var(--skin-primary,#c77dff);border-radius:999px;
+    width:48px;height:48px;font-size:1.5rem;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 5px 14px rgba(0,0,0,.3);transition:transform .12s,background .12s;z-index:3}
+  .mk-switch:hover{background:rgba(199,125,255,.42);transform:translateY(-2px)}
+  .mk-switch:active{transform:scale(.94)}
+  .mk-switch-ico{pointer-events:none}
+  /* the hover PREVIEW — the exercise it will swap TO — drops BELOW the button.
+     FIXED light ink (#fff) + accent numbers: the pill is a fixed dark colour on
+     every skin, so a skin's dark --skin-text (e.g. unicorns' deep plum) must NOT
+     leak in or it goes invisible on the dark background. */
+  .mk-switch-tip{position:absolute;top:calc(100% + 8px);left:50%;
+    font-family:'Fredoka One',cursive;font-size:1.2rem;direction:ltr;white-space:nowrap;letter-spacing:.02em;
+    color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);background:rgba(28,18,46,.96);
+    border:1.5px solid var(--skin-primary,#c77dff);border-radius:12px;padding:6px 14px;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);opacity:0;visibility:hidden;
+    transform:translate(-50%,-4px);transition:opacity .14s,transform .14s;pointer-events:none;z-index:4}
+  .mk-switch:hover .mk-switch-tip,.mk-switch:focus .mk-switch-tip,.mk-switch:focus-visible .mk-switch-tip{opacity:1;visibility:visible;transform:translate(-50%,0)}
   /* the chain fits on ONE line — the inner row auto-scales down when it would overflow */
   .mk-scroll{width:100%;overflow:hidden;display:flex;justify-content:center}
   .mk-row{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:5px;direction:ltr;
@@ -124,10 +149,16 @@ window.EXERCISES.types.mult_champ=(()=>{
           '<input class="ans-inp mk-ans blink" id="mk-ans" type="text" inputmode="numeric" maxlength="2" aria-label="הַתְּשׁוּבָה"></div>'+
         '<div class="mk-chain" id="mk-chain" style="display:none">'+
           '<div class="mk-sep"></div>'+
+          /* "זֶה כְּמוֹ" + the CURRENT-orientation chain (matches the number line;
+             empty on a chain card, where the interactive chain below is shown) */
           '<div class="mk-like-row"><span class="mk-like">זֶה כְּמוֹ</span>'+
-            /* the 🔁 switch flips WHICH factor repeats — pointless when both are
-               equal (3+3+3 flips to the same 3+3+3), so omit it for a×a */
-            (A===B?'':'<button class="mk-switch" id="mk-switch" type="button" title="הַחְלִיפִי אֶת הַמִּסְפָּר שֶׁחוֹזֵר"></button>')+'</div>'+
+            '<span class="mk-like-chain" id="mk-like-chain"></span></div>'+
+          /* the 🔁 switch flips WHICH factor repeats — pointless when both are
+             equal (3+3+3 flips to the same 3+3+3), so omit it for a×a. It's a
+             FLOATING, SEPARATE pill on its own line; the swap target shows only
+             in its hover tooltip, so the visible "זֶה כְּמוֹ" chain never lies. */
+          (A===B?'':'<button class="mk-switch" id="mk-switch" type="button" title="הַחְלִיפִי אֶת הַמִּסְפָּר שֶׁחוֹזֵר">'+
+            '<span class="mk-switch-ico">🔁</span><span class="mk-switch-tip" id="mk-switch-tip"></span></button>')+
           '<div class="mk-scroll"><div class="mk-row" id="mk-row"></div></div>'+
         '</div>'+
       '</div>';
@@ -138,6 +169,23 @@ window.EXERCISES.types.mult_champ=(()=>{
     const scroll=root.querySelector('.mk-scroll');
     const switchBtn=root.querySelector('#mk-switch');
     const rowEl=root.querySelector('#mk-row');
+    const likeChainEl=root.querySelector('#mk-like-chain');
+
+    // a read-only "rep + rep + …" chain string (styled numbers + operators),
+    // used both beside "זֶה כְּמוֹ" (current orientation) and, as plain text, in
+    // the 🔁 switch's hover tooltip (the orientation it will swap TO).
+    function likeChainHtml(rep,times){
+      let s='';
+      for(let i=0;i<times;i++)s+=(i?'<span class="mk-lc-op">+</span>':'')+'<span class="mk-lc-num">'+rep+'</span>';
+      return s;
+    }
+    // refresh the floating switch's hover preview to the OTHER orientation
+    function updateSwitchTip(){
+      if(!switchBtn)return;
+      const oRep=flip?A:B, oTimes=flip?B:A;
+      const tip=switchBtn.querySelector('.mk-switch-tip');
+      if(tip)tip.textContent=new Array(oTimes).fill(oRep).join(' + ');
+    }
 
     fb('✖️ כַּמָּה זֶה '+spoken(A,B)+'? כִּתְבִי אֶת הַתְּשׁוּבָה 💗');   // e.g. 4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ"
 
@@ -205,12 +253,10 @@ window.EXERCISES.types.mult_champ=(()=>{
     function renderChain(){
       const rep=flip?B:A, times=flip?A:B;
       rowEl.innerHTML=chainHtml(rep,times);
-      // the SWITCH button previews the OTHER orientation, e.g. "🔁 6 + 6"
-      // (absent when A===B — nothing to flip to)
-      if(switchBtn){
-        const oRep=flip?A:B, oTimes=flip?B:A;
-        switchBtn.innerHTML='🔁 '+new Array(oTimes).fill(oRep).join(' + ');
-      }
+      // the interactive chain below IS the current display — leave the read-only
+      // "זֶה כְּמוֹ" chain empty (it's only for the number-line card)
+      if(likeChainEl)likeChainEl.innerHTML='';
+      updateSwitchTip();   // the floating 🔁 previews the OTHER orientation on hover
       const finalInp=wireChain();
       requestAnimationFrame(()=>{fit();try{finalInp.focus();}catch(e){}});
     }
@@ -221,10 +267,10 @@ window.EXERCISES.types.mult_champ=(()=>{
     // switch (user request: the line must follow the factor swap).
     function renderNlAid(){
       const rep=flip?B:A, times=flip?A:B;
-      if(switchBtn){
-        const oRep=flip?A:B, oTimes=flip?B:A;
-        switchBtn.innerHTML='🔁 '+new Array(oTimes).fill(oRep).join(' + ');
-      }
+      // show the CURRENT orientation beside "זֶה כְּמוֹ" so it MATCHES the line's
+      // jumps (jumps of `rep` → "rep + rep + …"); the floating 🔁 previews the other
+      if(likeChainEl)likeChainEl.innerHTML=likeChainHtml(rep,times);
+      updateSwitchTip();
       const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='';
       if(typeof NL!=='undefined'){NL.configure(rep*5,rep);NL.init(0);}
       fb('✖️ כֶּפֶל זֶה קְפִיצוֹת שָׁווֹת! קִפְצִי '+times+' קְפִיצוֹת שֶׁל '+rep+' עַל הַיָּשָׁר 💗');
