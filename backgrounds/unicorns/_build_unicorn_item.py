@@ -23,8 +23,12 @@ Transform rules (see the workflow spec):
     #color-C  :checked ~ label X  -> .uc-uni.uc-c-C X
   - @keyframes NAME               -> @keyframes uc-NAME  (+ remap animation refs)
   - rem                           -> em   (rig scales by one font-size)
-  - DROPPED: html/body, .floor, .dust + particle-animation-* keyframes, input
-    rules, .panel/.swatch chrome, #toggle slow-mo, .fly-fx sky layer, @media.
+  - DROPPED: html/body, .floor, input rules, .panel/.swatch chrome, #toggle
+    slow-mo, .fly-fx sky layer, @media.
+  - KEPT: .dust stardust trail + its particle-animation-* keyframes — the
+    workshop authors it in viewport-fixed coords (fixed / 50vh / 50vw), so
+    EXTRA_CSS in unicorn.item.js re-anchors the container + spawn points to
+    the instance box (the rules here carry the sizes, colors and motion).
 """
 import re, io, sys
 
@@ -109,7 +113,7 @@ STATE = {
 # class/token drops are safe substrings (no kept selector contains them); the
 # page ELEMENT selectors html/body are matched with a word boundary so the rig's
 # `.body` CLASS is NOT caught (that bug collapsed the whole torso to a dot).
-DROP_TOK = (".floor", ".dust", ".panel", ".swatch", ".fly-fx", "input", "#toggle")
+DROP_TOK = (".floor", ".panel", ".swatch", ".fly-fx", "input", "#toggle")
 
 
 def xform_sel(sel):
@@ -138,9 +142,6 @@ for prelude, body in blocks(css):
     at = re.match(r"@(-webkit-)?keyframes\s+([\w-]+)", prelude)
     if at:
         name = at.group(2)
-        if name.startswith("particle-animation"):
-            dropped += 1
-            continue
         rules.append("@%skeyframes uc-%s {%s}" % (at.group(1) or "", name, rem2em(body).strip()))
         kept_kf += 1
         continue

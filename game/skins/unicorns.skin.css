@@ -12,7 +12,9 @@
 
 :root{
   --skin-primary: #FF6FB5;   /* candy pink   */
-  --skin-accent:  #7DC4FF;   /* sky tchelet  */
+  --skin-accent:  #8E2BC8;   /* deep purple — the exercise highlight ink (was sky
+                                tchelet #7DC4FF, which washed out over the light
+                                valley); dark purple reads crisp on the meadow */
   --skin-glow:    #C77DFF;   /* royal lilac  */
   --skin-text:    #5A2A52;   /* deep plum — in-game ink over the LIGHT valley */
   /* success/gift/intro screens draw over near-black: the deep-plum ink above

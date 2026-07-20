@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🐰 Bunny — standalone workshop</title>
+<!--
+  Workshop harness for the pure-CSS rabbit (originally a CodePen Pug+SASS dump
+  in this file; now compiled + packaged in bunny.item.js as
+  window.Bunny.place(parent, opts) → inst, with the walk-hop movement:
+  inst.hop() for a single spring, inst.roam({...}) for the come-and-go hop
+  travel used by the meadow scene. The rig faces LEFT natively.
+
+  This page shows: one BIG static bunny (art inspection, click → hop in place)
+  and two roaming bunnies hopping across the meadow band at different sizes.
+-->
+<style>
+  html,body{margin:0;height:100%;overflow:hidden}
+  body{position:relative;
+    background:linear-gradient(180deg,#BFE8FF 0%,#E8F6FF 55%,#8ED26B 56%,#57B24A 100%)}
+  .hint{position:fixed;left:14px;top:12px;z-index:10;color:#2c5530;
+    font:600 14px system-ui;background:rgba(255,255,255,.7);
+    padding:6px 12px;border-radius:10px}
+</style>
+</head>
+<body>
+<div class="hint">🐰 click the big bunny → hop · the small ones roam the meadow</div>
+<script src="bunny.item.js"></script>
+<script>
+  // the big display bunny — click it for a single hop in place
+  var big = window.Bunny.place(document.body, { size: 40, left: '46%', bottom: '12%' });
+  big.el.style.pointerEvents = 'auto';
+  big.el.style.cursor = 'pointer';
+  big.el.addEventListener('pointerdown', function () { big.hop(); });
+
+  // two roamers hopping along the grass band, in and out of the screen
+  var r1 = window.Bunny.place(document.body, { size: 18 })
+    .roam({ bandMinPct: 4, bandMaxPct: 16, hopPct: 3.4, waitMinSec: 2, waitMaxSec: 6 });
+  var r2 = window.Bunny.place(document.body, { size: 12 })
+    .roam({ bandMinPct: 18, bandMaxPct: 26, hopPct: 2.6, hopSec: 0.5, waitMinSec: 3, waitMaxSec: 8 });
+
+  // verification hooks
+  window.__bunny = {
+    big: big, roamers: [r1, r2],
+    count: function () { return document.querySelectorAll('.bn-bunny').length; }
+  };
+</script>
+</body>
+</html>

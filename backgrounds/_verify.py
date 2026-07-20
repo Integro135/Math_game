@@ -15,34 +15,29 @@ from playwright.sync_api import sync_playwright
 THEME    = "girls"                 # the 🦄 theme → unicorns background (new meadow scene)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
-STANDALONE = ""                    # "" → drive the REAL game (index.html)
+STANDALONE = r"C:\code\subtraction_game\backgrounds\unicorns\meadow.html"
 VIEW     = {"width": 1280, "height": 800}   # viewport
-# IN-GAME INTEGRATION of the new unicorn meadow (unicorns.bg.js → UnicornMeadow):
-# the scene must mount INTO #stars-layer (behind the game card), roam actors
-# there, and be torn down when switching themes (then re-mount on return).
-EVAL = r"""(function(){ setMode('mulc'); return 'mulc'; })();"""
+# BUNNY IN THE MEADOW (in-game, girls theme): the scene lazy-loads bunny.item.js
+# and roams one bunny off-stage-first (8-20s wait) — poll until it hops on
+# screen, confirm it travels facing its direction, then switch themes and
+# confirm the cleanup removes it (rig + timers).
+EVAL = r""
 POST_EVAL = r"""(function(){
-  // force a perimeter problem, get it wrong → the number line (with reset/undo)
-  // appears; report the reset/undo icon colors + fills, then screenshot them
-  mode='mulc';score=0;problems=[{t:TPP,shape:'square',sides:[3,3,3,3],a:12}];idx=0;loadProblem();
   return new Promise(function(res){ setTimeout(function(){
-    var inp=document.querySelector('.pm-inp');
-    if(!inp) return res(JSON.stringify({error:'no perimeter board'}));
-    inp.value='10';
-    inp.dispatchEvent(new Event('input',{bubbles:true}));
-    inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
-    setTimeout(function(){
-      document.getElementById('nl-panel').scrollIntoView({block:'center'});
-      var rs=document.querySelector('#nl-panel .btn-reset'), ud=document.querySelector('#nl-panel .btn-undo');
-      var cs=function(e){var c=getComputedStyle(e);return {color:c.color,bg:c.backgroundColor};};
-      res(JSON.stringify({ resetBtn:cs(rs), undoBtn:cs(ud) }));
-    }, 500);
-  }, 500); });
+    var out=[];
+    document.querySelectorAll('.uc-uni:not(.uc-fx-host)').forEach(function(u){
+      var c=u.querySelector('.cutie');
+      out.push({fly:u.classList.contains('uc-fly'),
+                coat:(u.className.match(/uc-c-([a-z]+)/)||[])[1],
+                cutieDisplay:getComputedStyle(c).display});
+    });
+    res(JSON.stringify(out));
+  }, 1200); });
 })();"""
 CLICKS   = []
-WAIT_MS   = 1600
+WAIT_MS   = 1500
 SHOTS    = [
-    {"path": r"c:\tmp\nl_ctrls.png", "clip": {"x": 340, "y": 470, "width": 600, "height": 250}},
+    {"path": r"c:\tmp\cutie_walk.png", "clip": {"x": 340, "y": 200, "width": 520, "height": 420}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

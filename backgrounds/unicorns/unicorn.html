@@ -3749,6 +3749,8 @@ input[type=radio]{position:fixed;opacity:0;pointer-events:none}
 }
 #gait-fly:checked ~ label .animate .wing{animation:wing-fly 1.05s ease-in-out infinite}
 #gait-fly:checked ~ label .animate .wing i{animation-duration:1.05s}
+/* soaring: NO cutie mark on flyers (user request) */
+#gait-fly:checked ~ label .cutie{display:none}
 /* WIND: the mane, tail and horn-glow flutter fast while airborne (the slow
    dreamy --speed:3s stays for the body/neck bob) */
 #gait-fly:checked ~ label .animate .mane b{animation-duration:1.15s}
@@ -3794,15 +3796,16 @@ input[type=radio]{position:fixed;opacity:0;pointer-events:none}
    Each coat re-tints the body (+ far legs + forelock accent) and stamps its
    own CUTIE MARK — a little glowing emoji on the rump. The rainbow mane/tail
    and the golden horn suit every coat. */
-/* the cutie mark — rides the .body (and its gait bob), stamped HIGH on the
-   hip (the near hind leg paints over the lower rump, so the mark sits above
-   the thigh line where the coat is always visible) */
-.body .cutie{
-  --shape-x:60%; --shape-y:-8%; --shape-width:22%; --shape-height:48%;
+/* the cutie mark — now a DIRECT part of the horse, painted LAST (markup: the
+   final 🐴 child), so no limb/neck/mane can ever sweep over it in any gait
+   (user request: the mark must ALWAYS be visible). Same visual spot as the old
+   in-body position: 53%/36.6% = body(20,30,55,33) + in-body (60%,20%). */
+.cutie{
+  --part-x:53%; --part-y:36.6%; --part-width:12.1%; --part-height:15.84%;
   background-color:transparent; border:none;
   display:flex; align-items:center; justify-content:center;
 }
-.body .cutie::before{
+.cutie::before{
   content:'⭐';
   position:static; width:auto; height:auto; background:transparent; border:none;
   font-size:.2rem; line-height:1;
@@ -3946,7 +3949,6 @@ input[type=radio]{position:fixed;opacity:0;pointer-events:none}
 			</div>
 			</div>
 			<div class="back-side"></div>
-			<div class="cutie"></div>
 		</div>
 
 		<div class="neck">
@@ -4000,6 +4002,7 @@ input[type=radio]{position:fixed;opacity:0;pointer-events:none}
 			<div class="eye"></div>
 			<div class="lash"></div>
 		</div>
+		<div class="cutie"></div>   <!-- painted LAST: the mark rides above every limb -->
 	</div>	
 	
 	<div class="dust front">

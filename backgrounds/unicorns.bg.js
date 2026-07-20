@@ -45,9 +45,10 @@
 
   // warm the scene module + its item deps during the intro-splash preload
   function loadScene(cb) {
-    var left = 3, done = function () { if (--left === 0) cb(); };
+    var left = 4, done = function () { if (--left === 0) cb(); };
     inject('unicorn.item.js', done);
     inject('fairy.item.js', done);
+    inject('bunny.item.js', done);
     inject('meadow.scene.js', done);
   }
 

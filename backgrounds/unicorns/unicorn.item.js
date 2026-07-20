@@ -31,8 +31,10 @@
 
    The rig is rem→em converted (one font-size scales the whole horse), every
    selector is scoped under .uc-uni and every keyframe prefixed uc-*, so it
-   cannot collide with a host. The workshop's dust storm, page chrome and
-   click-FX are stripped. Zero dependencies; injects its <style> once.
+   cannot collide with a host. The workshop's page chrome and click-FX are
+   stripped; the galloping STARDUST TRAIL is kept (its motion/colors ride in
+   from the workshop, EXTRA_CSS re-anchors it from viewport-fixed coords to
+   the instance box). Zero dependencies; injects its <style> once.
    ───────────────────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
@@ -61,186 +63,561 @@
   --color-sky: #C4C4FF;}
 .uc-uni * {position: relative;}
 .uc-uni label {cursor: pointer;}
+.uc-uni .dust {position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(((100vh - var(--horse-height)) / 2) + 0.02em);
+  overflow: hidden;}
+.uc-uni .dust .particle {background-color: var(--color-dust);
+  width: 0.05em;
+  height: 0.05em;
+  border-radius: 50%;
+  position: absolute;
+  border: 1px dashed var(--outlines);
+  top: calc(50vh + (var(--horse-height) / 2) - 0.05em);
+  left: calc(50vw - (var(--horse-width) / 2) + (var(--horse-width) * 0.15));}
+.uc-uni .dust.back .particle {left: calc(50vw - (var(--horse-width) / 2) + (var(--horse-width) * 0.5));}
+@-webkit-keyframes uc-particle-animation-1 {100% {
+    -webkit-transform: translateX(calc(0.1865302066 * var(--horse-width) )) translateY(calc(-0.0019510211 * (var(--horse-height) / 5))) scale(3) rotate(-126.5deg);
+            transform: translateX(calc(0.1865302066 * var(--horse-width) )) translateY(calc(-0.0019510211 * (var(--horse-height) / 5))) scale(3) rotate(-126.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-1 {100% {
+    -webkit-transform: translateX(calc(0.1865302066 * var(--horse-width) )) translateY(calc(-0.0019510211 * (var(--horse-height) / 5))) scale(3) rotate(-126.5deg);
+            transform: translateX(calc(0.1865302066 * var(--horse-width) )) translateY(calc(-0.0019510211 * (var(--horse-height) / 5))) scale(3) rotate(-126.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(1) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-1 var(--speed) ease-out infinite;
           animation: uc-particle-animation-1 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.01s);
           animation-delay: calc((var(--speed) * 0.1) + 0.01s);}
+.uc-uni .dust.back .particle:nth-child(1) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.01s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.01s);}
+@-webkit-keyframes uc-particle-animation-2 {100% {
+    -webkit-transform: translateX(calc(0.0269289474 * var(--horse-width) )) translateY(calc(-0.0005832403 * (var(--horse-height) / 5))) scale(4) rotate(-57.5deg);
+            transform: translateX(calc(0.0269289474 * var(--horse-width) )) translateY(calc(-0.0005832403 * (var(--horse-height) / 5))) scale(4) rotate(-57.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-2 {100% {
+    -webkit-transform: translateX(calc(0.0269289474 * var(--horse-width) )) translateY(calc(-0.0005832403 * (var(--horse-height) / 5))) scale(4) rotate(-57.5deg);
+            transform: translateX(calc(0.0269289474 * var(--horse-width) )) translateY(calc(-0.0005832403 * (var(--horse-height) / 5))) scale(4) rotate(-57.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(2) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-2 var(--speed) ease-out infinite;
           animation: uc-particle-animation-2 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.02s);
           animation-delay: calc((var(--speed) * 0.1) + 0.02s);}
+.uc-uni .dust.back .particle:nth-child(2) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.02s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.02s);}
+@-webkit-keyframes uc-particle-animation-3 {100% {
+    -webkit-transform: translateX(calc(0.2183341644 * var(--horse-width) )) translateY(calc(-0.0011654604 * (var(--horse-height) / 5))) scale(6) rotate(-141deg);
+            transform: translateX(calc(0.2183341644 * var(--horse-width) )) translateY(calc(-0.0011654604 * (var(--horse-height) / 5))) scale(6) rotate(-141deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-3 {100% {
+    -webkit-transform: translateX(calc(0.2183341644 * var(--horse-width) )) translateY(calc(-0.0011654604 * (var(--horse-height) / 5))) scale(6) rotate(-141deg);
+            transform: translateX(calc(0.2183341644 * var(--horse-width) )) translateY(calc(-0.0011654604 * (var(--horse-height) / 5))) scale(6) rotate(-141deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(3) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-3 var(--speed) ease-out infinite;
           animation: uc-particle-animation-3 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.03s);
           animation-delay: calc((var(--speed) * 0.1) + 0.03s);}
+.uc-uni .dust.back .particle:nth-child(3) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.03s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.03s);}
+@-webkit-keyframes uc-particle-animation-4 {100% {
+    -webkit-transform: translateX(calc(0.516067634 * var(--horse-width) )) translateY(calc(-0.0008606763 * (var(--horse-height) / 5))) scale(4) rotate(-108deg);
+            transform: translateX(calc(0.516067634 * var(--horse-width) )) translateY(calc(-0.0008606763 * (var(--horse-height) / 5))) scale(4) rotate(-108deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-4 {100% {
+    -webkit-transform: translateX(calc(0.516067634 * var(--horse-width) )) translateY(calc(-0.0008606763 * (var(--horse-height) / 5))) scale(4) rotate(-108deg);
+            transform: translateX(calc(0.516067634 * var(--horse-width) )) translateY(calc(-0.0008606763 * (var(--horse-height) / 5))) scale(4) rotate(-108deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(4) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-4 var(--speed) ease-out infinite;
           animation: uc-particle-animation-4 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.04s);
           animation-delay: calc((var(--speed) * 0.1) + 0.04s);}
+.uc-uni .dust.back .particle:nth-child(4) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.04s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.04s);}
+@-webkit-keyframes uc-particle-animation-5 {100% {
+    -webkit-transform: translateX(calc(0.6010072872 * var(--horse-width) )) translateY(calc(-0.0060810274 * (var(--horse-height) / 5))) scale(4) rotate(-76deg);
+            transform: translateX(calc(0.6010072872 * var(--horse-width) )) translateY(calc(-0.0060810274 * (var(--horse-height) / 5))) scale(4) rotate(-76deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-5 {100% {
+    -webkit-transform: translateX(calc(0.6010072872 * var(--horse-width) )) translateY(calc(-0.0060810274 * (var(--horse-height) / 5))) scale(4) rotate(-76deg);
+            transform: translateX(calc(0.6010072872 * var(--horse-width) )) translateY(calc(-0.0060810274 * (var(--horse-height) / 5))) scale(4) rotate(-76deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(5) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-5 var(--speed) ease-out infinite;
           animation: uc-particle-animation-5 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.05s);
           animation-delay: calc((var(--speed) * 0.1) + 0.05s);}
+.uc-uni .dust.back .particle:nth-child(5) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.05s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.05s);}
+@-webkit-keyframes uc-particle-animation-6 {100% {
+    -webkit-transform: translateX(calc(0.4536142004 * var(--horse-width) )) translateY(calc(-0.0087663683 * (var(--horse-height) / 5))) scale(4) rotate(-75.5deg);
+            transform: translateX(calc(0.4536142004 * var(--horse-width) )) translateY(calc(-0.0087663683 * (var(--horse-height) / 5))) scale(4) rotate(-75.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-6 {100% {
+    -webkit-transform: translateX(calc(0.4536142004 * var(--horse-width) )) translateY(calc(-0.0087663683 * (var(--horse-height) / 5))) scale(4) rotate(-75.5deg);
+            transform: translateX(calc(0.4536142004 * var(--horse-width) )) translateY(calc(-0.0087663683 * (var(--horse-height) / 5))) scale(4) rotate(-75.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(6) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-6 var(--speed) ease-out infinite;
           animation: uc-particle-animation-6 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.06s);
           animation-delay: calc((var(--speed) * 0.1) + 0.06s);}
+.uc-uni .dust.back .particle:nth-child(6) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.06s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.06s);}
+@-webkit-keyframes uc-particle-animation-7 {100% {
+    -webkit-transform: translateX(calc(0.3354709263 * var(--horse-width) )) translateY(calc(-0.0063274995 * (var(--horse-height) / 5))) scale(4) rotate(-14deg);
+            transform: translateX(calc(0.3354709263 * var(--horse-width) )) translateY(calc(-0.0063274995 * (var(--horse-height) / 5))) scale(4) rotate(-14deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-7 {100% {
+    -webkit-transform: translateX(calc(0.3354709263 * var(--horse-width) )) translateY(calc(-0.0063274995 * (var(--horse-height) / 5))) scale(4) rotate(-14deg);
+            transform: translateX(calc(0.3354709263 * var(--horse-width) )) translateY(calc(-0.0063274995 * (var(--horse-height) / 5))) scale(4) rotate(-14deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(7) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-7 var(--speed) ease-out infinite;
           animation: uc-particle-animation-7 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.07s);
           animation-delay: calc((var(--speed) * 0.1) + 0.07s);}
+.uc-uni .dust.back .particle:nth-child(7) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.07s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.07s);}
+@-webkit-keyframes uc-particle-animation-8 {100% {
+    -webkit-transform: translateX(calc(0.7113461256 * var(--horse-width) )) translateY(calc(-0.0099493652 * (var(--horse-height) / 5))) scale(6) rotate(-67.5deg);
+            transform: translateX(calc(0.7113461256 * var(--horse-width) )) translateY(calc(-0.0099493652 * (var(--horse-height) / 5))) scale(6) rotate(-67.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-8 {100% {
+    -webkit-transform: translateX(calc(0.7113461256 * var(--horse-width) )) translateY(calc(-0.0099493652 * (var(--horse-height) / 5))) scale(6) rotate(-67.5deg);
+            transform: translateX(calc(0.7113461256 * var(--horse-width) )) translateY(calc(-0.0099493652 * (var(--horse-height) / 5))) scale(6) rotate(-67.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(8) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-8 var(--speed) ease-out infinite;
           animation: uc-particle-animation-8 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.08s);
           animation-delay: calc((var(--speed) * 0.1) + 0.08s);}
+.uc-uni .dust.back .particle:nth-child(8) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.08s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.08s);}
+@-webkit-keyframes uc-particle-animation-9 {100% {
+    -webkit-transform: translateX(calc(0.080946473 * var(--horse-width) )) translateY(calc(-0.0065291825 * (var(--horse-height) / 5))) scale(4) rotate(-38deg);
+            transform: translateX(calc(0.080946473 * var(--horse-width) )) translateY(calc(-0.0065291825 * (var(--horse-height) / 5))) scale(4) rotate(-38deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-9 {100% {
+    -webkit-transform: translateX(calc(0.080946473 * var(--horse-width) )) translateY(calc(-0.0065291825 * (var(--horse-height) / 5))) scale(4) rotate(-38deg);
+            transform: translateX(calc(0.080946473 * var(--horse-width) )) translateY(calc(-0.0065291825 * (var(--horse-height) / 5))) scale(4) rotate(-38deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(9) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-9 var(--speed) ease-out infinite;
           animation: uc-particle-animation-9 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.09s);
           animation-delay: calc((var(--speed) * 0.1) + 0.09s);}
+.uc-uni .dust.back .particle:nth-child(9) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.09s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.09s);}
+@-webkit-keyframes uc-particle-animation-10 {100% {
+    -webkit-transform: translateX(calc(0.1470335732 * var(--horse-width) )) translateY(calc(-0.0020159981 * (var(--horse-height) / 5))) scale(4) rotate(-152.5deg);
+            transform: translateX(calc(0.1470335732 * var(--horse-width) )) translateY(calc(-0.0020159981 * (var(--horse-height) / 5))) scale(4) rotate(-152.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-10 {100% {
+    -webkit-transform: translateX(calc(0.1470335732 * var(--horse-width) )) translateY(calc(-0.0020159981 * (var(--horse-height) / 5))) scale(4) rotate(-152.5deg);
+            transform: translateX(calc(0.1470335732 * var(--horse-width) )) translateY(calc(-0.0020159981 * (var(--horse-height) / 5))) scale(4) rotate(-152.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(10) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-10 var(--speed) ease-out infinite;
           animation: uc-particle-animation-10 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.1s);
           animation-delay: calc((var(--speed) * 0.1) + 0.1s);}
+.uc-uni .dust.back .particle:nth-child(10) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.1s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.1s);}
+@-webkit-keyframes uc-particle-animation-11 {100% {
+    -webkit-transform: translateX(calc(0.3975218731 * var(--horse-width) )) translateY(calc(-0.0075265158 * (var(--horse-height) / 5))) scale(4) rotate(-40.5deg);
+            transform: translateX(calc(0.3975218731 * var(--horse-width) )) translateY(calc(-0.0075265158 * (var(--horse-height) / 5))) scale(4) rotate(-40.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-11 {100% {
+    -webkit-transform: translateX(calc(0.3975218731 * var(--horse-width) )) translateY(calc(-0.0075265158 * (var(--horse-height) / 5))) scale(4) rotate(-40.5deg);
+            transform: translateX(calc(0.3975218731 * var(--horse-width) )) translateY(calc(-0.0075265158 * (var(--horse-height) / 5))) scale(4) rotate(-40.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(11) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-11 var(--speed) ease-out infinite;
           animation: uc-particle-animation-11 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.11s);
           animation-delay: calc((var(--speed) * 0.1) + 0.11s);}
+.uc-uni .dust.back .particle:nth-child(11) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.11s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.11s);}
+@-webkit-keyframes uc-particle-animation-12 {100% {
+    -webkit-transform: translateX(calc(0.6381622519 * var(--horse-width) )) translateY(calc(-0.0067366122 * (var(--horse-height) / 5))) scale(5) rotate(-10deg);
+            transform: translateX(calc(0.6381622519 * var(--horse-width) )) translateY(calc(-0.0067366122 * (var(--horse-height) / 5))) scale(5) rotate(-10deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-12 {100% {
+    -webkit-transform: translateX(calc(0.6381622519 * var(--horse-width) )) translateY(calc(-0.0067366122 * (var(--horse-height) / 5))) scale(5) rotate(-10deg);
+            transform: translateX(calc(0.6381622519 * var(--horse-width) )) translateY(calc(-0.0067366122 * (var(--horse-height) / 5))) scale(5) rotate(-10deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(12) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-12 var(--speed) ease-out infinite;
           animation: uc-particle-animation-12 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.12s);
           animation-delay: calc((var(--speed) * 0.1) + 0.12s);}
+.uc-uni .dust.back .particle:nth-child(12) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.12s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.12s);}
+@-webkit-keyframes uc-particle-animation-13 {100% {
+    -webkit-transform: translateX(calc(0.3130797386 * var(--horse-width) )) translateY(calc(-0.0077930678 * (var(--horse-height) / 5))) scale(3) rotate(-122deg);
+            transform: translateX(calc(0.3130797386 * var(--horse-width) )) translateY(calc(-0.0077930678 * (var(--horse-height) / 5))) scale(3) rotate(-122deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-13 {100% {
+    -webkit-transform: translateX(calc(0.3130797386 * var(--horse-width) )) translateY(calc(-0.0077930678 * (var(--horse-height) / 5))) scale(3) rotate(-122deg);
+            transform: translateX(calc(0.3130797386 * var(--horse-width) )) translateY(calc(-0.0077930678 * (var(--horse-height) / 5))) scale(3) rotate(-122deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(13) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-13 var(--speed) ease-out infinite;
           animation: uc-particle-animation-13 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.13s);
           animation-delay: calc((var(--speed) * 0.1) + 0.13s);}
+.uc-uni .dust.back .particle:nth-child(13) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.13s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.13s);}
+@-webkit-keyframes uc-particle-animation-14 {100% {
+    -webkit-transform: translateX(calc(0.1034230215 * var(--horse-width) )) translateY(calc(-0.0038184827 * (var(--horse-height) / 5))) scale(5) rotate(-150deg);
+            transform: translateX(calc(0.1034230215 * var(--horse-width) )) translateY(calc(-0.0038184827 * (var(--horse-height) / 5))) scale(5) rotate(-150deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-14 {100% {
+    -webkit-transform: translateX(calc(0.1034230215 * var(--horse-width) )) translateY(calc(-0.0038184827 * (var(--horse-height) / 5))) scale(5) rotate(-150deg);
+            transform: translateX(calc(0.1034230215 * var(--horse-width) )) translateY(calc(-0.0038184827 * (var(--horse-height) / 5))) scale(5) rotate(-150deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(14) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-14 var(--speed) ease-out infinite;
           animation: uc-particle-animation-14 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.14s);
           animation-delay: calc((var(--speed) * 0.1) + 0.14s);}
+.uc-uni .dust.back .particle:nth-child(14) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.14s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.14s);}
+@-webkit-keyframes uc-particle-animation-15 {100% {
+    -webkit-transform: translateX(calc(0.6811699412 * var(--horse-width) )) translateY(calc(-0.0004574408 * (var(--horse-height) / 5))) scale(6) rotate(-105.5deg);
+            transform: translateX(calc(0.6811699412 * var(--horse-width) )) translateY(calc(-0.0004574408 * (var(--horse-height) / 5))) scale(6) rotate(-105.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-15 {100% {
+    -webkit-transform: translateX(calc(0.6811699412 * var(--horse-width) )) translateY(calc(-0.0004574408 * (var(--horse-height) / 5))) scale(6) rotate(-105.5deg);
+            transform: translateX(calc(0.6811699412 * var(--horse-width) )) translateY(calc(-0.0004574408 * (var(--horse-height) / 5))) scale(6) rotate(-105.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(15) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-15 var(--speed) ease-out infinite;
           animation: uc-particle-animation-15 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.15s);
           animation-delay: calc((var(--speed) * 0.1) + 0.15s);}
+.uc-uni .dust.back .particle:nth-child(15) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.15s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.15s);}
+@-webkit-keyframes uc-particle-animation-16 {100% {
+    -webkit-transform: translateX(calc(0.3868914844 * var(--horse-width) )) translateY(calc(-0.0059887576 * (var(--horse-height) / 5))) scale(6) rotate(-139.5deg);
+            transform: translateX(calc(0.3868914844 * var(--horse-width) )) translateY(calc(-0.0059887576 * (var(--horse-height) / 5))) scale(6) rotate(-139.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-16 {100% {
+    -webkit-transform: translateX(calc(0.3868914844 * var(--horse-width) )) translateY(calc(-0.0059887576 * (var(--horse-height) / 5))) scale(6) rotate(-139.5deg);
+            transform: translateX(calc(0.3868914844 * var(--horse-width) )) translateY(calc(-0.0059887576 * (var(--horse-height) / 5))) scale(6) rotate(-139.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(16) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-16 var(--speed) ease-out infinite;
           animation: uc-particle-animation-16 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.16s);
           animation-delay: calc((var(--speed) * 0.1) + 0.16s);}
+.uc-uni .dust.back .particle:nth-child(16) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.16s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.16s);}
+@-webkit-keyframes uc-particle-animation-17 {100% {
+    -webkit-transform: translateX(calc(0.1950402245 * var(--horse-width) )) translateY(calc(-0.0056747992 * (var(--horse-height) / 5))) scale(5) rotate(-123.5deg);
+            transform: translateX(calc(0.1950402245 * var(--horse-width) )) translateY(calc(-0.0056747992 * (var(--horse-height) / 5))) scale(5) rotate(-123.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-17 {100% {
+    -webkit-transform: translateX(calc(0.1950402245 * var(--horse-width) )) translateY(calc(-0.0056747992 * (var(--horse-height) / 5))) scale(5) rotate(-123.5deg);
+            transform: translateX(calc(0.1950402245 * var(--horse-width) )) translateY(calc(-0.0056747992 * (var(--horse-height) / 5))) scale(5) rotate(-123.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(17) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-17 var(--speed) ease-out infinite;
           animation: uc-particle-animation-17 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.17s);
           animation-delay: calc((var(--speed) * 0.1) + 0.17s);}
+.uc-uni .dust.back .particle:nth-child(17) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.17s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.17s);}
+@-webkit-keyframes uc-particle-animation-18 {100% {
+    -webkit-transform: translateX(calc(0.108179063 * var(--horse-width) )) translateY(calc(-0.0047562251 * (var(--horse-height) / 5))) scale(3) rotate(-81deg);
+            transform: translateX(calc(0.108179063 * var(--horse-width) )) translateY(calc(-0.0047562251 * (var(--horse-height) / 5))) scale(3) rotate(-81deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-18 {100% {
+    -webkit-transform: translateX(calc(0.108179063 * var(--horse-width) )) translateY(calc(-0.0047562251 * (var(--horse-height) / 5))) scale(3) rotate(-81deg);
+            transform: translateX(calc(0.108179063 * var(--horse-width) )) translateY(calc(-0.0047562251 * (var(--horse-height) / 5))) scale(3) rotate(-81deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(18) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-18 var(--speed) ease-out infinite;
           animation: uc-particle-animation-18 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.18s);
           animation-delay: calc((var(--speed) * 0.1) + 0.18s);}
+.uc-uni .dust.back .particle:nth-child(18) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.18s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.18s);}
+@-webkit-keyframes uc-particle-animation-19 {100% {
+    -webkit-transform: translateX(calc(0.665064983 * var(--horse-width) )) translateY(calc(-0.0047968338 * (var(--horse-height) / 5))) scale(5) rotate(-164deg);
+            transform: translateX(calc(0.665064983 * var(--horse-width) )) translateY(calc(-0.0047968338 * (var(--horse-height) / 5))) scale(5) rotate(-164deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-19 {100% {
+    -webkit-transform: translateX(calc(0.665064983 * var(--horse-width) )) translateY(calc(-0.0047968338 * (var(--horse-height) / 5))) scale(5) rotate(-164deg);
+            transform: translateX(calc(0.665064983 * var(--horse-width) )) translateY(calc(-0.0047968338 * (var(--horse-height) / 5))) scale(5) rotate(-164deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(19) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-19 var(--speed) ease-out infinite;
           animation: uc-particle-animation-19 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.19s);
           animation-delay: calc((var(--speed) * 0.1) + 0.19s);}
+.uc-uni .dust.back .particle:nth-child(19) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.19s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.19s);}
+@-webkit-keyframes uc-particle-animation-20 {100% {
+    -webkit-transform: translateX(calc(0.3799311838 * var(--horse-width) )) translateY(calc(-0.0012141532 * (var(--horse-height) / 5))) scale(3) rotate(-22.5deg);
+            transform: translateX(calc(0.3799311838 * var(--horse-width) )) translateY(calc(-0.0012141532 * (var(--horse-height) / 5))) scale(3) rotate(-22.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-20 {100% {
+    -webkit-transform: translateX(calc(0.3799311838 * var(--horse-width) )) translateY(calc(-0.0012141532 * (var(--horse-height) / 5))) scale(3) rotate(-22.5deg);
+            transform: translateX(calc(0.3799311838 * var(--horse-width) )) translateY(calc(-0.0012141532 * (var(--horse-height) / 5))) scale(3) rotate(-22.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(20) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-20 var(--speed) ease-out infinite;
           animation: uc-particle-animation-20 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.2s);
           animation-delay: calc((var(--speed) * 0.1) + 0.2s);}
+.uc-uni .dust.back .particle:nth-child(20) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.2s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.2s);}
+@-webkit-keyframes uc-particle-animation-21 {100% {
+    -webkit-transform: translateX(calc(0.6391360309 * var(--horse-width) )) translateY(calc(-0.009106735 * (var(--horse-height) / 5))) scale(3) rotate(-48.5deg);
+            transform: translateX(calc(0.6391360309 * var(--horse-width) )) translateY(calc(-0.009106735 * (var(--horse-height) / 5))) scale(3) rotate(-48.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-21 {100% {
+    -webkit-transform: translateX(calc(0.6391360309 * var(--horse-width) )) translateY(calc(-0.009106735 * (var(--horse-height) / 5))) scale(3) rotate(-48.5deg);
+            transform: translateX(calc(0.6391360309 * var(--horse-width) )) translateY(calc(-0.009106735 * (var(--horse-height) / 5))) scale(3) rotate(-48.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(21) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-21 var(--speed) ease-out infinite;
           animation: uc-particle-animation-21 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.21s);
           animation-delay: calc((var(--speed) * 0.1) + 0.21s);}
+.uc-uni .dust.back .particle:nth-child(21) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.21s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.21s);}
+@-webkit-keyframes uc-particle-animation-22 {100% {
+    -webkit-transform: translateX(calc(0.5704055607 * var(--horse-width) )) translateY(calc(-0.0003910802 * (var(--horse-height) / 5))) scale(6) rotate(-69.5deg);
+            transform: translateX(calc(0.5704055607 * var(--horse-width) )) translateY(calc(-0.0003910802 * (var(--horse-height) / 5))) scale(6) rotate(-69.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-22 {100% {
+    -webkit-transform: translateX(calc(0.5704055607 * var(--horse-width) )) translateY(calc(-0.0003910802 * (var(--horse-height) / 5))) scale(6) rotate(-69.5deg);
+            transform: translateX(calc(0.5704055607 * var(--horse-width) )) translateY(calc(-0.0003910802 * (var(--horse-height) / 5))) scale(6) rotate(-69.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(22) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-22 var(--speed) ease-out infinite;
           animation: uc-particle-animation-22 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.22s);
           animation-delay: calc((var(--speed) * 0.1) + 0.22s);}
+.uc-uni .dust.back .particle:nth-child(22) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.22s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.22s);}
+@-webkit-keyframes uc-particle-animation-23 {100% {
+    -webkit-transform: translateX(calc(0.5243436617 * var(--horse-width) )) translateY(calc(-0.0087148752 * (var(--horse-height) / 5))) scale(4) rotate(-103deg);
+            transform: translateX(calc(0.5243436617 * var(--horse-width) )) translateY(calc(-0.0087148752 * (var(--horse-height) / 5))) scale(4) rotate(-103deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-23 {100% {
+    -webkit-transform: translateX(calc(0.5243436617 * var(--horse-width) )) translateY(calc(-0.0087148752 * (var(--horse-height) / 5))) scale(4) rotate(-103deg);
+            transform: translateX(calc(0.5243436617 * var(--horse-width) )) translateY(calc(-0.0087148752 * (var(--horse-height) / 5))) scale(4) rotate(-103deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(23) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-23 var(--speed) ease-out infinite;
           animation: uc-particle-animation-23 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.23s);
           animation-delay: calc((var(--speed) * 0.1) + 0.23s);}
+.uc-uni .dust.back .particle:nth-child(23) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.23s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.23s);}
+@-webkit-keyframes uc-particle-animation-24 {100% {
+    -webkit-transform: translateX(calc(0.1731283628 * var(--horse-width) )) translateY(calc(-0.0092726604 * (var(--horse-height) / 5))) scale(6) rotate(-73deg);
+            transform: translateX(calc(0.1731283628 * var(--horse-width) )) translateY(calc(-0.0092726604 * (var(--horse-height) / 5))) scale(6) rotate(-73deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-24 {100% {
+    -webkit-transform: translateX(calc(0.1731283628 * var(--horse-width) )) translateY(calc(-0.0092726604 * (var(--horse-height) / 5))) scale(6) rotate(-73deg);
+            transform: translateX(calc(0.1731283628 * var(--horse-width) )) translateY(calc(-0.0092726604 * (var(--horse-height) / 5))) scale(6) rotate(-73deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(24) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-24 var(--speed) ease-out infinite;
           animation: uc-particle-animation-24 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.24s);
           animation-delay: calc((var(--speed) * 0.1) + 0.24s);}
+.uc-uni .dust.back .particle:nth-child(24) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.24s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.24s);}
+@-webkit-keyframes uc-particle-animation-25 {100% {
+    -webkit-transform: translateX(calc(0.0794815925 * var(--horse-width) )) translateY(calc(-0.0068352112 * (var(--horse-height) / 5))) scale(6) rotate(-93.5deg);
+            transform: translateX(calc(0.0794815925 * var(--horse-width) )) translateY(calc(-0.0068352112 * (var(--horse-height) / 5))) scale(6) rotate(-93.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-25 {100% {
+    -webkit-transform: translateX(calc(0.0794815925 * var(--horse-width) )) translateY(calc(-0.0068352112 * (var(--horse-height) / 5))) scale(6) rotate(-93.5deg);
+            transform: translateX(calc(0.0794815925 * var(--horse-width) )) translateY(calc(-0.0068352112 * (var(--horse-height) / 5))) scale(6) rotate(-93.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(25) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-25 var(--speed) ease-out infinite;
           animation: uc-particle-animation-25 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.25s);
           animation-delay: calc((var(--speed) * 0.1) + 0.25s);}
+.uc-uni .dust.back .particle:nth-child(25) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.25s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.25s);}
+@-webkit-keyframes uc-particle-animation-26 {100% {
+    -webkit-transform: translateX(calc(0.3962348094 * var(--horse-width) )) translateY(calc(-0.0079345421 * (var(--horse-height) / 5))) scale(3) rotate(-56deg);
+            transform: translateX(calc(0.3962348094 * var(--horse-width) )) translateY(calc(-0.0079345421 * (var(--horse-height) / 5))) scale(3) rotate(-56deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-26 {100% {
+    -webkit-transform: translateX(calc(0.3962348094 * var(--horse-width) )) translateY(calc(-0.0079345421 * (var(--horse-height) / 5))) scale(3) rotate(-56deg);
+            transform: translateX(calc(0.3962348094 * var(--horse-width) )) translateY(calc(-0.0079345421 * (var(--horse-height) / 5))) scale(3) rotate(-56deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(26) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-26 var(--speed) ease-out infinite;
           animation: uc-particle-animation-26 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.26s);
           animation-delay: calc((var(--speed) * 0.1) + 0.26s);}
+.uc-uni .dust.back .particle:nth-child(26) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.26s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.26s);}
+@-webkit-keyframes uc-particle-animation-27 {100% {
+    -webkit-transform: translateX(calc(0.3415531831 * var(--horse-width) )) translateY(calc(-0.0022188424 * (var(--horse-height) / 5))) scale(5) rotate(-153.5deg);
+            transform: translateX(calc(0.3415531831 * var(--horse-width) )) translateY(calc(-0.0022188424 * (var(--horse-height) / 5))) scale(5) rotate(-153.5deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-27 {100% {
+    -webkit-transform: translateX(calc(0.3415531831 * var(--horse-width) )) translateY(calc(-0.0022188424 * (var(--horse-height) / 5))) scale(5) rotate(-153.5deg);
+            transform: translateX(calc(0.3415531831 * var(--horse-width) )) translateY(calc(-0.0022188424 * (var(--horse-height) / 5))) scale(5) rotate(-153.5deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(27) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-27 var(--speed) ease-out infinite;
           animation: uc-particle-animation-27 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.27s);
           animation-delay: calc((var(--speed) * 0.1) + 0.27s);}
+.uc-uni .dust.back .particle:nth-child(27) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.27s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.27s);}
+@-webkit-keyframes uc-particle-animation-28 {100% {
+    -webkit-transform: translateX(calc(0.393523244 * var(--horse-width) )) translateY(calc(-0.0088784406 * (var(--horse-height) / 5))) scale(6) rotate(-14deg);
+            transform: translateX(calc(0.393523244 * var(--horse-width) )) translateY(calc(-0.0088784406 * (var(--horse-height) / 5))) scale(6) rotate(-14deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-28 {100% {
+    -webkit-transform: translateX(calc(0.393523244 * var(--horse-width) )) translateY(calc(-0.0088784406 * (var(--horse-height) / 5))) scale(6) rotate(-14deg);
+            transform: translateX(calc(0.393523244 * var(--horse-width) )) translateY(calc(-0.0088784406 * (var(--horse-height) / 5))) scale(6) rotate(-14deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(28) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-28 var(--speed) ease-out infinite;
           animation: uc-particle-animation-28 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.28s);
           animation-delay: calc((var(--speed) * 0.1) + 0.28s);}
+.uc-uni .dust.back .particle:nth-child(28) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.28s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.28s);}
+@-webkit-keyframes uc-particle-animation-29 {100% {
+    -webkit-transform: translateX(calc(0.5950931187 * var(--horse-width) )) translateY(calc(-0.0052506571 * (var(--horse-height) / 5))) scale(5) rotate(-40deg);
+            transform: translateX(calc(0.5950931187 * var(--horse-width) )) translateY(calc(-0.0052506571 * (var(--horse-height) / 5))) scale(5) rotate(-40deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-29 {100% {
+    -webkit-transform: translateX(calc(0.5950931187 * var(--horse-width) )) translateY(calc(-0.0052506571 * (var(--horse-height) / 5))) scale(5) rotate(-40deg);
+            transform: translateX(calc(0.5950931187 * var(--horse-width) )) translateY(calc(-0.0052506571 * (var(--horse-height) / 5))) scale(5) rotate(-40deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(29) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-29 var(--speed) ease-out infinite;
           animation: uc-particle-animation-29 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.29s);
           animation-delay: calc((var(--speed) * 0.1) + 0.29s);}
+.uc-uni .dust.back .particle:nth-child(29) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.29s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.29s);}
+@-webkit-keyframes uc-particle-animation-30 {100% {
+    -webkit-transform: translateX(calc(0.1338113957 * var(--horse-width) )) translateY(calc(-0.0052104567 * (var(--horse-height) / 5))) scale(5) rotate(-170deg);
+            transform: translateX(calc(0.1338113957 * var(--horse-width) )) translateY(calc(-0.0052104567 * (var(--horse-height) / 5))) scale(5) rotate(-170deg);
+    opacity: 0;
+  }}
+@keyframes uc-particle-animation-30 {100% {
+    -webkit-transform: translateX(calc(0.1338113957 * var(--horse-width) )) translateY(calc(-0.0052104567 * (var(--horse-height) / 5))) scale(5) rotate(-170deg);
+            transform: translateX(calc(0.1338113957 * var(--horse-width) )) translateY(calc(-0.0052104567 * (var(--horse-height) / 5))) scale(5) rotate(-170deg);
+    opacity: 0;
+  }}
 .uc-uni .particle:nth-child(30) {-webkit-transform-origin: -20% -20%;
           transform-origin: -20% -20%;
   -webkit-animation: uc-particle-animation-30 var(--speed) ease-out infinite;
           animation: uc-particle-animation-30 var(--speed) ease-out infinite;
   -webkit-animation-delay: calc((var(--speed) * 0.1) + 0.3s);
           animation-delay: calc((var(--speed) * 0.1) + 0.3s);}
+.uc-uni .dust.back .particle:nth-child(30) {-webkit-animation-delay: calc((var(--speed) * 0.68) + 0.3s);
+          animation-delay: calc((var(--speed) * 0.68) + 0.3s);}
 .uc-uni .🐴 {width: var(--horse-width);
   height: var(--horse-height);
   border: 0px solid var(--outlines);}
@@ -2218,6 +2595,16 @@
 .uc-uni .tail .nub > .section > .section > .section > .section {--color-hair:#6fc9ff}
 .uc-uni .tail .nub > .section > .section > .section > .section > .section {--color-hair:#9b8cff}
 .uc-uni .tail .nub > .section > .section > .section > .section > .section > .section {--color-hair:#c98cff}
+.uc-uni .dust .particle {border:none;
+  width:0.026em; height:0.026em;
+  background-color:#ffca5f;
+  box-shadow:0 0 0.014em 0.004em rgba(255,214,120,.85);}
+.uc-uni .dust .particle:nth-child(3n) {background-color:#ff85bd; box-shadow:0 0 0.014em 0.004em rgba(255,133,189,.85)}
+.uc-uni .dust .particle:nth-child(3n+1) {background-color:#7fc4ff; box-shadow:0 0 0.014em 0.004em rgba(127,196,255,.85)}
+.uc-uni .dust .particle:nth-child(4n) {border-radius:0;
+  -webkit-clip-path:polygon(50% 0%,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0% 50%,38% 38%);
+          clip-path:polygon(50% 0%,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0% 50%,38% 38%);
+  box-shadow:none;}
 .uc-uni .wing {display:none; border:none; pointer-events:none;
   --part-width:36%; --part-height:46%;
   --part-x:42%; --part-y:3%;
@@ -2398,6 +2785,7 @@
   50%    {transform:rotate(calc(var(--part-rotate) - 55deg))}}
 .uc-uni.uc-fly .animate .wing {animation:uc-wing-fly 1.05s ease-in-out infinite}
 .uc-uni.uc-fly .animate .wing i {animation-duration:1.05s}
+.uc-uni.uc-fly .cutie{display:none}
 .uc-uni.uc-fly .animate .mane b {animation-duration:1.15s}
 .uc-uni.uc-fly .animate .tail, .uc-uni.uc-fly .animate .tail .section, .uc-uni.uc-fly .animate .tail .section > * > *, .uc-uni.uc-fly .animate .tail .section > * > * > * > * {animation-duration:1.3s}
 .uc-uni.uc-fly .animate .horn {animation-duration:1.6s}
@@ -2405,10 +2793,10 @@
 @keyframes uc-fly-trail {0%  {opacity:0;transform:translate(0,0) scale(.5) rotate(0deg)}
   12% {opacity:1}
   100%{opacity:0;transform:translate(36vw,var(--dy,0px)) scale(1.05) rotate(150deg)}}
-.uc-uni .body .cutie {--shape-x:60%; --shape-y:-8%; --shape-width:22%; --shape-height:48%;
+.uc-uni .cutie {--part-x:53%; --part-y:36.6%; --part-width:12.1%; --part-height:15.84%;
   background-color:transparent; border:none;
   display:flex; align-items:center; justify-content:center;}
-.uc-uni .body .cutie::before {content:'⭐';
+.uc-uni .cutie::before {content:'⭐';
   position:static; width:auto; height:auto; background:transparent; border:none;
   font-size:.2em; line-height:1;
   filter:drop-shadow(0 0 .018em rgba(255,255,255,.85));
@@ -2487,7 +2875,7 @@
 			</div>
 			</div>
 			<div class="back-side"></div>
-			<div class="cutie"></div>
+			
 		</div>
 
 		<div class="neck">
@@ -2541,8 +2929,17 @@
 			<div class="eye"></div>
 			<div class="lash"></div>
 		</div>
+		<div class="cutie"></div>
 	</div>
 `;
+
+  /* the workshop's two stardust emitters — 30 particles each, siblings of the
+     horse (exactly its DOM: front = at the front hooves, back = under the
+     belly); hidden by the walk/fly gaits, streams only while galloping */
+  var DUST_HTML = (function () {
+    var p = new Array(31).join('<div class="particle"></div>');
+    return '<div class="dust front">' + p + '</div><div class="dust back">' + p + '</div>';
+  })();
 
   var EXTRA_CSS = '.uc-uni{position:absolute;width:3.8em;height:2.5em;pointer-events:none}'
     + '.uc-uni.uc-paused *{animation-play-state:paused!important}'
@@ -2552,7 +2949,21 @@
        borders out of each nested box and the shrinkage COMPOUNDS down the
        7-deep leg chains — the hooves collapse to slivers. Pin the whole rig
        (and its fx layer) back to the box model it was built for. */
-    + '.uc-uni,.uc-uni *,.uc-uni *::before,.uc-uni *::after{box-sizing:content-box}';
+    + '.uc-uni,.uc-uni *,.uc-uni *::before,.uc-uni *::after{box-sizing:content-box}'
+    /* stardust trail re-anchor: the workshop paints .dust in viewport-fixed
+       coords (the unicorn stands at the screen center there). The instance box
+       IS the horse box (3.8em × 2.5em), so: container = one horse-width of
+       slack on each side, one horse-height of headroom above, bottom edge just
+       over the foot line (same 0.02em spawn clip as the workshop); spawn
+       points sit 0.03em above that edge — front at the front hooves (15% into
+       the horse from the left), back under the belly (50%). The particles'
+       sizes, colors, delays and drift all come from the generated rules. */
+    + '.uc-uni .dust{position:absolute;top:calc(-1 * var(--horse-height));left:-100%;right:-100%;bottom:0.02em;overflow:hidden}'
+    /* width/height: the faithful 0.026em twinkles vanish at instance sizes
+       (60-110px font vs the workshop's ~176px) — plump them so the trail
+       reads from a distance; the keyframes' scale(3) grows them further. */
+    + '.uc-uni .dust .particle{top:calc(2 * var(--horse-height) - 0.05em);left:calc(1.15 * var(--horse-width));width:.05em;height:.05em}'
+    + '.uc-uni .dust.back .particle{left:calc(1.5 * var(--horse-width))}';
 
   function injectStyle() {
     if (document.getElementById(STYLE_ID)) return;
@@ -2638,7 +3049,7 @@
       + (opts.gait === 'fly' || opts.pose === 'fly' ? ' uc-fly' : '')
       + (opts.wings ? ' uc-wings' : '')
       + ' uc-c-' + (opts.color || 'pearl');
-    el.innerHTML = MARKUP;
+    el.innerHTML = MARKUP + DUST_HTML;
     el.style.fontSize = (opts.size || 40) + 'px';
     if (opts.left   != null) el.style.left   = opts.left;
     if (opts.top    != null) el.style.top    = opts.top;
@@ -2686,9 +3097,13 @@
         if (inst._busy || !inst._horse.animate) return; inst._busy = true;
         var h = inst._horse, prev = h.style.transformOrigin;
         h.style.transformOrigin = '50% 50%';
+        /* composite:'add' rides ON TOP of the CSS gait transform (the fly
+           gait's uni-float holds a translateY hover) — a default 'replace'
+           animation zeroes that hover for its duration, so the flyer DROPS
+           the moment the spin starts and POPS back up when it ends. */
         var a = h.animate(
           [{ transform: 'rotate(0deg)' }, { transform: 'rotate(-360deg)' }],
-          { duration: 1100, easing: 'cubic-bezier(.5,0,.5,1)' }
+          { duration: 1100, easing: 'cubic-bezier(.5,0,.5,1)', composite: 'add' }
         );
         a.onfinish = a.oncancel = function () { h.style.transformOrigin = prev; inst._busy = false; };
       },

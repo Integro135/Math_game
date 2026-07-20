@@ -200,9 +200,6 @@ window.UnicornMeadow = (function () {
 }
 @keyframes bfL { from { transform: rotateY(14deg); }  to { transform: rotateY(72deg); } }
 @keyframes bfR { from { transform: rotateY(-14deg); } to { transform: rotateY(-72deg); } }
-.uc-meadow .fish { position: fixed; font-size: 26px; line-height: 1; z-index: 6; pointer-events: none; }
-.uc-meadow .splash-drop { position: fixed; width: 5px; height: 5px; border-radius: 50%; background: #EAFBFF; z-index: 6; pointer-events: none; }
-.uc-meadow .ripple { position: fixed; border: 2px solid rgba(255,255,255,.7); border-radius: 50%; z-index: 6; pointer-events: none; }
 .uc-meadow .bl { position: fixed; width: 0; z-index: 5; pointer-events: none; }
 .uc-meadow .bl-stem {
   position: absolute; bottom: 0; left: -.14em; width: .28em; height: 2.2em;
@@ -263,6 +260,17 @@ window.UnicornMeadow = (function () {
   animation: rainbowBreathe 6s ease-in-out infinite alternate;
 }
 @keyframes rainbowBreathe { from { opacity: .78; } to { opacity: 1; } }
+/* click shine: the arc flares bright + crisp for a beat (replaces the breathe
+   animation for its duration), while .rb-spark twinkles pop along the bands */
+.uc-meadow #rainbow-wrap.rb-shine #rainbow { animation: rbShine 1.8s ease; }
+@keyframes rbShine {
+  0%, 100% { filter: blur(.45vmin) brightness(1); }
+  30%      { filter: blur(.28vmin) brightness(1.6) saturate(1.5); }
+}
+.uc-meadow .rb-spark {
+  position: fixed; width: 13px; height: 13px; z-index: 6; pointer-events: none;
+  clip-path: polygon(50% 0%,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0% 50%,38% 38%);
+}
 .uc-meadow canvas.scene { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .uc-meadow #wf-stage {
   position: fixed; left: 20%; width: 10vmin;
@@ -882,6 +890,7 @@ window.UnicornMeadow = (function () {
     st.t = st.manual != null ? st.manual : ((now - st.t0) % CYCLE) / CYCLE;
     paint(st.t);
     drawClouds(dt);
+    drawDolphins(dt);          /* pond pod rides the same cleared canvas */
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
@@ -901,75 +910,50 @@ window.UnicornMeadow = (function () {
   function _ucSetup(){
     if (!window.Unicorn) return;
     var U = window.Unicorn;
-    /* the CAST — half RUN, half WALK-fast, sizes medium/small only (the big
-       one was too big), and AT MOST 3 unicorns on stage at any moment:
-       every entry passes the shared gate (the walking pair needs 2 slots). */
+    /* the CAST — a HERD of gallopers with the ODD walker (ratio 4 running : 1
+       walking, per the request) + one winged sky flyer above. AT MOST 3 on
+       stage at once; every entry passes the shared gate. IMPORTANT: `roam()`
+       moves the actor across the screen via el.style.left, while the LEG cycle
+       is the CSS `--speed` animation — the two are INDEPENDENT, so bumping
+       speedPctPerSec speeds the TRAVEL without touching the leg cadence. */
     var MAX_ON_STAGE = 3;
-    var roamers = [], pairActive = false;
-    function activeCount(){
-      return roamers.reduce(function(n, i){ return n + (i.active ? 1 : 0); }, 0)
-           + (pairActive ? 2 : 0);
-    }
-    var soloGate = function(){ return activeCount() < MAX_ON_STAGE; };
+    var roamers = [];
+    function activeCount(){ return roamers.reduce(function(n, i){ return n + (i.active ? 1 : 0); }, 0); }
+    var gate = function(){ return activeCount() < MAX_ON_STAGE; };
 
     /* actor sizes follow the screen's SHORT side (design reference 800px):
-       desktop keeps the original 84/80/46; a 390px-wide phone gets ~half-size
-       unicorns instead of horses as wide as the whole screen */
+       desktop keeps full size; a 390px-wide phone gets ~half-size unicorns
+       instead of horses as wide as the whole screen */
     var UC = Math.max(0.45, Math.min(1, Math.min(innerWidth, innerHeight) / 800));
     var SZ = function(px){ return Math.round(px * UC); };
 
-    // RUNNERS (half the herd): a medium ground galloper + a small sky flyer,
-    // ×3 travel speed with a faster leg cycle to match
-    var r1 = U.place(ROOT, { size: SZ(84), color: 'pink', z: 4 });   // medium strawberry coat 💗
-    r1.el.style.setProperty('--speed', '.9s');   // unhurried leg cycle; the GROUND speed stays ×3
-    r1.roam({ bandMinPct: 3, bandMaxPct: 12, speedPctPerSec: 16, waitMinSec: 2, waitMaxSec: 7, gate: soloGate });
-    roamers.push(r1);
-    var r2 = U.place(ROOT, { size: SZ(80), wings: true, gait: 'fly', color: 'sky', z: 3 });  // cloud coat 🦋, official soar
-    r2.roam({ fly: true, bandMinPct: 8, bandMaxPct: 28, speedPctPerSec: 14.4, waitMinSec: 3, waitMaxSec: 9, bobAmpPx: 12, gate: soloGate });   // flight speed −20%
-    roamers.push(r2);
+    /* travel speeds — all +20% over the previous values, LEG CADENCE UNCHANGED:
+       gallop 16→19.2, flight 14.4→17.28, walk ~4.1→4.9 %/sec */
+    var RUN_MOVE = 19.2, FLY_MOVE = 17.28, WALK_MOVE = 4.9;
 
-    /* WALKERS (the other half): mother + baby striding together at a brisk
-       pace — fast walk cycle, ×3 ground speed, the baby trailing behind */
-    (function pairWalk(){
-      var mom  = U.place(ROOT, { size: SZ(84), gait: 'walk', color: 'pearl', z: 5 });
-      var baby = U.place(ROOT, { size: SZ(46), gait: 'walk', color: 'mint', z: 5 });   // clover foal 🍀
-      mom.el.style.setProperty('--speed', '.9s');       // brisk stride (default walk is 2.1s)
-      baby.el.style.setProperty('--speed', '.8s');      // little legs churn a bit faster
-      var rnd = function(a,b){ return a + Math.random() * (b - a); };
-      var dir, x, spd, gapPct, waitUntil = 0;
-      function face(){
-        mom.setFlip(dir > 0); baby.setFlip(dir > 0);   // the rig faces LEFT natively
-      }
-      function newTrip(seedVisible){
-        dir = Math.random() < 0.5 ? 1 : -1;
-        spd = rnd(3.6, 4.6);                            // the old calm pace ×3
-        var band = rnd(4, 11);
-        mom.el.style.bottom = band + '%'; baby.el.style.bottom = band + '%';
-        gapPct = (mom.el.getBoundingClientRect().width / innerWidth) * 100 * 0.95 || 24;
-        x = seedVisible ? rnd(20, 70) : (dir > 0 ? -gapPct * 2.2 : 100 + gapPct * 1.2);
-        face(); pairActive = true;
-      }
-      // the pair needs TWO free slots to come on stage
-      var pairGate = function(){ return activeCount() <= MAX_ON_STAGE - 2; };
-      waitUntil = performance.now() + rnd(2000, 5000);  // start off-stage; runners seed the scene
-      mom.el.style.left = '-200%'; baby.el.style.left = '-200%';
-      var last = performance.now();
-      (function step(now){
-        var dt = Math.min(0.05, (now - last) / 1000); last = now;
-        if (pairActive) {
-          x += dir * spd * dt;
-          mom.el.style.left = x + '%';
-          baby.el.style.left = (x - dir * gapPct) + '%';  // the baby trails behind
-          if ((dir > 0 && x - gapPct > 100 + gapPct) || (dir < 0 && x + gapPct < -gapPct * 1.4)) {
-            pairActive = false; waitUntil = now + rnd(6, 14) * 1000;
-          }
-        } else if (now >= waitUntil) {
-          if (pairGate()) newTrip(false);
-          else waitUntil = now + 900;                     // stage is full — try again shortly
-        }
-        requestAnimationFrame(step);
-      })(performance.now());
-    })();
+    // FOUR GALLOP RUNNERS — varied coats + sizes, brisk .9s leg cycle (unchanged)
+    var runCoats = ['pink', 'sky', 'mint', 'night'];
+    runCoats.forEach(function(coat, i){
+      var r = U.place(ROOT, { size: SZ(84 - i * 6), color: coat, z: 4 });
+      r.el.style.setProperty('--speed', '.9s');   // leg cadence — NOT sped up
+      r.roam({ bandMinPct: 3, bandMaxPct: 13, speedPctPerSec: RUN_MOVE,
+               waitMinSec: 2, waitMaxSec: 8, gate: gate });
+      roamers.push(r);
+    });
+
+    // ONE winged SKY FLYER — soaring above (wing beat unchanged)
+    var flyer = U.place(ROOT, { size: SZ(80), wings: true, gait: 'fly', color: 'sky', z: 3 });  // 🦋
+    flyer.roam({ fly: true, bandMinPct: 8, bandMaxPct: 28, speedPctPerSec: FLY_MOVE,
+                 waitMinSec: 3, waitMaxSec: 9, bobAmpPx: 12, gate: gate });
+    roamers.push(flyer);
+
+    // ONE WALKER (1 per 4 gallopers) — calm pearl coat, .9s stride (unchanged),
+    // travel +20%. Rarer + longer off-stage waits so runners dominate the herd.
+    var walker = U.place(ROOT, { size: SZ(84), gait: 'walk', color: 'pearl', z: 5 });
+    walker.el.style.setProperty('--speed', '.9s');   // stride cadence — NOT sped up
+    walker.roam({ bandMinPct: 4, bandMaxPct: 11, speedPctPerSec: WALK_MOVE,
+                  waitMinSec: 6, waitMaxSec: 15, gate: gate });
+    roamers.push(walker);
   }
   if (window.Unicorn) _ucSetup();
   else { var us = document.createElement('script'); us.src = BASE + 'unicorn.item.js'; us.onload = _ucSetup; document.head.appendChild(us); }
@@ -1030,18 +1014,24 @@ window.UnicornMeadow = (function () {
     d.innerHTML = '<i class="l"></i><i class="r"></i><b></b>';
     ROOT.appendChild(d);
     var x = o.x != null ? o.x : Math.random() * innerWidth;
-    var baseY = o.y != null ? o.y : innerHeight * rndf(.76, .92);
+    var baseY = o.y != null ? o.y
+              : innerHeight * (o.high ? rndf(.08, .30) : rndf(.76, .92));
     var vx = rndf(24, 46) * (Math.random() < .5 ? -1 : 1);
     if (o.burst) vx = rndf(34, 74) * (Math.random() < .5 ? -1 : 1);
     var rise = o.burst ? rndf(10, 24) : 0;                  // burst ones drift upward
+    var vy = o.burst ? 0 : rndf(-9, 9);   // residents also WANDER vertically —
     var ph = rndf(0, 6.28), born = performance.now(), last = born;
     var life = o.burst ? rndf(6000, 9000) : Infinity;
     var nextTurn = born + rndf(7000, 15000);
     (function step(now){
       if (!d.isConnected) return;
       var dt = Math.min(.05, (now - last) / 1000); last = now;
-      if (!o.burst && now > nextTurn){ vx *= -1; nextTurn = now + rndf(7000, 15000); }
+      if (!o.burst && now > nextTurn){
+        vx *= -1; vy = rndf(-9, 9);       // — fresh drift each turn, sky to grass
+        nextTurn = now + rndf(7000, 15000);
+      }
       x += vx * dt; baseY -= rise * dt;
+      baseY = Math.min(innerHeight * .92, Math.max(innerHeight * .06, baseY + vy * dt));
       var y = baseY + Math.sin(now / 1400 + ph) * 34 + Math.sin(now / 520 + ph * 2) * 10;
       if (x < -30) x = innerWidth + 26;
       if (x > innerWidth + 30) x = -26;
@@ -1053,7 +1043,9 @@ window.UnicornMeadow = (function () {
       requestAnimationFrame(step);
     })(born);
   }
-  for (var bi = 0; bi < 3; bi++) spawnButterfly();          // the resident meadow trio
+  // resident five: three over the meadow grass, two up in the sky (user asked
+  // for butterflies in the TOP of the screen too); all wander between bands
+  for (var bi = 0; bi < 5; bi++) spawnButterfly({ high: bi >= 3 });
 
   /* ── the castle show: a real fireworks volley + a butterfly burst ── */
   var showUntil = 0;
@@ -1073,45 +1065,111 @@ window.UnicornMeadow = (function () {
     })(b);
   }
 
-  /* ── the pond fish: leaps in an arc + splash; every so often and on click ── */
-  var fishBusy = false;
-  function pondCenter(){ return { x: innerWidth * WF.x, y: innerHeight * 0.885 }; }
-  function splash(x, y){
-    for (var i = 0; i < 5; i++){
-      var dr = document.createElement('div');
-      dr.className = 'splash-drop';
-      dr.style.left = (x - 2) + 'px'; dr.style.top = (y - 4) + 'px';
-      ROOT.appendChild(dr);
-      dr.animate([
-        { transform: 'translate(0,0)', opacity: .95 },
-        { transform: 'translate(' + rndf(-26, 26) + 'px,' + rndf(-34, -12) + 'px)', opacity: 0 }
-      ], { duration: 420 + Math.random() * 180, easing: 'ease-out' }
-      ).onfinish = (function(e2){ return function(){ e2.remove(); }; })(dr);
-    }
-    var rp = document.createElement('div');
-    rp.className = 'ripple';
-    rp.style.cssText += ';left:' + (x - 8) + 'px;top:' + (y - 4) + 'px;width:16px;height:8px';
-    ROOT.appendChild(rp);
-    rp.animate([{ transform: 'scale(1)', opacity: .8 }, { transform: 'scale(4)', opacity: 0 }],
-      { duration: 620, easing: 'ease-out' }).onfinish = function(){ rp.remove(); };
+  /* ── the pond POD — the Dubai background's leaping bottlenose dolphins,
+     fish-sized: a pod of 1-3 arcs out of the plunge pool with exit spray +
+     re-entry splash, clipped at the water line; every so often and on pond
+     click. Painted on the clouds canvas (z 6, cleared each tick) so they
+     ride above the painted pool. Body/physics/splash are the Dubai code;
+     only the geometry is pool-anchored + shrunk. ── */
+  var DOLPHINS = [];
+  function pondCenter(){ return { x: innerWidth * WF.x, y: innerHeight * WF.bottom }; }
+  function fishJump(){                       /* name kept — pond click + fx hooks */
+    if (DOLPHINS.length) return;
+    var p = pondCenter(), rx = innerWidth * 0.075;      // the painted pool ellipse
+    var mini = Math.max(.55, Math.min(1, rx / 90));     // small pool → smaller pod
+    var pod = 1 + (Math.random() * 3 | 0);
+    var dir = Math.random() < .5 ? -1 : 1;
+    var x0 = p.x - dir * rx * rndf(.15, .45);           // start back, land in water
+    for (var k = 0; k < pod; k++)
+      DOLPHINS.push({ x0: x0 - dir * rndf(6, 14), yW: p.y + rndf(-2, 2), dir: dir,
+                      delay: k * .42 + rndf(0, .12), age: 0, T: rndf(1.3, 1.7),
+                      trav: rx * rndf(.55, .9), hgt: rndf(26, 40) * mini,
+                      s: rndf(1.35, 1.75) * mini });    // body ≈ 26-33px — little-fish sized
   }
-  function fishJump(){
-    if (fishBusy) return;
-    fishBusy = true;
-    var p = pondCenter(), dx = rndf(-60, 60), flip = dx < 0 ? 1 : -1;   // 🐟 faces left
-    var f = document.createElement('div');
-    f.className = 'fish'; f.textContent = '🐟';
-    f.style.left = (p.x - 13) + 'px'; f.style.top = (p.y - 16) + 'px';
-    ROOT.appendChild(f);
-    splash(p.x, p.y);
-    f.animate([
-      { transform: 'translate(0,8px) rotate(' + (flip < 0 ? -55 : 55) + 'deg) scaleX(' + flip + ')', opacity: 0 },
-      { opacity: 1, offset: .12 },
-      { transform: 'translate(' + dx * .55 + 'px,-' + rndf(70, 100) + 'px) rotate(0deg) scaleX(' + flip + ')', offset: .5 },
-      { transform: 'translate(' + dx + 'px,6px) rotate(' + (flip < 0 ? 60 : -60) + 'deg) scaleX(' + flip + ')', opacity: 1 }
-    ], { duration: 950, easing: 'cubic-bezier(.35,.1,.6,1)' }).onfinish = function(){
-      f.remove(); splash(p.x + dx, p.y); fishBusy = false;
-    };
+  /* bottlenose body in the Dubai/reef style: countershaded gradient, melon +
+     rostrum, falcate dorsal, flukes, eye with a sparkle, the smile */
+  function drawDolphinBody(g){
+    g.fillStyle = '#4e6172';                                       /* flukes */
+    g.beginPath();
+    g.moveTo(-7.4, 0);
+    g.quadraticCurveTo(-8.9, -1.8, -10.2, -2.3);
+    g.quadraticCurveTo(-8.8, -.3, -8.7, 0);
+    g.quadraticCurveTo(-8.8, .3, -10.2, 2.3);
+    g.quadraticCurveTo(-8.9, 1.8, -7.4, 0);
+    g.closePath(); g.fill();
+    var bg = g.createLinearGradient(0, -2.7, 0, 2.4);   /* countershaded body */
+    bg.addColorStop(0, '#56697a'); bg.addColorStop(.45, '#6b8092');
+    bg.addColorStop(.7, '#9fb2c0'); bg.addColorStop(.85, '#e6eef4');
+    bg.addColorStop(1, '#f2f7fa');
+    g.fillStyle = bg;
+    g.beginPath();
+    g.moveTo(8.6, .1);                                  /* rostrum tip */
+    g.quadraticCurveTo(7, -1, 5, -1.7);                 /* melon */
+    g.quadraticCurveTo(1, -2.6, -3.3, -1.6);
+    g.quadraticCurveTo(-6.5, -.7, -7.9, -.2);
+    g.quadraticCurveTo(-6.9, .4, -3.3, 1.5);
+    g.quadraticCurveTo(1.7, 2.5, 6.1, .9);
+    g.quadraticCurveTo(7.8, .5, 8.6, .1);
+    g.closePath(); g.fill();
+    g.fillStyle = '#56697a';                            /* falcate dorsal fin */
+    g.beginPath();
+    g.moveTo(1.7, -2.1);
+    g.quadraticCurveTo(.6, -4.4, -1, -4.1);
+    g.quadraticCurveTo(-.9, -2.9, -1.9, -1.9);
+    g.closePath(); g.fill();
+    g.fillStyle = '#5c7186';                            /* pectoral flipper */
+    g.beginPath(); g.ellipse(1.9, 1.2, .5, 1.4, .6, 0, 6.2832); g.fill();
+    g.strokeStyle = 'rgba(35,48,60,.6)'; g.lineWidth = .22; g.lineCap = 'round';
+    g.beginPath();                                      /* the famous smile */
+    g.moveTo(8.4, .35); g.quadraticCurveTo(6.6, .95, 5.4, .75);
+    g.stroke();
+    g.fillStyle = '#101820';                            /* eye + sparkle + blowhole */
+    g.beginPath(); g.arc(5.1, -.6, .3, 0, 6.2832); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.85)';
+    g.beginPath(); g.arc(5.2, -.7, .11, 0, 6.2832); g.fill();
+    g.fillStyle = 'rgba(30,42,52,.7)';
+    g.beginPath(); g.ellipse(3.4, -2.05, .3, .15, -.2, 0, 6.2832); g.fill();
+  }
+  function dSplash(g, x, y, q, s){
+    var grow = 1 - q;
+    g.strokeStyle = 'rgba(220,240,255,' + (.38 * q) + ')';
+    g.lineWidth = 1.2 * s;
+    g.beginPath();
+    g.ellipse(x, y, (4 + grow * 24) * s, (1.2 + grow * 5) * s, 0, 0, 6.2832); g.stroke();
+    g.fillStyle = 'rgba(235,248,255,' + (.5 * q) + ')';
+    for (var i = 0; i < 5; i++){
+      var a = -Math.PI / 2 + (i - 2) * .4, L = (6 + grow * 10) * s;
+      g.fillRect(x + Math.cos(a) * L, y + Math.sin(a) * L - 2 * s, 1.1 * s, 2.4 * s);
+    }
+  }
+  function drawDolphins(dt){
+    for (var k = DOLPHINS.length - 1; k >= 0; k--){
+      var d = DOLPHINS[k];
+      d.age += dt;
+      var p = (d.age - d.delay) / d.T;
+      if (p >= 1.1){ DOLPHINS.splice(k, 1); continue; }
+      if (p <= 0) continue;
+      var pc = Math.min(1, p), s = d.s;
+      var xx = d.x0 + d.dir * pc * d.trav;
+      var yy = d.yW - Math.sin(pc * Math.PI) * d.hgt;
+      var vx = d.dir * d.trav / d.T;
+      var vy = -Math.cos(pc * Math.PI) * Math.PI * d.hgt / d.T;
+      if (p < 1){
+        xCl.save();
+        xCl.beginPath();                       /* above the water surface only */
+        xCl.rect(xx - 14 * s, d.yW - d.hgt - 12 * s, 28 * s, d.hgt + 12 * s);
+        xCl.clip();
+        xCl.translate(xx, yy);
+        xCl.scale(s, s);
+        xCl.rotate(Math.atan2(vy, vx));
+        if (d.dir < 0) xCl.scale(1, -1);       /* keep the back upward */
+        drawDolphinBody(xCl);
+        xCl.restore();
+      }
+      if (p < .22) dSplash(xCl, d.x0, d.yW, 1 - p / .22, s);                 /* exit spray */
+      if (p > .78) dSplash(xCl, d.x0 + d.dir * d.trav, d.yW,
+                           Math.max(0, 1 - (p - .78) / .32), s * 1.2);       /* re-entry */
+    }
   }
   setInterval(function(){ if (Math.random() < 0.6) fishJump(); }, 11000);
 
@@ -1136,6 +1194,39 @@ window.UnicornMeadow = (function () {
           setTimeout(function(){ f.remove(); }, 750);
         }, 4200 + Math.random() * 1200);
       }, i * 90);
+    })(i);
+  }
+
+  /* ── rainbow click: the arc flares bright and star twinkles pop along the
+     bands, riding the arc's real on-screen radius (center = 50% 100%) ── */
+  var rbBusyUntil = 0;
+  function rainbowShine(){
+    var now = performance.now();
+    if (now < rbBusyUntil) return;                          // one shine at a time
+    rbBusyUntil = now + 2000;
+    var wrap = document.getElementById('rainbow-wrap');
+    wrap.classList.add('rb-shine');
+    setTimeout(function(){ wrap.classList.remove('rb-shine'); }, 1900);
+    var r = wrap.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.bottom, R = r.height;
+    var COLS = ['#ffffff', '#ffd76e', '#ff9ecb', '#9ad4ff', '#b6f0c8'];
+    for (var i = 0; i < 14; i++)(function(i){
+      setTimeout(function(){
+        var a = Math.PI * rndf(.14, .86);                   // a point along the arc
+        var rr = R * rndf(.56, .90);                        // within the bands
+        var s = document.createElement('div');
+        s.className = 'rb-spark';
+        s.style.left = (cx - Math.cos(a) * rr - 6) + 'px';
+        s.style.top  = (cy - Math.sin(a) * rr - 6) + 'px';
+        s.style.background = COLS[i % COLS.length];
+        ROOT.appendChild(s);
+        s.animate([
+          { transform: 'scale(.25) rotate(0deg)',   opacity: 0 },
+          { transform: 'scale(1.2) rotate(90deg)',  opacity: 1, offset: .35 },
+          { transform: 'scale(.2) rotate(180deg) translateY(-12px)', opacity: 0 }
+        ], { duration: rndf(700, 1100), easing: 'ease-out' }
+        ).onfinish = function(){ s.remove(); };
+      }, i * 75);
     })(i);
   }
 
@@ -1224,6 +1315,29 @@ window.UnicornMeadow = (function () {
   if (window.Fairy) _fairySetup();
   else { var fairyScript = document.createElement('script'); fairyScript.src = BASE + 'fairy.item.js'; fairyScript.onload = _fairySetup; document.head.appendChild(fairyScript); }
 
+  /* ── the bunnies (bunny.item.js, loaded dynamically — never copied here):
+     a PAIR is around at any moment — both seed on-screen and their off-stage
+     rests are short, so as one hops out it soon hops back in. Clicking one
+     startles it (a big spring + sparkles, inst.startle via the router). ── */
+  function _bunnySetup(){
+    if (!window.Bunny) return;
+    /* the bands are capped at bottom 8%: the front grass dips to y≈.885H at
+       x≈.62W (a higher band puts the bunny ON the pink mountains there), and
+       the plunge pool spans bottom ~9-14% around x .12-.27W (a higher band
+       reads as hopping ON the water) — at ≤8% the feet stay on grass, always
+       in FRONT of the pond and the falls. */
+    window.Bunny.place(ROOT, { size: 8, z: 4 })
+      .roam({ bandMinPct: 3, bandMaxPct: 8, hopPct: 2.4, hopSec: 0.5,
+              restMinSec: 0.15, restMaxSec: 0.6,
+              waitMinSec: 1, waitMaxSec: 3, startOnScreen: true });
+    window.Bunny.place(ROOT, { size: 6, z: 4 })
+      .roam({ bandMinPct: 4.5, bandMaxPct: 8, hopPct: 2.0, hopSec: 0.5,
+              restMinSec: 0.2, restMaxSec: 0.7,
+              waitMinSec: 1, waitMaxSec: 3, startOnScreen: true });
+  }
+  if (window.Bunny) _bunnySetup();
+  else { var bunnyScript = document.createElement('script'); bunnyScript.src = BASE + 'bunny.item.js'; bunnyScript.onload = _bunnySetup; document.head.appendChild(bunnyScript); }
+
   /* ── falling stars — only while the twilight sky is up ── */
   setInterval(function(){
     var twil = ramp(st.t, 0.76, 0.88) * (1 - ramp(st.t, 0.93, 0.995));
@@ -1272,6 +1386,13 @@ window.UnicornMeadow = (function () {
     var x = e.clientX, y = e.clientY;
     var u = unicornAt(x, y);
     if (u){ uniReact(u); return; }                       // the unicorn always wins
+    // a bunny? → a startled spring + sparkles (generous pad — it's tiny)
+    var bn = [].find.call(document.querySelectorAll('.bn-bunny'), function(b){
+      var r = b.getBoundingClientRect();
+      return r.width > 0 && x >= r.left - 8 && x <= r.right + 8 &&
+             y >= r.top - 8 && y <= r.bottom + 8;
+    });
+    if (bn && bn._inst){ bn._inst.startle(); return; }
     if (fairyInst){
       var fr = fairyInst.el.getBoundingClientRect();
       if (Math.hypot(x - fr.left, y - fr.top) < 62){ fairyLightning(); return; }
@@ -1284,6 +1405,9 @@ window.UnicornMeadow = (function () {
     }
     var wr = wfStage.getBoundingClientRect();
     if (x >= wr.left - 14 && x <= wr.right + 14 && y >= wr.top - 20 && y <= wr.bottom + 8){ rainbowFall(); return; }
+    var rw = document.getElementById('rainbow-wrap').getBoundingClientRect();
+    var rcx = rw.left + rw.width / 2, rcy = rw.bottom, rd = Math.hypot(x - rcx, y - rcy);
+    if (y < rcy && rd >= rw.height * .5 && rd <= rw.height * .97){ rainbowShine(); return; }
     var p = pondCenter(), nx = (x - p.x) / (innerWidth * 0.075 * 1.4), ny = (y - p.y) / (innerHeight * 0.026 * 2.2);
     if (nx * nx + ny * ny <= 1){ fishJump(); return; }
     if (y > innerHeight * 0.85) bloomAt(x, y);           // the FRONT grass only
@@ -1291,7 +1415,8 @@ window.UnicornMeadow = (function () {
 
   /* fx test hooks */
   window.__meadow.fx = {
-    castleShow: castleShow, rainbowFall: rainbowFall, fishJump: fishJump, bloomAt: bloomAt,
+    castleShow: castleShow, rainbowFall: rainbowFall, rainbowShine: rainbowShine,
+    fishJump: fishJump, bloomAt: bloomAt,
     fairyLightning: fairyLightning, unicornAt: unicornAt, uniReact: uniReact,
     butterflies: function(){ return document.querySelectorAll('.bf').length; },
     fairyPresent: function(){ return !!document.querySelector('.fy-fairy'); },
@@ -1306,8 +1431,8 @@ window.UnicornMeadow = (function () {
       _touts.forEach(function (id) { window.clearTimeout(id); });
       _listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2]); });
       try { if (typeof wfCleanup === 'function') wfCleanup(); } catch (e) {}
-      Array.prototype.forEach.call(document.querySelectorAll('.uc-uni'), function (u) {
-        if (u._inst && u._inst.remove) u._inst.remove();
+      Array.prototype.forEach.call(document.querySelectorAll('.uc-uni, .bn-bunny'), function (u) {
+        if (u._inst && u._inst.remove) u._inst.remove();   // stops their own rAF/timers too
       });
       ROOT.innerHTML = '';
       ROOT.classList.remove('uc-meadow');
