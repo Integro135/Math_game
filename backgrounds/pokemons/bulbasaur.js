@@ -114,8 +114,12 @@
     '.pkbulb .bulbasaur .head .eye{width:14px;height:16px;background:#fff;overflow:hidden;left:15px;top:13px;',
     '  border-radius:88% 12% 11% 89% / 83% 47% 53% 17%;transform:rotate(5deg);border:1px solid #295980;',
     '  transform-origin:50% 10%;animation:pkbulbBlink 4.3s ease-in-out infinite}',
-    '.pkbulb .bulbasaur .head .eye .pupil{width:12px;height:15px;border-radius:100%;left:-2px;',
-    '  background-image:radial-gradient(1px 5px at center,#fff 100%,transparent),radial-gradient(#df005d 100%,transparent)}',
+    /* the red pupil is a SOLID fill (was a radial-gradient(#df005d 100%,transparent)
+       — that edge-case stop rasterised as transparent on some tablet/mobile GPUs, so
+       the eye lost its red there; a plain background-color is device-robust). The
+       white glint stays as an explicit-sized gradient overlay on top. */
+    '.pkbulb .bulbasaur .head .eye .pupil{width:12px;height:15px;border-radius:100%;left:-2px;background-color:#df005d;',
+    '  background-image:radial-gradient(1px 5px at center,#fff 100%,transparent)}',
     '.pkbulb .bulbasaur .head .eye-lid{width:1px;height:8px;background:#00abd6;border-radius:100px;left:22px;top:8px;transform:rotate(60deg)}',
     '.pkbulb .bulbasaur .head .smile{width:10px;height:6px;border-radius:100%;border-top:1px solid #0c506b;top:32px;left:-2px;transform:rotate(5deg)}',
     '.pkbulb .bulbasaur .head .smile::after{content:"";position:absolute;width:15px;height:6px;border-radius:100%;',

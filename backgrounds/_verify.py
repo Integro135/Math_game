@@ -21,27 +21,31 @@ except Exception: pass
 THEME    = "girls"                 # the 🦄 theme → unicorns background (new meadow scene)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
-STANDALONE = r""                   # in-game (girls→unicorns) so the split runs over the real scene
+STANDALONE = r"C:\Code\subtraction_game\backgrounds\pokemons\bulbasaur-demo.html"
 VIEW     = {"width": 1280, "height": 800}   # desktop viewport
 # PERF PROBE — measure the unicorn scene's per-frame timing over ~3s, and count how
 # many times paintMain() runs (the flower-bearing landscape paint) during that time.
 # If paintMain runs only at load, the added knoll flowers can't affect runtime FPS.
 EVAL = r"""(async function(){
   var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-  await new Promise(function(r){var t=setInterval(function(){if(window.__meadow){clearInterval(t);r();}},50);});
-  var samples=[], onstage=[];
-  for(var i=0;i<5;i++){await sleep(2000);
-    samples.push(document.getAnimations().filter(function(a){return a.playState==='running';}).length);
-    var n=0;document.querySelectorAll('.uc-uni:not(.uc-fx-host)').forEach(function(u){var r=u.getBoundingClientRect();if(r.right>4&&r.left<window.innerWidth-4&&!u.classList.contains('uc-paused'))n++;});
-    onstage.push(n);}
-  return JSON.stringify({coarsePointer:!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches),
-    runningSamples:samples, onStageSamples:onstage,
-    fairySparks:document.querySelectorAll('.fy-sparks .fy-spark').length});
+  await sleep(500);
+  if(window.__pk){var w=__pk.patrol&&__pk.patrol();if(w&&w.stop)w.stop();
+    var b=__pk.list[0];b.element.style.transform='';b.element.style.left='8%';}
+  await sleep(300);
+  var pupil=document.querySelector('.pkbulb .bulbasaur .head .eye .pupil');
+  var cs=getComputedStyle(pupil), r=pupil.getBoundingClientRect();
+  return JSON.stringify({
+    pupilBgColor:cs.backgroundColor,
+    pupilBgImage:cs.backgroundImage.slice(0,70),
+    pupilRect:[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]
+  });
 })();"""
 POST_EVAL = r""
 CLICKS   = []
 WAIT_MS   = 200
-SHOTS    = []
+SHOTS    = [
+    {"path": r"c:\tmp\bulba_eye.png", "clip": {"x": 150, "y": 540, "width": 260, "height": 200}},
+]
 # ────────────────────────────────────────────────────────────────────────────
 
 GAME_URL   = Path(r"c:\Code\subtraction_game\index.html").as_uri()
