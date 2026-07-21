@@ -1,6 +1,6 @@
 /* ── Three-addends-to-a-target exercise (חִבּוּר שְׁלוֹשָׁה מִסְפָּרִים ➕➕) ──────────
    `__ + __ + __ = N` — the child fills THREE addends of her own choosing that
-   sum to the target N. The target VARIES per card — a number 6..12 (not always
+   sum to the target N. The target VARIES per card — a number 6..14 (not always
    the same). Any triple that sums to N is accepted — EXCEPT that **0 and 10 may
    not be used** as an addend. A sum-correct answer that leans on a 0 or a 10 is
    praised ("נָכוֹן!") and costs NO points, but does NOT complete the problem —
@@ -19,10 +19,11 @@ window.EXERCISES.types.triple_sum=(()=>{
   const BANNED=[0,10];                       // may NOT be used as an addend
   const isBanned=v=>BANNED.indexOf(v)!==-1;
 
-  // The TARGET varies per card — a number 6..12 (every one has a no-0/no-10
-  // triple; the "no 10" rule bites only at 11/12, where 10+1+1 is the shortcut).
-  // Targets are DISTINCT across a pool so the same total doesn't repeat.
-  const TARGETS=[6,7,8,9,10,11,12];
+  // The TARGET varies per card — a number 6..14 (every one has a no-0/no-10
+  // triple; the "no 10" rule bites at 11..14, where the 10+… shortcut is barred —
+  // e.g. 13 = 4+4+5, 14 = 4+5+5). Targets are DISTINCT across a pool so the same
+  // total doesn't repeat.
+  const TARGETS=[6,7,8,9,10,11,12,13,14];
   function makePool(n){
     n=n||3;
     const bag=TARGETS.slice();

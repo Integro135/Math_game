@@ -23,7 +23,8 @@ def get_state(page) -> dict:
     return page.evaluate("""() => ({
         ptype, num1, num2, num3, num4,
         idx, score, done, mode, ttOp, bgOp,
-        TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TCS, TBG, TCM, TBC
+        TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TCS, TBG, TCM, TBC,
+        TH, TVA, TVS, TRA
     })""")
 
 
@@ -76,6 +77,17 @@ def correct_answer(state: dict) -> tuple:
         return ("single", n1 + n2 if state.get("ttOp") == "add" else n1 - n2)
     if p == state.get("TBG"):
         return ("single", n1 + n2 if state.get("bgOp") == "add" else n1 - n2)
+    if p == state.get("TH"):
+        return ("single", n1 + n2)    # whole-hundreds ADDITION (200+60, 500+40)
+    if p == state.get("TVA"):
+        return ("single", n1 + n2)    # single ⃝-unknown ADD (num1 + ⃝, ⃝=num2)
+    if p == state.get("TVS"):
+        return ("single", n1 - n2)    # single ⃝-unknown SUB
+    if p == state.get("TRA"):
+        # __+__+__ = R (R stored in num1); any triple summing to R is accepted —
+        # return a balanced one (three boxes #ans1/#ans2/#ans3)
+        q = n1 // 3
+        return ("tri", q, q, n1 - 2 * q)
     return ("single", n1 - n2)        # TM or TS
 
 
@@ -83,6 +95,10 @@ def submit_answer(page, ans: tuple) -> None:
     if ans[0] == "td":
         page.fill("#ans1", str(ans[1]))
         page.fill("#ans2", str(ans[2]))
+    elif ans[0] == "tri":
+        page.fill("#ans1", str(ans[1]))
+        page.fill("#ans2", str(ans[2]))
+        page.fill("#ans3", str(ans[3]))
     else:
         page.fill("#ans", str(ans[1]))
     page.click("#chk-btn")

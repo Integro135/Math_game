@@ -8,30 +8,46 @@ stays identical). It loads index.html, switches theme, optionally evaluates a JS
 snippet and/or dispatches real clicks, waits, screenshots, and reports JS errors.
 (Font CORS errors on file:// are expected and harmless.)
 """
+import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+
+# the game is Hebrew (+ math − signs): print UTF-8 so returning story text from
+# EVAL never crashes the console on Windows cp1252
+try: sys.stdout.reconfigure(encoding="utf-8")
+except Exception: pass
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
 THEME    = "girls"                 # the 🦄 theme → unicorns background (new meadow scene)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
-STANDALONE = r""                   # empty → drive the in-game index.html flow (girls→unicorns)
+STANDALONE = r""                   # empty → drive the in-game index.html flow
 VIEW     = {"width": 1280, "height": 800}   # viewport
-# IN-GAME 🦄 — after the unicorns bg mounts, freeze the day cycle at MIDDAY and
-# screenshot the castle knoll to confirm the new flowers render in-game too.
+# NEW word_chain (TWC) — force chain word problems in אַלּוּפָה, check the nikud
+# story renders and every generated result is 0..12; screenshot the story card.
 EVAL = r"""(async function(){
-  await new Promise(function(r){var t=setInterval(function(){
-    if(window.__meadow){clearInterval(t);r();}
-  },50);});
-  window.__meadow.seek(0.33);
-  return 'day';
+  var W=function(fn){return new Promise(function(r){var t=setInterval(function(){if(fn()){clearInterval(t);r();}},50);});};
+  setMode('mulc');
+  await W(function(){return window.EXERCISES&&EXERCISES.types.word_chain&&typeof problems!=='undefined'&&problems.length;});
+  score=0;problems=EXERCISES.types.word_chain.make('wc');idx=0;loadProblem();
+  await W(function(){return document.querySelector('.wc-story');});
+  // submit a WRONG answer → the derived DIGIT chain reveals
+  var inp=document.getElementById('wc-inp');
+  inp.value=String(report[0].correct+1);
+  inp.dispatchEvent(new Event('input',{bubbles:true}));
+  inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  await W(function(){return getComputedStyle(document.getElementById('wc-derived')).display!=='none';});
+  await new Promise(function(r){setTimeout(r,250);});
+  return JSON.stringify({
+    derivedShown:getComputedStyle(document.getElementById('wc-derived')).display!=='none',
+    eq:document.querySelector('.wc-eq').textContent
+  });
 })();"""
-POST_EVAL = r""
+POST_EVAL = r"""(function(){var so=document.getElementById('sad-ov');if(so)so.style.display='none';return 'ok';})();"""
 CLICKS   = []
-WAIT_MS   = 1400
+WAIT_MS   = 1600
 SHOTS    = [
-    {"path": r"c:\tmp\meadow_full.png", "clip": {"x": 0, "y": 0, "width": 1280, "height": 800}},
-    {"path": r"c:\tmp\meadow_knoll.png", "clip": {"x": 840, "y": 300, "width": 440, "height": 420}},
+    {"path": r"c:\tmp\word_chain.png", "clip": {"x": 280, "y": 60, "width": 720, "height": 560}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

@@ -32,7 +32,8 @@
    updates the "זֶה כְּמוֹ" chain to match, so both always agree.
 
    Problem shape: { t:TMK, a:base, b:count } → `a` repeated `b` times by default
-   (a = the small multiplicand). Factors reach up to 4 (a,b ∈ {2,3,4}).
+   (a = the small multiplicand). ANY factor pair whose PRODUCT is ≤ 16 (both ≥ 2,
+   so e.g. 2×7, 2×8, 3×5 as well as the 2×/3×/4× facts).
    Interactive: mounted by core.js _colxMount into #colx-root; self-checks via
    api.solved()/api.wrong() exactly like the other interactive modules. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
@@ -46,13 +47,15 @@ window.EXERCISES.types.mult_champ=(()=>{
   // spoken form of the displayed product a×b → "<a-times> <b>" (4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ")
   const spoken=(a,b)=>timesW(a)+' '+(NUM[b]||b);
 
-  /* champion grid: factors up to 4 — a∈{2,3,4} × b∈{2,3,4} (product ≤ 16).
-     `a` (the number repeated by default) and `b` (the count) both stay ≤ 4, so
-     the whole 2×/3×/4× fact set is covered and EITHER orientation is a short
-     one-line chain after the 🔁 switch. The complete 3×3 grid = 9 problems. */
+  /* champion grid: EVERY factor pair (both ≥ 2) whose PRODUCT is ≤ 16 — so beyond
+     the 2×/3×/4× facts it also covers 2×5, 2×6, 2×7, 2×8, 3×5, 5×3 … (user: "כפל
+     עד תוצאה של 16", expand the factors). `a` is repeated `b` times by default;
+     the 🔁 switch flips the orientation and the skip-counting number line always
+     ends exactly ONE jump past the product (renderNlAid), so a long count like
+     2×8 still fits. Both orders are generated (2×3 AND 3×2) for commutativity. */
   function makePool(n){
     const pairs=[];
-    for(let a=2;a<=4;a++)for(let b=2;b<=4;b++)pairs.push({t:TMK,a,b});
+    for(let a=2;a<=8;a++)for(let b=2;b<=8;b++)if(a*b<=16)pairs.push({t:TMK,a,b});
     return sh(pairs).slice(0,n||12);
   }
 
@@ -262,9 +265,10 @@ window.EXERCISES.types.mult_champ=(()=>{
     }
 
     // the skip-counting NUMBER-LINE aid: jumps of `rep` (the repeated number)
-    // over 0..rep·5 — one step beyond the largest product for that rep, so the
-    // line's right edge never spells out the answer. Re-configured on every 🔁
-    // switch (user request: the line must follow the factor swap).
+    // over 0..(times+1)·rep — exactly ONE jump beyond the product, so the line's
+    // right edge never spells out the answer for ANY factor pair (incl. the wider
+    // 2×7 / 2×8 facts). Re-configured on every 🔁 switch (the line must follow the
+    // factor swap).
     function renderNlAid(){
       const rep=flip?B:A, times=flip?A:B;
       // show the CURRENT orientation beside "זֶה כְּמוֹ" so it MATCHES the line's
@@ -272,7 +276,7 @@ window.EXERCISES.types.mult_champ=(()=>{
       if(likeChainEl)likeChainEl.innerHTML=likeChainHtml(rep,times);
       updateSwitchTip();
       const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='';
-      if(typeof NL!=='undefined'){NL.configure(rep*5,rep);NL.init(0);}
+      if(typeof NL!=='undefined'){NL.configure((times+1)*rep,rep);NL.init(0);}
       fb('✖️ כֶּפֶל זֶה קְפִיצוֹת שָׁווֹת! קִפְצִי '+times+' קְפִיצוֹת שֶׁל '+rep+' עַל הַיָּשָׁר 💗');
     }
 

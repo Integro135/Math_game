@@ -148,13 +148,21 @@ class TestChampMultiplication:
         assert page.evaluate("!!document.getElementById('lbmulc')"), \
             "the mulc picker button must render"
 
-    def test_factors_never_exceed_four(self, page):
-        """Every generated problem multiplies numbers up to 4 (a,b ∈ {2,3,4})."""
+    def test_products_never_exceed_sixteen(self, page):
+        """Every generated problem has both factors ≥2 and a PRODUCT ≤16. Factors
+        are now EXPANDED beyond the old ≤4 grid (e.g. 2×7, 2×8, 3×5) as long as
+        a·b ≤ 16 (user: 'כפל עד תוצאה של 16')."""
         _enter_mulc(page)   # ensures the mult_champ type file is loaded
         bad = page.evaluate(
             "EXERCISES.types.mult_champ.make('mulc')"
-            ".filter(p => p.a<2 || p.a>4 || p.b<2 || p.b>4)")
-        assert bad == [], f"all factors must be 2..4, offenders: {bad}"
+            ".filter(p => p.a<2 || p.b<2 || p.a*p.b>16)")
+        assert bad == [], f"all products must be ≤16 with factors ≥2, offenders: {bad}"
+        # the expansion really does produce a factor > 4 sometimes (not just ≤4)
+        seen = page.evaluate(
+            "(()=>{const s=new Set();for(let i=0;i<40;i++)"
+            "EXERCISES.types.mult_champ.make('mulc').forEach(p=>{s.add(p.a);s.add(p.b);});"
+            "return [...s];})()")
+        assert any(f > 4 for f in seen), f"factors should now exceed 4 sometimes, saw {seen}"
 
     def test_superman_coin_multiplication_exercises_in_mulc_pool(self, page):
         """The two basic-multiplication exercises borrowed from Superman —
@@ -271,7 +279,7 @@ class TestChampMultiplication:
         page.evaluate("document.getElementById('mk-switch').click()")
         page.wait_for_timeout(120)
         ticks = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
-        assert ticks == [0, 4, 8, 12, 16, 20], f"after 🔁 the line must jump by 4, got {ticks}"
+        assert ticks == [0, 4, 8, 12, 16], f"after 🔁 the line must jump by 4 (ending one jump past 12), got {ticks}"
         page.wait_for_function("document.getElementById('mk-ans').value===''", timeout=TIMEOUT)
         page.evaluate("""() => {
             const inp=document.getElementById('mk-ans');
@@ -325,7 +333,7 @@ class TestChampMultiplication:
         assert like() == [3, 3, 3, 3], f"jumps of 3 → 'זה כמו' chain must be 3+3+3+3, got {like()}"
         page.evaluate("document.getElementById('mk-switch').click()")
         page.wait_for_timeout(150)
-        assert ticks() == [0, 4, 8, 12, 16, 20]
+        assert ticks() == [0, 4, 8, 12, 16]
         assert like() == [4, 4, 4], f"after 🔁 (jumps of 4) the chain must become 4+4+4, got {like()}"
 
     def test_floating_switch_is_separate_and_tooltip_previews_target(self, page):
@@ -910,16 +918,17 @@ class TestTripleSum:
         assert page.evaluate(
             "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
 
-    def test_triple_sum_target_varies_and_is_6_to_12(self, page):
-        """The target is NOT always the same — make() spreads it over 6..12, and
-        the three cards in one pool carry DISTINCT targets."""
+    def test_triple_sum_target_varies_and_is_6_to_14(self, page):
+        """The target is NOT always the same — make() spreads it over 6..14 (user:
+        reach up to 14), and the three cards in one pool carry DISTINCT targets."""
         _enter_triple(page)
         seen = set(page.evaluate(
-            "(()=>{const s={};for(let i=0;i<40;i++)"
+            "(()=>{const s={};for(let i=0;i<60;i++)"
             "EXERCISES.types.triple_sum.make('mulc').forEach(p=>s[p.a]=1);"
             "return Object.keys(s).map(Number);})()"))
         assert len(seen) > 1, f"the target must vary, saw only {seen}"
-        assert seen and all(6 <= t <= 12 for t in seen), f"targets must be 6..12, saw {seen}"
+        assert seen and all(6 <= t <= 14 for t in seen), f"targets must be 6..14, saw {seen}"
+        assert any(t > 12 for t in seen), f"targets must now reach past 12 (up to 14), saw {seen}"
         one = page.evaluate("EXERCISES.types.triple_sum.make('mulc').map(p=>p.a)")
         assert len(set(one)) == len(one), f"one pool's targets must be distinct, got {one}"
 
@@ -1011,36 +1020,36 @@ class TestTripleSum:
 
 
 # ─────────────────────────────────────────────────────────
-# "כַּמָּה זֶה חֵצִי" (half / THF) — the first taste of DIVISION: two friends
-# share 4/6/8/10 items EQUALLY. Tapping the items toggles a golden MIDDLE line
-# that splits them into two equal halves (each sliding toward its girl); the
-# child types how many EACH gets (n ÷ 2). A wrong answer auto-opens the split.
+# "חִלּוּק שָׁווֶה בְּשָׁווֶה" (half / THF) — the first taste of DIVISION: friends
+# share items EQUALLY, k=2 OR k=3 (totals up to 16). Tapping the items toggles
+# golden divider lines that split them into k equal groups; the child types how
+# many EACH gets (n ÷ k). A wrong answer auto-opens the split.
 # ─────────────────────────────────────────────────────────
 
-def _enter_half(page, n=8):
+def _enter_half(page, n=8, k=2):
     """Enter אַלּוּפָה, wait for the half type + built pool, then force ONE
-    share-equally problem and wait for its board."""
+    share-equally problem (n items among k friends) and wait for its board."""
     page.evaluate("setMode('mulc')")
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.half==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
         timeout=TIMEOUT)
     page.evaluate(
-        f"mode='mulc';score=0;problems=[{{t:THF,n:{n},a:{n//2},item:'🍎',"
-        f"itemName:'תַּפּוּחִים',names:['דָּנָה','נֹעָה']}}];idx=0;loadProblem();")
+        f"mode='mulc';score=0;problems=[{{t:THF,n:{n},k:{k},a:{n//k},item:'🍎',"
+        f"itemName:'תַּפּוּחִים',names:['דָּנָה','נֹעָה','רוֹנִי']}}];idx=0;loadProblem();")
     page.wait_for_selector(".hf-inp", timeout=TIMEOUT)
     page.wait_for_timeout(120)
 
 
 class TestHalfSplit:
     def test_half_loads_and_mounts(self, page):
-        """Forcing THF mounts the story + n items pre-grouped in two equal halves,
+        """Forcing THF mounts the story + n items pre-grouped in two equal groups,
         split line hidden; no host check button, no number line."""
         _enter_half(page, 8)
         assert page.evaluate("ptype === THF")
         assert page.evaluate("document.querySelectorAll('.hf-item').length") == 8
-        halves = page.evaluate("[...document.querySelectorAll('.hf-half')].map(h=>h.children.length)")
-        assert halves == [4, 4], f"items must sit in two equal halves, got {halves}"
+        halves = page.evaluate("[...document.querySelectorAll('.hf-grp')].map(h=>h.children.length)")
+        assert halves == [4, 4], f"items must sit in two equal groups, got {halves}"
         assert not page.evaluate("!!document.querySelector('.hf-root.hf-split')"), \
             "the split line must start hidden"
         assert page.evaluate(
@@ -1101,21 +1110,39 @@ class TestHalfSplit:
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13
 
-    def test_half_pool_is_even_totals_up_to_14(self, page):
-        """make('mulc') builds one problem per total 4/6/8/10/12/14 — every total
-        EVEN (so the share is exact), reaching up to 14, answer exactly half."""
+    def test_half_pool_mixes_div2_and_div3_up_to_16(self, page):
+        """make('mulc') builds a MIX of ÷2 (even totals 8..16) and ÷3 (multiples of
+        three 6..15); every total divides EXACTLY by its k, the answer is n/k, and
+        no total exceeds 16 (user: divide up to 16, also by 3)."""
         _enter_half(page)   # ensures the half type file is loaded
-        pool = page.evaluate("EXERCISES.types.half.make('mulc').map(p=>({n:p.n,a:p.a}))")
-        assert sorted(p["n"] for p in pool) == [4, 6, 8, 10, 12, 14]
-        assert all(p["a"] * 2 == p["n"] for p in pool), f"answers must be exact halves: {pool}"
+        pool = page.evaluate("EXERCISES.types.half.make('mulc').map(p=>({n:p.n,k:p.k,a:p.a}))")
+        assert all(p["a"] * p["k"] == p["n"] for p in pool), f"answers must be exact n/k: {pool}"
+        assert all(p["n"] <= 16 for p in pool), f"no total may exceed 16: {pool}"
+        ks = {p["k"] for p in pool}
+        assert ks == {2, 3}, f"the pool must MIX ÷2 and ÷3, got ks={sorted(ks)}"
 
     def test_half_14_splits_into_two_sevens_and_solves(self, page):
         """A total of 14 mounts 7 items each side; typing 7 solves it (full 20)."""
         _enter_half(page, 14)
         assert page.evaluate("document.querySelectorAll('.hf-item').length") == 14
-        halves = page.evaluate("[...document.querySelectorAll('.hf-half')].map(h=>h.children.length)")
-        assert halves == [7, 7], f"14 must split into two equal halves of 7, got {halves}"
+        halves = page.evaluate("[...document.querySelectorAll('.hf-grp')].map(h=>h.children.length)")
+        assert halves == [7, 7], f"14 must split into two equal groups of 7, got {halves}"
         _dispatch_enter(page, ".hf-inp", 7)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+
+    def test_half_div3_splits_into_three_groups_and_solves(self, page):
+        """A ÷3 problem (9 among 3) mounts 3 equal groups of 3 with 2 divider lines
+        and 3 kid emojis; typing n/3 = 3 solves it (full 20)."""
+        _enter_half(page, 9, 3)
+        assert page.evaluate("document.querySelectorAll('.hf-item').length") == 9
+        groups = page.evaluate("[...document.querySelectorAll('.hf-grp')].map(g=>g.children.length)")
+        assert groups == [3, 3, 3], f"9 among 3 must be three groups of 3, got {groups}"
+        assert page.evaluate("document.querySelectorAll('.hf-line').length") == 2, \
+            "three groups need two divider lines"
+        assert page.evaluate("document.querySelectorAll('.hf-kid').length") == 3, \
+            "÷3 must show three kid emojis"
+        _dispatch_enter(page, ".hf-inp", 3)
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 20
 
@@ -1475,3 +1502,118 @@ class TestWordProblems:
         assert res["nounTwo"] > 0, "a 2-before-noun story must occur (operands can be 2)"
         assert res["absoluteLeak"] == 0, \
             f"the absolute form must not appear before a noun, leaked {res['absoluteLeak']}"
+
+
+# ─────────────────────────────────────────────────────────
+# "בְּעָיוֹת שַׁרְשֶׁרֶת" (word_chain / TWC) — a CHAIN word problem: a start, then two
+# more steps (+/−) told in a nikud story (קיבל 2, קיבל עוד 2, נתן 4 → 2+2−4). Every
+# step and the final result stay in 0..12. On a mistake the bare DIGIT chain is
+# revealed to retry (graded 100/75/50/0). Mixed into אַלּוּפָה (mulc).
+# ─────────────────────────────────────────────────────────
+
+def _enter_word_chain(page):
+    """Enter אַלּוּפָה, wait for the word_chain type + built pool, then force a batch
+    of REAL chain stories (from make('wc')) and wait for the first card."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.word_chain==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate("mode='mulc';score=0;problems=EXERCISES.types.word_chain.make('wc');idx=0;loadProblem();")
+    page.wait_for_selector(".wc-inp", timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
+class TestWordChain:
+    def test_word_chain_loads_and_mounts(self, page):
+        """Forcing TWC mounts the nikud story (three spelled numbers) + an answer
+        box; the derived digit chain is hidden; no host check button, no number line."""
+        _enter_word_chain(page)
+        assert page.evaluate("ptype === TWC")
+        assert page.evaluate("!!document.querySelector('.wc-story')")
+        assert page.evaluate("document.querySelectorAll('.wc-story .wc-num').length") == 3, \
+            "the story must spell out all three chain numbers (tappable)"
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('wc-derived')).display === 'none'"), \
+            "the bare digit chain must stay hidden until a mistake"
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'")
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('chk-btn')).display === 'none'")
+
+    def test_word_chain_results_are_0_to_12(self, page):
+        """Every generated chain has operands ≥2 and keeps every step AND the final
+        result within 0..12 (user: 'מספרים עד 12 בתוצאה')."""
+        _enter_word_chain(page)
+        bad = page.evaluate("""() => {
+            const out=[];
+            for(let k=0;k<60;k++){
+                for(const p of EXERCISES.types.word_chain.make('wc')){
+                    const r1 = p.ops[0]==='sub'? p.a-p.b : p.a+p.b;
+                    const r2 = p.ops[1]==='sub'? r1-p.c : r1+p.c;
+                    if(p.a<2||p.b<2||p.c<2||r1<0||r1>12||r2<0||r2>12) out.push(p);
+                }
+            }
+            return out;
+        }""")
+        assert bad == [], f"every step + result must be 0..12 with operands ≥2, offenders: {bad}"
+
+    def test_word_chain_host_result_matches_chain(self, page):
+        """The host's computed answer (report.correct, via core.js _wc) equals the
+        left-to-right chain result."""
+        _enter_word_chain(page)
+        ok = page.evaluate("""() => {
+            const p=problems[0];
+            const r1 = p.ops[0]==='sub'? p.a-p.b : p.a+p.b;
+            const r2 = p.ops[1]==='sub'? r1-p.c : r1+p.c;
+            return report[0].correct === r2;
+        }""")
+        assert ok, "core.js _wc must match the chain result"
+
+    def test_word_chain_correct_scores_full(self, page):
+        """Solving the story on the first try scores the full 20."""
+        _enter_word_chain(page)
+        page.evaluate("""() => {
+            const inp=document.getElementById('wc-inp');
+            inp.value=String(report[0].correct);
+            inp.dispatchEvent(new Event('input',{bubbles:true}));
+            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+        }""")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+        assert page.evaluate("report[0].gotCorrect") is True
+
+    def test_word_chain_wrong_reveals_digit_chain_then_partial(self, page):
+        """A wrong answer reveals the bare DIGIT chain (a op1 b op2 c =, two
+        operators) with a fresh box; solving it there scores 75% of 20 = 15."""
+        _enter_word_chain(page)
+        page.evaluate("""() => {
+            const inp=document.getElementById('wc-inp');
+            inp.value=String(report[0].correct + 1);       // guaranteed wrong
+            inp.dispatchEvent(new Event('input',{bubbles:true}));
+            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+        }""")
+        page.wait_for_function(
+            "getComputedStyle(document.getElementById('wc-derived')).display !== 'none'",
+            timeout=TIMEOUT)
+        # the revealed equation is a real 3-term chain (two + / − operators)
+        eqtxt = page.evaluate("document.querySelector('.wc-eq').textContent")
+        assert sum(eqtxt.count(op) for op in ("+", "−")) == 2, \
+            f"the derived chain must show two operators, got {eqtxt!r}"
+        page.evaluate("""() => {
+            const inp=document.getElementById('wc-inp2');
+            inp.value=String(report[0].correct);
+            inp.dispatchEvent(new Event('input',{bubbles:true}));
+            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+        }""")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 15, "one mistake then solving the chain scores 75% (15)"
+
+    def test_word_chain_in_mulc_pool(self, page):
+        """word_chain (TWC) is woven into the אַלּוּפָה pool."""
+        page.evaluate("setMode('mulc')")
+        page.wait_for_function(
+            "typeof problems!=='undefined' && problems.length>0"
+            " && typeof EXERCISES.types.word_chain==='object'", timeout=TIMEOUT)
+        assert page.evaluate("problems.some(p=>p.t===TWC)"), \
+            "word_chain (TWC) must appear in the אַלּוּפָה pool"

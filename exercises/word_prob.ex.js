@@ -1,6 +1,7 @@
-/* ── "בְּעָיוֹת מִלּוּלִיּוֹת עַד 10" — short nikud word problems ────────────────
+/* ── "בְּעָיוֹת מִלּוּלִיּוֹת" — short nikud word problems ──────────────────────
    A new exercise for the אַלּוּפָה category (mode 'mulc'). A SHORT vowelled
-   (מְנֻקָּד) story up to 10, e.g.:
+   (מְנֻקָּד) story — ADDITION reaches a sum of 12, subtraction stays ≤ 10 (each
+   operand ≤ 10 so its spelled Hebrew word exists), e.g.:
 
        לְיוֹסִי חֲמִשָּׁה תַּפּוּחִים. רוֹעִי לָקַח לוֹ שְׁלֹשָׁה תַּפּוּחִים.
        כַּמָּה תַּפּוּחִים נִשְׁאֲרוּ לְיוֹסִי?
@@ -73,11 +74,12 @@ window.EXERCISES.types.word_prob=(()=>{
     {g:'f',e:'⭐',t:(A,B)=>'לְעֹמֶר הָיוּ '+A+' מַדְבֵּקוֹת. הוּא קָנָה עוֹד '+B+' מַדְבֵּקוֹת. כַּמָּה מַדְבֵּקוֹת יֵשׁ לוֹ?'},
   ];
 
-  /* one problem: pick an op, pick operands (≤10, both ≥2), render the story with
-     the operands spelled out as gender-agreeing Hebrew words (underlined + tappable) */
+  /* one problem: pick an op, pick operands (both ≥2, each ≤10 so a spelled word
+     exists), render the story with the operands spelled out as gender-agreeing
+     Hebrew words (underlined + tappable) */
   function makeOne(op){
     let a,b;
-    if(op==='add'){ a=irnd(2,8); b=irnd(2,10-a); }          // sum 4..10
+    if(op==='add'){ a=irnd(2,10); b=irnd(2,Math.min(10,12-a)); }  // sum 4..12 (operands ≤10)
     else          { b=irnd(2,6); a=irnd(b+2,10); }          // a 4..10, answer a−b ≥ 2
     const list=(op==='add'?ADD:SUB);
     const tpl=list[irnd(0,list.length-1)];

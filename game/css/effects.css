@@ -229,6 +229,10 @@
 /* ── End-screen gift ── */
 .end-gift{font-size:5rem;margin:8px 0;display:block;
   animation:giftPop .65s cubic-bezier(.17,1.5,.5,1) both}
+/* the ×N multiplier next to the 🎁 — THEMED (skin accent) so it suits the
+   current background instead of the default dark ink; a soft drop keeps it
+   legible over both light and dark skins */
+.end-gift-x{color:var(--skin-accent,#FFD740);text-shadow:0 2px 5px rgba(0,0,0,.3)}
 @keyframes giftPop{
   from{transform:scale(0) rotate(-20deg);opacity:0}
   to  {transform:scale(1) rotate(0);opacity:1}

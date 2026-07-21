@@ -18,6 +18,28 @@ class TestScoreAndMode:
         solve_one(page)
         assert page.evaluate("score") == 20
 
+    def test_solve_one_handles_every_mx_slot0_type(self, page):
+        """`solve_one` must correctly answer EVERY type the mx shuffle can seat at
+        slot 0 — whole-hundreds (TH, ADDITION), the single ⃝-unknown add/sub
+        (TVA/TVS) and the three-box triple (TRA). Regression for a test-helper gap
+        (`correct_answer`/`submit_answer` didn't cover these) that flaked the mx
+        scoring tests (~20%) whenever the shuffle landed one of them at slot 0."""
+        page.evaluate("setMode('mx')")
+        page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        for prob in ("{t:TH,a:500,b:40}",                       # 500+40 = 540 (addition!)
+                     "{t:TVA,a:30,b:20,sym:'circle'}",          # 30 + ⃝ = 50
+                     "{t:TVS,a:30,b:20,sym:'triangle'}",        # 30 − ⃝ = 10
+                     "{t:TRA,r:15}"):                           # __+__+__ = 15 (three boxes)
+            # a filler 2nd card so solving slot 0 advances (idx→1) instead of ending
+            page.evaluate(f"mode='mx';score=0;problems=[{prob},{{t:TS,a:5,b:2}}];idx=0;loadProblem()")
+            page.wait_for_function(
+                "done===false && idx===0 && (document.getElementById('ans')||document.getElementById('ans1'))",
+                timeout=TIMEOUT)
+            page.wait_for_timeout(120)
+            solve_one(page)
+            assert page.evaluate("score") == 20, f"solve_one must solve {prob} for +20 in mx"
+            assert page.evaluate("idx") == 1, f"solving {prob} must advance to the next card"
+
     def test_correct_answer_in_mode10_adds_10_points(self, page):
         page.evaluate("setMode(10)")
         page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
