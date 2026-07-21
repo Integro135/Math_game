@@ -27,32 +27,21 @@ VIEW     = {"width": 1280, "height": 800}   # desktop viewport
 # many times paintMain() runs (the flower-bearing landscape paint) during that time.
 # If paintMain runs only at load, the added knoll flowers can't affect runtime FPS.
 EVAL = r"""(async function(){
-  var W=function(fn){return new Promise(function(r){var t=setInterval(function(){if(fn()){clearInterval(t);r();}},50);});};
   var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-  setMode('mulc');
-  await W(function(){return window.EXERCISES&&EXERCISES.types.half&&typeof problems!=='undefined'&&problems.length;});
-  score=0;problems=[{t:THF,n:9,k:3,a:3,item:'🍎',itemName:'תַּפּוּחִים',names:['דָּנָה','נֹעָה','רוֹנִי']}];idx=0;loadProblem();
-  await W(function(){return document.querySelector('.hf-stage');});
-  await sleep(400);
-  document.querySelector('.hf-stage').click();   // open the split
-  await sleep(700);
-  // confirm NO layout property is transitioned on the split parts
-  var line=document.querySelector('.hf-line'), grp=document.querySelector('.hf-grp');
-  var lt=getComputedStyle(line).transitionProperty, gt=getComputedStyle(grp).transitionProperty;
-  var bad=['width','margin','padding','left','top'].filter(function(p){return (lt+','+gt).indexOf(p)>=0;});
-  return JSON.stringify({
-    split:!!document.querySelector('.hf-root.hf-split'),
-    groups:document.querySelectorAll('.hf-grp').length,
-    lines:document.querySelectorAll('.hf-line').length,
-    lineTransition:lt, grpTransition:gt, layoutPropsAnimated:bad
-  });
+  await new Promise(function(r){var t=setInterval(function(){if(window.__meadow){clearInterval(t);r();}},50);});
+  var samples=[], onstage=[];
+  for(var i=0;i<5;i++){await sleep(2000);
+    samples.push(document.getAnimations().filter(function(a){return a.playState==='running';}).length);
+    var n=0;document.querySelectorAll('.uc-uni:not(.uc-fx-host)').forEach(function(u){var r=u.getBoundingClientRect();if(r.right>4&&r.left<window.innerWidth-4&&!u.classList.contains('uc-paused'))n++;});
+    onstage.push(n);}
+  return JSON.stringify({coarsePointer:!!(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches),
+    runningSamples:samples, onStageSamples:onstage,
+    fairySparks:document.querySelectorAll('.fy-sparks .fy-spark').length});
 })();"""
 POST_EVAL = r""
 CLICKS   = []
-WAIT_MS   = 300
-SHOTS    = [
-    {"path": r"c:\tmp\half_split_perf.png", "clip": {"x": 300, "y": 60, "width": 680, "height": 460}},
-]
+WAIT_MS   = 200
+SHOTS    = []
 # ────────────────────────────────────────────────────────────────────────────
 
 GAME_URL   = Path(r"c:\Code\subtraction_game\index.html").as_uri()

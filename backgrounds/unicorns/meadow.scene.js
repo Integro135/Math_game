@@ -631,7 +631,11 @@ window.UnicornMeadow = (function () {
 
 
   var TAU = Math.PI * 2;
-  var DPR = Math.min(devicePixelRatio || 1, 2);
+  // PERF (v9.56): cap canvas DPR at 1.5 — the scene runs 4 full-screen canvases
+  // (far ridges, main landscape, clouds, waterfall) that redraw per frame; at DPR
+  // 2 a retina tablet fills 4× the pixels each frame. 1.5 ≈ −44% fill, barely
+  // softer, a big win on weak GPUs.
+  var DPR = Math.min(devicePixelRatio || 1, 1.5);
   var CYCLE = 120000;
   /* W/H = viewport; HM = the vertical budget the LANDSCAPE (ridges/hills/
      waterfall/flower band) may use, measured UP from the bottom edge. On
@@ -957,8 +961,11 @@ window.UnicornMeadow = (function () {
        moves the actor across the screen via el.style.left, while the LEG cycle
        is the CSS `--speed` animation — the two are INDEPENDENT, so bumping
        speedPctPerSec speeds the TRAVEL without touching the leg cadence. */
-    var MAX_ON_STAGE = 2;   // perf: ≤2 rigs galloping at once (each rig = ~80 CSS animations);
-                            // off-stage rigs are auto-paused by roam() (uc-paused)
+    /* perf: each galloping rig ≈ 60 CSS animations. On TOUCH devices (tablet/phone,
+       weaker GPU — where the lag was reported) allow only ONE actor on stage at a
+       time; desktop keeps 2. Off-stage rigs are auto-paused by roam() (uc-paused). */
+    var LITE = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+    var MAX_ON_STAGE = LITE ? 1 : 2;
     var roamers = [];
     function activeCount(){ return roamers.reduce(function(n, i){ return n + (i.active ? 1 : 0); }, 0); }
     var gate = function(){ return activeCount() < MAX_ON_STAGE; };

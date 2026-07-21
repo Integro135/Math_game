@@ -20,7 +20,8 @@
 (function () {
   'use strict';
   var STYLE_ID = 'fairy-item-style';
-  var SPARKS = 20;
+  var SPARKS = 8;   // perf (v9.56): 8 twinkles (was 20) — an always-on ambient effect;
+                    // the burst still reads fine and this drops ~12 CSS animations
 
   /* the fairy's own look — NO background, positioned by a 0-size .fy-fairy
      anchor (its centre = where you place it), sized via transform:scale. */

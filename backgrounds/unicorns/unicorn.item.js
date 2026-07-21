@@ -2933,11 +2933,14 @@
 	</div>
 `;
 
-  /* the workshop's two stardust emitters — 30 particles each, siblings of the
-     horse (exactly its DOM: front = at the front hooves, back = under the
-     belly); hidden by the walk/fly gaits, streams only while galloping */
+  /* the workshop's two stardust emitters, siblings of the horse (front = at the
+     front hooves, back = under the belly); hidden by the walk/fly gaits, streams
+     only while galloping. PERF (v9.56): 8 particles/emitter (was 30) — the trail
+     was ~60 CSS animations PER RIG (more than the whole horse) and dominated the
+     scene cost on weak tablets/phones; 8 still reads as a sparkle trail. */
+  var DUST_N = 8;
   var DUST_HTML = (function () {
-    var p = new Array(31).join('<div class="particle"></div>');
+    var p = new Array(DUST_N + 1).join('<div class="particle"></div>');
     return '<div class="dust front">' + p + '</div><div class="dust back">' + p + '</div>';
   })();
 
