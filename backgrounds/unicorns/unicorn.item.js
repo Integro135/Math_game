@@ -3200,10 +3200,11 @@
           inst.setFlip(FACES_LEFT ? dir > 0 : dir < 0);
           el.style.left = pct + '%';
           waiting = false;
+          el.classList.remove('uc-paused');                 // resume the leg cycle for the trip
           inst.active = true;                               // on a trip (the host can count these)
         }
         if (o.startOnScreen !== false && (!o.gate || o.gate())) newTrip(true);
-        else { waiting = true; waitUntil = last + rnd(waitMin, waitMax) * 1000; inst.active = false; el.style.left = '-200%'; }
+        else { waiting = true; waitUntil = last + rnd(waitMin, waitMax) * 1000; inst.active = false; el.style.left = '-200%'; el.classList.add('uc-paused'); }
 
         function step(now) {
           if (inst._dead) return;
@@ -3222,6 +3223,7 @@
           if ((dir > 0 && pct > 100 + exitPad) || (dir < 0 && pct < -exitPad)) {
             waiting = true;                                  // fully off-stage → wait
             inst.active = false;
+            el.classList.add('uc-paused');                   // freeze the ~80 leg animations while parked off-screen (perf)
             waitUntil = now + rnd(waitMin, waitMax) * 1000;
           }
           inst._raf = requestAnimationFrame(step);

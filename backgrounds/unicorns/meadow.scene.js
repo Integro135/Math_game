@@ -957,7 +957,8 @@ window.UnicornMeadow = (function () {
        moves the actor across the screen via el.style.left, while the LEG cycle
        is the CSS `--speed` animation — the two are INDEPENDENT, so bumping
        speedPctPerSec speeds the TRAVEL without touching the leg cadence. */
-    var MAX_ON_STAGE = 3;
+    var MAX_ON_STAGE = 2;   // perf: ≤2 rigs galloping at once (each rig = ~80 CSS animations);
+                            // off-stage rigs are auto-paused by roam() (uc-paused)
     var roamers = [];
     function activeCount(){ return roamers.reduce(function(n, i){ return n + (i.active ? 1 : 0); }, 0); }
     var gate = function(){ return activeCount() < MAX_ON_STAGE; };

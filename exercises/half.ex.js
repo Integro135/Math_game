@@ -77,18 +77,27 @@ window.EXERCISES.types.half=(()=>{
   /* pre-split the k groups must read as ONE continuous row: no horizontal padding,
      and the (transparent) 2px borders + the collapsed lines' margins add up to
      exactly the 7px in-row gap */
+  /* PERF: the split animates ONLY transform + paint (border/background) — NEVER a
+     layout property (no width/margin/padding transition) — so it never reflows the
+     row per frame and stays smooth even over the busy unicorn scene. */
   .hf-grp{display:flex;align-items:center;gap:var(--hf-gap,7px);padding:8px 0;border-radius:14px;
-    border:2px dashed transparent;transition:transform .45s cubic-bezier(.34,1.56,.64,1),
-      border-color .35s,background .35s,padding .45s}
+    border:2px dashed transparent;will-change:transform;
+    transition:transform .45s cubic-bezier(.34,1.56,.64,1),border-color .35s,background .35s}
   .hf-item{font-size:var(--hf-isz,2rem);line-height:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
-  /* the golden dividers — zero-width until the split drops them between the groups */
-  .hf-line{width:0;height:70px;border-radius:4px;margin:0 1.5px;align-self:center;
+  /* the divider keeps a ZERO-width LAYOUT box (so the pre-split row stays exactly
+     continuous). The visible golden bar is an absolutely-positioned ::before that
+     only scaleY's in; the line translateX-centres itself in the widened gap. */
+  .hf-line{position:relative;width:0;height:70px;margin:0 1.5px;align-self:center;
+    will-change:transform;transform:translateX(0);
+    transition:transform .45s cubic-bezier(.3,1.3,.5,1)}
+  .hf-line::before{content:'';position:absolute;left:50%;top:50%;width:5px;height:70px;border-radius:4px;
     background:linear-gradient(180deg,var(--skin-accent,#ffd27d),#ffb02e);
-    box-shadow:0 0 14px var(--skin-accent,#ffd27d);
-    transform:scaleY(0);transform-origin:center top;
-    transition:transform .45s cubic-bezier(.3,1.3,.5,1),margin .45s,width .45s}
-  .hf-root.hf-split .hf-line{transform:scaleY(1);width:5px;margin:0 12px}
-  .hf-root.hf-split .hf-grp{padding:8px 6px;border-color:rgba(255,210,125,.55);background:rgba(255,255,255,.07)}
+    box-shadow:0 0 14px var(--skin-accent,#ffd27d);transform-origin:center;
+    transform:translate(-50%,-50%) scaleY(0);
+    transition:transform .45s cubic-bezier(.3,1.3,.5,1);pointer-events:none}
+  .hf-root.hf-split .hf-line{transform:translateX(var(--ltx,0))}
+  .hf-root.hf-split .hf-line::before{transform:translate(-50%,-50%) scaleY(1)}
+  .hf-root.hf-split .hf-grp{transform:translateX(var(--gtx,0));border-color:rgba(255,210,125,.55);background:rgba(255,255,255,.07)}
   .hf-root.hf-split .hf-kid{transform:scale(1.12)}
   .hf-tip{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--skin-text,#fff);opacity:.75;
     display:flex;align-items:center;gap:6px;transition:opacity .3s}
@@ -108,7 +117,7 @@ window.EXERCISES.types.half=(()=>{
   @media(max-width:480px){
     .hf-root{--hf-isz:1.45rem;--hf-ksz:1.9rem;--hf-gap:4px;--hf-kgap:16px}
     .hf-line{height:54px;margin:0}   /* 2px+2px borders alone = the 4px gap */
-    .hf-root.hf-split .hf-line{margin:0 8px}
+    .hf-line::before{height:54px}
   }`;
   function injectStyle(){
     if(document.getElementById('hf-style'))return;
@@ -135,11 +144,16 @@ window.EXERCISES.types.half=(()=>{
     const hint=msg=>{const h=document.getElementById('hint');if(h)h.textContent=msg;};
 
     const kidsHtml=KIDS.slice(0,k).map(e=>'<span class="hf-kid">'+e+'</span>').join('');
-    // k groups of `per` items, separated by k-1 golden divider lines
+    // k groups of `per` items, separated by k-1 golden divider lines. The split
+    // spreads the groups apart PURELY via transform:translateX (no layout) — each
+    // group/line carries its symmetric offset as a CSS var (--gtx / --ltx).
+    const SEP=28;                                   // px of extra gap opened per boundary
+    const gOff=i=>Math.round((i-(k-1)/2)*SEP);      // group i slides symmetrically from centre
+    const lOff=j=>Math.round((j+0.5-(k-1)/2)*SEP);  // divider j sits in the middle of its gap
     let groupsHtml='';
     for(let g=0;g<k;g++){
-      groupsHtml+='<div class="hf-grp">'+new Array(per).fill('<span class="hf-item">'+item+'</span>').join('')+'</div>';
-      if(g<k-1)groupsHtml+='<div class="hf-line"></div>';
+      groupsHtml+='<div class="hf-grp" style="--gtx:'+gOff(g)+'px">'+new Array(per).fill('<span class="hf-item">'+item+'</span>').join('')+'</div>';
+      if(g<k-1)groupsHtml+='<div class="hf-line" style="--ltx:'+lOff(g)+'px"></div>';
     }
     root.innerHTML=
       '<div class="hf-root" id="hf-root-'+uid+'">'+

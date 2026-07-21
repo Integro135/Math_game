@@ -1077,6 +1077,21 @@ class TestHalfSplit:
         assert mid > max(rest) + 8, \
             f"after the tap the MIDDLE gap must be clearly wider, got mid={mid}, rest={rest}"
 
+    def test_half_split_animates_no_layout_properties(self, page):
+        """PERF: the split must animate ONLY transform + paint (border/background),
+        NEVER a layout property (width/margin/padding/left/top) — so it can't reflow
+        the row every frame (that's what janked it over the heavy unicorn scene)."""
+        _enter_half(page, 9, 3)
+        page.click(".hf-stage")
+        page.wait_for_function("!!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
+        props = page.evaluate("""() => {
+            const line=document.querySelector('.hf-line'), grp=document.querySelector('.hf-grp');
+            return getComputedStyle(line).transitionProperty + ',' + getComputedStyle(grp).transitionProperty;
+        }""")
+        for bad in ("width", "margin", "padding", "left", "top"):
+            assert bad not in props, \
+                f"the split must NOT transition the layout property '{bad}' (got {props!r})"
+
     def test_half_tap_toggles_the_middle_split(self, page):
         """Tapping the items shows the golden middle line (splits into 2 groups);
         tapping again hides it."""

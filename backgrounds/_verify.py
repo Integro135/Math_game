@@ -21,36 +21,37 @@ except Exception: pass
 THEME    = "girls"                 # the 🦄 theme → unicorns background (new meadow scene)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
-STANDALONE = r""                   # empty → drive the in-game index.html flow
+STANDALONE = r""                   # in-game (girls→unicorns) so the split runs over the real scene
 VIEW     = {"width": 1280, "height": 800}   # desktop viewport
-# word_chain — reveal the derived DIGIT chain (submit a wrong answer) and check
-# the INTERMEDIATE running-sum box renders (like the regular chain exercises).
+# PERF PROBE — measure the unicorn scene's per-frame timing over ~3s, and count how
+# many times paintMain() runs (the flower-bearing landscape paint) during that time.
+# If paintMain runs only at load, the added knoll flowers can't affect runtime FPS.
 EVAL = r"""(async function(){
   var W=function(fn){return new Promise(function(r){var t=setInterval(function(){if(fn()){clearInterval(t);r();}},50);});};
+  var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
   setMode('mulc');
-  await W(function(){return window.EXERCISES&&EXERCISES.types.word_chain&&typeof problems!=='undefined'&&problems.length;});
-  score=0;problems=EXERCISES.types.word_chain.make('wc');idx=0;loadProblem();
-  await W(function(){return document.querySelector('.wc-story');});
-  var inp=document.getElementById('wc-inp');
-  inp.value=String(report[0].correct+1);
-  inp.dispatchEvent(new Event('input',{bubbles:true}));
-  inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
-  await W(function(){return getComputedStyle(document.getElementById('wc-derived')).display!=='none';});
-  await new Promise(function(r){setTimeout(r,300);});
-  var sb=document.querySelector('.wc-box');
-  var r=sb?sb.getBoundingClientRect():null;
+  await W(function(){return window.EXERCISES&&EXERCISES.types.half&&typeof problems!=='undefined'&&problems.length;});
+  score=0;problems=[{t:THF,n:9,k:3,a:3,item:'🍎',itemName:'תַּפּוּחִים',names:['דָּנָה','נֹעָה','רוֹנִי']}];idx=0;loadProblem();
+  await W(function(){return document.querySelector('.hf-stage');});
+  await sleep(400);
+  document.querySelector('.hf-stage').click();   // open the split
+  await sleep(700);
+  // confirm NO layout property is transitioned on the split parts
+  var line=document.querySelector('.hf-line'), grp=document.querySelector('.hf-grp');
+  var lt=getComputedStyle(line).transitionProperty, gt=getComputedStyle(grp).transitionProperty;
+  var bad=['width','margin','padding','left','top'].filter(function(p){return (lt+','+gt).indexOf(p)>=0;});
   return JSON.stringify({
-    hasSubBox:!!sb, subExp:sb?sb.getAttribute('data-exp'):null,
-    subRect:r?[r.left|0,r.top|0,r.width|0,r.height|0]:null,
-    a:num1,b:num2,c:num3,ops:problems[0].ops,
-    r1:(problems[0].ops[0]==='sub'?num1-num2:num1+num2)
+    split:!!document.querySelector('.hf-root.hf-split'),
+    groups:document.querySelectorAll('.hf-grp').length,
+    lines:document.querySelectorAll('.hf-line').length,
+    lineTransition:lt, grpTransition:gt, layoutPropsAnimated:bad
   });
 })();"""
-POST_EVAL = r"""(function(){var so=document.getElementById('sad-ov');if(so)so.style.display='none';return 'ok';})();"""
+POST_EVAL = r""
 CLICKS   = []
-WAIT_MS   = 1600
+WAIT_MS   = 300
 SHOTS    = [
-    {"path": r"c:\tmp\word_chain_box.png", "clip": {"x": 420, "y": 370, "width": 440, "height": 200}},
+    {"path": r"c:\tmp\half_split_perf.png", "clip": {"x": 300, "y": 60, "width": 680, "height": 460}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 
