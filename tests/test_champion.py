@@ -1585,7 +1585,8 @@ class TestWordChain:
 
     def test_word_chain_wrong_reveals_digit_chain_then_partial(self, page):
         """A wrong answer reveals the bare DIGIT chain (a op1 b op2 c =, two
-        operators) with a fresh box; solving it there scores 75% of 20 = 15."""
+        operators) WITH an intermediate running-sum box (like the regular chains);
+        solving the final box scores 75% of 20 = 15."""
         _enter_word_chain(page)
         page.evaluate("""() => {
             const inp=document.getElementById('wc-inp');
@@ -1596,10 +1597,18 @@ class TestWordChain:
         page.wait_for_function(
             "getComputedStyle(document.getElementById('wc-derived')).display !== 'none'",
             timeout=TIMEOUT)
-        # the revealed equation is a real 3-term chain (two + / − operators)
-        eqtxt = page.evaluate("document.querySelector('.wc-eq').textContent")
-        assert sum(eqtxt.count(op) for op in ("+", "−")) == 2, \
-            f"the derived chain must show two operators, got {eqtxt!r}"
+        # the revealed chain is a real 3-term chain: two operators + an INTERMEDIATE
+        # running-sum box (data-exp = the running total after the first two terms)
+        assert page.evaluate("document.querySelectorAll('.wc-chain .wc-op').length") == 2, \
+            "the derived chain must show two operators"
+        box = page.evaluate("""() => {
+            const b=document.querySelector('.wc-box'); const p=problems[0];
+            const r1 = p.ops[0]==='sub'? p.a-p.b : p.a+p.b;
+            return {present:!!b, exp:b?+b.getAttribute('data-exp'):null, r1};
+        }""")
+        assert box["present"], "the derived chain must show an intermediate running-sum box"
+        assert box["exp"] == box["r1"], \
+            f"the intermediate box must expect the running total {box['r1']}, got {box['exp']}"
         page.evaluate("""() => {
             const inp=document.getElementById('wc-inp2');
             inp.value=String(report[0].correct);

@@ -5,7 +5,7 @@
    means NO prize for that game — no 🎁 badge on its picker button, no gift
    screen on completion. GIFT_GOALS holds ONLY the games that currently have a
    prize (a game with no prize is absent), so `GIFT_GOALS[mode]` is falsy then. */
-const DEFAULT_GIFT_GOALS={sup:800,mulc:600};   // ONLY Superman (800) + אַלּוּפָה (600) carry a prize; every other game absent → no prize
+const DEFAULT_GIFT_GOALS={sup:800,mulc:700};   // ONLY Superman (800) + אַלּוּפָה (700) carry a prize; every other game absent → no prize
 const GIFT_GOALS={};
 function _savedGiftGoals(){try{return JSON.parse(localStorage.getItem('giftGoals')||'{}')||{};}catch(e){return {};}}
 function _rebuildGiftGoals(){
@@ -28,16 +28,20 @@ function setGiftGoal(m,val){
 }
 const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',b20:'גָּשֵׁר 20',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן',mulc:'אַלּוּפָה'};
 /* ── Prize COUNT per win ─────────────────────────────────────────────────────
-   How many prizes a winning set awards for each game (default 1). Parent-
-   configurable from the settings prizes tab (the ×N input next to the goal),
-   persisted in localStorage 'giftCounts'. GIFT_COUNTS holds ONLY counts ≥ 2
-   (1 = the plain single prize), so giftCount(mode) is the single read point. */
+   How many prizes a winning set awards for each game (default 1, but אַלּוּפָה
+   gives ×2 out of the box — DEFAULT_GIFT_COUNTS). Parent-configurable from the
+   settings prizes tab (the ×N input next to the goal), persisted in localStorage
+   'giftCounts'. GIFT_COUNTS holds ONLY counts ≥ 2 (1 = the plain single prize),
+   so giftCount(mode) is the single read point. A saved override of 1 removes the
+   multiplier even where a default ×N exists. */
+const DEFAULT_GIFT_COUNTS={mulc:2};   // אַלּוּפָה awards ×2 prizes per win by default
 const GIFT_COUNTS={};
 function _savedGiftCounts(){try{return JSON.parse(localStorage.getItem('giftCounts')||'{}')||{};}catch(e){return {};}}
 function _rebuildGiftCounts(){
   for(const k in GIFT_COUNTS)delete GIFT_COUNTS[k];
+  for(const k in DEFAULT_GIFT_COUNTS){const v=DEFAULT_GIFT_COUNTS[k];if(v>=2)GIFT_COUNTS[k]=v;}
   const ov=_savedGiftCounts();
-  for(const k in ov){const v=parseInt(ov[k],10);if(v>=2)GIFT_COUNTS[k]=Math.min(99,v);}
+  for(const k in ov){const v=parseInt(ov[k],10);if(v>=2)GIFT_COUNTS[k]=Math.min(99,v);else delete GIFT_COUNTS[k];}
 }
 _rebuildGiftCounts();
 function giftCount(m){return GIFT_COUNTS[m]||1;}
@@ -1099,7 +1103,7 @@ function _reportRowHtml(row,i){
   else if(row.skipped) right=row.wrongs.map(w=>`<span class="rep-wrong-val">✗${w}</span>`).join('')+`<span class="rep-arrow">→</span><span class="rep-skipped">דולג</span>`;
   else right=row.wrongs.map(w=>`<span class="rep-wrong-val">✗${w}</span>`).join('')+`<span class="rep-arrow">→</span><span class="rep-correct">✓${row.correct}</span>`;
   return `<div class="rep-row ${row.ok?'rep-ok':'rep-bad'}"><span class="rep-badge">${i+1}</span>`
-       + `<span class="rep-eq-txt">${row.eq}</span><div class="rep-right">${right}</div></div>`;
+       + `<div class="rep-body"><span class="rep-eq-txt">${row.eq}</span><div class="rep-right">${right}</div></div></div>`;
 }
 function reportOpen(){
   if(!report||!report.length)return;

@@ -87,8 +87,7 @@
 .rep-sum-ok {background:rgba(67,160,71,.18);border:1px solid rgba(67,160,71,.4);color:#80ffb4}
 .rep-sum-err{background:rgba(233,30,99,.12);border:1px solid rgba(233,30,99,.32);color:#ffd6ff}
 .rep-row{
-  display:grid;grid-template-columns:28px 1fr auto;
-  align-items:center;gap:10px;
+  display:flex;align-items:center;gap:10px;
   padding:9px 12px;border-radius:14px;margin-bottom:6px;border:1px solid transparent;
 }
 .rep-ok {background:rgba(67,160,71,.08);border-color:rgba(67,160,71,.22)}
@@ -99,11 +98,19 @@
   font-size:.78rem;font-weight:800;font-family:'Nunito',sans-serif;
   display:flex;align-items:center;justify-content:center;
 }
+/* the equation + the attempts share one flex line and WRAP the attempts to a
+   second line only when they don't fit (narrow phones) — so a long mult row like
+   "🏆 4 × 4 = 16" with several ✗ attempts never gets squeezed into a column that
+   breaks the equation apart token-by-token */
+.rep-body{
+  flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;
+  gap:3px 10px;justify-content:space-between;
+}
 .rep-eq-txt{
   font-family:'Fredoka One',cursive;font-size:1.3rem;color:#ffd6ff;
-  letter-spacing:.03em;direction:ltr;text-align:center;
+  letter-spacing:.03em;direction:ltr;white-space:nowrap;
 }
-.rep-right{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;min-width:60px}
+.rep-right{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
 .rep-check{color:#80ffb4;font-size:1.3rem;font-weight:900}
 .rep-wrong-val{
   color:#ff80ab;font-family:'Fredoka One',cursive;font-size:1.05rem;

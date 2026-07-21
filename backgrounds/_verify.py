@@ -22,32 +22,35 @@ THEME    = "girls"                 # the 🦄 theme → unicorns background (new
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
 STANDALONE = r""                   # empty → drive the in-game index.html flow
-VIEW     = {"width": 1280, "height": 800}   # viewport
-# NEW word_chain (TWC) — force chain word problems in אַלּוּפָה, check the nikud
-# story renders and every generated result is 0..12; screenshot the story card.
+VIEW     = {"width": 1280, "height": 800}   # desktop viewport
+# word_chain — reveal the derived DIGIT chain (submit a wrong answer) and check
+# the INTERMEDIATE running-sum box renders (like the regular chain exercises).
 EVAL = r"""(async function(){
   var W=function(fn){return new Promise(function(r){var t=setInterval(function(){if(fn()){clearInterval(t);r();}},50);});};
   setMode('mulc');
   await W(function(){return window.EXERCISES&&EXERCISES.types.word_chain&&typeof problems!=='undefined'&&problems.length;});
   score=0;problems=EXERCISES.types.word_chain.make('wc');idx=0;loadProblem();
   await W(function(){return document.querySelector('.wc-story');});
-  // submit a WRONG answer → the derived DIGIT chain reveals
   var inp=document.getElementById('wc-inp');
   inp.value=String(report[0].correct+1);
   inp.dispatchEvent(new Event('input',{bubbles:true}));
   inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
   await W(function(){return getComputedStyle(document.getElementById('wc-derived')).display!=='none';});
-  await new Promise(function(r){setTimeout(r,250);});
+  await new Promise(function(r){setTimeout(r,300);});
+  var sb=document.querySelector('.wc-box');
+  var r=sb?sb.getBoundingClientRect():null;
   return JSON.stringify({
-    derivedShown:getComputedStyle(document.getElementById('wc-derived')).display!=='none',
-    eq:document.querySelector('.wc-eq').textContent
+    hasSubBox:!!sb, subExp:sb?sb.getAttribute('data-exp'):null,
+    subRect:r?[r.left|0,r.top|0,r.width|0,r.height|0]:null,
+    a:num1,b:num2,c:num3,ops:problems[0].ops,
+    r1:(problems[0].ops[0]==='sub'?num1-num2:num1+num2)
   });
 })();"""
 POST_EVAL = r"""(function(){var so=document.getElementById('sad-ov');if(so)so.style.display='none';return 'ok';})();"""
 CLICKS   = []
 WAIT_MS   = 1600
 SHOTS    = [
-    {"path": r"c:\tmp\word_chain.png", "clip": {"x": 280, "y": 60, "width": 720, "height": 560}},
+    {"path": r"c:\tmp\word_chain_box.png", "clip": {"x": 420, "y": 370, "width": 440, "height": 200}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

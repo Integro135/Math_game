@@ -114,8 +114,25 @@ window.EXERCISES.types.word_chain=(()=>{
   .wc-tip.below::after{top:-8px;bottom:auto;border-top:0;border-bottom:8px solid var(--skin-accent,#ffd27d);border-top-color:transparent}
   .wc-tip .wc-tip-e{font-size:1.75rem;line-height:1;animation:wcPop .3s ease both}
   @keyframes wcPop{from{opacity:0;transform:scale(.35)}to{opacity:1;transform:none}}
-  .wc-ansrow,.wc-eqrow{display:flex;align-items:center;justify-content:center;gap:12px;direction:ltr;flex-wrap:wrap}
-  .wc-eq{font-family:'Fredoka One',cursive;font-size:1.9rem;color:var(--skin-text,#fff);letter-spacing:.03em}
+  .wc-ansrow{display:flex;align-items:center;justify-content:center;gap:12px;direction:ltr;flex-wrap:wrap}
+  .wc-eqrow{display:flex;align-items:flex-start;justify-content:center;gap:10px;direction:ltr;flex-wrap:wrap}
+  /* the derived DIGIT chain: a op1 b (running-sum helper box below) op2 c = [answer].
+     Like the regular chain exercises, the middle carries an INTERMEDIATE box for
+     the running total after the first two terms (green/red only, never scored). */
+  .wc-chain{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:5px;direction:ltr;padding-top:2px}
+  .wc-grp{display:flex;align-items:center;height:46px;font-family:'Fredoka One',cursive;font-size:1.7rem;line-height:1;color:var(--skin-text,#fff);gap:4px}
+  .wc-op{color:var(--skin-accent,#ffd27d)}
+  .wc-eq{color:var(--skin-accent,#ffd27d);margin:0 2px}
+  .wc-cell{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;overflow:visible}
+  .wc-sub-row{display:flex;align-items:center;gap:3px;position:relative}
+  .wc-sub-row .wc-seq{font-family:'Fredoka One',cursive;font-size:1rem;color:rgba(255,215,0,.6)}
+  /* diagonal guide from the running-sum box up toward the next operator (same cue
+     the chain/mult_chain exercises draw) */
+  .wc-sub-row::after{content:'';position:absolute;left:100%;top:30%;width:52px;height:2px;border-radius:2px;
+    transform-origin:0% 50%;transform:rotate(-55deg);
+    background:linear-gradient(90deg,rgba(255,215,0,.9),rgba(255,215,0,.08));
+    animation:tzPulse 1.5s ease-in-out infinite;pointer-events:none}
+  #colx-root .tx-sub-inp.wc-box{width:40px;height:42px;font-size:1.3rem;border-radius:10px;padding:0}
   #colx-root .ans-inp.wc-inp,#colx-root .ans-inp.wc-inp2{width:74px;height:58px;font-size:2rem;border-radius:12px;text-align:center;padding:0}
   .wc-chk{width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
     font-size:1.5rem;line-height:1;color:#fff;background:var(--skin-primary,#c77dff);
@@ -144,6 +161,7 @@ window.EXERCISES.types.word_chain=(()=>{
     const ops=(p&&p.ops)||['add','sub'];
     const A=Math.max(0,a||0), B=Math.max(0,b||0), C=Math.max(0,(p&&p.c)||0);
     const correct=chain(A,B,C,ops);
+    const r1=ops[0]==='sub'?A-B:A+B;                 // running total after the first two terms
     const s1=ops[0]==='add'?'+':'−', s2=ops[1]==='add'?'+':'−';
     const eqStr=A+' '+s1+' '+B+' '+s2+' '+C+' =';
     const story=(p&&p.story)||eqStr;
@@ -164,7 +182,15 @@ window.EXERCISES.types.word_chain=(()=>{
           '<div class="wc-sep"></div>'+
           '<div class="wc-eqlabel">הַתַּרְגִּיל מֵהַסִּפּוּר:</div>'+
           '<div class="wc-eqrow">'+
-            '<span class="wc-eq">'+eqStr+'</span>'+
+            '<div class="wc-chain">'+
+              '<span class="wc-grp"><span class="wc-term">'+A+'</span></span>'+
+              '<div class="wc-cell">'+
+                '<span class="wc-grp"><span class="wc-op">'+s1+'</span><span class="wc-term">'+B+'</span></span>'+
+                '<div class="wc-sub-row"><span class="wc-seq">=</span>'+
+                  '<input class="tx-sub-inp wc-box" data-exp="'+r1+'" type="text" inputmode="numeric" maxlength="2" aria-label="תּוֹצָאַת בֵּינַיִם"></div>'+
+              '</div>'+
+              '<span class="wc-grp"><span class="wc-op">'+s2+'</span><span class="wc-term">'+C+'</span><span class="wc-eq">=</span></span>'+
+            '</div>'+
             '<input class="ans-inp wc-inp2 blink" id="wc-inp2" type="text" inputmode="numeric" maxlength="2" aria-label="הַתְּשׁוּבָה">'+
             '<button type="button" class="wc-chk" id="wc-chk2" aria-label="בְּדִיקָה">✓</button>'+
           '</div>'+
@@ -174,6 +200,22 @@ window.EXERCISES.types.word_chain=(()=>{
     const inp1=root.querySelector('#wc-inp'), chk1=root.querySelector('#wc-chk');
     const derived=root.querySelector('#wc-derived');
     const inp2=root.querySelector('#wc-inp2'), chk2=root.querySelector('#wc-chk2');
+
+    // the INTERMEDIATE running-sum box (a op1 b) — a gentle green/red aid, NEVER
+    // scored (only the final box scores), exactly like the chain helper boxes
+    const subBox=root.querySelector('.wc-box');
+    if(subBox){
+      const exp=+subBox.getAttribute('data-exp');
+      subBox.addEventListener('input',function(){
+        this.value=this.value.replace(/\D/g,'').slice(0,2);
+        this.classList.remove('sub-ok','sub-err');
+        if(this.value!==''&&parseInt(this.value,10)===exp)this.classList.add('sub-ok');
+      });
+      subBox.addEventListener('blur',function(){
+        if(this.value!==''&&parseInt(this.value,10)!==exp)this.classList.add('sub-err');
+      });
+      subBox.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();try{inp2.focus();}catch(_){}}});
+    }
 
     fb('📖 קִרְאִי אֶת הַסִּפּוּר וְחַשְּׁבִי שְׁלָב אַחֲרֵי שְׁלָב 💗');
 

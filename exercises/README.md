@@ -489,8 +489,9 @@ return { t:TMK, modes:['mulc'], aidsReveal:'always', make(mode){…}, mount };
 ```
 
 It is the sole game in the **`hard` tier** (`DIFFICULTY_GROUPS`, tier label
-`קָשֶׁה`, game tile `אַלּוּפָה 🏆`, `modePts('mulc')=20`,
-`DEFAULT_GIFT_GOALS.mulc=600`).
+`קָשֶׁה`, game tile `אַלּוּפָה 🏆`, `modePts('mulc')=20`, prize goal
+`DEFAULT_GIFT_GOALS.mulc=700`, and it awards **×2 prizes** per win by default
+via `DEFAULT_GIFT_COUNTS.mulc=2`).
 
 ### Data side — `make('mulc')`
 `makePool()` → EVERY factor pair with **product ≤ 16** (both factors ≥ 2),
@@ -841,7 +842,10 @@ tooltip. Problem `{t:TWC,a,b,c,ops,story}`.
 Mirrors `word_prob`: **Phase 1** shows the story + a single answer box; the
 `correct` is the `chain(a,b,c,ops)` result. A WRONG answer → `api.penalize(v)`
 (−25%, host sad modal) AND `reveal()` drops the derived DIGIT chain
-(`a op1 b op2 c =`, two operators) with a fresh box (**Phase 2**). Each further
+(`a op1 b op2 c =`) with a fresh answer box (**Phase 2**). Like the regular chain
+exercises, the chain carries an INTERMEDIATE running-sum box after the first two
+terms (`.wc-box`, `data-exp` = the running total `a op1 b`; green/red aid only,
+never scored). Each further
 mistake is another −25%; a correct value in either phase → `api.solvedFrac(FRAC[
 mistakes])` (100 / 75 / 50 / 0). No number line. The host side: `core.js` stores
 the ops in `wcOps` on load and computes `correct` via the `_wc(a,b,c,ops)` helper

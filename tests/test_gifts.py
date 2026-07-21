@@ -31,12 +31,12 @@ class TestGiftReward:
 
     def test_gift_thresholds_configured(self, page):
         """GIFT_GOALS holds numeric thresholds for the reward modes only. By
-        default ONLY Superman (sup=800) and אַלּוּפָה (mulc=600) carry a prize;
+        default ONLY Superman (sup=800) and אַלּוּפָה (mulc=700) carry a prize;
         every other game (b20/mx/br + the basic 0/5/10/20/big) has no threshold
         → never a gift."""
         goals = page.evaluate("GIFT_GOALS")
         assert goals.get("sup") == 800, f"Superman prize must be 800, got {goals.get('sup')}"
-        assert goals.get("mulc") == 600, f"אַלּוּפָה prize must be 600, got {goals.get('mulc')}"
+        assert goals.get("mulc") == 700, f"אַלּוּפָה prize must be 700, got {goals.get('mulc')}"
         for m in ("b20", "mx", "br", "0", "5", "10", "20", "big"):
             assert goals.get(m) is None, f"mode {m} must NOT have a gift threshold"
 
@@ -101,10 +101,10 @@ class TestPrizeConfig:
         assert inputs == games and inputs >= 5, f"expected {games} goal inputs, got {inputs}"
 
     def test_default_thresholds_only_reward_games(self, page):
-        """Out of the box only Superman (sup=800) and אַלּוּפָה (mulc=600) carry a
+        """Out of the box only Superman (sup=800) and אַלּוּפָה (mulc=700) carry a
         prize; every other game (b20/mx/br + the basic ones) has none."""
         goals = page.evaluate("GIFT_GOALS")
-        assert goals.get("sup") == 800 and goals.get("mulc") == 600
+        assert goals.get("sup") == 800 and goals.get("mulc") == 700
         for m in ("b20", "mx", "br", "0", "5", "10", "20"):
             assert goals.get(m) is None, f"game {m} must start with no prize"
 
@@ -172,13 +172,24 @@ class TestPrizeConfig:
 # ─────────────────────────────────────────────────────────
 
 class TestPrizeCount:
-    def test_default_count_is_one_plain_badge(self, page):
-        """Out of the box every game awards ONE prize: giftCount()=1 and the
-        picker badge is the plain 🎁 (no ×N multiplier)."""
+    def test_default_counts_sup_plain_mulc_x2(self, page):
+        """Out of the box Superman awards ONE prize (plain 🎁), while אַלּוּפָה awards
+        TWO by default (DEFAULT_GIFT_COUNTS.mulc=2 → 🎁×2 on its picker badge)."""
         assert page.evaluate("giftCount('sup')") == 1
-        assert page.evaluate("giftCount('mulc')") == 1
-        badge = page.evaluate("document.getElementById('lbsup').textContent")
-        assert "🎁" in badge and "×" not in badge, f"plain 🎁 expected, got {badge!r}"
+        assert page.evaluate("giftCount('mulc')") == 2, "אַלּוּפָה must default to ×2 prizes"
+        sup_badge = page.evaluate("document.getElementById('lbsup').textContent")
+        assert "🎁" in sup_badge and "×" not in sup_badge, f"sup plain 🎁 expected, got {sup_badge!r}"
+        assert "🎁×2" in page.evaluate("document.getElementById('lbmulc').textContent"), \
+            "אַלּוּפָה picker badge must read 🎁×2 by default"
+
+    def test_mulc_count_can_be_overridden_back_to_one(self, page):
+        """A parent can drop אַלּוּפָה's default ×2 back to a single prize —
+        setGiftCount(...,1) removes the multiplier even though the DEFAULT is 2."""
+        assert page.evaluate("giftCount('mulc')") == 2
+        page.evaluate("setGiftCount('mulc', 1)")
+        assert page.evaluate("giftCount('mulc')") == 1, "override to 1 must win over the ×2 default"
+        assert "×" not in page.evaluate("document.getElementById('lbmulc').textContent"), \
+            "the picker badge drops back to a plain 🎁"
 
     def test_set_count_shows_multiplier_on_badge_and_indicator(self, page):
         """setGiftCount('sup',3) → the picker button reads 🎁×3 and the header
@@ -186,8 +197,8 @@ class TestPrizeCount:
         page.evaluate("setGiftCount('sup', 3)")
         assert page.evaluate("giftCount('sup')") == 3
         assert "🎁×3" in page.evaluate("document.getElementById('lbsup').textContent")
-        assert "×" not in page.evaluate("document.getElementById('lbmulc').textContent"), \
-            "mulc keeps the plain 🎁 (its count is still 1)"
+        assert "🎁×2" in page.evaluate("document.getElementById('lbmulc').textContent"), \
+            "mulc keeps its own default ×2 (untouched by setting sup)"
         page.evaluate("setMode('sup')")
         page.wait_for_function("typeof problems!=='undefined' && problems.length>0", timeout=TIMEOUT)
         assert "🎁×3" in page.evaluate("document.getElementById('gift-next').textContent")
@@ -244,4 +255,4 @@ class TestPrizeCount:
         cnts = page.evaluate("document.querySelectorAll('#prize-row .prize-cnt').length")
         assert cnts == games, f"expected {games} count inputs, got {cnts}"
         assert page.evaluate("document.getElementById('pcsup').value") == "2"
-        assert page.evaluate("document.getElementById('pcmulc').value") == "1"
+        assert page.evaluate("document.getElementById('pcmulc').value") == "2"   # אַלּוּפָה default ×2
