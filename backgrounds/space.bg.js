@@ -57,6 +57,8 @@ window.BACKGROUNDS.space={
   let spaceLayer,vigLayer,nova=null,nextNovaAt=25+Math.random()*35,lastT=0;
   let bhFrenzyT=null;   // click on the black hole → short feeding frenzy
   let ASTRO=null;       // click on the black hole → an astronaut spirals in
+  let SUCK=null;        // click on the black hole → GRAVITY SURGE: dust ripped from the whole screen
+  let SURGE=0;          // the surge's 0..1 envelope — boosts bhPull's strength + reach each frame
   let sunFlareT=null,sunFlareAng=0,nextSunFlareAt=null;   // limb-flare schedule
 
   // Constellations — real figures a child can find in the night sky
@@ -186,12 +188,13 @@ window.BACKGROUNDS.space={
   function bhPull(o,K){
     const dx=BH.x-o.x,dy=BH.y-o.y,d=Math.hypot(dx,dy);
     if(d<BH.r*1.02)return-1;   // swallowed right AT the rim (just past the photon ring)
-    if(d>=BH.r*7)return 1;
-    const f=K*(BH.r/d)*(BH.r/d);
+    if(d>=BH.r*7*(1+SURGE*1.2))return 1;   // a click-surge extends the hole's grip
+    const f=K*(1+SURGE*3)*(BH.r/d)*(BH.r/d);   // …and multiplies its strength for a few seconds
     if(o.vx!==undefined){
       o.vx+=dx/d*f;o.vy+=dy/d*f;
+      const cap=6*(1+SURGE);   // surging gravity may fling things faster than the usual ceiling
       const sp=Math.hypot(o.vx,o.vy);
-      if(sp>6){o.vx*=6/sp;o.vy*=6/sp;}
+      if(sp>cap){o.vx*=cap/sp;o.vy*=cap/sp;}
     }else{o.x+=dx/d*f*2;o.y+=dy/d*f*2;}
     // fade only over the LAST stretch (≲1.5r) — infalling things stay clearly
     // visible almost all the way down to the event horizon
@@ -211,6 +214,76 @@ window.BACKGROUNDS.space={
     const e=t-t0;
     if(e<0||e>dur)return 0;
     return e<.35?e/.35:1-(e-.35)/(dur-.35);
+  }
+  // Click → the hole's gravity SURGES for a few seconds: star-dust is ripped from ALL
+  // AROUND the screen (half sprinkled across the sky, half streaming in over the
+  // borders) and spirals down to the photon ring in waves. bhPull is boosted in
+  // parallel via SURGE, so comets/travellers inside the widened grip get yanked too.
+  // Two-phase timing so the pull TAPERS OFF instead of cutting out: a dense opening
+  // SHOWER (many grains over the first ~1s), then a THINNING TAIL whose grains start
+  // one after another with ever-widening gaps + short falls, so the stream dwindles to
+  // a single last grain before it's gone (no abrupt block-vanish at the end).
+  function startGravitySurge(t0){
+    const parts=[];
+    const SHOWER=60, TAIL=9, N=SHOWER+TAIL;
+    for(let i=0;i<N;i++){
+      let x,y,guard=0;
+      if(i%2===0){
+        do{x=Math.random()*W;y=Math.random()*H;}
+        while(Math.hypot(x-BH.x,y-BH.y)<BH.r*2.6&&guard++<20);
+      }else{
+        const side=(Math.random()*4)|0;
+        x=side===0?-12:side===1?W+12:Math.random()*W;
+        y=side<2?Math.random()*H:(side===2?-12:H+12);
+      }
+      const dx=x-BH.x,dy=y-BH.y;
+      let startAt,dur;
+      if(i<SHOWER){                                  // the dense opening pull
+        startAt=Math.random()*1.0;
+        dur=.7+Math.random()*.9;
+      }else{                                          // the thinning tail → down to one
+        const k=(i-SHOWER)/(TAIL-1);                 // 0..1 across the tail
+        startAt=1.15+Math.pow(k,2.4)*2.7;            // 1.15s → 3.85s, gaps widening
+        dur=.4+Math.random()*.3;                     // short falls so a tail grain is solo
+      }
+      parts.push({
+        ang0:Math.atan2(dy,dx),
+        d0:Math.max(Math.hypot(dx,dy),BH.r*2.2),
+        startAt,dur,
+        swirl:(Math.random()<.5?-1:1)*(.5+Math.random()*1.1),   // gentle spiral, tightening inward
+        size:.7+Math.random()*1.7,
+        warm:Math.random()<.4,                       // some grains glow hot on the way in
+      });
+    }
+    let end=0;for(const p of parts)end=Math.max(end,p.startAt+p.dur);
+    SUCK={t0,parts,end:end+.15};                     // vanish only after the LAST grain has fallen
+  }
+  // each grain accelerates (u²: slow start, gravity finish) from its spawn point down
+  // to the rim on a tightening spiral, drawn as a velocity-stretched streak that heats
+  // up near the horizon — then vanishes behind the shadow (drawn UNDER drawBlackHole).
+  function drawSuction(t){
+    if(!SUCK)return;
+    const e=t-SUCK.t0;
+    if(e>SUCK.end){SUCK=null;return;}
+    const rim=BH.r*1.03;
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+    for(const p of SUCK.parts){
+      const u=(e-p.startAt)/p.dur;
+      if(u<=0||u>=1)continue;
+      const fall=u*u;
+      const d=(p.d0-rim)*(1-fall)+rim,ang=p.ang0+p.swirl*fall;
+      const x=BH.x+Math.cos(ang)*d,y=BH.y+Math.sin(ang)*d;
+      const uB=Math.max(0,u-.07),fallB=uB*uB;                 // the tail: where it just was
+      const dB=(p.d0-rim)*(1-fallB)+rim,angB=p.ang0+p.swirl*fallB;
+      const heat=1-d/(p.d0+1);                                // 0 far → 1 at the rim
+      const a=Math.min(1,u*4)*(.22+.78*heat);
+      ctx.strokeStyle=(p.warm||heat>.75)
+        ?`rgba(255,${Math.round(215-90*heat)},${Math.round(150-80*heat)},${a})`
+        :`rgba(190,215,255,${a*.9})`;
+      ctx.lineWidth=p.size*(.6+heat*.9);
+      ctx.beginPath();ctx.moveTo(BH.x+Math.cos(angB)*dB,BH.y+Math.sin(angB)*dB);ctx.lineTo(x,y);ctx.stroke();
+    }
+    ctx.restore();
   }
   // ── gravitational lensing (point-mass, weak-field) — light from a source at
   // true offset d bends round the hole, so it APPEARS pushed outward to the
@@ -1267,6 +1340,7 @@ window.BACKGROUNDS.space={
       // the object reacts in motion, alongside its discovery bubble
       if(tg.kind==='bh'){
         bhFrenzyT=lastT;
+        startGravitySurge(lastT);   // gravity surge: dust from the whole screen streams in
         // an unlucky astronaut drifts in, spirals around and falls past the horizon
         if(!ASTRO)ASTRO={t0:lastT,ang0:Math.random()*TAU,dir:Math.random()<.5?-1:1};
       }
@@ -1326,6 +1400,7 @@ window.BACKGROUNDS.space={
     const t=ts/1000;
     const dt=Math.min(.05,t-lastFrameT);
     lastFrameT=t;lastT=t;
+    SURGE=clickEnv(bhFrenzyT,t,3.5);   // the click-surge envelope bhPull reads this frame
     ctx.drawImage(spaceLayer.cv,0,0,W,H);
     drawStars(t);
     drawNova(t);
@@ -1336,6 +1411,7 @@ window.BACKGROUNDS.space={
     drawEarth(t,dt);
     drawEarthOrbiters(t,false);  // near side — in front
     drawComets(t,dt);
+    drawSuction(t);      // surge dust dives in UNDER the hole, so it vanishes behind the shadow
     drawBlackHole(t);
     drawAstro(t);
     ctx.drawImage(vigLayer.cv,0,0,W,H);

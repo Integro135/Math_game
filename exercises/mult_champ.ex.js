@@ -32,8 +32,10 @@
    updates the "זֶה כְּמוֹ" chain to match, so both always agree.
 
    Problem shape: { t:TMK, a:base, b:count } → `a` repeated `b` times by default
-   (a = the small multiplicand). ANY factor pair whose PRODUCT is ≤ 16 (both ≥ 2,
-   so e.g. 2×7, 2×8, 3×5 as well as the 2×/3×/4× facts).
+   (a = the small multiplicand). ANY factor pair whose PRODUCT is ≤ 16 (e.g. 2×7,
+   2×8, 3×5 as well as the 2×/3×/4× facts), PLUS the ×1 (identity) and ×0 (zero)
+   facts — for those the aid is always the count-chain (which states the rule),
+   never the skip-counting line (0/1 copies is degenerate on a line).
    Interactive: mounted by core.js _colxMount into #colx-root; self-checks via
    api.solved()/api.wrong() exactly like the other interactive modules. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
@@ -42,7 +44,7 @@ window.EXERCISES.types.mult_champ=(()=>{
   const sh=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 
   // Hebrew number WORDS (feminine, NIQQUD) — factors are 2..4; a few extra for safety.
-  const NUM={1:'אַחַת',2:'שְׁתַּיִם',3:'שָׁלוֹשׁ',4:'אַרְבַּע',5:'חָמֵשׁ',6:'שֵׁשׁ',7:'שֶׁבַע',8:'שְׁמוֹנֶה',9:'תֵּשַׁע',10:'עֶשֶׂר'};
+  const NUM={0:'אֶפֶס',1:'אַחַת',2:'שְׁתַּיִם',3:'שָׁלוֹשׁ',4:'אַרְבַּע',5:'חָמֵשׁ',6:'שֵׁשׁ',7:'שֶׁבַע',8:'שְׁמוֹנֶה',9:'תֵּשַׁע',10:'עֶשֶׂר'};
   const timesW=n=>n===1?'פַּעַם':n===2?'פַּעֲמַיִם':(NUM[n]||n)+' פְּעָמִים';   // "<n> times"
   // spoken form of the displayed product a×b → "<a-times> <b>" (4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ")
   const spoken=(a,b)=>timesW(a)+' '+(NUM[b]||b);
@@ -54,9 +56,19 @@ window.EXERCISES.types.mult_champ=(()=>{
      ends exactly ONE jump past the product (renderNlAid), so a long count like
      2×8 still fits. Both orders are generated (2×3 AND 3×2) for commutativity. */
   function makePool(n){
-    const pairs=[];
-    for(let a=2;a<=8;a++)for(let b=2;b<=8;b++)if(a*b<=16)pairs.push({t:TMK,a,b});
-    return sh(pairs).slice(0,n||12);
+    n=n||12;
+    const core=[];
+    for(let a=2;a<=8;a++)for(let b=2;b<=8;b++)if(a*b<=16)core.push({t:TMK,a,b});
+    // ×1 (the number itself) and ×0 (zero) facts, both orders — the identity and
+    // zero rules (user request). A COUPLE of each are woven into the deck so they
+    // surface without flooding it; their aid is the count-based chain, never the
+    // skip-counting line (0/1 copies is degenerate on a line — see reveal()).
+    const ones=[],zeros=[];
+    for(let x=2;x<=9;x++){
+      ones.push({t:TMK,a:x,b:1});ones.push({t:TMK,a:1,b:x});
+      zeros.push({t:TMK,a:x,b:0});zeros.push({t:TMK,a:0,b:x});
+    }
+    return sh(sh(core).slice(0,Math.max(1,n-4)).concat(sh(ones).slice(0,2),sh(zeros).slice(0,2))).slice(0,n);
   }
 
   const CSS=`
@@ -139,7 +151,9 @@ window.EXERCISES.types.mult_champ=(()=>{
 
   function mount({root,a,b,api}){
     injectStyle();
-    const A=Math.max(2,a||2), B=Math.max(2,b||2), product=A*B;
+    // use the given factors verbatim (0 and 1 are valid — the ×0/×1 facts);
+    // default to 2 only when a factor is genuinely missing
+    const A=(typeof a==='number'?a:2), B=(typeof b==='number'?b:2), product=A*B;
     let done=false, revealed=false, flip=false, aidKind=null;
     const timers=[]; const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
     const H=()=>document.getElementById('hint');
@@ -187,7 +201,7 @@ window.EXERCISES.types.mult_champ=(()=>{
       if(!switchBtn)return;
       const oRep=flip?A:B, oTimes=flip?B:A;
       const tip=switchBtn.querySelector('.mk-switch-tip');
-      if(tip)tip.textContent=new Array(oTimes).fill(oRep).join(' + ');
+      if(tip)tip.textContent=oTimes<=0?'0':oTimes===1?String(oRep):new Array(oTimes).fill(oRep).join(' + ');
     }
 
     fb('✖️ כַּמָּה זֶה '+spoken(A,B)+'? כִּתְבִי אֶת הַתְּשׁוּבָה 💗');   // e.g. 4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ"
@@ -204,6 +218,14 @@ window.EXERCISES.types.mult_champ=(()=>{
     // The first term, then middle terms 2..times-1 (each "+rep" over an optional
     // running-sum helper box + diagonal guide), then the FINAL "+rep = □".
     function chainHtml(rep,times){
+      // ×0 (zero copies → 0) and ×1 (one copy → the number) are degenerate: show a
+      // single term + the answer box, no "+" chain (the normal loop assumes ≥2).
+      if(times<=0)
+        return '<span class="mk-grp"><span class="mk-term">0</span><span class="mk-eq">=</span>'+
+          '<input class="ans-inp mk-final" data-exp="'+product+'" type="text" inputmode="numeric" maxlength="2" aria-label="הַתְּשׁוּבָה"></span>';
+      if(times===1)
+        return '<span class="mk-grp"><span class="mk-term">'+rep+'</span><span class="mk-eq">=</span>'+
+          '<input class="ans-inp mk-final" data-exp="'+product+'" type="text" inputmode="numeric" maxlength="2" aria-label="הַתְּשׁוּבָה"></span>';
       let row='<span class="mk-grp"><span class="mk-term">'+rep+'</span></span>';
       for(let i=2;i<=times-1;i++){
         row+='<div class="mk-cell">'+
@@ -260,6 +282,10 @@ window.EXERCISES.types.mult_champ=(()=>{
       // "זֶה כְּמוֹ" chain empty (it's only for the number-line card)
       if(likeChainEl)likeChainEl.innerHTML='';
       updateSwitchTip();   // the floating 🔁 previews the OTHER orientation on hover
+      // the hint follows the orientation — a clear RULE for the ×0 / ×1 cases
+      if(times<=0)      fb('✖️ כֶּפֶל בְּ-0 = אֶפֶס פְּעָמִים = 0! כָּל מִסְפָּר כָּפוּל 0 הוּא 0 💗');
+      else if(times===1)fb('✖️ כֶּפֶל בְּ-1 = פַּעַם אַחַת = הַמִּסְפָּר עַצְמוֹ ('+rep+')! 💗');
+      else              fb('✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! סְפְרִי אֶת הַחִבּוּר — אוֹ לַחֲצִי 🔁 לְהַחְלִיף 💗');
       const finalInp=wireChain();
       requestAnimationFrame(()=>{fit();try{finalInp.focus();}catch(e){}});
     }
@@ -286,16 +312,20 @@ window.EXERCISES.types.mult_champ=(()=>{
     // window.__mkAidTurn carries the turn across cards (and lets tests pin it).
     function reveal(){
       if(revealed)return;revealed=true;
-      if(typeof window.__mkAidTurn!=='number')window.__mkAidTurn=0;
-      aidKind=(window.__mkAidTurn++%2===0)?'nl':'chain';
+      // ×0 / ×1 (a factor ≤ 1): the skip-counting line is degenerate (jumps of 0, or
+      // 0 jumps) — always use the count-based CHAIN aid, which states the rule.
+      if(A<=1||B<=1){ aidKind='chain'; }
+      else {
+        if(typeof window.__mkAidTurn!=='number')window.__mkAidTurn=0;
+        aidKind=(window.__mkAidTurn++%2===0)?'nl':'chain';
+      }
       chainWrap.style.display='';
       titleEl.classList.add('mk-answered');
       if(aidKind==='nl'){
         scroll.style.display='none';   // the chain row stays hidden — the LINE is this card's aid
         renderNlAid();
       }else{
-        fb('✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! סְפְרִי אֶת הַחִבּוּר — אוֹ לַחֲצִי 🔁 לְהַחְלִיף 💗');
-        renderChain();
+        renderChain();   // renderChain sets the (orientation-aware) hint
       }
     }
 

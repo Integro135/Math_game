@@ -18,33 +18,28 @@ try: sys.stdout.reconfigure(encoding="utf-8")
 except Exception: pass
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "girls"                 # the 🦄 theme → unicorns background (new meadow scene)
+THEME    = "galaxy"                # the 🌌 theme → space background (black-hole gravity surge)
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
-STANDALONE = r"C:\Code\subtraction_game\backgrounds\pokemons\bulbasaur-demo.html"
+# GRAVITY SURGE TAPER on the FLOW login screen (mirrors the game): click the black hole
+# (BH at W*.74, H*.42), then screenshot LATE (~3.4s in) — the pull should have thinned to
+# a straggler grain or two, not a full block cutting out.
+STANDALONE = r"C:\Code\Flow_UI\login.html"
 VIEW     = {"width": 1280, "height": 800}   # desktop viewport
-# PERF PROBE — measure the unicorn scene's per-frame timing over ~3s, and count how
-# many times paintMain() runs (the flower-bearing landscape paint) during that time.
-# If paintMain runs only at load, the added knoll flowers can't affect runtime FPS.
 EVAL = r"""(async function(){
   var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-  await sleep(500);
-  if(window.__pk){var w=__pk.patrol&&__pk.patrol();if(w&&w.stop)w.stop();
-    var b=__pk.list[0];b.element.style.transform='';b.element.style.left='8%';}
-  await sleep(300);
-  var pupil=document.querySelector('.pkbulb .bulbasaur .head .eye .pupil');
-  var cs=getComputedStyle(pupil), r=pupil.getBoundingClientRect();
-  return JSON.stringify({
-    pupilBgColor:cs.backgroundColor,
-    pupilBgImage:cs.backgroundImage.slice(0,70),
-    pupilRect:[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]
-  });
+  await sleep(600);
+  var x=innerWidth*.74,y=innerHeight*.42;
+  var el=document.elementFromPoint(x,y)||document.body;
+  el.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:x,clientY:y}));
+  await sleep(3400);
+  return 'surge-clicked, late shot';
 })();"""
 POST_EVAL = r""
 CLICKS   = []
-WAIT_MS   = 200
+WAIT_MS   = 100
 SHOTS    = [
-    {"path": r"c:\tmp\bulba_eye.png", "clip": {"x": 150, "y": 540, "width": 260, "height": 200}},
+    {"path": r"c:\tmp\login_surge_late.png", "clip": {"x": 0, "y": 0, "width": 1280, "height": 800}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

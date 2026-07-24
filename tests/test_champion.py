@@ -149,20 +149,50 @@ class TestChampMultiplication:
             "the mulc picker button must render"
 
     def test_products_never_exceed_sixteen(self, page):
-        """Every generated problem has both factors ≥2 and a PRODUCT ≤16. Factors
-        are now EXPANDED beyond the old ≤4 grid (e.g. 2×7, 2×8, 3×5) as long as
-        a·b ≤ 16 (user: 'כפל עד תוצאה של 16')."""
+        """Every generated problem has factors ≥0 and a PRODUCT ≤16 — beyond the ≤4
+        grid it includes the wider facts (2×7, 2×8, 3×5) AND the ×1 (identity) and
+        ×0 (zero) facts (user: add ×1 and ×0)."""
         _enter_mulc(page)   # ensures the mult_champ type file is loaded
         bad = page.evaluate(
             "EXERCISES.types.mult_champ.make('mulc')"
-            ".filter(p => p.a<2 || p.b<2 || p.a*p.b>16)")
-        assert bad == [], f"all products must be ≤16 with factors ≥2, offenders: {bad}"
-        # the expansion really does produce a factor > 4 sometimes (not just ≤4)
-        seen = page.evaluate(
-            "(()=>{const s=new Set();for(let i=0;i<40;i++)"
-            "EXERCISES.types.mult_champ.make('mulc').forEach(p=>{s.add(p.a);s.add(p.b);});"
-            "return [...s];})()")
-        assert any(f > 4 for f in seen), f"factors should now exceed 4 sometimes, saw {seen}"
+            ".filter(p => p.a<0 || p.b<0 || p.a*p.b>16)")
+        assert bad == [], f"all products must be ≤16 (factors ≥0), offenders: {bad}"
+        # over many pools: factors exceed 4 sometimes, AND ×1 and ×0 both occur
+        agg = page.evaluate(
+            "(()=>{const s=new Set();let one=false,zero=false;for(let i=0;i<80;i++)"
+            "EXERCISES.types.mult_champ.make('mulc').forEach(p=>{s.add(p.a);s.add(p.b);"
+            "if(p.a===1||p.b===1)one=true;if(p.a===0||p.b===0)zero=true;});"
+            "return {factors:[...s],one:one,zero:zero};})()")
+        assert any(f > 4 for f in agg["factors"]), f"factors should exceed 4 sometimes, saw {agg['factors']}"
+        assert agg["one"], "the pool must include ×1 (identity) facts"
+        assert agg["zero"], "the pool must include ×0 (zero) facts"
+
+    def test_times_zero_and_one_solve_via_count_chain(self, page):
+        """×0 and ×1 are answerable, and a wrong product reveals the COUNT-chain
+        (never the degenerate skip-counting line): ×0 → a single '0 =' term
+        expecting 0; ×1 → a single term (the number itself)."""
+        # ×0 — force the line turn to prove ×0 still forces the chain
+        _force_mulc_tmk(page, 4, 0)
+        assert page.evaluate("num1===4 && num2===0"), "the mount must keep the 0 factor (not clamp to 2)"
+        page.evaluate("window.__mkAidTurn=0")     # a normal fact would pick the line here
+        self._wrong_product(page)
+        page.wait_for_function("!!document.querySelector('#mk-row .mk-final')", timeout=TIMEOUT)
+        assert page.evaluate(
+            "getComputedStyle(document.getElementById('nl-panel')).display === 'none'"), \
+            "×0 must NOT use the number line (it's degenerate); the count-chain is shown"
+        assert page.evaluate("+document.querySelector('#mk-row .mk-final').getAttribute('data-exp')") == 0
+        terms0 = page.evaluate("[...document.querySelectorAll('#mk-row .mk-term')].map(e=>e.textContent)")
+        assert terms0 == ["0"], f"×0 chain must be a single '0' term, got {terms0}"
+        page.evaluate("""() => {const f=document.querySelector('#mk-row .mk-final');
+            f.value='0';f.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));}""")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        # ×1 — the chain is a single term = the number itself
+        _force_mulc_tmk(page, 6, 1)
+        self._wrong_product(page)
+        page.wait_for_function("!!document.querySelector('#mk-row .mk-final')", timeout=TIMEOUT)
+        assert page.evaluate("+document.querySelector('#mk-row .mk-final').getAttribute('data-exp')") == 6
+        terms1 = page.evaluate("[...document.querySelectorAll('#mk-row .mk-term')].map(e=>e.textContent)")
+        assert terms1 == ["6"], f"×1 chain must be a single term (the number itself), got {terms1}"
 
     def test_superman_coin_multiplication_exercises_in_mulc_pool(self, page):
         """The two basic-multiplication exercises borrowed from Superman —
