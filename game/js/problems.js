@@ -76,21 +76,32 @@ function _withPolygons(pool,target,minKeep){
 const QUEEN_SUPER_COUNT=20;
 
 // ── the READING program (Superman + אַלּוּפָה): ONE reading card per 4 exercises.
-// FIVE kinds fill the 5 reading slots — story_quiz (סיפור ושאלה), cloze (השלם
-// את המילה), true_false (נכון או לא), word_match (התאם מילה לתמונה), sent_order
-// (סדר את המשפט). Each game uses ALL FIVE kinds, one card each (the modules
-// rotate their own content, no-repeat), woven at every 4th slot (see makePool).
-// Also the WHOLE set of the new "שפה" language game (mode 'lang').
-const READING_KINDS=['story_quiz','cloze','true_false','word_match','sent_order'];
+// The kinds — story_quiz (סיפור ושאלה), cloze (השלם את המילה), true_false (נכון
+// או לא), word_match (התאם מילה לתמונה), sent_order (סדר את המשפט), rhyme (איזו
+// מילה מתחרזת). A 20-card deck has exactly READING_SLOTS=5 reading slots (one
+// per 4 exercises), so when there are MORE kinds than slots the kinds ROTATE
+// across games via _rkCursor — every kind gets its turn, and no single game is
+// crowded past the 1-per-4 cadence. Also the WHOLE set of the "שפה" game ('lang').
+const READING_KINDS=['story_quiz','cloze','true_false','word_match','sent_order','rhyme'];
+const READING_SLOTS=5;
+let _rkCursor=0;
 function _readingCards(m){
+  const avail=READING_KINDS.filter(k=>EX(k));
+  let pick;
+  if(avail.length<=READING_SLOTS)pick=avail.slice();
+  else{
+    pick=[];
+    for(let i=0;i<READING_SLOTS;i++)pick.push(avail[(_rkCursor+i)%avail.length]);
+    _rkCursor=(_rkCursor+READING_SLOTS)%avail.length;   // next game starts where this one stopped
+  }
   const cards=[];
-  shuffle(READING_KINDS.filter(k=>EX(k))).forEach(k=>{
+  shuffle(pick).forEach(k=>{
     const c=EX(k).make(m);if(c&&c.length)cards.push(c[0]);
   });
   return shuffle(cards);
 }
 // internal handle each reading kind answers to (its make() dispatch key)
-const READING_HANDLE={story_quiz:'story',cloze:'clz',true_false:'tf',word_match:'wm',sent_order:'so'};
+const READING_HANDLE={story_quiz:'story',cloze:'clz',true_false:'tf',word_match:'wm',sent_order:'so',rhyme:'rhy'};
 // Cap an already-shuffled pool to n problems while PRESERVING TYPE COVERAGE:
 // surplus is removed from over-represented types first (walking from the end),
 // so every type that appears keeps ≥1 instance and slot 0 stays put. `minKeep`
@@ -178,9 +189,11 @@ function makePool(m){
     return pool;
   }
   // "שפה" — the LANGUAGE game (medium tier): a mixed reading session holding ALL
-  // FIVE reading kinds. Three rounds of the five kinds (one fresh card each, via
-  // the modules' own no-repeat rotation) → 15 cards, shuffled. So every language
-  // exercise the app has appears here, and none is arithmetic.
+  // the reading kinds (no rotation cursor here — the whole point of this game is
+  // full coverage). Three rounds of every kind (one fresh card each, via the
+  // modules' own no-repeat rotation) → 3 × READING_KINDS.length cards (6 kinds →
+  // 18), shuffled. So every language exercise the app has appears here, and none
+  // is arithmetic.
   if(m==='lang'){
     const deck=[];
     for(let round=0;round<3;round++)
@@ -194,6 +207,7 @@ function makePool(m){
   if(m==='tf')return EX('true_false')?EX('true_false').make('tf'):[];   // true/false only (internal handle)
   if(m==='wm')return EX('word_match')?EX('word_match').make('wm'):[];   // word-match only (internal handle)
   if(m==='so')return EX('sent_order')?EX('sent_order').make('so'):[];   // sentence-order only (internal handle)
+  if(m==='rhy')return EX('rhyme')?EX('rhyme').make('rhy'):[];           // rhyme-matching only (internal handle)
   if(m==='ice')return EX('ice_cream')?EX('ice_cream').make('ice'):[]; // ice-cream shop only (internal handle)
   if(m==='mulu')return EX('mult_unknown')?EX('mult_unknown').make('mulu'):[]; // mult-with-unknown only (internal handle)
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
@@ -386,4 +400,4 @@ function makeBridge20Pool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='lang'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='mulc'?20:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='rhy'?15:mode==='lang'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='mulc'?20:mode||5;}

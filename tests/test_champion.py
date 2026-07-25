@@ -1728,11 +1728,13 @@ class TestStoryQuiz:
 
     def test_reading_cards_one_per_four_and_no_type_dropped(self, page):
         """The built Superman AND אַלּוּפָה decks carry a READING card at EVERY 4th
-        slot (indexes 3/7/11/15/19 → positions 4/8/12/16/20), 5 per 20-card deck,
-        all FIVE kinds present. Crucially, weaving the reading cards must NOT drop
-        any arithmetic type — every base type still appears (splice inserts, the
-        cap preserves coverage). Checked across several shuffled builds. mulc slot
-        0 stays a mult_champ card."""
+        slot (indexes 3/7/11/15/19 → positions 4/8/12/16/20) — exactly
+        READING_SLOTS=5 DISTINCT kinds per 20-card deck (with 6 kinds registered
+        the kinds ROTATE across games, so the cadence never exceeds 1-per-4).
+        Crucially, weaving the reading cards must NOT drop any arithmetic type —
+        every base type still appears (splice inserts, the cap preserves
+        coverage). Checked across several shuffled builds. mulc slot 0 stays a
+        mult_champ card."""
         BASE = {
             "sup": ['column_add', 'big_step', 'coin_mul', 'bagel_cost', 'column_sub',
                     'hundreds', 'mult_chain', 'triple_sum', 'polygon'],
@@ -1745,25 +1747,31 @@ class TestStoryQuiz:
             page.wait_for_function(
                 "typeof problems!=='undefined' && problems.length>0"
                 " && typeof EXERCISES.types.story_quiz==='object'"
-                " && typeof EXERCISES.types.sent_order==='object'", timeout=TIMEOUT)
+                " && typeof EXERCISES.types.sent_order==='object'"
+                " && typeof EXERCISES.types.rhyme==='object'", timeout=TIMEOUT)
             res = page.evaluate("""(base)=>{
-                const R=[TSQ,TCZ,TTF,TWM,TSO];
+                const R=[TSQ,TCZ,TTF,TWM,TSO,TRH];
                 const expected=base.map(k=>EXERCISES.types[k]&&EXERCISES.types[k].t).filter(Boolean);
-                let bad=null;
+                let bad=null;const everKind=new Set();
                 for(let iter=0;iter<8 && !bad;iter++){
                     const d=makePool(mode);
                     const at=d.map((p,i)=>R.includes(p.t)?i:-1).filter(i=>i>=0);
                     const kinds=new Set(d.filter(p=>R.includes(p.t)).map(p=>p.t));
+                    kinds.forEach(k=>everKind.add(k));
                     const nonReading=new Set(d.filter(p=>!R.includes(p.t)).map(p=>p.t));
                     const missing=expected.filter(t=>!nonReading.has(t));
                     if(d.length!==20) bad={reason:'len',len:d.length};
                     else if(JSON.stringify(at)!=='[3,7,11,15,19]') bad={reason:'slots',at};
-                    else if(kinds.size!==5) bad={reason:'kinds',kinds:[...kinds]};
+                    else if(kinds.size!==READING_SLOTS) bad={reason:'kinds',kinds:[...kinds]};
                     else if(missing.length) bad={reason:'dropped',missing};
                 }
-                return {bad,expectedCount:expected.length,first:makePool(mode)[0].t};
+                return {bad,expectedCount:expected.length,everKind:[...everKind],
+                        first:makePool(mode)[0].t};
             }""", BASE[mode])
             assert res["bad"] is None, f"{mode}: {res['bad']}"
+            # the rotation must eventually serve EVERY kind — none is permanently starved
+            assert len(res["everKind"]) == 6, \
+                f"{mode}: over 8 builds all six reading kinds must appear, got {res['everKind']}"
             if mode == "mulc":
                 assert res["first"] == page.evaluate("TMK"), "mulc slot 0 must stay mult_champ"
 
@@ -1842,9 +1850,10 @@ class TestStoryQuiz:
 
 
 # ─────────────────────────────────────────────────────────
-# The FOUR additional reading kinds sharing the one-per-5 reading slots:
+# The FIVE additional reading kinds sharing the one-per-4 reading slots:
 # cloze (הַשְׁלֵם אֶת הַמִּלָּה) · true_false (נָכוֹן אוֹ לֹא) ·
-# word_match (הַתְאֵם מִלָּה לִתְמוּנָה) · sent_order (סַדֵּר אֶת הַמִּשְׁפָּט)
+# word_match (הַתְאֵם מִלָּה לִתְמוּנָה) · sent_order (סַדֵּר אֶת הַמִּשְׁפָּט) ·
+# rhyme (אֵיזוֹ מִלָּה מִתְחָרֶזֶת)
 # ─────────────────────────────────────────────────────────
 
 def _enter_reading(page, ex, sel):
@@ -2086,9 +2095,144 @@ class TestSentOrder:
 
 
 # ─────────────────────────────────────────────────────────
+# "אֵיזוֹ מִלָּה מִתְחָרֶזֶת?" (rhyme / TRH) — PHONOLOGICAL awareness, the 6th reading
+# kind: a picture+word CUE and 3 picture+word options, exactly ONE rhyming. Select
+# → ✓ submits; a mistake reveals the SOUND AID (the cue's rhyme ending spelled out).
+# ─────────────────────────────────────────────────────────
+
+class TestRhyme:
+    def test_rhyme_mounts_cue_and_three_picture_options(self, page):
+        """A rhyme card shows the vowelled cue (emoji + word) and 3 option cards
+        (emoji + vowelled word) + the module's ✓; the sound aid starts HIDDEN."""
+        _enter_reading(page, "rhyme", ".rh-opt")
+        assert page.evaluate("ptype === TRH")
+        res = page.evaluate("""() => ({
+            cue: document.querySelector('.rh-cue-w').textContent,
+            cueE: document.querySelector('.rh-cue-e').textContent,
+            words: [...document.querySelectorAll('.rh-opt .rh-w')].map(e=>e.textContent),
+            emoji: [...document.querySelectorAll('.rh-opt .rh-e')].map(e=>e.textContent),
+            aidOn: document.querySelector('.rh-sound').classList.contains('rh-on'),
+            hasChk: !!document.querySelector('.rh-chk'),
+            hostChk: getComputedStyle(document.getElementById('chk-btn')).display,
+            nl: document.getElementById('nl-panel').style.display,
+        })""")
+        assert _has_niqqud(res["cue"]), f"the cue word must be vowelled: {res['cue']}"
+        assert res["cueE"].strip(), "the cue must carry a picture"
+        assert len(res["words"]) == 3 and len(set(res["words"])) == 3
+        assert all(_has_niqqud(w) for w in res["words"]), f"vowelled options required: {res['words']}"
+        assert all(e.strip() for e in res["emoji"]), "every option needs a picture"
+        assert res["aidOn"] is False, "the rhyme-ending aid must stay hidden until a mistake"
+        assert res["hasChk"] and res["hostChk"] == "none" and res["nl"] == "none"
+
+    def test_rhyme_correct_scores_full(self, page):
+        """Selecting the rhyming word + ✓ solves for full אַלּוּפָה points."""
+        _enter_reading(page, "rhyme", ".rh-opt")
+        page.evaluate("document.querySelector(`.rh-opt[data-i=\"${num1}\"]`).click()")
+        page.click(".rh-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+        assert page.evaluate("report[0].gotCorrect") is True
+
+    def test_rhyme_wrong_reveals_sound_aid_then_partial(self, page):
+        """A wrong option logs a mistake AND reveals the rhyme-ending aid (the cue's
+        sound), then allows a re-pick; the follow-up correct answer scores 67% (13)."""
+        _enter_reading(page, "rhyme", ".rh-opt")
+        page.evaluate("document.querySelector(`.rh-opt[data-i=\"${num1===1?2:1}\"]`).click()")
+        page.click(".rh-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        aid = page.evaluate("""() => ({
+            on: document.querySelector('.rh-sound').classList.contains('rh-on'),
+            txt: document.querySelector('.rh-sound').textContent,
+            sound: problems[0].sound})""")
+        assert aid["on"], "a mistake must reveal the rhyme-ending aid"
+        assert aid["sound"] and aid["sound"] in aid["txt"], \
+            f"the aid must spell the rhyme ending {aid['sound']!r}: {aid['txt']!r}"
+        page.wait_for_timeout(1200)
+        page.evaluate("document.querySelector(`.rh-opt[data-i=\"${num1}\"]`).click()")
+        page.click(".rh-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+    def test_rhyme_bank_is_unambiguous(self, page):
+        """The pedagogical guard (the cloze/sent_order lesson): in EVERY built card
+        exactly ONE option may rhyme with the cue. Mechanically — the answer shares
+        the pair's final letter, and BOTH distractors end with a DIFFERENT letter
+        (from the pair and from each other). Also: every bank word is vowelled, each
+        pair really shares its declared ending, and the pair words / emoji never
+        overlap the distractor pool."""
+        _enter_reading(page, "rhyme", ".rh-opt")
+        res = page.evaluate("""() => {
+            const ex = EXERCISES.types.rhyme;
+            const strip = s => s.replace(/[\\u0591-\\u05C7]/g,'');       // drop niqqud
+            const fin = w => {const c=strip(w).slice(-1);
+                return ({'\\u05DA':'\\u05DB','\\u05DD':'\\u05DE','\\u05DF':'\\u05E0',
+                         '\\u05E3':'\\u05E4','\\u05E5':'\\u05E6'}[c])||c;};
+            const bad = [];
+            // 1. the bank itself — both members really end with the declared letter
+            for (const e of ex._bank){
+                for (const m of [e.a, e.b]){
+                    if (fin(m.w) !== e.end) bad.push({badEnd:m.w, declared:e.end, real:fin(m.w)});
+                    if (!/[\\u0591-\\u05C7]/.test(m.w)) bad.push({unvowelled:m.w});
+                }
+                if (!e.sound) bad.push({noSound:e.a.w});
+            }
+            // 2. pair words and the distractor pool must be disjoint (words + emoji)
+            const pw = new Set(ex._bank.flatMap(e=>[e.a.w,e.b.w]));
+            const pe = new Set(ex._bank.flatMap(e=>[e.a.e,e.b.e]));
+            for (const d of ex._distractors){
+                if (pw.has(d.w)) bad.push({sharedWord:d.w});
+                if (pe.has(d.e)) bad.push({sharedEmoji:d.e});
+                if (fin(d.w) !== d.end) bad.push({badDistractorEnd:d.w, declared:d.end, real:fin(d.w)});
+            }
+            // 3. built cards — exactly one option can rhyme with the cue
+            for (let i = 0; i < 400; i++){
+                const p = ex.make('rhy')[0];
+                const cueEnd = fin(p.cue.w);
+                const same = p.opts.filter(o => fin(o.w) === cueEnd);
+                if (same.length !== 1) bad.push({card:p.cue.w, opts:p.opts.map(o=>o.w)});
+                else if (fin(p.opts[p.a-1].w) !== cueEnd) bad.push({wrongIndex:p.cue.w, a:p.a});
+                if (new Set(p.opts.map(o=>o.w)).size !== 3) bad.push({dupOpts:p.opts.map(o=>o.w)});
+            }
+            return {bank:ex._bank.length, bad:bad.slice(0,8)};
+        }""")
+        assert res["bank"] >= 12, f"the rhyme bank must offer ≥12 pairs, got {res['bank']}"
+        assert res["bad"] == [], f"ambiguous / malformed rhyme data: {res['bad']}"
+
+    def test_rhyme_rotation_serves_every_pair_before_repeating(self, page):
+        """Anti-memorisation: the pair queue is a no-repeat shuffled rotation — 12
+        consecutive cards use 12 DISTINCT pairs, and either member may be the cue."""
+        _enter_reading(page, "rhyme", ".rh-opt")
+        res = page.evaluate("""() => {
+            const ex = EXERCISES.types.rhyme;
+            ex._resetRotation();
+            const n = ex._bank.length, cues = [], pairs = [];
+            for (let i = 0; i < n; i++){
+                const p = ex.make('mulc')[0];
+                cues.push(p.cue.w);
+                pairs.push(ex._bank.findIndex(e => e.a.w === p.cue.w || e.b.w === p.cue.w));
+            }
+            // over many cards BOTH members of a pair get to be the cue
+            ex._resetRotation();
+            const seenSides = new Set();
+            for (let i = 0; i < 200; i++){
+                const p = ex.make('mulc')[0];
+                const e = ex._bank.find(e => e.a.w === p.cue.w || e.b.w === p.cue.w);
+                seenSides.add(p.cue.w === e.a.w ? 'a' : 'b');
+            }
+            return {n, distinctPairs:new Set(pairs).size, unknown:pairs.filter(i=>i<0).length,
+                    sides:[...seenSides]};
+        }""")
+        assert res["unknown"] == 0, "every served cue must come from the bank"
+        assert res["distinctPairs"] == res["n"], \
+            f"{res['n']} consecutive cards must use {res['n']} distinct pairs, got {res['distinctPairs']}"
+        assert sorted(res["sides"]) == ["a", "b"], \
+            f"both pair members must get to be the cue, got {res['sides']}"
+
+
+# ─────────────────────────────────────────────────────────
 # "שָׂפָה 📖" (mode 'lang') — the LANGUAGE game under the medium (בֵּינוֹנִי) tier:
-# a mixed reading session holding ALL FIVE reading kinds (story_quiz / cloze /
-# true_false / word_match / sent_order), no arithmetic.
+# a mixed reading session holding EVERY reading kind (story_quiz / cloze /
+# true_false / word_match / sent_order / rhyme), no arithmetic.
 # ─────────────────────────────────────────────────────────
 
 class TestLanguageGame:
@@ -2102,22 +2246,23 @@ class TestLanguageGame:
         assert page.evaluate("!!document.getElementById('lblang')"), \
             "the lang picker button must render"
 
-    def test_lang_pool_holds_all_five_reading_kinds_and_no_arithmetic(self, page):
-        """The שפה session mixes ALL FIVE reading kinds and contains NO arithmetic
-        card (it's a language game)."""
+    def test_lang_pool_holds_every_reading_kind_and_no_arithmetic(self, page):
+        """The שפה session mixes EVERY registered reading kind (no rotation cursor
+        here — full coverage is the point of this game) and contains NO arithmetic
+        card."""
         page.evaluate("setMode('lang')")
         page.wait_for_function(
             "typeof problems!=='undefined' && problems.length>0"
-            " && ['story_quiz','cloze','true_false','word_match','sent_order']"
+            " && ['story_quiz','cloze','true_false','word_match','sent_order','rhyme']"
             ".every(k=>EXERCISES.types[k])", timeout=TIMEOUT)
         res = page.evaluate("""(()=>{
-            const R=[TSQ,TCZ,TTF,TWM,TSO];
+            const R=[TSQ,TCZ,TTF,TWM,TSO,TRH];
             const d=makePool('lang');
             const kinds=new Set(d.map(p=>p.t));
-            return {len:d.length, allFive:R.every(t=>kinds.has(t)),
+            return {len:d.length, missing:R.filter(t=>!kinds.has(t)),
                     nonReading:d.filter(p=>!R.includes(p.t)).length};})()""")
         assert res["len"] >= 10, f"the lang session should be a full run, got {res['len']}"
-        assert res["allFive"], "all five reading kinds must appear in the שפה game"
+        assert res["missing"] == [], f"every reading kind must appear in the שפה game, missing {res['missing']}"
         assert res["nonReading"] == 0, \
             f"the שפה game must contain NO arithmetic cards, got {res['nonReading']}"
 

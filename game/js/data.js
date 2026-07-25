@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order',TRH='rhyme';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -47,6 +47,7 @@ const EXERCISE_INDEX=[
   {file:'true_false',modes:['tf','lang','sup','mulc']},     // נָכוֹן אוֹ לֹא — a 2-line nikud story + a statement; pick נכון/לא נכון → ✓ submits. Reading slots + "שפה". 'tf' is an INTERNAL handle only.
   {file:'word_match',modes:['wm','lang','sup','mulc']},     // הַתְאֵם מִלָּה לִתְמוּנָה — DRAG (or tap-tap) 3 vowelled words onto 3 pictures. Reading slots + "שפה". 'wm' is an INTERNAL handle only.
   {file:'sent_order',modes:['so','lang','sup','mulc']},     // סַדֵּר אֶת הַמִּשְׁפָּט — scrambled word pills tapped into order, ✓ submits. Reading slots + "שפה". 'so' is an INTERNAL handle only.
+  {file:'rhyme',     modes:['rhy','lang','sup','mulc']},    // אֵיזוֹ מִלָּה מִתְחָרֶזֶת — a picture+word CUE and 3 picture+word options, exactly one rhymes; select → ✓ submits, a mistake reveals the rhyme ending. PHONOLOGICAL awareness (not reading-for-meaning). Reading slots + "שפה". 'rhy' is an INTERNAL handle only.
   {file:'triple_sum',modes:['trip','mx','sup','mulc']},  // __+__+__ = N (target VARIES 6..12) — three CHOSEN addends; 0 and 10 are disallowed (a 0/10 answer is praised with NO penalty but must be re-tried with other numbers). Woven into Queen/Superman/אַלּוּפָה. 'trip' is an INTERNAL handle only.
   {file:'half',      modes:['hlf','mulc']},      // "כַּמָּה זֶה חֵצִי" — share 4/6/8/10 items EQUALLY between two friends; tap the items → a golden middle line splits them in two. First DIVISION intuition, mixed into אַלּוּפָה. 'hlf' is an INTERNAL handle only.
   {file:'plates',    modes:['plt','mulc']},      // "צַלָּחוֹת" — g plates × s items each (2..4×2..4), find the TOTAL; tap → the items POUR into one countable row. Multiplication-story inverse of half, mixed into אַלּוּפָה. 'plt' is an INTERNAL handle only.
@@ -54,7 +55,7 @@ const EXERCISE_INDEX=[
   {file:'mult_unknown',modes:['mulu','mulc']},   // כֶּפֶל בְּנֶעְלָם — 3 × □ = 9, find the hidden factor; the SKIP-COUNTING number line (jumps of a) is shown from the START. Mixed into אַלּוּפָה. 'mulu' is an INTERNAL handle only.
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain',[TSQ]:'story_quiz',[TCZ]:'cloze',[TTF]:'true_false',[TWM]:'word_match',[TSO]:'sent_order'};
+const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain',[TSQ]:'story_quiz',[TCZ]:'cloze',[TTF]:'true_false',[TWM]:'word_match',[TSO]:'sent_order',[TRH]:'rhyme'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config
