@@ -268,7 +268,7 @@ function loadProblem(){
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
   if(ptype===TWP){wpOp=problems[idx].op||'sub';}
   if(ptype===TWC){wcOps=problems[idx].ops||['add','sub'];}
-  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TWC?_wc(num1,num2,num3,wcOps):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TWC?_wc(num1,num2,num3,wcOps):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
@@ -286,6 +286,11 @@ function loadProblem(){
    :ptype===TMU?'❓ אֵיזֶה מִסְפָּר חָסֵר בַּכֶּפֶל? קִפְצִי עַל הַיָּשָׁר וְסִפְרִי אֶת הַקְּפִיצוֹת!'
    :ptype===TMK?'🏆 כַּמָּה זֶה הַכֶּפֶל? כִּתְבִי אֶת הַתְּשׁוּבָה — אַתְּ אַלּוּפָה!'
    :ptype===TWC?'📖 קִרְאִי אֶת הַסִּפּוּר וְחַשְּׁבִי שְׁלָב אַחֲרֵי שְׁלָב!'
+   :ptype===TSQ?'📖 קִרְאִי אֶת הַסִּפּוּר, בַּחֲרִי תְּשׁוּבָה וְלַחֲצִי ✓ לְהַגִּישׁ!'
+   :ptype===TCZ?'📝 אֵיזוֹ מִלָּה חֲסֵרָה בַּמִּשְׁפָּט? בַּחֲרִי וְלַחֲצִי ✓!'
+   :ptype===TTF?'✔️✖️ קִרְאִי אֶת הַסִּפּוּר — הַמִּשְׁפָּט נָכוֹן אוֹ לֹא? בַּחֲרִי וְלַחֲצִי ✓!'
+   :ptype===TWM?'🖼️ גִּרְרִי כָּל מִלָּה אֶל הַתְּמוּנָה הַמַּתְאִימָה!'
+   :ptype===TSO?'🔀 סַדְּרִי אֶת הַמִּלִּים לְמִשְׁפָּט נָכוֹן — וְאָז ✓!'
    :ptype===TMC?'✖️ כֶּפֶל זֶה חִבּוּר חוֹזֵר! אֶפְשָׁר לְמַלֵּא אֶת הַבֵּינַיִם — אוֹ לִכְתֹּב אֶת הַתְּשׁוּבָה בַּסּוֹף!'
    :ptype===TCM?('🪙 כַּמָּה מַטְבְּעוֹת שֶׁל '+(num2||5)+' צְרִיכִים? הוֹסִיפִי וְסִפְרִי!')
    :ptype===TBC?'🥨 כַּמָּה זֶה עוֹלֶה? הוֹסִיפִי מַטְבְּעוֹת שֶׁל 5 וְסַכְּמִי!'
@@ -345,7 +350,7 @@ function loadProblem(){
   // TCM (coin multiplication) / TBC (bagel cost) / TPG (polygon sides) / TMC
   // (multiplication chain) / TMK (אַלּוּפָה multiplication): the module owns its
   // own scaffold; no number-line aid
-  if(ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC){
+  if(ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC){
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
     const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='none';
     chainGnMode=false;tdaJarMode=false;}
@@ -378,7 +383,7 @@ function loadProblem(){
     if(nlp){nlp.style.display='';NL.configure(num1+num2+_thStep,_thStep,num1);NL.init(num1);}
     chainGnMode=false;tdaJarMode=false;}
   // Aid display — kangaroo NL or the cookie jar, per aidMode
-  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU&&ptype!==TBG&&ptype!==TH){
+  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU&&ptype!==TBG&&ptype!==TH){
   const isTD=ptype===TDA||ptype===TDS||ptype===TRA;
   const useNL=aidMode==='nl';
   const useKang=aidMode==='kang';
@@ -405,7 +410,7 @@ function loadProblem(){
   },60);
   buildGamesMenu();
   // the aid-toggle menu is meaningless inside a self-contained exercise
-  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU||ptype===TBG)?'hidden':'';}
+  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU||ptype===TBG)?'hidden':'';}
   // Digit hint button — shown for TT, TBG, and for TS/TM where both nums > 10
   {const _dhBtn=document.getElementById('digit-hint-btn');
   if(_dhBtn){
@@ -438,7 +443,7 @@ function _varShapeSVG(kind,size){
 /* ── Equation ── */
 function renderEq(){
   // leaving a module-owned exercise (TCA) → release its listeners/timers
-  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU){_colxCleanup();_colxCleanup=null;}
+  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU){_colxCleanup();_colxCleanup=null;}
   // restore hint visibility (TC hides it and embeds it inline)
   if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
   const n=t=>`<span class="eq-n" data-num="${t}">${t}</span>`;
@@ -576,7 +581,7 @@ function renderEq(){
         '</div>';
     }
   }
-  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)h='<div id="colx-root" class="colx-root"></div>';
+  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)h='<div id="colx-root" class="colx-root"></div>';
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
   else               h=n(num1)+op('+','op-p')+nB(num2,num1,'add')+op('=','op-e')+inp;
   document.getElementById('eq').innerHTML=h;
@@ -589,7 +594,7 @@ function renderEq(){
   if(ptype!==TVA&&ptype!==TVS){const _eq=document.getElementById('eq');
    const _nums=_eq.querySelectorAll('.eq-n[data-num],.eq-res[data-num]');
    if(_nums.length>=2)_nums[0].classList.add('eq-noobj');}
-  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)_colxMount();
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)_colxMount();
 }
 
 /* ── self-contained exercise host (TCA → column_add, TCS → column_sub) ──
@@ -604,7 +609,7 @@ function _colxMount(){
   loadExercise(exName,()=>{
     // problem changed while loading (idx moved, left colx, or now a DIFFERENT
     // colx type) → a stale async module-load must NOT clobber the live mount
-    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
+    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TMU)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
     const root=document.getElementById('colx-root');
     const ex=window.EXERCISES&&EXERCISES.types[exName];
     if(!root||!ex)return;
@@ -662,7 +667,7 @@ function showBtns(s){
     btns.innerHTML='';
     btns.className='btn-row';
     // exercise modules (TCA/TCS/TCM/TBC/TPG/TMC/TMK) check themselves — no host check button
-    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)?'none':'flex';
+    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)?'none':'flex';
   }else{
     if(cb)cb.style.display='none';
     btns.innerHTML=
@@ -686,7 +691,7 @@ document.addEventListener('input',e=>{
 });
 function checkAns(){
   if(done)return;
-  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)return;   // the exercise module checks itself
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)return;   // the exercise module checks itself
   // ── Multi-unknown problems: two (TDA/TDS) or three (TRA) empty boxes ──
   if(ptype===TDA||ptype===TDS||ptype===TRA){
     const i1=document.getElementById('ans1'),i2=document.getElementById('ans2'),
@@ -1087,6 +1092,11 @@ function _reportRows(){
     else if(r.ptype===TMU)eq=`❓ ${r.num1} × ${r.correct} = ${r.num1*r.correct}`;
     else if(r.ptype===TWP)eq=`📖 ${r.num1} ${(p.op||'sub')==='add'?'+':'−'} ${r.num2} = ${r.correct}`;
     else if(r.ptype===TWC){const o=p.ops||['add','sub'];eq=`📖 ${r.num1} ${o[0]==='add'?'+':'−'} ${r.num2} ${o[1]==='add'?'+':'−'} ${r.num3} = ${r.correct}`;}
+    else if(r.ptype===TSQ)eq=`${p.emoji||'📖'} סִפּוּר — תְּשׁוּבָה ${r.correct}`;
+    else if(r.ptype===TCZ)eq=`📝 הַמִּלָּה: ${(p.opts&&p.opts[r.correct-1])||'?'}`;
+    else if(r.ptype===TTF)eq=`✔️✖️ ${r.correct===1?'נָכוֹן':'לֹא נָכוֹן'}`;
+    else if(r.ptype===TWM)eq=`🖼️ הַתְאָמָה ${(p.pairs||[]).map(x=>x.e).join(' ')}`;
+    else if(r.ptype===TSO)eq=`🔀 ${(p.words||[]).join(' ')}`;
     else if(r.ptype===TTS)eq=`➕ ___ + ___ + ___ = ${r.correct}`;
     else if(r.ptype===THF){const _k=p.k||2;eq=`${p.item||'✂️'} ${p.n||r.correct*_k} ÷ ${_k} = ${r.correct}`;}
     else if(r.ptype===TPL)eq=`🍽️ ${p.g||'?'} × ${p.s||'?'} = ${r.correct}`;

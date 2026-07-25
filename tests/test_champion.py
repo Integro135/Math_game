@@ -1671,3 +1671,403 @@ class TestWordChain:
             " && typeof EXERCISES.types.word_chain==='object'", timeout=TIMEOUT)
         assert page.evaluate("problems.some(p=>p.t===TWC)"), \
             "word_chain (TWC) must appear in the אַלּוּפָה pool"
+
+
+# ─────────────────────────────────────────────────────────
+# "סִפּוּר וְשְׁאֵלָה" (story_quiz / TSQ) — READING comprehension: a short nikud
+# story (≤4 lines, age-7 level; topics חלל/חדי קרן/דינוזאורים/נסיכות) + ONE
+# multiple-choice question with vowelled answers. Tap an answer to SELECT, press
+# the ✓ to SUBMIT — only then is it judged. Woven into Superman + אַלּוּפָה at ONE
+# PER 5 EXERCISES (deck slots 5/10/15/20).
+# ─────────────────────────────────────────────────────────
+
+# Hebrew niqqud combining marks (U+05B0–U+05BC, U+05C1/2/7) — a vowelled text test
+_NIQQUD = tuple(chr(c) for c in list(range(0x05B0, 0x05BD)) + [0x05C1, 0x05C2, 0x05C7])
+
+
+def _has_niqqud(s):
+    return any(ch in s for ch in _NIQQUD)
+
+
+def _enter_story(page, mode="mulc"):
+    """Enter sup/mulc, wait for the story_quiz type + built pool, then force ONE
+    real story card (from make) and wait for its board."""
+    page.evaluate(f"setMode('{mode}')")
+    page.wait_for_function(
+        "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.story_quiz==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate(
+        f"mode='{mode}';score=0;problems=EXERCISES.types.story_quiz.make('{mode}');idx=0;loadProblem();")
+    page.wait_for_selector(".sq-opt", timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
+class TestStoryQuiz:
+    def test_story_quiz_mounts_with_nikud_story_and_options(self, page):
+        """Forcing TSQ mounts the vowelled story (≤4 lines), the question, ≥3
+        vowelled answer options and the module's own ✓ submit; no #ans box, no
+        number line, host check button hidden."""
+        _enter_story(page)
+        assert page.evaluate("ptype === TSQ")
+        res = page.evaluate("""() => ({
+            story: document.querySelector('.sq-story').textContent,
+            q: document.querySelector('.sq-q').textContent,
+            opts: [...document.querySelectorAll('.sq-opt')].map(o=>o.textContent),
+            hasChk: !!document.querySelector('.sq-chk'),
+            hasAns: !!document.getElementById('ans'),
+            nl: getComputedStyle(document.getElementById('nl-panel')).display,
+            hostChk: getComputedStyle(document.getElementById('chk-btn')).display,
+        })""")
+        assert _has_niqqud(res["story"]), "the story must be vowelled (nikud)"
+        assert _has_niqqud(res["q"]), "the question must be vowelled"
+        assert len(res["opts"]) >= 3 and all(_has_niqqud(o) for o in res["opts"]), \
+            f"all answers must be vowelled, got {res['opts']}"
+        assert res["hasChk"] and not res["hasAns"]
+        assert res["nl"] == "none" and res["hostChk"] == "none"
+
+    def test_reading_cards_one_per_four_and_no_type_dropped(self, page):
+        """The built Superman AND אַלּוּפָה decks carry a READING card at EVERY 4th
+        slot (indexes 3/7/11/15/19 → positions 4/8/12/16/20), 5 per 20-card deck,
+        all FIVE kinds present. Crucially, weaving the reading cards must NOT drop
+        any arithmetic type — every base type still appears (splice inserts, the
+        cap preserves coverage). Checked across several shuffled builds. mulc slot
+        0 stays a mult_champ card."""
+        BASE = {
+            "sup": ['column_add', 'big_step', 'coin_mul', 'bagel_cost', 'column_sub',
+                    'hundreds', 'mult_chain', 'triple_sum', 'polygon'],
+            "mulc": ['mult_champ', 'perimeter', 'column_sub', 'column_add', 'compare',
+                     'word_prob', 'word_chain', 'triple_sum', 'half', 'plates',
+                     'coin_mul', 'bagel_cost', 'ice_cream', 'mult_unknown'],
+        }
+        for mode in ("sup", "mulc"):
+            page.evaluate(f"setMode('{mode}')")
+            page.wait_for_function(
+                "typeof problems!=='undefined' && problems.length>0"
+                " && typeof EXERCISES.types.story_quiz==='object'"
+                " && typeof EXERCISES.types.sent_order==='object'", timeout=TIMEOUT)
+            res = page.evaluate("""(base)=>{
+                const R=[TSQ,TCZ,TTF,TWM,TSO];
+                const expected=base.map(k=>EXERCISES.types[k]&&EXERCISES.types[k].t).filter(Boolean);
+                let bad=null;
+                for(let iter=0;iter<8 && !bad;iter++){
+                    const d=makePool(mode);
+                    const at=d.map((p,i)=>R.includes(p.t)?i:-1).filter(i=>i>=0);
+                    const kinds=new Set(d.filter(p=>R.includes(p.t)).map(p=>p.t));
+                    const nonReading=new Set(d.filter(p=>!R.includes(p.t)).map(p=>p.t));
+                    const missing=expected.filter(t=>!nonReading.has(t));
+                    if(d.length!==20) bad={reason:'len',len:d.length};
+                    else if(JSON.stringify(at)!=='[3,7,11,15,19]') bad={reason:'slots',at};
+                    else if(kinds.size!==5) bad={reason:'kinds',kinds:[...kinds]};
+                    else if(missing.length) bad={reason:'dropped',missing};
+                }
+                return {bad,expectedCount:expected.length,first:makePool(mode)[0].t};
+            }""", BASE[mode])
+            assert res["bad"] is None, f"{mode}: {res['bad']}"
+            if mode == "mulc":
+                assert res["first"] == page.evaluate("TMK"), "mulc slot 0 must stay mult_champ"
+
+    def test_story_quiz_submit_needs_selection_then_correct_scores_full(self, page):
+        """✓ with nothing selected only nudges (no penalty); selecting the CORRECT
+        answer and pressing ✓ solves for full points."""
+        _enter_story(page)
+        page.click(".sq-chk")
+        page.wait_for_timeout(200)
+        assert page.evaluate("tryFirst") == 0, "submitting with no selection must not penalise"
+        assert page.evaluate("done") is False
+        page.evaluate("""() => {
+            document.querySelector(`.sq-opt[data-i="${num1}"]`).click();   // the correct option
+        }""")
+        page.click(".sq-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20, "first-try correct must award full mulc points"
+        assert page.evaluate("report[0].gotCorrect") is True
+
+    def test_story_quiz_wrong_then_correct_gives_partial(self, page):
+        """A WRONG submitted answer logs a mistake (penalty + red shake) but lets
+        her re-pick; the follow-up correct answer scores 67% (13)."""
+        _enter_story(page)
+        page.evaluate("""() => {
+            const wrong = num1 === 1 ? 2 : 1;               // any option ≠ the correct one
+            document.querySelector(`.sq-opt[data-i="${wrong}"]`).click();
+        }""")
+        page.click(".sq-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("done") is False
+        page.wait_for_timeout(1200)                         # the red mark clears for a re-pick
+        page.evaluate("""() => {
+            document.querySelector(`.sq-opt[data-i="${num1}"]`).click();
+        }""")
+        page.click(".sq-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13, "correct after one mistake scores 67% (13)"
+
+    def test_story_quiz_library_is_valid(self, page):
+        """Every library story is ≤4 short lines, has a vowelled question + 3
+        DISTINCT vowelled options and a valid 1-based answer index; the pool is
+        BIG (8 per topic = 32) so answers can't be memorised."""
+        _enter_story(page)
+        pool = page.evaluate("EXERCISES.types.story_quiz.make('story')")
+        assert len(pool) >= 32, f"the library must offer ≥32 stories (8 × 4 topics), got {len(pool)}"
+        topics = {p["topic"] for p in pool}
+        assert topics == {"space", "unicorns", "dinos", "princess"}, f"got topics {topics}"
+        for p in pool:
+            assert 1 <= len(p["lines"]) <= 4, f"story must be ≤4 lines: {p['lines']}"
+            assert all(_has_niqqud(l) for l in p["lines"]), f"unvowelled line in {p['topic']}"
+            assert _has_niqqud(p["q"])
+            assert len(p["opts"]) == 3 and len(set(p["opts"])) == 3, f"3 distinct options required: {p['opts']}"
+            assert all(_has_niqqud(o) for o in p["opts"])
+            assert 1 <= p["a"] <= len(p["opts"]), f"answer index out of range: {p['a']}"
+
+    def test_story_quiz_rotation_never_repeats_within_a_cycle(self, page):
+        """Anti-memorisation: topics AND stories rotate via shuffled queues — over
+        32 consecutive cards every topic is served exactly 8 times with 8 DISTINCT
+        stories (no repeat until the whole topic pool is exhausted)."""
+        _enter_story(page)
+        res = page.evaluate("""() => {
+            EXERCISES.types.story_quiz._resetRotation();   // start a fresh cycle
+            const seen={};
+            for(let g=0;g<32;g++){
+                for(const p of EXERCISES.types.story_quiz.make('mulc')){
+                    (seen[p.topic]=seen[p.topic]||[]).push(p.q);
+                }
+            }
+            return Object.fromEntries(Object.entries(seen).map(
+                ([t,qs])=>[t,{served:qs.length,distinct:new Set(qs).size}]));
+        }""")
+        assert len(res) == 4, f"all four topics must be served, got {list(res)}"
+        for topic, s in res.items():
+            assert s["served"] == 8 and s["distinct"] == 8, \
+                f"{topic}: 32 consecutive cards must serve this topic 8 DISTINCT stories, got {s}"
+
+
+# ─────────────────────────────────────────────────────────
+# The FOUR additional reading kinds sharing the one-per-5 reading slots:
+# cloze (הַשְׁלֵם אֶת הַמִּלָּה) · true_false (נָכוֹן אוֹ לֹא) ·
+# word_match (הַתְאֵם מִלָּה לִתְמוּנָה) · sent_order (סַדֵּר אֶת הַמִּשְׁפָּט)
+# ─────────────────────────────────────────────────────────
+
+def _enter_reading(page, ex, sel):
+    """Enter אַלּוּפָה, wait for the given reading module, force ONE of its cards
+    and wait for its board (sel = a selector proving the mount)."""
+    page.evaluate("setMode('mulc')")
+    page.wait_for_function(
+        f"typeof EXERCISES!=='undefined' && typeof EXERCISES.types.{ex}==='object'"
+        " && typeof problems!=='undefined' && problems.length>0",
+        timeout=TIMEOUT)
+    page.evaluate(f"mode='mulc';score=0;problems=EXERCISES.types.{ex}.make('mulc');idx=0;loadProblem();")
+    page.wait_for_selector(sel, timeout=TIMEOUT)
+    page.wait_for_timeout(120)
+
+
+class TestCloze:
+    def test_cloze_mounts_vowelled_sentence_with_gap(self, page):
+        """A cloze card shows the sentence with a visible gap + 3 vowelled options
+        + the module's ✓; bank sentences and options are all vowelled."""
+        _enter_reading(page, "cloze", ".cz-opt")
+        assert page.evaluate("ptype === TCZ")
+        assert page.evaluate("!!document.querySelector('.cz-gap')")
+        opts = page.evaluate("[...document.querySelectorAll('.cz-opt')].map(o=>o.textContent)")
+        assert len(opts) == 3 and all(_has_niqqud(o) for o in opts)
+        assert _has_niqqud(page.evaluate("document.querySelector('.cz-sent').textContent"))
+        pool = page.evaluate("EXERCISES.types.cloze.make('clz')")
+        assert len(pool) >= 12 and all(1 <= p["a"] <= 3 for p in pool)
+
+    def test_cloze_correct_fills_gap_and_scores_full(self, page):
+        """Selecting the correct word + ✓ drops it into the gap and solves (20)."""
+        _enter_reading(page, "cloze", ".cz-opt")
+        page.evaluate("document.querySelector(`.cz-opt[data-i=\"${num1}\"]`).click()")
+        page.click(".cz-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+        gap = page.evaluate("document.querySelector('.cz-gap').textContent")
+        assert gap != "___" and _has_niqqud(gap), "the correct word must drop into the gap"
+
+    def test_cloze_wrong_then_correct_is_partial(self, page):
+        """A wrong word logs a mistake and allows a re-pick; then correct → 13."""
+        _enter_reading(page, "cloze", ".cz-opt")
+        page.evaluate("document.querySelector(`.cz-opt[data-i=\"${num1===1?2:1}\"]`).click()")
+        page.click(".cz-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("done") is False
+        page.wait_for_timeout(1200)
+        page.evaluate("document.querySelector(`.cz-opt[data-i=\"${num1}\"]`).click()")
+        page.click(".cz-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+
+class TestTrueFalse:
+    def test_true_false_mounts_story_statement_and_two_options(self, page):
+        """A true/false card shows the vowelled mini-story, the statement and the
+        two options נָכוֹן / לֹא נָכוֹן."""
+        _enter_reading(page, "true_false", ".tf-opt")
+        assert page.evaluate("ptype === TTF")
+        assert _has_niqqud(page.evaluate("document.querySelector('.tf-story').textContent"))
+        assert _has_niqqud(page.evaluate("document.querySelector('.tf-stmt').textContent"))
+        opts = page.evaluate("[...document.querySelectorAll('.tf-opt')].map(o=>o.textContent)")
+        assert len(opts) == 2
+        pool = page.evaluate("EXERCISES.types.true_false.make('tf')")
+        assert len(pool) >= 12
+        assert {p["a"] for p in pool} == {1, 2}, "the bank must mix true AND false items"
+
+    def test_true_false_correct_scores_full(self, page):
+        _enter_reading(page, "true_false", ".tf-opt")
+        page.evaluate("document.querySelector(`.tf-opt[data-i=\"${num1}\"]`).click()")
+        page.click(".tf-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+
+    def test_true_false_wrong_then_correct_is_partial(self, page):
+        _enter_reading(page, "true_false", ".tf-opt")
+        page.evaluate("document.querySelector(`.tf-opt[data-i=\"${num1===1?2:1}\"]`).click()")
+        page.click(".tf-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        page.wait_for_timeout(1200)
+        page.evaluate("document.querySelector(`.tf-opt[data-i=\"${num1}\"]`).click()")
+        page.click(".tf-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+
+class TestWordMatch:
+    def test_word_match_mounts_three_pictures_and_words(self, page):
+        """A match card shows 3 picture cells + 3 vowelled word pills."""
+        _enter_reading(page, "word_match", ".wm-word")
+        assert page.evaluate("ptype === TWM")
+        assert page.evaluate("document.querySelectorAll('.wm-pic').length") == 3
+        words = page.evaluate("[...document.querySelectorAll('.wm-word')].map(w=>w.textContent)")
+        assert len(words) == 3 and all(_has_niqqud(w) for w in words)
+
+    def test_word_match_all_correct_solves_full(self, page):
+        """Tap-tap matching every word to its picture solves for full points (the
+        drag path shares the same tryMatch)."""
+        _enter_reading(page, "word_match", ".wm-word")
+        page.evaluate("""() => {
+            for (let i = 0; i < 3; i++) {
+                document.querySelector(`.wm-word[data-i="${i}"]`).click();
+                document.querySelector(`.wm-pic[data-i="${i}"]`).click();
+            }
+        }""")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+        assert page.evaluate("document.querySelectorAll('.wm-pic.wm-done').length") == 3
+
+    def test_word_match_wrong_drop_penalises_then_partial(self, page):
+        """A word placed on the WRONG picture shakes + logs a mistake; finishing
+        correctly afterwards scores 67% (13)."""
+        _enter_reading(page, "word_match", ".wm-word")
+        page.evaluate("""() => {
+            document.querySelector('.wm-word[data-i="0"]').click();
+            document.querySelector('.wm-pic[data-i="1"]').click();   // wrong picture
+        }""")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("done") is False
+        page.evaluate("""() => {
+            for (let i = 0; i < 3; i++) {
+                document.querySelector(`.wm-word[data-i="${i}"]`).click();
+                document.querySelector(`.wm-pic[data-i="${i}"]`).click();
+            }
+        }""")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+
+class TestSentOrder:
+    def test_sent_order_mounts_scrambled_bank(self, page):
+        """An order card shows the scrambled word pills (NOT in the correct order)
+        + an empty strip + ✓."""
+        _enter_reading(page, "sent_order", ".so-word")
+        assert page.evaluate("ptype === TSO")
+        res = page.evaluate("""() => ({
+            bank: [...document.querySelectorAll('.so-bank .so-word')].map(w=>w.textContent),
+            words: problems[0].words,
+        })""")
+        assert len(res["bank"]) == len(res["words"]) >= 4
+        assert res["bank"] != res["words"], "the bank must open SCRAMBLED"
+        assert all(_has_niqqud(w) for w in res["words"])
+
+    def test_sent_order_correct_order_scores_full(self, page):
+        """Tapping the words in the correct order then ✓ solves for full points."""
+        _enter_reading(page, "sent_order", ".so-word")
+        page.evaluate("""() => {
+            for (const w of problems[0].words) {
+                [...document.querySelectorAll('.so-bank .so-word')]
+                    .find(el => el.textContent === w).click();
+            }
+        }""")
+        page.click(".so-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+
+    def test_sent_order_wrong_keeps_words_then_partial(self, page):
+        """A wrong order logs a mistake but KEEPS the built words (she fixes, not
+        restarts); a submit with missing words only nudges (no penalty)."""
+        _enter_reading(page, "sent_order", ".so-word")
+        page.click(".so-chk")                                   # nothing placed yet
+        page.wait_for_timeout(200)
+        assert page.evaluate("tryFirst") == 0, "an incomplete submit must not penalise"
+        page.evaluate("""() => {                                 // place ALL words in a WRONG order
+            const ws = problems[0].words, rev = ws.slice().reverse();
+            for (const w of rev) {
+                [...document.querySelectorAll('.so-bank .so-word')]
+                    .find(el => el.textContent === w).click();
+            }
+        }""")
+        page.click(".so-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate("document.querySelectorAll('.so-strip .so-word').length") > 0, \
+            "the built words must stay for fixing"
+        # fix: send everything back, then place correctly
+        page.evaluate("""() => {
+            [...document.querySelectorAll('.so-strip .so-word')].forEach(el => el.click());
+            for (const w of problems[0].words) {
+                [...document.querySelectorAll('.so-bank .so-word')]
+                    .find(el => el.textContent === w).click();
+            }
+        }""")
+        page.click(".so-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 13
+
+
+# ─────────────────────────────────────────────────────────
+# "שָׂפָה 📖" (mode 'lang') — the LANGUAGE game under the medium (בֵּינוֹנִי) tier:
+# a mixed reading session holding ALL FIVE reading kinds (story_quiz / cloze /
+# true_false / word_match / sent_order), no arithmetic.
+# ─────────────────────────────────────────────────────────
+
+class TestLanguageGame:
+    def test_lang_registered_under_medium_with_picker_button(self, page):
+        """The 'lang' game sits in the medium (בֵּינוֹנִי) tier and renders a picker
+        button (lblang)."""
+        assert page.evaluate(
+            "DIFFICULTY_GROUPS.find(g=>g.id==='medium').modes.some(m=>m.id==='lang')"), \
+            "the 'lang' game must be registered under the medium tier"
+        page.evaluate("openSettings ? renderModePicker() : renderModePicker()")
+        assert page.evaluate("!!document.getElementById('lblang')"), \
+            "the lang picker button must render"
+
+    def test_lang_pool_holds_all_five_reading_kinds_and_no_arithmetic(self, page):
+        """The שפה session mixes ALL FIVE reading kinds and contains NO arithmetic
+        card (it's a language game)."""
+        page.evaluate("setMode('lang')")
+        page.wait_for_function(
+            "typeof problems!=='undefined' && problems.length>0"
+            " && ['story_quiz','cloze','true_false','word_match','sent_order']"
+            ".every(k=>EXERCISES.types[k])", timeout=TIMEOUT)
+        res = page.evaluate("""(()=>{
+            const R=[TSQ,TCZ,TTF,TWM,TSO];
+            const d=makePool('lang');
+            const kinds=new Set(d.map(p=>p.t));
+            return {len:d.length, allFive:R.every(t=>kinds.has(t)),
+                    nonReading:d.filter(p=>!R.includes(p.t)).length};})()""")
+        assert res["len"] >= 10, f"the lang session should be a full run, got {res['len']}"
+        assert res["allFive"], "all five reading kinds must appear in the שפה game"
+        assert res["nonReading"] == 0, \
+            f"the שפה game must contain NO arithmetic cards, got {res['nonReading']}"
+
+    def test_lang_mode_scores_reading_points(self, page):
+        """The lang game scores the reading base (15 per card, like the other
+        reading modes)."""
+        assert page.evaluate("(()=>{mode='lang';return modePts();})()") == 15

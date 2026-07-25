@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -42,6 +42,11 @@ const EXERCISE_INDEX=[
   {file:'compare',   modes:['cmp','mulc']},      // DRAG the ‹ › = sign between two numbers — mixed into אַלּוּפָה. 'cmp' is an INTERNAL handle only (tester / direct setMode).
   {file:'word_prob', modes:['wp','mulc']},       // בְּעָיוֹת מִלּוּלִיּוֹת עַד 10 (nikud short stories) — mixed into אַלּוּפָה. On a mistake: −25% + the derived equation (5−3) revealed + a retry. 'wp' is an INTERNAL handle only (tester / direct setMode).
   {file:'word_chain',modes:['wc','mulc']},       // בְּעָיוֹת שַׁרְשֶׁרֶת (nikud) — a CHAIN story (קיבל 2, קיבל עוד 2, נתן 4 → 2+2−4), results 0..12; on a mistake the derived DIGIT chain is revealed. Mixed into אַלּוּפָה. 'wc' is an INTERNAL handle only.
+  {file:'story_quiz',modes:['story','lang','sup','mulc']},  // סִפּוּר וְשְׁאֵלָה — a short nikud READING story (חלל/חדי קרן/דינוזאורים/נסיכות, ≤4 lines) + a multiple-choice vowelled question; pick → ✓ submits. Woven ONE-PER-4 into Superman + אַלּוּפָה, and part of the "שפה" language game (mode 'lang'). 'story' is an INTERNAL handle only.
+  {file:'cloze',     modes:['clz','lang','sup','mulc']},    // הַשְׁלֵם אֶת הַמִּלָּה — a vowelled sentence with a gap + 3 word options; pick → ✓ submits (the word drops into the gap). Reading slots + "שפה". 'clz' is an INTERNAL handle only.
+  {file:'true_false',modes:['tf','lang','sup','mulc']},     // נָכוֹן אוֹ לֹא — a 2-line nikud story + a statement; pick נכון/לא נכון → ✓ submits. Reading slots + "שפה". 'tf' is an INTERNAL handle only.
+  {file:'word_match',modes:['wm','lang','sup','mulc']},     // הַתְאֵם מִלָּה לִתְמוּנָה — DRAG (or tap-tap) 3 vowelled words onto 3 pictures. Reading slots + "שפה". 'wm' is an INTERNAL handle only.
+  {file:'sent_order',modes:['so','lang','sup','mulc']},     // סַדֵּר אֶת הַמִּשְׁפָּט — scrambled word pills tapped into order, ✓ submits. Reading slots + "שפה". 'so' is an INTERNAL handle only.
   {file:'triple_sum',modes:['trip','mx','sup','mulc']},  // __+__+__ = N (target VARIES 6..12) — three CHOSEN addends; 0 and 10 are disallowed (a 0/10 answer is praised with NO penalty but must be re-tried with other numbers). Woven into Queen/Superman/אַלּוּפָה. 'trip' is an INTERNAL handle only.
   {file:'half',      modes:['hlf','mulc']},      // "כַּמָּה זֶה חֵצִי" — share 4/6/8/10 items EQUALLY between two friends; tap the items → a golden middle line splits them in two. First DIVISION intuition, mixed into אַלּוּפָה. 'hlf' is an INTERNAL handle only.
   {file:'plates',    modes:['plt','mulc']},      // "צַלָּחוֹת" — g plates × s items each (2..4×2..4), find the TOTAL; tap → the items POUR into one countable row. Multiplication-story inverse of half, mixed into אַלּוּפָה. 'plt' is an INTERNAL handle only.
@@ -49,7 +54,7 @@ const EXERCISE_INDEX=[
   {file:'mult_unknown',modes:['mulu','mulc']},   // כֶּפֶל בְּנֶעְלָם — 3 × □ = 9, find the hidden factor; the SKIP-COUNTING number line (jumps of a) is shown from the START. Mixed into אַלּוּפָה. 'mulu' is an INTERNAL handle only.
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain'};
+const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain',[TSQ]:'story_quiz',[TCZ]:'cloze',[TTF]:'true_false',[TWM]:'word_match',[TSO]:'sent_order'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config
@@ -67,6 +72,7 @@ const DIFFICULTY_GROUPS=[
     {id:'b20',label:'גָּשֵׁר 20 🌉'},
     {id:'mx',label:'מַלְכָּה 👸'},
     {id:'sup',label:'סוּפֶּרְמֶן 🦸'},
+    {id:'lang',label:'שָׂפָה 📖'},
   ]},
   {id:'hard',label:'קָשֶׁה',modes:[
     {id:'mulc',label:'אַלּוּפָה 🏆'},

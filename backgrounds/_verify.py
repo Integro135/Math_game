@@ -18,28 +18,30 @@ try: sys.stdout.reconfigure(encoding="utf-8")
 except Exception: pass
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "galaxy"                # the 🌌 theme → space background (black-hole gravity surge)
+THEME    = "girls"                 # the 🦄 theme → unicorns background
 DSF      = 2                       # device scale factor (higher = sharper zoom)
 HIDE_UI  = False
-# GRAVITY SURGE TAPER on the FLOW login screen (mirrors the game): click the black hole
-# (BH at W*.74, H*.42), then screenshot LATE (~3.4s in) — the pull should have thinned to
-# a straggler grain or two, not a full block cutting out.
-STANDALONE = r"C:\Code\Flow_UI\login.html"
+STANDALONE = r""                   # in-game — the NEW story_quiz (TSQ) reading card
 VIEW     = {"width": 1280, "height": 800}   # desktop viewport
+# READING KINDS — mount ONE card of the reading type named in RD_TYPE/RD_SEL and
+# screenshot it (run once per type, editing only these two lines).
+RD_TYPE  = "sent_order"
+RD_SEL   = ".so-word"
 EVAL = r"""(async function(){
+  var W=function(fn){return new Promise(function(r){var t=setInterval(function(){if(fn()){clearInterval(t);r();}},50);});};
   var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-  await sleep(600);
-  var x=innerWidth*.74,y=innerHeight*.42;
-  var el=document.elementFromPoint(x,y)||document.body;
-  el.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:x,clientY:y}));
-  await sleep(3400);
-  return 'surge-clicked, late shot';
-})();"""
+  setMode('mulc');
+  await W(function(){return window.EXERCISES&&EXERCISES.types.__RD__&&typeof problems!=='undefined'&&problems.length;});
+  score=0;problems=EXERCISES.types.__RD__.make('mulc');idx=0;loadProblem();
+  await W(function(){return document.querySelector('__SEL__');});
+  await sleep(350);
+  return JSON.stringify({t:ptype});
+})();""".replace("__RD__", RD_TYPE).replace("__SEL__", RD_SEL)
 POST_EVAL = r""
 CLICKS   = []
-WAIT_MS   = 100
+WAIT_MS   = 400
 SHOTS    = [
-    {"path": r"c:\tmp\login_surge_late.png", "clip": {"x": 0, "y": 0, "width": 1280, "height": 800}},
+    {"path": r"c:\tmp\reading_card.png", "clip": {"x": 280, "y": 30, "width": 720, "height": 700}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

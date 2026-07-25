@@ -74,6 +74,23 @@ function _withPolygons(pool,target,minKeep){
 
 // Queen (mx) & Superman (sup) always present EXACTLY this many exercises per run.
 const QUEEN_SUPER_COUNT=20;
+
+// ── the READING program (Superman + אַלּוּפָה): ONE reading card per 4 exercises.
+// FIVE kinds fill the 5 reading slots — story_quiz (סיפור ושאלה), cloze (השלם
+// את המילה), true_false (נכון או לא), word_match (התאם מילה לתמונה), sent_order
+// (סדר את המשפט). Each game uses ALL FIVE kinds, one card each (the modules
+// rotate their own content, no-repeat), woven at every 4th slot (see makePool).
+// Also the WHOLE set of the new "שפה" language game (mode 'lang').
+const READING_KINDS=['story_quiz','cloze','true_false','word_match','sent_order'];
+function _readingCards(m){
+  const cards=[];
+  shuffle(READING_KINDS.filter(k=>EX(k))).forEach(k=>{
+    const c=EX(k).make(m);if(c&&c.length)cards.push(c[0]);
+  });
+  return shuffle(cards);
+}
+// internal handle each reading kind answers to (its make() dispatch key)
+const READING_HANDLE={story_quiz:'story',cloze:'clz',true_false:'tf',word_match:'wm',sent_order:'so'};
 // Cap an already-shuffled pool to n problems while PRESERVING TYPE COVERAGE:
 // surplus is removed from over-represented types first (walking from the end),
 // so every type that appears keeps ≥1 instance and slot 0 stays put. `minKeep`
@@ -112,8 +129,18 @@ function makePool(m){
   if(m==='b20')return makeBridge20Pool();            // bridge-20 curriculum (two alternating sets)
   // Superman — an EQUAL 3-per-type mix: column addition + big-number subtraction
   // + coin-multiplication + bagel-cost (×5 in shekels) + column subtraction
-  // + whole-hundreds + multiplication chains, shuffled then capped to 20 shown
-  if(m==='sup')return _withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])]),QUEEN_SUPER_COUNT);
+  // + whole-hundreds + multiplication chains, shuffled then capped to 20 shown.
+  // READING cards are woven in at ONE PER 4 EXERCISES (see _readingCards): the
+  // base deck is capped 5 short (coverage-preserving — no arithmetic type is
+  // dropped) and a reading card is SPLICED (inserted, never overwriting) at
+  // every 4th slot (positions 4/8/12/16/20 → index 3/7/11/15/19). Splice only
+  // shifts the other cards right, so nothing "falls through the cracks".
+  if(m==='sup'){
+    const rd=_readingCards(m);
+    const deck=_withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])]),QUEEN_SUPER_COUNT-rd.length);
+    rd.forEach((s,k)=>deck.splice(Math.min(3+k*4,deck.length),0,s));
+    return deck;
+  }
   if(m==='big')return EX('big_step').make('big');    // big number ± step game
   if(m==='poly')return EX('polygon')?EX('polygon').make('poly'):[];   // count-the-sides shapes game
   if(m==='mul')return EX('mult_chain')?EX('mult_chain').make('mul'):[];// multiplication as repeated addition (2×3 → 2+2+2)
@@ -121,6 +148,11 @@ function makePool(m){
   // (sum of sides) and GRADED column-subtraction (horizontal-first, staged
   // penalties), shuffled then capped to 20 (coverage-preserving).
   if(m==='mulc'){
+    // READING cards get ONE PER 4 EXERCISES (like Superman, see _readingCards):
+    // cap the arithmetic base 5 short (coverage-preserving — every arithmetic
+    // type keeps ≥1, so none is missed), pin TMK at slot 0, then SPLICE (insert,
+    // never overwrite) a reading card at every 4th slot (positions 4/8/12/16/20).
+    const rd=_readingCards(m);
     const pool=_capPool(shuffle([
       ...(EX('mult_champ')?EX('mult_champ').make('mulc'):[]),
       ...(EX('perimeter')?EX('perimeter').make('mulc'):[]),
@@ -136,16 +168,32 @@ function makePool(m){
       ...(EX('bagel_cost')?EX('bagel_cost').make('mulc'):[]), // כמה עולים X בייגלה (×₪5) — ראשית הכפל בשקלים (מסופרמן)
       ...(EX('ice_cream')?EX('ice_cream').make('mulc'):[]),   // חנות הגלידה — יש לה ₪X, כל גלידה ₪2/5/10; כמה אפשר לקנות (חילוק כ"כמה קבוצות")
       ...(EX('mult_unknown')?EX('mult_unknown').make('mulc'):[]), // כפל בנעלם — 3×□=9; ישר קפיצות-של-a גלוי מההתחלה
-    ]),QUEEN_SUPER_COUNT);
+    ]),QUEEN_SUPER_COUNT-rd.length);
     // the אַלּוּפָה game OPENS on its flagship multiplication card (TMK): keep a
     // mult_champ problem at slot 0 (the rest — perimeter / column-sub / compare /
     // word-problems — stay mixed through the deck).
     const ti=pool.findIndex(p=>p.t===TMK);
     if(ti>0){const tp=pool.splice(ti,1)[0];pool.unshift(tp);}
+    rd.forEach((s,k)=>pool.splice(Math.min(3+k*4,pool.length),0,s));
     return pool;
+  }
+  // "שפה" — the LANGUAGE game (medium tier): a mixed reading session holding ALL
+  // FIVE reading kinds. Three rounds of the five kinds (one fresh card each, via
+  // the modules' own no-repeat rotation) → 15 cards, shuffled. So every language
+  // exercise the app has appears here, and none is arithmetic.
+  if(m==='lang'){
+    const deck=[];
+    for(let round=0;round<3;round++)
+      READING_KINDS.forEach(k=>{if(EX(k)){const cs=EX(k).make(READING_HANDLE[k]);if(cs&&cs.length)deck.push(cs[0]);}});
+    return shuffle(deck);
   }
   if(m==='wp')return EX('word_prob')?EX('word_prob').make('wp'):[];   // word-problems only (internal handle)
   if(m==='wc')return EX('word_chain')?EX('word_chain').make('wc'):[]; // chain word-problems only (internal handle)
+  if(m==='story')return EX('story_quiz')?EX('story_quiz').make('story'):[]; // reading stories only (internal handle)
+  if(m==='clz')return EX('cloze')?EX('cloze').make('clz'):[];           // cloze only (internal handle)
+  if(m==='tf')return EX('true_false')?EX('true_false').make('tf'):[];   // true/false only (internal handle)
+  if(m==='wm')return EX('word_match')?EX('word_match').make('wm'):[];   // word-match only (internal handle)
+  if(m==='so')return EX('sent_order')?EX('sent_order').make('so'):[];   // sentence-order only (internal handle)
   if(m==='ice')return EX('ice_cream')?EX('ice_cream').make('ice'):[]; // ice-cream shop only (internal handle)
   if(m==='mulu')return EX('mult_unknown')?EX('mult_unknown').make('mulu'):[]; // mult-with-unknown only (internal handle)
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
@@ -338,4 +386,4 @@ function makeBridge20Pool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='mulc'?20:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='lang'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='mulc'?20:mode||5;}
