@@ -2030,6 +2030,60 @@ class TestSentOrder:
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13
 
+    def test_sent_order_bank_has_no_duplicate_words(self, page):
+        """Every bank sentence must have DISTINCT words (a duplicate would make the
+        string compare ambiguous) — the mechanical guard behind 'exactly one order'.
+        Also every sentence is 4 words."""
+        _enter_reading(page, "sent_order", ".so-word")
+        bad = page.evaluate("""() => {
+            const pool = EXERCISES.types.sent_order.make('so');
+            const bad = [];
+            for (const p of pool){
+                if (new Set(p.words).size !== p.words.length) bad.push({dup:p.words.join(' ')});
+                if (p.words.length < 4) bad.push({short:p.words.join(' ')});
+            }
+            return {count:pool.length, bad};
+        }""")
+        assert bad["count"] >= 12, f"expected the full bank, got {bad['count']}"
+        assert bad["bad"] == [], f"sentences must have distinct words + ≥4 words: {bad['bad']}"
+
+    def test_sent_order_drag_reorders_chosen_words(self, page):
+        """A CHOSEN word can be DRAGGED within the strip to change the order: build
+        with the first two words swapped (wrong), drag word0 back before word1
+        (RTL → onto the right half), then ✓ solves. A drag must NOT bounce the word
+        to the bank (that's a tap)."""
+        _enter_reading(page, "sent_order", ".so-word")
+        words = page.evaluate("problems[0].words")
+        # place in a WRONG order: swap the first two, keep the rest
+        order = list(range(len(words)))
+        order[0], order[1] = order[1], order[0]
+        for i in order:
+            page.evaluate("""(w)=>{[...document.querySelectorAll('.so-bank .so-word')]
+                .find(e=>e.textContent===w).click();}""", words[i])
+        built_before = page.evaluate(
+            "[...document.querySelectorAll('.so-strip .so-word')].map(e=>e.textContent).join(' ')")
+        assert built_before != " ".join(words), "precondition: strip starts in the wrong order"
+        # drag word0 (2nd pill) onto the RIGHT half of word1 (1st pill) → word0 first
+        def rect(w):
+            return page.evaluate("""(w)=>{const el=[...document.querySelectorAll('.so-strip .so-word')]
+                .find(e=>e.textContent===w);const r=el.getBoundingClientRect();
+                return {cx:r.left+r.width/2,cy:r.top+r.height/2,right:r.right};}""", w)
+        a, b = rect(words[0]), rect(words[1])
+        page.mouse.move(a["cx"], a["cy"]); page.mouse.down()
+        page.mouse.move((a["cx"] + b["right"]) / 2, b["cy"], steps=6)
+        page.mouse.move(b["right"] - 6, b["cy"], steps=6)
+        page.mouse.up()
+        page.wait_for_timeout(120)
+        built_after = page.evaluate(
+            "[...document.querySelectorAll('.so-strip .so-word')].map(e=>e.textContent).join(' ')")
+        assert built_after == " ".join(words), \
+            f"drag must reorder to the correct sentence, got {built_after!r}"
+        assert page.evaluate("document.querySelectorAll('.so-strip .so-word').length") == len(words), \
+            "the dragged word must stay in the strip (a drag is not a tap-to-bank)"
+        page.click(".so-chk")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 20
+
 
 # ─────────────────────────────────────────────────────────
 # "שָׂפָה 📖" (mode 'lang') — the LANGUAGE game under the medium (בֵּינוֹנִי) tier:
