@@ -1726,6 +1726,37 @@ class TestStoryQuiz:
         assert res["hasChk"] and not res["hasAns"]
         assert res["nl"] == "none" and res["hostChk"] == "none"
 
+    def test_story_quiz_card_shows_no_emoji_picture_clue(self, page):
+        """The card must be TEXT ONLY. A topic emoji over the story (🚀 for a
+        space story) let the child match the picture to the "חֲלָלִית" option and
+        answer WITHOUT READING — the whole point of the exercise. Guards the
+        story, the question AND the options against any pictographic character,
+        over many cards so every topic is covered."""
+        _enter_story(page)
+        res = page.evaluate("""() => {
+            const EX = EXERCISES.types.story_quiz;
+            // every card in the library, rendered text-side: story + q + options
+            const pool = EX.make('story');
+            const PICT = /[\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{FE0F}\\u{2B00}-\\u{2BFF}]/u;
+            const bad = [];
+            pool.forEach(p => {
+                const txt = (p.lines || []).join(' ') + ' ' + (p.q || '') + ' ' + (p.opts || []).join(' ');
+                const m = txt.match(PICT);
+                if (m) bad.push(p.topic + ': ' + m[0]);
+            });
+            return {
+                bad,
+                emojiEl: !!document.querySelector('.sq-emoji'),
+                mountedStory: document.querySelector('.sq-story').textContent,
+                storyTags: [...document.querySelector('.sq-story').children].map(c => c.tagName),
+            };
+        }""")
+        assert not res["emojiEl"], "the .sq-emoji picture clue must not be rendered"
+        assert set(res["storyTags"]) <= {"BR"}, \
+            f"the story block must hold plain text lines only (line breaks), got {res['storyTags']}"
+        assert res["bad"] == [], f"story/question/options must carry no emoji clue: {res['bad']}"
+        assert _has_niqqud(res["mountedStory"])
+
     def test_reading_cards_one_per_four_and_no_type_dropped(self, page):
         """The built Superman AND אַלּוּפָה decks carry a READING card at EVERY 4th
         slot (indexes 3/7/11/15/19 → positions 4/8/12/16/20) — exactly
@@ -1813,10 +1844,11 @@ class TestStoryQuiz:
     def test_story_quiz_library_is_valid(self, page):
         """Every library story is ≤4 short lines, has a vowelled question + 3
         DISTINCT vowelled options and a valid 1-based answer index; the pool is
-        BIG (8 per topic = 32) so answers can't be memorised."""
+        BIG (12 per topic = 48 — grown from 32 when the child started recalling
+        answers) so answers can't be memorised."""
         _enter_story(page)
         pool = page.evaluate("EXERCISES.types.story_quiz.make('story')")
-        assert len(pool) >= 32, f"the library must offer ≥32 stories (8 × 4 topics), got {len(pool)}"
+        assert len(pool) >= 48, f"the library must offer ≥48 stories (12 × 4 topics), got {len(pool)}"
         topics = {p["topic"] for p in pool}
         assert topics == {"space", "unicorns", "dinos", "princess"}, f"got topics {topics}"
         for p in pool:
@@ -1829,24 +1861,44 @@ class TestStoryQuiz:
 
     def test_story_quiz_rotation_never_repeats_within_a_cycle(self, page):
         """Anti-memorisation: topics AND stories rotate via shuffled queues — over
-        32 consecutive cards every topic is served exactly 8 times with 8 DISTINCT
-        stories (no repeat until the whole topic pool is exhausted)."""
+        one full library cycle every topic is served exactly its story count with
+        ALL-DISTINCT stories (no repeat until the whole topic pool is exhausted).
+        Sizes are derived from the library, so growing a topic keeps this green."""
         _enter_story(page)
         res = page.evaluate("""() => {
-            EXERCISES.types.story_quiz._resetRotation();   // start a fresh cycle
-            const seen={};
-            for(let g=0;g<32;g++){
-                for(const p of EXERCISES.types.story_quiz.make('mulc')){
-                    (seen[p.topic]=seen[p.topic]||[]).push(p.q);
-                }
+            const EX = EXERCISES.types.story_quiz;
+            // per-topic library sizes, from the full pool
+            const libCount = {};
+            for (const p of EX.make('story')) libCount[p.topic] = (libCount[p.topic] || 0) + 1;
+            const total = Object.values(libCount).reduce((s, n) => s + n, 0);
+            EX._resetRotation();                           // start a fresh cycle
+            const seen = {};
+            for (let g = 0; g < total; g++){
+                for (const p of EX.make('mulc')) (seen[p.topic] = seen[p.topic] || []).push(p.q);
             }
-            return Object.fromEntries(Object.entries(seen).map(
-                ([t,qs])=>[t,{served:qs.length,distinct:new Set(qs).size}]));
+            return {libCount, served: Object.fromEntries(Object.entries(seen).map(
+                ([t, qs]) => [t, {served: qs.length, distinct: new Set(qs).size}]))};
         }""")
-        assert len(res) == 4, f"all four topics must be served, got {list(res)}"
-        for topic, s in res.items():
-            assert s["served"] == 8 and s["distinct"] == 8, \
-                f"{topic}: 32 consecutive cards must serve this topic 8 DISTINCT stories, got {s}"
+        lib = res["libCount"]
+        assert len(res["served"]) == 4, f"all four topics must be served, got {list(res['served'])}"
+        for topic, s in res["served"].items():
+            n = lib[topic]
+            assert s["served"] == n and s["distinct"] == n, \
+                f"{topic}: a full cycle must serve its {n} stories all-distinct, got {s}"
+
+    def test_story_quiz_answer_position_is_shuffled(self, page):
+        """Anti-memorisation: the correct option must NOT sit in a fixed slot (the
+        child once learned "the answer is number 3"). Over many built cards the
+        correct index lands in ALL THREE positions, none dominant."""
+        _enter_story(page)
+        res = page.evaluate("""() => {
+            const EX = EXERCISES.types.story_quiz; EX._resetRotation();
+            const pos = {1:0, 2:0, 3:0};
+            for (let i = 0; i < 240; i++){ pos[EX.make('mulc')[0].a]++; }
+            return pos;
+        }""")
+        assert all(res[k] >= 30 for k in res), \
+            f"the correct answer must be shuffled across all 3 slots, got {res}"
 
 
 # ─────────────────────────────────────────────────────────
@@ -1880,7 +1932,7 @@ class TestCloze:
         assert len(opts) == 3 and all(_has_niqqud(o) for o in opts)
         assert _has_niqqud(page.evaluate("document.querySelector('.cz-sent').textContent"))
         pool = page.evaluate("EXERCISES.types.cloze.make('clz')")
-        assert len(pool) >= 12 and all(1 <= p["a"] <= 3 for p in pool)
+        assert len(pool) >= 24 and all(1 <= p["a"] <= 3 for p in pool)
 
     def test_cloze_correct_fills_gap_and_scores_full(self, page):
         """Selecting the correct word + ✓ drops it into the gap and solves (20)."""
@@ -1905,6 +1957,19 @@ class TestCloze:
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13
 
+    def test_cloze_answer_position_is_shuffled(self, page):
+        """The correct word must not sit in a fixed slot — over the whole bank,
+        rebuilt many times, it lands in all 3 option positions."""
+        _enter_reading(page, "cloze", ".cz-opt")
+        res = page.evaluate("""() => {
+            const EX = EXERCISES.types.cloze; EX._resetRotation();
+            const pos = {1:0, 2:0, 3:0};
+            for (let r = 0; r < 12; r++) for (const p of EX.make('clz')) pos[p.a]++;
+            return pos;
+        }""")
+        assert all(res[k] >= 30 for k in res), \
+            f"the correct answer must be shuffled across all 3 slots, got {res}"
+
 
 class TestTrueFalse:
     def test_true_false_mounts_story_statement_and_two_options(self, page):
@@ -1917,7 +1982,7 @@ class TestTrueFalse:
         opts = page.evaluate("[...document.querySelectorAll('.tf-opt')].map(o=>o.textContent)")
         assert len(opts) == 2
         pool = page.evaluate("EXERCISES.types.true_false.make('tf')")
-        assert len(pool) >= 12
+        assert len(pool) >= 24
         assert {p["a"] for p in pool} == {1, 2}, "the bank must mix true AND false items"
 
     def test_true_false_correct_scores_full(self, page):
@@ -1937,6 +2002,26 @@ class TestTrueFalse:
         page.click(".tf-chk")
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13
+
+
+_GHOSTS = "document.querySelectorAll('.wm-ghost').length"
+
+
+def _wm_box(page, sel):
+    """Centre of a word pill / picture cell, in viewport coordinates."""
+    el = page.query_selector(sel)
+    el.scroll_into_view_if_needed()
+    b = el.bounding_box()
+    return b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+
+
+def _wm_grab(page, word_i):
+    """Press a word pill and move far enough to spawn the floating ghost."""
+    wx, wy = _wm_box(page, f'.wm-word[data-i="{word_i}"]')
+    page.mouse.move(wx, wy)
+    page.mouse.down()
+    page.mouse.move(wx + 40, wy - 30, steps=6)     # > the 6px drag threshold
+    assert page.evaluate(_GHOSTS) == 1, "the drag must spawn exactly one ghost"
 
 
 class TestWordMatch:
@@ -1980,6 +2065,90 @@ class TestWordMatch:
         }""")
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13
+
+    def test_word_match_bank_is_big_and_valid(self, page):
+        """The pair bank must stay BIG (≥30 — grown from 18 when the child started
+        recalling answers) with every word vowelled and no duplicate words or
+        emoji (a duplicate would make a card ambiguous)."""
+        _enter_reading(page, "word_match", ".wm-word")
+        res = page.evaluate("""() => {
+            const bank = EXERCISES.types.word_match._bank;
+            return {
+                n: bank.length,
+                dupW: bank.length - new Set(bank.map(p => p.w)).size,
+                dupE: bank.length - new Set(bank.map(p => p.e)).size,
+                unvowelled: bank.filter(p => !/[\\u0591-\\u05C7]/.test(p.w)).map(p => p.w),
+            };
+        }""")
+        assert res["n"] >= 30, f"the bank must offer ≥30 pairs, got {res['n']}"
+        assert res["dupW"] == 0 and res["dupE"] == 0, f"duplicate words/emoji in the bank: {res}"
+        assert res["unvowelled"] == [], f"every bank word must be vowelled: {res['unvowelled']}"
+
+    # ── the floating drag GHOST must never outlive its drag ──────────────
+    # It is position:fixed at z-9999, so a leaked one freezes mid-flight above
+    # everything (the z-996 success screen included) until the next problem
+    # mounts. User: "the word icon sometimes sticks half-way after a correct
+    # answer, and it also shows during the success screen."
+
+    def test_word_match_real_drag_matches_and_leaves_no_ghost_on_success(self, page):
+        """A REAL pointer-drag (not the tap-tap shortcut) onto the right picture
+        matches — and once it solves, NO ghost is left floating over the success
+        screen."""
+        _enter_reading(page, "word_match", ".wm-word")
+        for i in (0, 1):                                   # clear two by tap-tap
+            page.evaluate(f"""() => {{
+                document.querySelector('.wm-word[data-i="{i}"]').click();
+                document.querySelector('.wm-pic[data-i="{i}"]').click();
+            }}""")
+        _wm_grab(page, 2)                                  # the last one by DRAG
+        px, py = _wm_box(page, '.wm-pic[data-i="2"]')
+        page.mouse.move(px, py, steps=8)
+        page.mouse.up()
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("document.querySelectorAll('.wm-pic.wm-done').length") == 3
+        assert page.evaluate("score") == 20
+        page.wait_for_function("_fwOn === true", timeout=TIMEOUT)
+        assert page.evaluate(_GHOSTS) == 0, \
+            "a drag ghost must not float over the success screen"
+
+    def test_word_match_pointercancel_removes_the_ghost(self, page):
+        """`pointercancel` (the browser/OS stealing the gesture — an edge or
+        system swipe) means `pointerup` NEVER arrives. Without a handler the
+        ghost stayed frozen mid-flight; it must be removed, and the cancelled
+        gesture must NOT count as a drop."""
+        _enter_reading(page, "word_match", ".wm-word")
+        _wm_grab(page, 0)
+        pid = page.evaluate("document.querySelector('.wm-ghost').dataset.pid")
+        page.evaluate(
+            "pid => window.dispatchEvent(new PointerEvent('pointercancel',"
+            "{pointerId:+pid, bubbles:true}))", pid)
+        assert page.evaluate(_GHOSTS) == 0, "pointercancel must remove the ghost"
+        page.mouse.up()                                    # the late release is ignored
+        assert page.evaluate(_GHOSTS) == 0
+        assert page.evaluate("document.querySelectorAll('.wm-pic.wm-done').length") == 0, \
+            "a cancelled gesture must not land a match"
+        assert page.evaluate("tryFirst") == 0, "…and must not count as a mistake"
+
+    def test_word_match_second_finger_does_not_orphan_the_ghost(self, page):
+        """A second finger pressing another pill mid-drag used to overwrite the
+        live drag, orphaning ghost #1 with no reference left to remove it by (and
+        the real pointerup, now a foreign pointerId, was ignored). The extra
+        pointer must be ignored and the original drag must still complete."""
+        _enter_reading(page, "word_match", ".wm-word")
+        _wm_grab(page, 0)
+        page.evaluate("""() => {
+            const w = document.querySelector('.wm-word[data-i="1"]');
+            const r = w.getBoundingClientRect();
+            w.dispatchEvent(new PointerEvent('pointerdown', {pointerId: 77, bubbles: true,
+                clientX: r.left + r.width / 2, clientY: r.top + r.height / 2}));
+        }""")
+        assert page.evaluate(_GHOSTS) == 1, "the 2nd pointer must not spawn a 2nd ghost"
+        px, py = _wm_box(page, '.wm-pic[data-i="0"]')
+        page.mouse.move(px, py, steps=8)
+        page.mouse.up()
+        assert page.evaluate(_GHOSTS) == 0, "the original drag must still clean up"
+        assert page.evaluate("document.querySelectorAll('.wm-pic.wm-done').length") == 1, \
+            "the original drag must still land its match"
 
 
 class TestSentOrder:
@@ -2053,7 +2222,7 @@ class TestSentOrder:
             }
             return {count:pool.length, bad};
         }""")
-        assert bad["count"] >= 12, f"expected the full bank, got {bad['count']}"
+        assert bad["count"] >= 24, f"expected the full bank, got {bad['count']}"
         assert bad["bad"] == [], f"sentences must have distinct words + ≥4 words: {bad['bad']}"
 
     def test_sent_order_drag_reorders_chosen_words(self, page):
@@ -2195,7 +2364,7 @@ class TestRhyme:
             }
             return {bank:ex._bank.length, bad:bad.slice(0,8)};
         }""")
-        assert res["bank"] >= 12, f"the rhyme bank must offer ≥12 pairs, got {res['bank']}"
+        assert res["bank"] >= 24, f"the rhyme bank must offer ≥24 pairs, got {res['bank']}"
         assert res["bad"] == [], f"ambiguous / malformed rhyme data: {res['bad']}"
 
     def test_rhyme_rotation_serves_every_pair_before_repeating(self, page):
@@ -2227,6 +2396,19 @@ class TestRhyme:
             f"{res['n']} consecutive cards must use {res['n']} distinct pairs, got {res['distinctPairs']}"
         assert sorted(res["sides"]) == ["a", "b"], \
             f"both pair members must get to be the cue, got {res['sides']}"
+
+    def test_rhyme_answer_position_is_shuffled(self, page):
+        """The rhyming option must not sit in a fixed slot — over many cards the
+        correct index lands in all 3 positions."""
+        _enter_reading(page, "rhyme", ".rh-opt")
+        res = page.evaluate("""() => {
+            const ex = EXERCISES.types.rhyme; ex._resetRotation();
+            const pos = {1:0, 2:0, 3:0};
+            for (let i = 0; i < 240; i++){ pos[ex.make('mulc')[0].a]++; }
+            return pos;
+        }""")
+        assert all(res[k] >= 30 for k in res), \
+            f"the rhyming answer must be shuffled across all 3 slots, got {res}"
 
 
 # ─────────────────────────────────────────────────────────
@@ -2270,3 +2452,68 @@ class TestLanguageGame:
         """The lang game scores the reading base (15 per card, like the other
         reading modes)."""
         assert page.evaluate("(()=>{mode='lang';return modePts();})()") == 15
+
+
+# ─────────────────────────────────────────────────────────
+# "דַּלְּגִי עַל הַשְּׁאֵלָה" — the skip button on language cards (user request): a
+# card she can't decode must not soft-lock the set, but a skip scores 0 (marked
+# skipped, not correct, in the report + the grade).
+# ─────────────────────────────────────────────────────────
+
+_LANG_SEL = {"story_quiz": ".sq-opt", "cloze": ".cz-opt", "true_false": ".tf-opt",
+             "word_match": ".wm-word", "sent_order": ".so-word", "rhyme": ".rh-opt"}
+
+
+class TestLanguageSkip:
+    def test_skip_button_present_in_every_language_exercise(self, page):
+        """All SIX reading kinds — including the drag ones (word_match / sent_order)
+        that have no ✓ — show the skip button in the host button row."""
+        for ex, sel in _LANG_SEL.items():
+            _enter_reading(page, ex, sel)
+            assert page.evaluate("!!document.querySelector('#btns .b-skip')"), \
+                f"{ex} must show the skip button"
+
+    def test_skip_button_absent_for_arithmetic_exercises(self, page):
+        """A non-language self-mounting exercise (column subtraction) must NOT get
+        the skip button — skipping is a reading-only affordance."""
+        _enter_reading(page, "cloze", ".cz-opt")           # boots mulc + modules
+        assert page.evaluate("!!document.querySelector('#btns .b-skip')")
+        page.wait_for_function("typeof EXERCISES.types.column_sub==='object'", timeout=TIMEOUT)
+        page.evaluate("problems=EXERCISES.types.column_sub.make('mulc');idx=0;loadProblem();")
+        page.wait_for_timeout(150)
+        assert page.evaluate("ptype === TCS")
+        assert page.evaluate("!document.querySelector('#btns .b-skip')"), \
+            "arithmetic exercises must NOT show the skip button"
+
+    def test_skip_scores_zero_advances_and_marks_report(self, page):
+        """Clicking skip on a language card: 0 points, advances to the next
+        problem, and the report marks it skipped (NOT gotCorrect)."""
+        _enter_reading(page, "cloze", ".cz-opt")
+        page.evaluate("""() => {
+            const c = EXERCISES.types.cloze;                // two cards → skip lands on a real next
+            problems = [c.make('mulc')[0], c.make('mulc')[0]];
+            score = 0; idx = 0; loadProblem();
+        }""")
+        page.wait_for_selector(".cz-opt", timeout=TIMEOUT)
+        page.click("#btns .b-skip")
+        page.wait_for_function("idx === 1", timeout=TIMEOUT)
+        assert page.evaluate("score") == 0, "a skip must score 0 points"
+        r0 = page.evaluate("report[0]")
+        assert r0.get("skipped") is True, "the skipped question must be marked skipped"
+        assert not r0.get("gotCorrect"), "a skip must NOT count as a correct answer"
+
+    def test_skipped_row_is_not_counted_correct_in_report(self, page):
+        """In the end-of-set report a skipped card (no wrong attempts) must render
+        as skipped, not as a ✓ — regression on the `ok` flag."""
+        _enter_reading(page, "rhyme", ".rh-opt")
+        page.evaluate("""() => {
+            const r = EXERCISES.types.rhyme;
+            problems = [r.make('mulc')[0], r.make('mulc')[0]];
+            score = 0; idx = 0; loadProblem();
+        }""")
+        page.wait_for_selector(".rh-opt", timeout=TIMEOUT)
+        page.click("#btns .b-skip")
+        page.wait_for_function("idx === 1", timeout=TIMEOUT)
+        row = page.evaluate("_reportRows()[0]")
+        assert row["skipped"] is True and row["ok"] is False, \
+            "a skipped-with-no-wrongs row must not read as correct"

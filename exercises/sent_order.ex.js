@@ -9,7 +9,7 @@
    reading. The scramble is guaranteed ≠ the correct order.
 
    Problem: { t:TSO, words:[…correct order], scr:[…scrambled], a:word count }
-   (a → num1). Bank of 12 sentences via a NO-REPEAT shuffled-queue rotation.
+   (a → num1). Bank of 24 sentences via a NO-REPEAT shuffled-queue rotation.
    Interactive: core.js _colxMount into #colx-root; aidsReveal 'always'. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.sent_order=(()=>{
@@ -35,6 +35,18 @@ window.EXERCISES.types.sent_order=(()=>{
     'שָׂרָה לוֹבֶשֶׁת שִׂמְלָה וְרֻדָּה',
     'הַצִּפּוֹר שָׁרָה שִׁיר יָפֶה',
     'הַנְּסִיכָה גָּרָה בְּאַרְמוֹן גָּדוֹל',
+    'הַתִּינוֹק הַקָּטָן יָשֵׁן בָּעֲגָלָה',
+    'סַבָּא שׁוֹתֶה תֵּה חַם',
+    'הַיַּלְדָּה קוֹרֵאת סֵפֶר מְעַנְיֵן',
+    'הַטַּבָּח מְבַשֵּׁל אֹרֶז לָבָן',
+    'הַלֵּיצָן חוֹבֵשׁ כּוֹבַע מַצְחִיק',
+    'הָאִכָּר חוֹלֵב אֶת הַפָּרָה',
+    'הַסְּנָאִי מְטַפֵּס עַל הָעֵץ',
+    'אִמָּא מְכִינָה סָלָט יָרֹק',
+    'הַתֻּכִּי אוֹכֵל גַּרְעִינִים שְׁחֹרִים',
+    'הָאַרְנָב קוֹפֵץ עַל הַדֶּשֶׁא',
+    'הַגַּנָּן מַשְׁקֶה אֶת הַפְּרָחִים',
+    'הַנַּגָּר בּוֹנֶה כִּסֵּא חָדָשׁ',
   ];
 
   let _q=null,_last=-1;

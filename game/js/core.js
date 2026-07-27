@@ -660,6 +660,20 @@ function _colxMount(){
   });
 }
 
+/* ── Language exercises: skip-this-question ────────────────────────────────
+   The reading kinds (story_quiz/cloze/true_false/word_match/sent_order/rhyme)
+   get a "דַּלְּגִי עַל הַשְּׁאֵלָה" button below the card. Reading a card she can't
+   decode can stall the whole set, so she may move on — but a skip scores 0 (it
+   is NOT gotCorrect, it counts as skipped in the report and the grade). */
+function _isLangType(pt){return pt===TSQ||pt===TCZ||pt===TTF||pt===TWM||pt===TSO||pt===TRH;}
+function skipLangQuestion(){
+  if(done||!_isLangType(ptype))return;   // guard: only a live language card
+  done=true;
+  if(report[idx])report[idx].skipped=true;   // 0 points, shown as "דולג" in the report
+  setFb('⏭️ דִּלַּגְנוּ עַל הַשְּׁאֵלָה — 0 נְקֻדּוֹת','fb-err');
+  setTimeout(()=>{if(!_fwOn)nextP();},700);   // brief note, then advance (no celebration)
+}
+
 /* ── Buttons ── */
 function showBtns(s){
   const cb=document.getElementById('chk-btn');
@@ -667,6 +681,10 @@ function showBtns(s){
   if(s==='check'){
     btns.innerHTML='';
     btns.className='btn-row';
+    // language reading cards get a skip button (0 points) so a hard-to-read card
+    // never soft-locks the set
+    if(_isLangType(ptype))
+      btns.innerHTML='<button class="btn b-skip" onclick="skipLangQuestion()">⏭️ דַּלְּגִי עַל הַשְּׁאֵלָה</button>';
     // exercise modules (TCA/TCS/TCM/TBC/TPG/TMC/TMK) check themselves — no host check button
     if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)?'none':'flex';
   }else{
@@ -1105,7 +1123,7 @@ function _reportRows(){
     else if(r.ptype===TVA||r.ptype===TVS){const E=s=>({circle:'🔵',triangle:'🔺',square:'🟦'}[s]||'🔷');const e=E(p.sym),opc=r.ptype===TVA?'+':'−';
       eq=p.symA?`${E(p.symA)}=${r.num1} ${e}=${r.num2} · ${E(p.symA)} ${opc} ${e} = ${r.correct}`:`${e}=${r.num2} · ${r.num1} ${opc} ${e} = ${r.correct}`;}
     else                  eq=`${r.num1} + ${r.num2} = ${r.correct}`;   // TA, TCA (column add)
-    return {eq,ok:(r.wrongs||[]).length===0,wrongs:(r.wrongs||[]).slice(),correct:r.correct,skipped:!!r.skipped};
+    return {eq,ok:(r.wrongs||[]).length===0&&!r.skipped,wrongs:(r.wrongs||[]).slice(),correct:r.correct,skipped:!!r.skipped};
   });
 }
 /* one .rep-row's HTML — shared by the end-of-set summary AND the per-entry history detail */

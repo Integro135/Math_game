@@ -1,6 +1,7 @@
 /* ── "הַתְאֵם מִלָּה לְתְמוּנָה" — match vowelled words to pictures ──────────────
-   A READING exercise (one of the reading kinds sharing the one-per-5 reading
-   slots in Superman + אַלּוּפָה): THREE picture cards (emoji) and THREE vowelled
+   A READING exercise (one of the SIX reading kinds sharing the READING_SLOTS=5
+   one-per-4 reading slots in Superman + אַלּוּפָה, and a kind of the שָׂפָה 📖
+   game): THREE picture cards (emoji) and THREE vowelled
    word pills — the child DRAGS each word onto its picture (genuine pointer-drag,
    mouse + touch, like compare.ex.js; a floating ghost + rect hit-test). A
    TAP-TAP fallback also works: tap a word (select) then tap a picture. A correct
@@ -8,7 +9,7 @@
    mistake (api.wrong). All three matched → api.solved(). First sight-reading.
 
    Problem: { t:TWM, pairs:[{e,w}×3], a:3 } (a = pair count → num1, the report's
-   "correct"). Pairs come from an 18-pair bank via a NO-REPEAT shuffled-queue
+   "correct"). Pairs come from a 30-pair bank via a NO-REPEAT shuffled-queue
    rotation (3 popped per card — no pair repeats until the bank cycles).
    Interactive: core.js _colxMount into #colx-root; aidsReveal 'always'. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
@@ -23,6 +24,9 @@ window.EXERCISES.types.word_match=(()=>{
     {e:'🚗',w:'מְכוֹנִית'},{e:'🎈',w:'בַּלּוֹן'},{e:'🐱',w:'חָתוּל'},{e:'🍌',w:'בָּנָנָה'},
     {e:'⭐',w:'כּוֹכָב'},{e:'🌳',w:'עֵץ'},{e:'👑',w:'כֶּתֶר'},{e:'🧦',w:'גֶּרֶב'},
     {e:'🍦',w:'גְּלִידָה'},{e:'🦋',w:'פַּרְפַּר'},
+    {e:'🐶',w:'כֶּלֶב'},{e:'🍉',w:'אֲבַטִּיחַ'},{e:'👟',w:'נַעַל'},{e:'🔑',w:'מַפְתֵּחַ'},
+    {e:'🐸',w:'צְפַרְדֵּעַ'},{e:'☂️',w:'מִטְרִיָּה'},{e:'🍓',w:'תּוּת'},{e:'🚂',w:'רַכֶּבֶת'},
+    {e:'🧀',w:'גְּבִינָה'},{e:'🐢',w:'צָב'},{e:'✈️',w:'מָטוֹס'},{e:'🥕',w:'גֶּזֶר'},
   ];
 
   // NO-REPEAT rotation: pop 3 pairs per card; the queue reshuffles when short
@@ -101,6 +105,9 @@ window.EXERCISES.types.word_match=(()=>{
 
     function tryMatch(wordEl,picEl){
       if(done||!wordEl||!picEl||picEl.classList.contains('wm-done'))return;
+      // belt-and-braces: scoring may open the success screen / sad modal, and a
+      // z-9999 ghost must never be left floating over either
+      killGhost();
       const wi=+wordEl.getAttribute('data-i'), pi=+picEl.getAttribute('data-i');
       if(wi===pi){                                        // correct — lock it in
         wordEl.classList.remove('wm-sel');wordEl.classList.add('wm-used');
@@ -130,9 +137,38 @@ window.EXERCISES.types.word_match=(()=>{
     }));
     pics.forEach(pc=>pc.addEventListener('click',function(){if(selWord)tryMatch(selWord,this);}));
 
-    // DRAG: pointer-drag a word pill onto a picture (ghost + rect hit-test, the
-    // compare.ex.js pattern — window-level move/up, no setPointerCapture)
-    let drag=null;   // {wordEl, ghost, sx, sy, moved}
+    /* DRAG: pointer-drag a word pill onto a picture (ghost + rect hit-test, the
+       compare.ex.js pattern — window-level move/up, no setPointerCapture).
+
+       The floating ghost is `position:fixed; z-index:9999`, so one that outlives
+       its drag freezes mid-flight ABOVE everything — including the z-996 success
+       screen — until the next problem mounts and cleanup sweeps it (user: "the
+       word icon sometimes sticks half-way after a correct answer, and it also
+       shows during the success screen"). Two ways the drag could end without a
+       `pointerup`, both fixed here:
+         · pointercancel — the browser/OS takes the gesture (an edge or system
+           swipe, palm rejection). compare.ex.js handles this; THIS module was
+           written from it but dropped the handler, so pointerup never came and
+           the ghost stayed. That's the "certain point you drag to" trigger.
+         · a SECOND finger — another pointerdown overwrote `drag`, orphaning
+           ghost #1 with no live reference left to remove it by.
+       So: one owned ghost, every exit funnels through endDrag(), the drag is
+       pinned to its pointerId, and a second pointer is ignored while one is
+       live. killGhost() sweeps by CLASS so even an orphan dies. */
+    let drag=null;      // {id, wordEl, sx, sy, moved}
+    let ghost=null;
+    function killGhost(){
+      ghost=null;
+      const gs=document.querySelectorAll('.wm-ghost');
+      for(let i=0;i<gs.length;i++)gs[i].remove();
+    }
+    function endDrag(){
+      const d=drag;drag=null;
+      killGhost();
+      pics.forEach(pc=>pc.classList.remove('wm-hot'));
+      if(d&&d.wordEl)d.wordEl.style.opacity='';
+      return d||{};
+    }
     function overPic(x,y){
       for(const pc of pics){
         if(pc.classList.contains('wm-done'))continue;
@@ -141,45 +177,52 @@ window.EXERCISES.types.word_match=(()=>{
       }
       return null;
     }
+    const mine=e=>drag&&e.pointerId===drag.id;
     function onMove(e){
-      if(!drag)return;
+      if(!mine(e))return;
       if(!drag.moved&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)<6)return;
       if(!drag.moved){
         drag.moved=true;
-        drag.ghost=document.createElement('div');
-        drag.ghost.className='wm-ghost';
-        drag.ghost.textContent=drag.wordEl.textContent;
-        document.body.appendChild(drag.ghost);
+        ghost=document.createElement('div');
+        ghost.className='wm-ghost';
+        ghost.textContent=drag.wordEl.textContent;
+        ghost.dataset.pid=String(drag.id);       // which pointer owns it (debug + tests)
+        document.body.appendChild(ghost);
         drag.wordEl.style.opacity='.35';
       }
-      drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';
+      ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';
       const hot=overPic(e.clientX,e.clientY);
       pics.forEach(pc=>pc.classList.toggle('wm-hot',pc===hot));
       e.preventDefault();
     }
     function onUp(e){
-      if(!drag)return;
-      const d=drag;drag=null;
-      pics.forEach(pc=>pc.classList.remove('wm-hot'));
-      if(d.ghost&&d.ghost.parentNode)d.ghost.parentNode.removeChild(d.ghost);
-      d.wordEl.style.opacity='';
+      if(!mine(e))return;
+      const d=endDrag();                  // the ghost dies BEFORE any scoring runs
       if(d.moved){
         const pc=overPic(e.clientX,e.clientY);
         if(pc)tryMatch(d.wordEl,pc);
       }
       // a no-move release falls through to the click handler (tap-select)
     }
+    function onCancel(e){if(mine(e))endDrag();}
+    function onBlur(){if(drag)endDrag();}   // released outside the window (desktop)
     words.forEach(w=>w.addEventListener('pointerdown',function(e){
       if(done||this.classList.contains('wm-used'))return;
-      drag={wordEl:this,ghost:null,sx:e.clientX,sy:e.clientY,moved:false};
+      if(drag)return;                     // a 2nd finger must not orphan the live ghost
+      drag={id:e.pointerId,wordEl:this,sx:e.clientX,sy:e.clientY,moved:false};
     }));
     window.addEventListener('pointermove',onMove);
     window.addEventListener('pointerup',onUp);
+    window.addEventListener('pointercancel',onCancel);
+    window.addEventListener('blur',onBlur);
+    killGhost();      // insurance: never inherit a stray ghost from a past card
 
     return function cleanup(){
       window.removeEventListener('pointermove',onMove);
       window.removeEventListener('pointerup',onUp);
-      document.querySelectorAll('.wm-ghost').forEach(g=>g.remove());
+      window.removeEventListener('pointercancel',onCancel);
+      window.removeEventListener('blur',onBlur);
+      killGhost();
       timers.forEach(clearTimeout);root.innerHTML='';
     };
   }
@@ -190,6 +233,7 @@ window.EXERCISES.types.word_match=(()=>{
     aidsReveal:'always',
     make(mode){return mode==='wm'?makePool('wm'):(mode==='sup'||mode==='mulc')?makePool(mode):[];},
     _resetRotation(){_q=null;},   // test hook
+    _bank:BANK,                   // test hook (bank-size / validity sweeps)
     mount,
   };
 })();

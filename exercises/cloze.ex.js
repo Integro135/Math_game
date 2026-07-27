@@ -7,7 +7,7 @@
    + api.solved(); wrong → api.wrong(pick) + re-pick. Trains reading-in-context.
 
    Problem: { t:TCZ, pre, post, opts:[3], a:1-based correct } (a → num1).
-   Bank of 12 sentences served by a NO-REPEAT shuffled-queue rotation (like
+   Bank of 24 sentences served by a NO-REPEAT shuffled-queue rotation (like
    story_quiz — the child must not memorise answers); options shuffled per card.
    Interactive: mounted by core.js _colxMount into #colx-root; aidsReveal 'always'. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
@@ -33,6 +33,18 @@ window.EXERCISES.types.cloze=(()=>{
     {pre:'סַבְתָּא אָפְתָה',post:'טְעִימָה.',opts:['עוּגָה','מִטְרִיָּה','נַעַל']},
     {pre:'הַדָּג שׂוֹחֶה בְּתוֹךְ',post:'.',opts:['הַמַּיִם','הַחוֹל','הָאֲוִיר']},
     {pre:'בַּקַּיִץ חַם וְאוֹכְלִים',post:'.',opts:['גְּלִידָה','מָרָק חַם','גֶּרֶב']},
+    {pre:'הַתִּינוֹק יָשֵׁן בְּתוֹךְ',post:'.',opts:['הָעֲרִיסָה','הַמַּחֲבַת','הָאַקְוַרְיוּם']},
+    {pre:'חָתַכְנוּ אֶת הַלֶּחֶם עִם',post:'.',opts:['סַכִּין','מַסְרֵק','בַּלּוֹן']},
+    {pre:'הָרוֹפֵא בָּדַק אֶת',post:'הַחוֹלֶה.',opts:['הַיֶּלֶד','הַשֻּׁלְחָן','הֶעָנָן']},
+    {pre:'נָעַלְנוּ',post:'לִפְנֵי הַטִּיּוּל.',opts:['נַעֲלַיִם','כּוֹבַע','מִשְׁקָפַיִם']},
+    {pre:'הַסַּפָּר גָּזַר לִי אֶת',post:'.',opts:['הַשֵּׂעָר','הַמִּטְרִיָּה','הַחַלּוֹן']},
+    {pre:'בַּלַּיְלָה חָלַמְתִּי',post:'מָתוֹק.',opts:['חֲלוֹם','שִׁעוּר','מַסְמֵר']},
+    {pre:'הַצַּיֶּרֶת צִיְּרָה צִיּוּר עִם',post:'.',opts:['מִכְחוֹל','פַּטִּישׁ','מַגֶּבֶת']},
+    {pre:'שָׁמַעְנוּ',post:'יָפֶה בָּרַדְיוֹ.',opts:['שִׁיר','מֶלַח','אָרוֹן']},
+    {pre:'אִמָּא סִפְּרָה לִי',post:'לִפְנֵי הַשֵּׁנָה.',opts:['סִפּוּר','מַגְהֵץ','אֶבֶן']},
+    {pre:'הַכַּבָּאִים כִּבּוּ אֶת',post:'בְּמַיִם.',opts:['הָאֵשׁ','הָעוּגָה','הַסְּפָרִים']},
+    {pre:'הַיַּלְדָּה פָּתְחָה אֶת',post:'וְנִכְנְסָה הַבַּיְתָה.',opts:['הַדֶּלֶת','הַמַּזְלֵג','הַשָּׁמַיִם']},
+    {pre:'בַּגַּן רָאִינוּ',post:'קוֹפֵץ מֵעָנָף לְעָנָף.',opts:['סְנָאִי','כִּסֵּא','דְּלִי']},
   ];
 
   // NO-REPEAT rotation over the bank (shuffled queue; a fresh cycle never opens

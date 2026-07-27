@@ -10,7 +10,7 @@
    reading-for-meaning (so it complements story_quiz/cloze/true_false).
 
    Problem: { t:TRH, cue:{e,w}, sound, opts:[{e,w}×3], a:1-based correct } (a →
-   num1, the report's "correct"). 12 rhyme PAIRS; either member may be the cue
+   num1, the report's "correct"). 24 rhyme PAIRS; either member may be the cue
    and the other is then the answer, so a pair never looks the same twice.
    Served by a NO-REPEAT shuffled-queue rotation over the pairs.
 
@@ -42,6 +42,18 @@ window.EXERCISES.types.rhyme=(()=>{
     {a:{e:'⛰️',w:'הַר'},       b:{e:'🐭',w:'עַכְבָּר'},     sound:'אַר', end:'ר'},
     {a:{e:'☁️',w:'עָנָן'},      b:{e:'🌳',w:'גַּן'},        sound:'אַן', end:'נ'},
     {a:{e:'🐄',w:'פָּרָה'},     b:{e:'🎸',w:'גִּיטָרָה'},    sound:'רָה', end:'ה'},
+    {a:{e:'❤️',w:'לֵב'},       b:{e:'🐺',w:'זְאֵב'},       sound:'אֵב', end:'ב'},
+    {a:{e:'🚩',w:'דֶּגֶל'},     b:{e:'🦵',w:'רֶגֶל'},       sound:'גֶל', end:'ל'},
+    {a:{e:'📞',w:'טֶלֶפוֹן'},   b:{e:'🥒',w:'מְלָפְפוֹן'},   sound:'פוֹן',end:'נ'},
+    {a:{e:'🐫',w:'גָּמָל'},     b:{e:'🧺',w:'סַל'},         sound:'אַל', end:'ל'},
+    {a:{e:'🐝',w:'דְּבוֹרָה'},   b:{e:'🕎',w:'מְנוֹרָה'},     sound:'וֹרָה',end:'ה'},
+    {a:{e:'👃',w:'אַף'},       b:{e:'🥄',w:'כַּף'},        sound:'אַף', end:'פ'},
+    {a:{e:'🐊',w:'תַּנִּין'},    b:{e:'🔪',w:'סַכִּין'},      sound:'אִין',end:'נ'},
+    {a:{e:'✈️',w:'מָטוֹס'},    b:{e:'🥤',w:'כּוֹס'},       sound:'וֹס', end:'ס'},
+    {a:{e:'🎩',w:'כּוֹבַע'},    b:{e:'🎨',w:'צֶבַע'},       sound:'בַע', end:'ע'},
+    {a:{e:'🎁',w:'מַתָּנָה'},    b:{e:'🖼️',w:'תְּמוּנָה'},    sound:'נָה', end:'ה'},
+    {a:{e:'🧀',w:'גְּבִינָה'},   b:{e:'⛵',w:'סְפִינָה'},     sound:'אִינָה',end:'ה'},
+    {a:{e:'🤴',w:'מֶלֶךְ'},     b:{e:'🛣️',w:'דֶּרֶךְ'},      sound:'אֶךְ', end:'כ'},
   ];
 
   /* THE DISTRACTOR POOL — familiar picturable words, NONE of them a bank word
@@ -62,6 +74,12 @@ window.EXERCISES.types.rhyme=(()=>{
     {e:'🦋',w:'פַּרְפַּר',   end:'ר'},
     {e:'🚪',w:'דֶּלֶת',    end:'ת'},
     {e:'⚽',w:'כַּדּוּר',   end:'ר'},
+    {e:'🍇',w:'עֲנָבִים',  end:'מ'},
+    {e:'🚁',w:'מַסּוֹק',   end:'ק'},
+    {e:'🐢',w:'צָב',      end:'ב'},
+    {e:'🍕',w:'פִּיצָה',   end:'ה'},
+    {e:'🥁',w:'תֹּף',      end:'פ'},
+    {e:'🌽',w:'תִּירָס',   end:'ס'},
   ];
 
   // NO-REPEAT rotation over the PAIRS (shuffled queue; a fresh cycle never opens
