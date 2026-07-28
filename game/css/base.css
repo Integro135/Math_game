@@ -410,16 +410,35 @@ body{
 }
 .b-nxt:hover{box-shadow:0 8px 0 #880E4F,0 12px 32px rgba(194,24,91,.8),inset 0 1px 0 rgba(255,255,255,.32)}
 .b-nxt:active{box-shadow:0 2px 0 #880E4F,0 4px 14px rgba(194,24,91,.5),inset 0 1px 0 rgba(255,255,255,.28)!important}
-/* skip-this-question — deliberately MUTED slate (secondary): a way out of a
-   card she can't read, not a tempting shortcut. Smaller + calmer than the
-   pink/purple action buttons. */
+/* skip-this-question — a polished PERIWINKLE glass pill: it earns its entrance
+   (only after the 2nd mistake), so it POPS IN with a friendly bounce and wears
+   a slow shine sweep — pretty, but cooler-toned + smaller than the pink/purple
+   primaries so it reads as a side exit, not the main road. */
 .b-skip{
-  background:linear-gradient(150deg,#B0BEC5,#78909C,#546E7A);color:#fff;
-  text-shadow:0 1px 5px rgba(0,0,0,.45);font-size:.95rem;padding:11px 26px;opacity:.9;
-  box-shadow:0 5px 0 #37474F,0 7px 18px rgba(84,110,122,.5),inset 0 1px 0 rgba(255,255,255,.26)
+  background:linear-gradient(150deg,#B3C0F7,#7C8CE8 48%,#5563D1);color:#fff;
+  text-shadow:0 1px 4px rgba(26,35,126,.55);
+  font-size:.98rem;padding:12px 28px;overflow:hidden;
+  border:2px solid rgba(255,255,255,.38);
+  box-shadow:0 5px 0 #3A46A5,0 8px 20px rgba(85,99,209,.55),inset 0 1px 0 rgba(255,255,255,.35);
+  animation:skipPopIn .45s cubic-bezier(.34,1.56,.64,1)
 }
-.b-skip:hover{opacity:1;box-shadow:0 7px 0 #37474F,0 11px 26px rgba(84,110,122,.65),inset 0 1px 0 rgba(255,255,255,.3)}
-.b-skip:active{box-shadow:0 2px 0 #37474F,0 4px 12px rgba(84,110,122,.45),inset 0 1px 0 rgba(255,255,255,.26)!important}
+.b-skip:hover{box-shadow:0 7px 0 #3A46A5,0 12px 28px rgba(85,99,209,.7),0 0 18px rgba(124,140,232,.55),inset 0 1px 0 rgba(255,255,255,.4)}
+.b-skip:active{box-shadow:0 2px 0 #3A46A5,0 4px 12px rgba(85,99,209,.45),inset 0 1px 0 rgba(255,255,255,.3)!important}
+/* the shine sweep — transform-only (no layout/paint churn); display:none while
+   hidden means it costs nothing until the button is actually shown */
+.b-skip::before{content:'';position:absolute;top:0;bottom:0;left:0;width:42%;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.42) 50%,transparent);
+  transform:translateX(-130%) skewX(-18deg);
+  animation:skipShine 3.4s ease-in-out .6s infinite;pointer-events:none}
+@keyframes skipPopIn{
+  0%{opacity:0;transform:translateY(12px) scale(.75)}
+  60%{opacity:1;transform:translateY(-4px) scale(1.07)}
+  100%{opacity:1;transform:none}
+}
+@keyframes skipShine{
+  0%,55%{transform:translateX(-130%) skewX(-18deg)}
+  85%,100%{transform:translateX(330%) skewX(-18deg)}
+}
 .b-rpl{
   background:linear-gradient(150deg,#FFE57F,#FFD740,#FF8F00);color:#4a0080;
   text-shadow:0 1px 4px rgba(255,180,0,.4);font-size:1.2rem;padding:16px 44px;

@@ -240,3 +240,10 @@ body.theme-savanna .end-grade-max{color:rgba(228,210,182,.75)}
 body.theme-savanna .end-grade-msg{color:#E4D2B6}
 
 @media(max-width:480px){body.theme-savanna .title{font-size:1.15rem}}
+
+/* the skip pill (language cards, appears after 2 mistakes) — a COOL periwinkle
+   ghost, deliberately distinct from the warm try/next accents; the pop-in +
+   shine-sweep animations come from base.css */
+body.theme-savanna .b-skip{border-color:rgba(150,190,255,.55);color:#D6E6FF;background:rgba(150,190,255,.10);box-shadow:0 0 12px rgba(150,190,255,.26)}
+body.theme-savanna .b-skip:hover,body.theme-savanna .b-skip:active{
+  background:rgba(150,190,255,.14);box-shadow:0 0 20px rgba(150,190,255,.4)}

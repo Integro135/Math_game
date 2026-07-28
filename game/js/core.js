@@ -621,6 +621,7 @@ function _colxMount(){
         if(done)return;
         if(report[idx])report[idx].wrongs.push(v);
         if(tryFirst===0)_unlockAids();tryFirst++;
+        _maybeShowSkip();   // reveal the language skip button once she's missed twice
         showSadModal();
       },
       // park the skinned number line's rider at a helpful anchor (the line
@@ -661,13 +662,21 @@ function _colxMount(){
 }
 
 /* ── Language exercises: skip-this-question ────────────────────────────────
-   The reading kinds (story_quiz/cloze/true_false/word_match/sent_order/rhyme)
-   get a "דַּלְּגִי עַל הַשְּׁאֵלָה" button below the card. Reading a card she can't
-   decode can stall the whole set, so she may move on — but a skip scores 0 (it
-   is NOT gotCorrect, it counts as skipped in the report and the grade). */
+   The reading kinds (story_quiz/cloze/true_false/word_match/sent_order/rhyme,
+   in EVERY mode they appear — Superman, אַלּוּפָה and the שָׂפָה game) get a
+   "דַּלְּגִי עַל הַשְּׁאֵלָה" button below the card. It stays HIDDEN until the child
+   has made TWO mistakes (tryFirst>=2) — only a card she genuinely can't crack
+   offers a way out, so it never becomes a lazy shortcut. A skip scores 0 (it is
+   NOT gotCorrect; it counts as skipped in the report and the grade). */
 function _isLangType(pt){return pt===TSQ||pt===TCZ||pt===TTF||pt===TWM||pt===TSO||pt===TRH;}
+// show the skip button only on a live language card AFTER the 2nd mistake
+function _maybeShowSkip(){
+  const b=document.getElementById('skip-btn');
+  if(!b)return;
+  b.style.display=(_isLangType(ptype)&&!done&&tryFirst>=2)?'':'none';
+}
 function skipLangQuestion(){
-  if(done||!_isLangType(ptype))return;   // guard: only a live language card
+  if(done||!_isLangType(ptype)||tryFirst<2)return;   // only after the 2nd mistake
   done=true;
   if(report[idx])report[idx].skipped=true;   // 0 points, shown as "דולג" in the report
   setFb('⏭️ דִּלַּגְנוּ עַל הַשְּׁאֵלָה — 0 נְקֻדּוֹת','fb-err');
@@ -682,9 +691,10 @@ function showBtns(s){
     btns.innerHTML='';
     btns.className='btn-row';
     // language reading cards get a skip button (0 points) so a hard-to-read card
-    // never soft-locks the set
+    // never soft-locks the set — hidden until the 2nd mistake (_maybeShowSkip)
     if(_isLangType(ptype))
-      btns.innerHTML='<button class="btn b-skip" onclick="skipLangQuestion()">⏭️ דַּלְּגִי עַל הַשְּׁאֵלָה</button>';
+      btns.innerHTML='<button class="btn b-skip" id="skip-btn" style="display:none" onclick="skipLangQuestion()">⏭️ דַּלְּגִי עַל הַשְּׁאֵלָה</button>';
+    _maybeShowSkip();
     // exercise modules (TCA/TCS/TCM/TBC/TPG/TMC/TMK) check themselves — no host check button
     if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TMU)?'none':'flex';
   }else{

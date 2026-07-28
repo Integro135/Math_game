@@ -186,12 +186,15 @@ Notes:
 - `column_sub` is the only interactive type served in **two** modes (Queen
   `'mx'` no-borrow + Superman `'sup'`); the other two interactive types
   (`column_add`, `coin_mul`) are Superman-only.
-- **Skip button (reading only):** the six reading kinds (`story_quiz`, `cloze`,
-  `true_false`, `word_match`, `sent_order`, `rhyme`) get a host-rendered
-  "דַּלְּגִי עַל הַשְּׁאֵלָה" button (core.js `_isLangType`/`skipLangQuestion`, shown in
-  the `#btns` row by `showBtns`). A skip scores **0** (marked `report[idx].skipped`,
-  NOT `gotCorrect`) and advances with no celebration — so a card she can't read
-  never soft-locks the set. Arithmetic types never show it.
+- **Skip button (reading only, after 2 mistakes):** the six reading kinds
+  (`story_quiz`, `cloze`, `true_false`, `word_match`, `sent_order`, `rhyme`) get a
+  host-rendered "דַּלְּגִי עַל הַשְּׁאֵלָה" button (core.js `_isLangType` /
+  `skipLangQuestion`, injected into the `#btns` row by `showBtns`). It stays HIDDEN
+  until the child misses **twice** (`_maybeShowSkip` reveals it at `tryFirst>=2`,
+  reset per problem) so it's an escape hatch, not a shortcut. A skip scores **0**
+  (marked `report[idx].skipped`, NOT `gotCorrect`) and advances with no
+  celebration. Shown in every mode the reading types appear (Superman / אַלּוּפָה /
+  שָׂפָה); arithmetic types never show it.
 
 ---
 

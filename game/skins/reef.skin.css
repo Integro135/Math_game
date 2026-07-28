@@ -328,3 +328,10 @@ body.theme-reef .end-grade-msg{color:#BDE8F5}
 @media(max-width:480px){
   body.theme-reef .title{font-size:1.2rem;letter-spacing:.1em}
 }
+
+/* the skip pill (language cards, appears after 2 mistakes) — a COOL periwinkle
+   ghost, deliberately distinct from the warm try/next accents; the pop-in +
+   shine-sweep animations come from base.css */
+body.theme-reef .b-skip{border-color:rgba(140,175,255,.55);color:#D4E0FF;background:rgba(140,175,255,.10);box-shadow:0 0 12px rgba(140,175,255,.28)}
+body.theme-reef .b-skip:hover,body.theme-reef .b-skip:active{
+  background:rgba(140,175,255,.14);box-shadow:0 0 20px rgba(140,175,255,.45)}

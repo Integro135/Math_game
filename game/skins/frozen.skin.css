@@ -234,3 +234,10 @@ body.theme-frozen .end-grade-max{color:rgba(199,228,248,.75)}
 body.theme-frozen .end-grade-msg{color:#CFE6F6}
 
 @media(max-width:480px){body.theme-frozen .title{font-size:1.15rem}}
+
+/* the skip pill (language cards, appears after 2 mistakes) — a COOL periwinkle
+   ghost, deliberately distinct from the warm try/next accents; the pop-in +
+   shine-sweep animations come from base.css */
+body.theme-frozen .b-skip{border-color:rgba(196,178,255,.6);color:#E6DCFF;background:rgba(196,178,255,.10);box-shadow:0 0 12px rgba(196,178,255,.28)}
+body.theme-frozen .b-skip:hover,body.theme-frozen .b-skip:active{
+  background:rgba(196,178,255,.14);box-shadow:0 0 20px rgba(196,178,255,.45)}

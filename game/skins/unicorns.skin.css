@@ -376,3 +376,10 @@ body.theme-girls .end-grade-msg{color:#7A4070}
 @media(max-width:480px){
   body.theme-girls .title{font-size:1.2rem;letter-spacing:.1em}
 }
+
+/* the skip pill (language cards, appears after 2 mistakes) — a COOL periwinkle
+   ghost, deliberately distinct from the warm try/next accents; the pop-in +
+   shine-sweep animations come from base.css */
+body.theme-girls .b-skip{border-color:rgba(126,110,228,.6);color:#6A55C8;background:rgba(140,124,240,.09);box-shadow:0 0 12px rgba(140,124,240,.25)}
+body.theme-girls .b-skip:hover,body.theme-girls .b-skip:active{
+  background:rgba(140,124,240,.14);box-shadow:0 0 20px rgba(140,124,240,.4)}

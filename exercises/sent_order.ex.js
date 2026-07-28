@@ -80,7 +80,11 @@ window.EXERCISES.types.sent_order=(()=>{
   .so-strip.so-ok{border-style:solid;border-color:#4caf50;background:rgba(76,175,80,.12)}
   .so-strip.so-err{border-color:#e91e63;animation:soShake .4s ease}
   @keyframes soShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}60%{transform:translateX(5px)}}
-  .so-strip .so-hintword{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.05rem;color:rgba(255,255,255,.45)}
+  /* placeholder prompt in the empty strip — uses the theme INK (var --skin-text)
+     at reduced opacity, NOT hardcoded white, so it stays legible on light themes
+     (girls' plum ink) as well as dark ones */
+  .so-strip .so-hintword{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.1rem;
+    color:var(--skin-text,#fff);opacity:.7;font-weight:700}
   /* the word BANK */
   .so-bank{direction:rtl;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:52px}
   .so-word{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.3rem;color:var(--skin-text,#fff);

@@ -2456,8 +2456,9 @@ class TestLanguageGame:
 
 # ─────────────────────────────────────────────────────────
 # "דַּלְּגִי עַל הַשְּׁאֵלָה" — the skip button on language cards (user request): a
-# card she can't decode must not soft-lock the set, but a skip scores 0 (marked
-# skipped, not correct, in the report + the grade).
+# card she can't decode must not soft-lock the set, but it appears ONLY AFTER
+# TWO MISTAKES, and a skip scores 0 (marked skipped, not correct, in the report
+# + the grade). Tested under אַלּוּפָה (mulc), where all six kinds appear.
 # ─────────────────────────────────────────────────────────
 
 _LANG_SEL = {"story_quiz": ".sq-opt", "cloze": ".cz-opt", "true_false": ".tf-opt",
@@ -2465,19 +2466,22 @@ _LANG_SEL = {"story_quiz": ".sq-opt", "cloze": ".cz-opt", "true_false": ".tf-opt
 
 
 class TestLanguageSkip:
-    def test_skip_button_present_in_every_language_exercise(self, page):
+    def test_skip_button_exists_hidden_in_every_language_exercise(self, page):
         """All SIX reading kinds — including the drag ones (word_match / sent_order)
-        that have no ✓ — show the skip button in the host button row."""
+        that have no ✓ — wire the skip button under אַלּוּפָה, but it starts HIDDEN
+        (no mistakes yet)."""
         for ex, sel in _LANG_SEL.items():
             _enter_reading(page, ex, sel)
-            assert page.evaluate("!!document.querySelector('#btns .b-skip')"), \
-                f"{ex} must show the skip button"
+            assert page.evaluate("!!document.querySelector('#btns #skip-btn')"), \
+                f"{ex} must wire the skip button"
+            assert page.evaluate(
+                "getComputedStyle(document.querySelector('#skip-btn')).display") == "none", \
+                f"{ex}: skip must be HIDDEN before any mistake"
 
     def test_skip_button_absent_for_arithmetic_exercises(self, page):
         """A non-language self-mounting exercise (column subtraction) must NOT get
-        the skip button — skipping is a reading-only affordance."""
+        the skip button at all — skipping is a reading-only affordance."""
         _enter_reading(page, "cloze", ".cz-opt")           # boots mulc + modules
-        assert page.evaluate("!!document.querySelector('#btns .b-skip')")
         page.wait_for_function("typeof EXERCISES.types.column_sub==='object'", timeout=TIMEOUT)
         page.evaluate("problems=EXERCISES.types.column_sub.make('mulc');idx=0;loadProblem();")
         page.wait_for_timeout(150)
@@ -2485,9 +2489,9 @@ class TestLanguageSkip:
         assert page.evaluate("!document.querySelector('#btns .b-skip')"), \
             "arithmetic exercises must NOT show the skip button"
 
-    def test_skip_scores_zero_advances_and_marks_report(self, page):
-        """Clicking skip on a language card: 0 points, advances to the next
-        problem, and the report marks it skipped (NOT gotCorrect)."""
+    def test_skip_appears_only_after_two_mistakes(self, page):
+        """The gate: HIDDEN at start and after ONE mistake, VISIBLE after the 2nd;
+        then a click scores 0, advances, and marks the report skipped."""
         _enter_reading(page, "cloze", ".cz-opt")
         page.evaluate("""() => {
             const c = EXERCISES.types.cloze;                // two cards → skip lands on a real next
@@ -2495,25 +2499,45 @@ class TestLanguageSkip:
             score = 0; idx = 0; loadProblem();
         }""")
         page.wait_for_selector(".cz-opt", timeout=TIMEOUT)
-        page.click("#btns .b-skip")
+        disp = "getComputedStyle(document.querySelector('#skip-btn')).display"
+        wrongs = page.evaluate("[1,2,3].filter(i=>i!==num1)")
+        assert page.evaluate(disp) == "none", "hidden before any mistake"
+        # mistake #1 → still hidden
+        page.evaluate(f"document.querySelector('.cz-opt[data-i=\"{wrongs[0]}\"]').click()")
+        page.click(".cz-chk")
+        page.wait_for_function("tryFirst === 1", timeout=TIMEOUT)
+        assert page.evaluate(disp) == "none", "still hidden after ONE mistake"
+        page.wait_for_timeout(1200)                         # the red mark clears for a re-pick
+        # mistake #2 → appears
+        page.evaluate(f"document.querySelector('.cz-opt[data-i=\"{wrongs[1]}\"]').click()")
+        page.click(".cz-chk")
+        page.wait_for_function("tryFirst === 2", timeout=TIMEOUT)
+        assert page.evaluate(disp) != "none", "the skip button must APPEAR after the 2nd mistake"
+        # now it works: 0 points, advance, marked skipped (not correct)
+        page.click("#skip-btn")
         page.wait_for_function("idx === 1", timeout=TIMEOUT)
         assert page.evaluate("score") == 0, "a skip must score 0 points"
         r0 = page.evaluate("report[0]")
-        assert r0.get("skipped") is True, "the skipped question must be marked skipped"
-        assert not r0.get("gotCorrect"), "a skip must NOT count as a correct answer"
+        assert r0.get("skipped") is True and not r0.get("gotCorrect"), \
+            "the skipped question must be marked skipped and NOT correct"
 
-    def test_skipped_row_is_not_counted_correct_in_report(self, page):
-        """In the end-of-set report a skipped card (no wrong attempts) must render
-        as skipped, not as a ✓ — regression on the `ok` flag."""
-        _enter_reading(page, "rhyme", ".rh-opt")
-        page.evaluate("""() => {
-            const r = EXERCISES.types.rhyme;
-            problems = [r.make('mulc')[0], r.make('mulc')[0]];
-            score = 0; idx = 0; loadProblem();
+    def test_skip_handler_ignores_calls_before_two_mistakes(self, page):
+        """Defence in depth: even if invoked directly, skip is a no-op before the
+        2nd mistake — it never advances or zeroes a still-answerable card."""
+        _enter_reading(page, "cloze", ".cz-opt")
+        page.evaluate("idx=0;score=0;")
+        page.evaluate("skipLangQuestion()")                 # tryFirst is 0
+        assert page.evaluate("idx") == 0 and page.evaluate("done") is False, \
+            "skip must do nothing before two mistakes"
+
+    def test_report_row_skipped_never_reads_as_correct(self, page):
+        """Guard on the `ok` flag: an entry marked skipped is ok:false even with NO
+        wrong attempts, so it can never render as a ✓."""
+        _enter_reading(page, "cloze", ".cz-opt")
+        row = page.evaluate("""() => {
+            report = [{ptype:TCZ, num1:1, num2:0, num3:0, num4:0, correct:1, wrongs:[], skipped:true}];
+            problems = [{t:TCZ, opts:['אָב','בָּב','גָּב'], a:1}];
+            return _reportRows()[0];
         }""")
-        page.wait_for_selector(".rh-opt", timeout=TIMEOUT)
-        page.click("#btns .b-skip")
-        page.wait_for_function("idx === 1", timeout=TIMEOUT)
-        row = page.evaluate("_reportRows()[0]")
         assert row["skipped"] is True and row["ok"] is False, \
-            "a skipped-with-no-wrongs row must not read as correct"
+            "a skipped row must not read as correct"

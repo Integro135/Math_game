@@ -317,3 +317,10 @@ body.theme-maldives .end-grade-msg{color:#BEE8E2}
 @media(max-width:480px){
   body.theme-maldives .title{font-size:1.2rem;letter-spacing:.1em}
 }
+
+/* the skip pill (language cards, appears after 2 mistakes) — a COOL periwinkle
+   ghost, deliberately distinct from the warm try/next accents; the pop-in +
+   shine-sweep animations come from base.css */
+body.theme-maldives .b-skip{border-color:rgba(150,170,255,.55);color:#D9E2FF;background:rgba(150,170,255,.10);box-shadow:0 0 12px rgba(150,170,255,.28)}
+body.theme-maldives .b-skip:hover,body.theme-maldives .b-skip:active{
+  background:rgba(150,170,255,.14);box-shadow:0 0 20px rgba(150,170,255,.45)}
