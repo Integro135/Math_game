@@ -2111,6 +2111,42 @@ class TestWordMatch:
         assert page.evaluate(_GHOSTS) == 0, \
             "a drag ghost must not float over the success screen"
 
+    def test_word_match_drag_ghost_anchors_to_grab_point(self, page):
+        """On tablet the pill must be picked up from EXACTLY where she presses:
+        the ghost keeps the grab point under the pointer, it does NOT snap to
+        centre on the finger. Grab the WIDEST word near its right edge, drag by a
+        known delta — the ghost centre must equal (word-centre + delta), not the
+        finger position (user: the drag starts shifted from where she pressed)."""
+        _enter_reading(page, "word_match", ".wm-word")
+        rect = page.evaluate("""() => {
+            const ws = [...document.querySelectorAll('.wm-word')];
+            ws.forEach(w => w.scrollIntoView({block:'center'}));
+            const w = ws.sort((a,b) =>
+                b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+            const r = w.getBoundingClientRect();
+            return {right:r.right, cx:r.left+r.width/2, cy:r.top+r.height/2, width:r.width};
+        }""")
+        assert rect["width"] > 40, "need a reasonably wide pill for an off-centre grab"
+        grab_x, grab_y = rect["right"] - 8, rect["cy"]     # near the right edge, well off-centre
+        offset = grab_x - rect["cx"]                        # how far the grab is from centre
+        assert offset > 12, "precondition: the grab must be clearly off-centre"
+        dx, dy = 60, -45
+        page.mouse.move(grab_x, grab_y)
+        page.mouse.down()
+        page.mouse.move(grab_x + dx, grab_y + dy, steps=8)
+        center = page.evaluate("""() => {
+            const g = document.querySelector('.wm-ghost'); const r = g.getBoundingClientRect();
+            return {x:r.left+r.width/2, y:r.top+r.height/2};
+        }""")
+        page.mouse.up()
+        assert abs(center["x"] - (rect["cx"] + dx)) <= 4, \
+            f"ghost x must track word-centre+delta ({rect['cx']+dx:.0f}), got {center['x']:.0f}"
+        assert abs(center["y"] - (rect["cy"] + dy)) <= 4, \
+            f"ghost y must track word-centre+delta ({rect['cy']+dy:.0f}), got {center['y']:.0f}"
+        # …and specifically NOT snapped to centre under the finger (the old bug)
+        assert abs(center["x"] - (grab_x + dx)) > 12, \
+            "the ghost must not jump so its centre sits under the finger"
+
     def test_word_match_pointercancel_removes_the_ghost(self, page):
         """`pointercancel` (the browser/OS stealing the gesture — an edge or
         system swipe) means `pointerup` NEVER arrives. Without a handler the

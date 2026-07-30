@@ -190,7 +190,9 @@ window.EXERCISES.types.word_match=(()=>{
         document.body.appendChild(ghost);
         drag.wordEl.style.opacity='.35';
       }
-      ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';
+      // anchor to the grab point (ox/oy) so the pill tracks the finger from where
+      // it was actually grabbed — no jump-to-centre
+      ghost.style.left=(e.clientX-drag.ox)+'px';ghost.style.top=(e.clientY-drag.oy)+'px';
       const hot=overPic(e.clientX,e.clientY);
       pics.forEach(pc=>pc.classList.toggle('wm-hot',pc===hot));
       e.preventDefault();
@@ -209,7 +211,14 @@ window.EXERCISES.types.word_match=(()=>{
     words.forEach(w=>w.addEventListener('pointerdown',function(e){
       if(done||this.classList.contains('wm-used'))return;
       if(drag)return;                     // a 2nd finger must not orphan the live ghost
-      drag={id:e.pointerId,wordEl:this,sx:e.clientX,sy:e.clientY,moved:false};
+      // GRAB OFFSET — keep the exact point she pressed under her finger. The ghost
+      // is transform:translate(-50%,-50%) (centred on its left/top), so we anchor
+      // left/top to (finger − offset-from-word-centre). Without this the pill
+      // snaps so its CENTRE sits under the finger, so grabbing it near an edge
+      // makes the drag start visibly shifted from where she pressed (user, tablet).
+      const r=this.getBoundingClientRect();
+      drag={id:e.pointerId,wordEl:this,sx:e.clientX,sy:e.clientY,moved:false,
+            ox:e.clientX-(r.left+r.width/2), oy:e.clientY-(r.top+r.height/2)};
     }));
     window.addEventListener('pointermove',onMove);
     window.addEventListener('pointerup',onUp);
