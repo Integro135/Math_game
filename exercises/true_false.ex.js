@@ -62,16 +62,16 @@ window.EXERCISES.types.true_false=(()=>{
   .tf-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:15px;width:100%;max-width:560px;margin:0 auto}
   .tf-story{direction:rtl;text-align:center;line-height:1.8;width:100%;
     font-family:'Fredoka One','Heebo',sans-serif;font-weight:400;
-    font-size:1.4rem;color:var(--skin-text,#fff);
+    font-size:1.6rem;color:var(--skin-text,#fff);
     text-shadow:0 0 12px rgba(160,190,255,.25);
     background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);
     border-radius:16px;padding:14px 18px;animation:tfFade .35s ease}
   @keyframes tfFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
   .tf-stmt{direction:rtl;text-align:center;font-family:'Fredoka One','Heebo',sans-serif;
-    font-size:1.35rem;color:var(--skin-accent,#ffd27d);line-height:1.6;padding:0 6px;
+    font-size:1.55rem;color:var(--skin-accent,#ffd27d);line-height:1.6;padding:0 6px;
     text-shadow:0 0 10px rgba(255,210,125,.35)}
   .tf-opts{display:flex;gap:14px;direction:rtl;flex-wrap:wrap;justify-content:center}
-  .tf-opt{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.35rem;color:var(--skin-text,#fff);
+  .tf-opt{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.5rem;color:var(--skin-text,#fff);
     cursor:pointer;user-select:none;min-width:150px;text-align:center;
     background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.25);border-radius:16px;
     padding:13px 22px;display:flex;align-items:center;justify-content:center;gap:9px;
@@ -89,7 +89,7 @@ window.EXERCISES.types.true_false=(()=>{
     border:2px solid rgba(255,255,255,.5);box-shadow:0 3px 0 rgba(0,0,0,.28)}
   .tf-chk:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
   .tf-chk:disabled{opacity:.4;cursor:default;box-shadow:none}
-  @media(max-width:480px){.tf-story{font-size:1.15rem}.tf-stmt{font-size:1.15rem}.tf-opt{font-size:1.15rem;min-width:120px}}`;
+  @media(max-width:480px){.tf-story{font-size:1.35rem}.tf-stmt{font-size:1.35rem}.tf-opt{font-size:1.3rem;min-width:120px}}`;
   function injectStyle(){
     if(document.getElementById('tf-style'))return;
     const st=document.createElement('style');st.id='tf-style';st.textContent=CSS;

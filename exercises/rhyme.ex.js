@@ -118,29 +118,29 @@ window.EXERCISES.types.rhyme=(()=>{
 
   const CSS=`
   .rh-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:560px;margin:0 auto}
-  .rh-title{direction:rtl;text-align:center;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.25rem;
+  .rh-title{direction:rtl;text-align:center;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.4rem;
     color:var(--skin-text,#fff);text-shadow:0 0 10px rgba(160,190,255,.3)}
   .rh-cue{direction:rtl;display:flex;align-items:center;justify-content:center;gap:14px;
     background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.2);border-radius:18px;
     padding:10px 26px;animation:rhFade .35s ease}
   @keyframes rhFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
   .rh-cue-e{font-size:3rem;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.3))}
-  .rh-cue-w{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.9rem;
+  .rh-cue-w{font-family:'Fredoka One','Heebo',sans-serif;font-size:2.1rem;
     color:var(--skin-accent,#ffd27d);text-shadow:0 0 12px rgba(255,210,125,.35)}
   .rh-sound{display:none;direction:rtl;text-align:center;font-family:'Fredoka One','Heebo',sans-serif;
-    font-size:1.1rem;line-height:1.5;color:var(--skin-accent,#ffd27d);
+    font-size:1.3rem;line-height:1.5;color:var(--skin-accent,#ffd27d);
     background:rgba(255,210,125,.12);border:1.5px dashed rgba(255,210,125,.6);
     border-radius:14px;padding:7px 15px}
   .rh-sound.rh-on{display:block;animation:rhFade .3s ease}
-  .rh-sound b{font-size:1.35rem}
+  .rh-sound b{font-size:1.55rem}
   .rh-opts{display:flex;gap:14px;justify-content:center;direction:rtl;flex-wrap:wrap}
-  .rh-opt{width:122px;border-radius:18px;cursor:pointer;user-select:none;
+  .rh-opt{width:132px;border-radius:18px;cursor:pointer;user-select:none;
     background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.25);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
     padding:11px 6px;transition:transform .12s,border-color .15s,background .15s,box-shadow .15s}
   .rh-opt:hover{background:rgba(255,255,255,.13)}
   .rh-opt .rh-e{font-size:2.6rem;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.3))}
-  .rh-opt .rh-w{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.25rem;color:var(--skin-text,#fff)}
+  .rh-opt .rh-w{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.45rem;color:var(--skin-text,#fff)}
   .rh-opt.rh-sel{border-color:var(--skin-primary,#c77dff);background:rgba(199,125,255,.18);
     box-shadow:0 0 14px rgba(199,125,255,.35);transform:translateY(-2px)}
   .rh-opt.rh-ok{border-color:#4caf50;background:rgba(76,175,80,.2)}
@@ -152,8 +152,8 @@ window.EXERCISES.types.rhyme=(()=>{
     border:2px solid rgba(255,255,255,.5);box-shadow:0 3px 0 rgba(0,0,0,.28)}
   .rh-chk:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
   .rh-chk:disabled{opacity:.4;cursor:default;box-shadow:none}
-  @media(max-width:480px){.rh-cue-e{font-size:2.4rem}.rh-cue-w{font-size:1.5rem}
-    .rh-opt{width:98px;padding:9px 5px}.rh-opt .rh-e{font-size:2.1rem}.rh-opt .rh-w{font-size:1.05rem}}`;
+  @media(max-width:480px){.rh-cue-e{font-size:2.4rem}.rh-cue-w{font-size:1.7rem}
+    .rh-opt{width:106px;padding:9px 5px}.rh-opt .rh-e{font-size:2.1rem}.rh-opt .rh-w{font-size:1.2rem}}`;
   function injectStyle(){
     if(document.getElementById('rh-style'))return;
     const st=document.createElement('style');st.id='rh-style';st.textContent=CSS;

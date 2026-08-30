@@ -99,6 +99,29 @@ class TestNumberLineVisibility:
             f"18−x=11 number line must run 0..20, got {nums[0]}..{nums[-1]}"
         assert 18 in nums, "The minuend (18) must be a labelled tick on the line"
 
+    def test_bridge20_line_extends_past_the_answer(self, page):
+        """גָּשֵׁר 20: a bridging addition reaching 25 (19+6) must NOT sit on the
+        number line's right EDGE — that gives the answer away. The line has to run
+        PAST it, like the framed windows in the other exercises. Regression: the
+        line was a fixed 0..24, and additions' sums weren't counted at all, so a
+        24/25 answer landed on (or past) the edge."""
+        page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TA,a:19,b:6}]; idx=0; loadProblem()")
+        page.wait_for_timeout(150)
+        page.evaluate("tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();")
+        page.wait_for_timeout(100)
+        nums = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert nums, "the number line must render ticks"
+        assert 25 in nums, f"the answer 25 must be ON the line, got {nums[0]}..{nums[-1]}"
+        assert nums[-1] > 25, f"the line must extend PAST the answer, not end at it (ends {nums[-1]})"
+        # a subtraction whose minuend reaches 25 (25−9) likewise must not end at 25
+        page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TS,a:25,b:9}]; idx=0; loadProblem()")
+        page.wait_for_timeout(120)
+        page.evaluate("tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();")
+        page.wait_for_timeout(100)
+        nums2 = page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        assert nums2 and 25 in nums2 and nums2[-1] > 25, \
+            f"25−9: minuend 25 must be on the line and not the edge (ends {nums2[-1] if nums2 else None})"
+
     def test_cookie_jar_shows_only_the_box_no_number_line(self, page):
         """The cookie-jar aid must show ONLY the box — the old number line
         above it (.pgm-nl) is hidden on every background/skin."""

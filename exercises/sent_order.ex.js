@@ -71,7 +71,7 @@ window.EXERCISES.types.sent_order=(()=>{
 
   const CSS=`
   .so-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:560px;margin:0 auto}
-  .so-title{direction:rtl;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.25rem;
+  .so-title{direction:rtl;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.4rem;
     color:var(--skin-text,#fff);text-shadow:0 0 10px rgba(160,190,255,.3)}
   /* the answer STRIP — the sentence being built (RTL: first word lands rightmost) */
   .so-strip{direction:rtl;display:flex;flex-wrap:wrap;gap:9px;justify-content:center;align-items:center;
@@ -83,11 +83,11 @@ window.EXERCISES.types.sent_order=(()=>{
   /* placeholder prompt in the empty strip — uses the theme INK (var --skin-text)
      at reduced opacity, NOT hardcoded white, so it stays legible on light themes
      (girls' plum ink) as well as dark ones */
-  .so-strip .so-hintword{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.1rem;
+  .so-strip .so-hintword{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.25rem;
     color:var(--skin-text,#fff);opacity:.7;font-weight:700}
   /* the word BANK */
   .so-bank{direction:rtl;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:52px}
-  .so-word{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.3rem;color:var(--skin-text,#fff);
+  .so-word{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.5rem;color:var(--skin-text,#fff);
     cursor:pointer;user-select:none;
     background:rgba(255,255,255,.09);border:2px solid rgba(255,255,255,.3);border-radius:999px;
     padding:8px 18px;transition:transform .12s,border-color .15s,background .15s}
@@ -99,7 +99,7 @@ window.EXERCISES.types.sent_order=(()=>{
     border:2px solid rgba(255,255,255,.5);box-shadow:0 3px 0 rgba(0,0,0,.28)}
   .so-chk:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
   .so-chk:disabled{opacity:.4;cursor:default;box-shadow:none}
-  @media(max-width:480px){.so-word{font-size:1.1rem;padding:7px 14px}}`;
+  @media(max-width:480px){.so-word{font-size:1.3rem;padding:7px 14px}}`;
   function injectStyle(){
     if(document.getElementById('so-style'))return;
     const st=document.createElement('style');st.id='so-style';st.textContent=CSS;

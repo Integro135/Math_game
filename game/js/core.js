@@ -390,10 +390,15 @@ function loadProblem(){
   const useKang=aidMode==='kang';
   const ct=document.getElementById('chain-tools');if(ct)ct.style.display=useNL?'block':'none';
   const nlp=document.getElementById('nl-panel');
-  // kangaroo line spans 0..20 by default; for missing-subtrahend (e.g. 18−x=11)
-  // and plain subtraction it must never be shorter than the minuend on screen.
-  // גָּשֵׁר 20 crosses the SECOND ten (sums/minuends up to 23) → widen to 0..24 there.
-  const _nlMax=Math.max(20,mode==='b20'?24:0,(ptype===TM||ptype===TS||ptype===TVS)?num1:0);
+  // kangaroo line spans 0..20 by default. The biggest value that must sit ON the
+  // line is the MINUEND for subtraction and the SUM for addition — so the answer /
+  // last hop is never off the end. גָּשֵׁר 20 bridges reach 25 (e.g. 19+6, 25−9): a
+  // fixed 0..24 line put such an answer AT or PAST the right edge, giving it away.
+  const _isAddT=ptype===TA||ptype===TVA;
+  const _nlHi=Math.max(20,(ptype===TM||ptype===TS||ptype===TVS)?num1:0,_isAddT?num1+num2:0);
+  // in the bridge games (גֶּשֶׁר 10 / 20) keep the answer OFF the very edge — extend
+  // a couple past the top value, like the framed windows the other exercises use.
+  const _nlMax=(mode==='br'||mode==='b20')?_nlHi+2:_nlHi;
   if(nlp){nlp.style.display=useKang?'':'none';if(useKang){NL.configure(_nlMax,1);NL.init(0);}}
   if(useNL){
     pgmTensMode=false;chainGnMode=false;

@@ -314,3 +314,39 @@ class TestDoubleUnknown:
             return {done:done, score:score, got:(report[0]||{}).gotCorrect||false};})()""")
         assert real["done"] is True and real["got"] is True and real["score"] > 0, \
             f"a real pair (13 − 4 = 9) must be accepted for points: {real}"
+
+    def _space_dir(self, page, problem_js):
+        """Reveal the kangaroo line for the given (forced) problem and return the
+        direction the spacebar hands to NL.step (+1 forward / −1 back), plus
+        diagnostics."""
+        page.evaluate(f"aidMode='kang'; mode='mx'; problems=[{problem_js}]; idx=0; loadProblem()")
+        page.wait_for_selector("#ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(140)
+        page.evaluate("tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();")
+        page.wait_for_timeout(90)
+        # self-restoring spy: capture the direction arg of the next NL.step call
+        page.evaluate("window.__dir=null; if(!NL.__wrapped){const _o=NL.step;"
+                      "NL.step=function(d){window.__dir=d; return _o.call(NL,d);};NL.__wrapped=true;}")
+        page.evaluate("document.activeElement&&document.activeElement.blur&&document.activeElement.blur()")
+        page.keyboard.press("Space")
+        page.wait_for_timeout(90)
+        return page.evaluate("({dir:window.__dir, aidMode:aidMode, done:done, tryFirst:tryFirst,"
+                             "nl:getComputedStyle(document.getElementById('nl-panel')).display,"
+                             "ae:(document.activeElement&&document.activeElement.tagName)||'',"
+                             "aet:(document.activeElement&&document.activeElement.type)||''})")
+
+    def test_tri_unknown_space_hops_forward_not_back(self, page):
+        """x+x+x=20 (TRA) is an ADDITION built UP from 0, so the spacebar must hop the
+        kangaroo number line FORWARD (+1) — not backward like a subtraction. Regression:
+        TRA was missing from the space handler's add-list, so a press stepped −1
+        (the rider jumped the opposite way)."""
+        d = self._space_dir(page, "{t:TRA,r:20}")
+        assert d["dir"] == 1, f"space must hop the three-addend (TRA) line FORWARD (+1): {d}"
+
+    def test_double_unknown_add_hops_forward_sub_hops_back(self, page):
+        """x+x=R (TDA) is an addition → space hops forward (+1); x−x=R (TDS) is a
+        subtraction → space hops back (−1). Same add-list regression."""
+        da = self._space_dir(page, "{t:TDA,r:12}")
+        assert da["dir"] == 1, f"TDA (x+x) space must step +1: {da}"
+        ds = self._space_dir(page, "{t:TDS,r:12}")
+        assert ds["dir"] == -1, f"TDS (x−x) space must step −1: {ds}"
