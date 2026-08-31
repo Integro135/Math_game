@@ -18,30 +18,41 @@ try: sys.stdout.reconfigure(encoding="utf-8")
 except Exception: pass
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "girls"                 # the 🦄 theme → unicorns background
-DSF      = 2                       # device scale factor (higher = sharper zoom)
+THEME    = "girls"                 # background theme applied before the EVAL
+DSF      = 1                       # device scale factor
 HIDE_UI  = False
-STANDALONE = r""                   # in-game — the NEW story_quiz (TSQ) reading card
+STANDALONE = r""                   # in-game: compare-hover bug diagnostic
 VIEW     = {"width": 1280, "height": 800}   # desktop viewport
-# READING KINDS — mount ONE card of the reading type named in RD_TYPE/RD_SEL and
-# screenshot it (run once per type, editing only these two lines).
-RD_TYPE  = "sent_order"
-RD_SEL   = ".so-word"
 EVAL = r"""(async function(){
   var W=function(fn){return new Promise(function(r){var t=setInterval(function(){if(fn()){clearInterval(t);r();}},50);});};
   var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-  setMode('mulc');
-  await W(function(){return window.EXERCISES&&EXERCISES.types.__RD__&&typeof problems!=='undefined'&&problems.length;});
-  score=0;problems=EXERCISES.types.__RD__.make('mulc');idx=0;loadProblem();
-  await W(function(){return document.querySelector('__SEL__');});
-  await sleep(350);
-  return JSON.stringify({t:ptype});
-})();""".replace("__RD__", RD_TYPE).replace("__SEL__", RD_SEL)
+  await W(function(){return typeof openParentGate==='function' && document.getElementById('parent-ov');});
+  var disp=function(id){return getComputedStyle(document.getElementById(id)).display;};
+  openParentGate();
+  await sleep(120);
+  var qText=document.getElementById('parent-q').textContent;
+  var ans=_parentAns;
+  var m=qText.match(/(\d+)\s*÷\s*(\d+)/);
+  var dividend=m?+m[1]:null, divisor=m?+m[2]:null;
+  var mathOK=!!m && (dividend/divisor===ans) && (dividend%divisor===0);
+  // WRONG answer → gate stays, settings stay closed
+  document.getElementById('parent-ans').value=String(ans+1); checkParentGate();
+  var wrongSettings=disp('settings-ov'), wrongGate=disp('parent-ov');
+  // CORRECT answer → gate closes, settings open
+  document.getElementById('parent-ans').value=String(ans); checkParentGate();
+  var rightSettings=disp('settings-ov'), rightGate=disp('parent-ov');
+  // re-open so the screenshot shows the division gate + label
+  openParentGate(); await sleep(150);
+  var label=document.querySelector('#parent-ov .set-sec-lbl').textContent;
+  return JSON.stringify({qText:qText, ans:ans, dividend:dividend, divisor:divisor, mathOK:mathOK,
+    wrongSettings:wrongSettings, wrongGate:wrongGate, rightSettings:rightSettings, rightGate:rightGate,
+    labelHasDivision: label.indexOf('חִלּוּק')>=0});
+})();"""
 POST_EVAL = r""
 CLICKS   = []
 WAIT_MS   = 400
 SHOTS    = [
-    {"path": r"c:\tmp\reading_card.png", "clip": {"x": 280, "y": 30, "width": 720, "height": 700}},
+    {"path": r"c:\tmp\parent_gate_division.png", "clip": {"x": 0, "y": 0, "width": 1280, "height": 800}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

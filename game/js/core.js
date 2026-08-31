@@ -226,15 +226,17 @@ function closeSettings(){
   if(o)o.style.display='none';
 }
 
-/* ── Parent gate — a single-digit × single-digit challenge that guards the
-   settings modal; settings open only after a correct answer ── */
+/* ── Parent gate — a DIVISION challenge that guards the settings modal (harder
+   for a child to sneak past than the old ×, still trivial for a parent);
+   settings open only after a correct answer ── */
 let _parentAns=0;
 function openParentGate(e){
   if(e)e.stopPropagation();
-  const a=2+Math.floor(Math.random()*8), b=2+Math.floor(Math.random()*8);  // 2..9
-  _parentAns=a*b;
+  // a clean whole-number quotient: dividend = divisor × quotient, both 2..9
+  const dvsr=2+Math.floor(Math.random()*8), quot=2+Math.floor(Math.random()*8);
+  _parentAns=quot;
   const q=document.getElementById('parent-q');
-  if(q)q.textContent=a+' × '+b+' = ?';
+  if(q)q.textContent=(dvsr*quot)+' ÷ '+dvsr+' = ?';
   const inp=document.getElementById('parent-ans'); if(inp)inp.value='';
   const err=document.getElementById('parent-err'); if(err)err.textContent='';
   const o=document.getElementById('parent-ov');

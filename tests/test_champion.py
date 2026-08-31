@@ -592,6 +592,34 @@ class TestPerimeter:
         sc = edges("{t:TPP,shape:'tri',sides:[2,4,3],a:9}")
         assert max(sc) - min(sc) > 10, f"scalene edges must differ by scale, got {sc}"
 
+    def test_perimeter_space_hops_number_line_with_answer_box_focused(self, page):
+        """After a wrong perimeter the number line appears; pressing SPACE while the
+        answer box is STILL FOCUSED must hop the rider — the child must NOT have to
+        click the line first. Regression guard: the perimeter answer box is a TEXT
+        input, so space has to be routed to the NL in the early branch (before the
+        text-field guard), exactly like the column / mult-unknown cards."""
+        _enter_perim(page, "{t:TPP,shape:'square',sides:[3,3,3,3],a:12}")
+        _dispatch_enter(page, ".pm-inp", 10)          # wrong (correct is 12) → reveals the NL
+        page.wait_for_function(
+            "getComputedStyle(document.getElementById('nl-panel')).display !== 'none'",
+            timeout=TIMEOUT)
+        # let the sad modal clear (space is intentionally inert while it's up) and
+        # the retry-reset refocus the answer box — the exact state the child is in
+        page.wait_for_function(
+            "getComputedStyle(document.getElementById('sad-ov')).display==='none'"
+            " && document.querySelector('.pm-inp').value===''", timeout=TIMEOUT)
+        page.eval_on_selector(".pm-inp", "el=>el.focus()")
+        page.wait_for_function(
+            "document.activeElement === document.querySelector('.pm-inp')", timeout=TIMEOUT)
+        a0 = page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length")
+        page.keyboard.press("Space")
+        page.wait_for_timeout(150)
+        a1 = page.evaluate("document.querySelectorAll('#nl-arcs-svg path').length")
+        assert a1 == a0 + 1, \
+            "space must hop the rider even with the answer box focused (no NL click first)"
+        assert page.evaluate("document.querySelector('.pm-inp').value.indexOf(' ')<0"), \
+            "space must NOT type into the answer box (preventDefault)"
+
 
 # ─────────────────────────────────────────────────────────
 # DRAG-the-comparison-sign (compare / TCP) — two numbers with an empty slot; the
@@ -770,6 +798,39 @@ class TestCompare:
         page.eval_on_selector('.cp-tile[data-op="eq"]', "el=>el.dispatchEvent(new MouseEvent('mouseleave'))")
         assert page.evaluate(
             "document.querySelector('.cp-sign-tip').classList.contains('cp-tip-show')") is False
+
+    def test_pressing_a_sign_shows_its_meaning_on_touch(self, page):
+        """On a TOUCH device (the game's primary platform) mouseenter/mouseleave
+        never fire, so the < > = meaning hint must ALSO appear on pointerdown:
+        pressing a sign reveals the two-circle hint, a plain tap keeps it up so
+        the child can read it, and starting a REAL drag clears it (the ghost
+        takes over). Regression guard for the tablet 'no hover' bug."""
+        _enter_compare(page, 7, 3)
+        res = page.evaluate("""() => {
+            const tiles=[...document.querySelectorAll('.cp-tile')];
+            const tip=document.querySelector('.cp-sign-tip');
+            const shown=()=>tip.classList.contains('cp-tip-show');
+            const ctr=el=>{const r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];};
+            // A) press (touch) reveals the meaning — the fix
+            const [x0,y0]=ctr(tiles[0]);
+            tiles[0].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:x0,clientY:y0,pointerId:1}));
+            const pressShows=shown();
+            const circles=document.querySelectorAll('.cp-sign-tip .cp-c').length;
+            // a plain tap (release, no move) keeps it up to read
+            window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,clientX:x0,clientY:y0,pointerId:1}));
+            const tapKeeps=shown();
+            // B) a real drag clears the hint
+            const [x1,y1]=ctr(tiles[1]);
+            tiles[1].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:x1,clientY:y1,pointerId:2}));
+            window.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,clientX:x1+40,clientY:y1+40,pointerId:2}));
+            const dragHides=!shown();
+            window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,clientX:x1+40,clientY:y1+40,pointerId:2}));
+            return {pressShows,circles,tapKeeps,dragHides};
+        }""")
+        assert res["pressShows"], "pressing a sign (touch) must reveal its meaning hint"
+        assert res["circles"] == 2, f"the hint draws two meaning circles, got {res['circles']}"
+        assert res["tapKeeps"], "a plain tap must keep the hint up so the child can read it"
+        assert res["dragHides"], "starting a real drag must clear the hint (the ghost takes over)"
 
 
 # ─────────────────────────────────────────────────────────

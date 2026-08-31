@@ -196,6 +196,7 @@ window.EXERCISES.types.compare=(()=>{
       if(!active.moved&&Math.hypot(dx,dy)<6)return;
       if(!active.moved){
         active.moved=true;
+        hideTip();                       // a real drag began → clear the meaning hint (the ghost takes over)
         const g=document.createElement('div');g.className='cp-ghost';g.textContent=G[active.op];
         document.body.appendChild(g);active.ghost=g;active.tile.classList.add('cp-dragging');
       }
@@ -229,7 +230,11 @@ window.EXERCISES.types.compare=(()=>{
       window.addEventListener('pointercancel',onCancel);
     }
 
-    // ── HOVER HELP — pointing at a sign shows its meaning as circles ──
+    // ── HOVER / TOUCH HELP — pointing at (desktop) OR pressing (touch) a sign
+    // shows its meaning as circles. mouseenter/leave never fire on a tablet — the
+    // game's primary device — so on touch the child would never see the < > =
+    // explanation; pointerdown reveals it there (and on desktop press), and the
+    // hint clears the moment a real drag begins so it never fights the ghost.
     // > → big○ small○ ; < → small○ big○ ; = → equal○ equal○
     const signTip=document.createElement('div');signTip.className='cp-sign-tip';
     root.appendChild(signTip);
@@ -248,13 +253,17 @@ window.EXERCISES.types.compare=(()=>{
     function hideTip(){signTip.classList.remove('cp-tip-show');}
 
     root.querySelectorAll('.cp-tile').forEach(tile=>{
-      tile.addEventListener('pointerdown',e=>{hideTip();onDown(tile,e);});
+      // pointerdown reveals the meaning (touch tap OR desktop press); it stays up
+      // for a plain tap so the child can read it, and hideTip on the first drag
+      // move / on drop clears it. mouseenter keeps the desktop hover preview.
+      tile.addEventListener('pointerdown',e=>{if(!tile.disabled)showTip(tile);onDown(tile,e);});
       tile.addEventListener('mouseenter',()=>{if(!active&&!tile.disabled)showTip(tile);});
       tile.addEventListener('mouseleave',hideTip);
     });
 
     function place(op){
       if(done||placed)return;
+      hideTip();                       // a sign was dropped → clear any lingering meaning hint
       slot.innerHTML='';slot.textContent=G[op];slot.classList.add('cp-filled');
       if(op===want){
         done=true;placed=true;

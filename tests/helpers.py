@@ -29,9 +29,9 @@ def get_state(page) -> dict:
 
 
 def open_settings_via_gate(page):
-    """Click the gear and clear the parent gate (an a×b challenge) so the settings
-    modal opens. The gate stores the expected product in the global `_parentAns`,
-    so the test answers it deterministically (no need to read the rendered sum)."""
+    """Click the gear and clear the parent gate (a division challenge) so the
+    settings modal opens. The gate stores the expected answer in the global
+    `_parentAns`, so the test answers it deterministically (no need to read it)."""
     page.click("#settings-btn")
     page.wait_for_function(
         "getComputedStyle(document.getElementById('parent-ov')).display === 'flex'",

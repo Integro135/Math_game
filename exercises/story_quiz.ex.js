@@ -239,7 +239,7 @@ window.EXERCISES.types.story_quiz=(()=>{
   .sq-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:560px;margin:0 auto}
   .sq-story{direction:rtl;text-align:center;line-height:1.8;width:100%;
     font-family:'Fredoka One','Heebo',sans-serif;font-weight:400;
-    font-size:1.6rem;color:var(--skin-text,#fff);
+    font-size:1.95rem;color:var(--skin-text,#fff);
     text-shadow:0 0 12px rgba(160,190,255,.25);
     background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);
     border-radius:16px;padding:14px 18px;animation:sqFade .35s ease}
@@ -248,11 +248,11 @@ window.EXERCISES.types.story_quiz=(()=>{
      The topic emoji survives only in the end-of-set report row. */
   @keyframes sqFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
   .sq-q{direction:rtl;text-align:center;font-family:'Fredoka One','Heebo',sans-serif;
-    font-size:1.55rem;color:var(--skin-accent,#ffd27d);line-height:1.5;padding:0 6px;
+    font-size:1.9rem;color:var(--skin-accent,#ffd27d);line-height:1.5;padding:0 6px;
     text-shadow:0 0 10px rgba(255,210,125,.35)}
   /* the answers — vowelled pills; tap to SELECT (highlight), ✓ submits */
   .sq-opts{display:flex;flex-direction:column;align-items:stretch;gap:9px;width:100%;max-width:430px;direction:rtl}
-  .sq-opt{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.5rem;color:var(--skin-text,#fff);
+  .sq-opt{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.85rem;color:var(--skin-text,#fff);
     direction:rtl;text-align:right;line-height:1.5;cursor:pointer;user-select:none;
     background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.25);border-radius:14px;
     padding:9px 14px;display:flex;align-items:center;gap:10px;
@@ -276,9 +276,9 @@ window.EXERCISES.types.story_quiz=(()=>{
   .sq-chk:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
   .sq-chk:disabled{opacity:.4;cursor:default;box-shadow:none}
   @media(max-width:480px){
-    .sq-story{font-size:1.35rem;padding:12px 12px}
-    .sq-q{font-size:1.35rem}
-    .sq-opt{font-size:1.3rem;padding:8px 11px}
+    .sq-story{font-size:1.6rem;padding:12px 12px}
+    .sq-q{font-size:1.6rem}
+    .sq-opt{font-size:1.55rem;padding:8px 11px}
   }`;
   function injectStyle(){
     if(document.getElementById('sq-style'))return;

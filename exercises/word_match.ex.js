@@ -42,7 +42,7 @@ window.EXERCISES.types.word_match=(()=>{
 
   const CSS=`
   .wm-root{position:relative;display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:560px;margin:0 auto}
-  .wm-title{direction:rtl;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.4rem;
+  .wm-title{direction:rtl;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.7rem;
     color:var(--skin-text,#fff);text-shadow:0 0 10px rgba(160,190,255,.3)}
   .wm-pics{display:flex;gap:16px;justify-content:center;direction:rtl;flex-wrap:wrap}
   .wm-pic{width:118px;min-height:118px;border-radius:18px;cursor:pointer;user-select:none;
@@ -56,20 +56,20 @@ window.EXERCISES.types.word_match=(()=>{
   .wm-pic.wm-shake{animation:wmShake .4s ease}
   @keyframes wmShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}60%{transform:translateX(5px)}}
   .wm-words{display:flex;gap:12px;justify-content:center;direction:rtl;flex-wrap:wrap;min-height:48px}
-  .wm-word{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.5rem;color:var(--skin-text,#fff);
+  .wm-word{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.85rem;color:var(--skin-text,#fff);
     cursor:grab;user-select:none;touch-action:none;
     background:rgba(255,255,255,.09);border:2px solid rgba(255,255,255,.3);border-radius:999px;
     padding:8px 20px;transition:border-color .15s,background .15s,box-shadow .15s,opacity .2s}
   .wm-word.wm-sel{border-color:var(--skin-primary,#c77dff);background:rgba(199,125,255,.2);
     box-shadow:0 0 14px rgba(199,125,255,.4)}
   .wm-word.wm-used{display:none}
-  .wm-placed{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.35rem;color:#a5ffc2;
+  .wm-placed{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.6rem;color:#a5ffc2;
     background:rgba(76,175,80,.18);border:1.5px solid rgba(76,175,80,.6);border-radius:999px;padding:3px 13px}
   .wm-ghost{position:fixed;z-index:9999;pointer-events:none;opacity:.92;transform:translate(-50%,-50%);
-    font-family:'Fredoka One','Heebo',sans-serif;font-size:1.5rem;color:#fff;
+    font-family:'Fredoka One','Heebo',sans-serif;font-size:1.85rem;color:#fff;
     background:rgba(157,78,221,.9);border:2px solid #fff;border-radius:999px;padding:8px 20px;
     box-shadow:0 10px 26px rgba(0,0,0,.4)}
-  @media(max-width:480px){.wm-pic{width:96px;min-height:104px}.wm-pic .wm-emoji{font-size:2.4rem}.wm-word{font-size:1.3rem;padding:7px 15px}}`;
+  @media(max-width:480px){.wm-pic{width:96px;min-height:104px}.wm-pic .wm-emoji{font-size:2.4rem}.wm-word{font-size:1.55rem;padding:7px 15px}}`;
   function injectStyle(){
     if(document.getElementById('wm-style'))return;
     const st=document.createElement('style');st.id='wm-style';st.textContent=CSS;
