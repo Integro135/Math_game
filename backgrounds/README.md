@@ -12,6 +12,21 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 | **Dubai v2** (`dubai2.bg.js` + `dubai2.html`) | `dubai2.bg.js`, `dubai2.html` | The Dubai dusk scene recreated from scratch — same design space, constants and cadences as the legacy scene, city and hallmarks redrawn (Burj Khalifa, Burj Al Arab, Cayan, Emirates Towers, Museum of the Future, Dubai Frame, Ain Dubai), mirrored in rippled water. Theme `dubai` → `dubai2`. **Full section below.** |
 | **Standalone study** (`blackhole.html`) | `blackhole.html` | The physics study the space hole came from: a GR ray-traced black hole in one WebGL2 file, not wired into the game — drag to spin the hole, wheel to zoom, quality/bloom/jets/dust toggles. **Full section below.** |
 
+**Loading veil for slow scenes** (`game/js/bg-loader.js`): most backgrounds
+appear instantly, but space2 compiles its WebGL2 ray-tracer and bakes the sky
+before the first frame — up to ~20 s on a weak machine — which used to leave the
+stage black with no sign of life. A scene marked `slowLoad: true` on its module
+(and listed in `SLOW_BGS`, which also covers the very first load, before the
+module object exists) gets a veil inside the stage: a dark space gradient, a
+spinner, "טוֹעֲנִים אֶת הֶחָלָל…", and after 4 s a second line. The loader paints
+it BEFORE calling `init()` (init is synchronous and would otherwise block the
+paint), re-hangs it after the scene wipes the stage, and keeps it until the
+scene calls `window.BG_LOADING.done()` from its first rendered frame — with a
+45 s safety timeout, and a clear on theme-switch/unload. The veil is
+`pointer-events:none` and lives in `#stars-layer`, so the game card stays
+visible and playable while the backdrop loads. Scenes that don't opt in show no
+veil at all.
+
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns`,
 `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
 (🏙️, 🦁 and 🦕 are their own themes in the menu). Canvas-scene themes spawn no

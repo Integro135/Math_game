@@ -97,8 +97,75 @@ function loadExercisesFor(mode, onReady){
   need.forEach(f => loadExercise(f, () => { if(--left === 0 && onReady) onReady(); }));
 }
 
+/* ── loading veil for SLOW backgrounds ──────────────────────────────────────
+   Most scenes appear instantly, but a heavy one (space2 compiles its WebGL2
+   ray-tracer and bakes the sky — up to ~20 s on a weak machine) would otherwise
+   leave the stage black with no sign that anything is happening. Such a scene
+   is marked `slowLoad: true` on its module (and listed in SLOW_BGS, which also
+   covers the very first load, before the module object exists). For those:
+     • the veil is shown and PAINTED before init() runs (init is synchronous and
+       would otherwise block the paint), then
+     • it stays until the scene calls window.BG_LOADING.done() from its first
+       rendered frame — with a safety timeout so it can never get stuck.
+   The veil lives inside the stage (#stars-layer) and is pointer-events:none, so
+   the game card stays visible and fully usable while the backdrop loads. */
+const SLOW_BGS = ['space2'];
+const BG_LOAD_MAX = 45000;                 // safety: never leave the veil up forever
+let _veil = null, _veilMaxTO = null, _veilHintTO = null;
+
+function _veilCSS(){
+  if(document.getElementById('bg-veil-css')) return;
+  const st = document.createElement('style');
+  st.id = 'bg-veil-css';
+  st.textContent =
+    '.bg-veil{position:fixed;inset:0;z-index:3;pointer-events:none;display:flex;' +
+      'flex-direction:column;align-items:center;justify-content:center;gap:18px;' +
+      'background:radial-gradient(ellipse at 50% 45%,#141033 0%,#0a0820 55%,#05040f 100%);' +
+      'transition:opacity .45s ease}' +
+    '.bg-veil.bg-veil-out{opacity:0}' +
+    '.bg-veil-ring{width:74px;height:74px;border-radius:50%;border:5px solid rgba(150,170,255,.22);' +
+      'border-top-color:#9ec2ff;border-right-color:#c9a6ff;animation:bgVeilSpin 1.1s linear infinite}' +
+    '.bg-veil-txt{direction:rtl;text-align:center;color:#dfe6ff;font-size:19px;font-weight:700;' +
+      'letter-spacing:.02em;text-shadow:0 2px 10px rgba(0,0,0,.6)}' +
+    '.bg-veil-hint{direction:rtl;text-align:center;color:rgba(200,210,255,.72);font-size:15px;' +
+      'opacity:0;transition:opacity .4s}' +
+    '.bg-veil-hint.on{opacity:1}' +
+    '@keyframes bgVeilSpin{to{transform:rotate(360deg)}}';
+  (document.head || document.documentElement).appendChild(st);
+}
+
+function showBgVeil(stage){
+  hideBgVeil(true);
+  if(!stage) return;
+  _veilCSS();
+  const v = document.createElement('div');
+  v.className = 'bg-veil';
+  v.innerHTML = '<div class="bg-veil-ring"></div>' +
+                '<div class="bg-veil-txt">טוֹעֲנִים אֶת הֶחָלָל…</div>' +
+                '<div class="bg-veil-hint">רֶגַע, מְצַיְּרִים חוֹר שָׁחוֹר 🌌</div>';
+  stage.appendChild(v);
+  _veil = v;
+  _veilHintTO = setTimeout(() => {
+    const h = v.querySelector('.bg-veil-hint'); if(h) h.classList.add('on');
+  }, 4000);
+  _veilMaxTO = setTimeout(() => hideBgVeil(), BG_LOAD_MAX);
+}
+
+function hideBgVeil(now){
+  clearTimeout(_veilHintTO); clearTimeout(_veilMaxTO);
+  const v = _veil; _veil = null;
+  if(!v) return;
+  if(now){ if(v.parentNode) v.remove(); return; }
+  v.classList.add('bg-veil-out');
+  setTimeout(() => { if(v.parentNode) v.remove(); }, 500);
+}
+
+/* the scene tells us when its first frame is actually on screen */
+window.BG_LOADING = { done: () => hideBgVeil(), showing: () => !!_veil };
+
 /* ── backgrounds ── */
 function unloadBackground(){
+  hideBgVeil(true);
   if(_bgCleanup){ _bgCleanup(); _bgCleanup = null; }
   applySkin(null);
   loadAids('classic');
@@ -106,14 +173,34 @@ function unloadBackground(){
 
 function loadBackground(name){
   if(_bgCleanup){ _bgCleanup(); _bgCleanup = null; }
+  hideBgVeil(true);
+  const stage0 = document.getElementById('stars-layer');
+  // a slow scene gets the veil BEFORE anything heavy runs
+  const slow = SLOW_BGS.indexOf(name) >= 0 ||
+               !!(window.BACKGROUNDS[name] && window.BACKGROUNDS[name].slowLoad);
+  if(slow && stage0){ stage0.innerHTML = ''; showBgVeil(stage0); }
   const start = () => {
     const mod = window.BACKGROUNDS[name];
-    if(!mod) return;
+    if(!mod){ hideBgVeil(); return; }
     applySkin(mod.skin || name);
     loadAids(mod.aids || 'classic');
     const stage = document.getElementById('stars-layer');
-    if(!stage) return;
-    _bgCleanup = mod.init({ stage }) || null;
+    if(!stage){ hideBgVeil(); return; }
+    const veiled = !!_veil;
+    const run = () => {
+      if(veiled){                       // the scene wipes the stage — re-hang the veil on top
+        const v = _veil;
+        _bgCleanup = mod.init({ stage }) || null;
+        if(v && !v.parentNode && _veil === v) stage.appendChild(v);
+      } else {
+        _bgCleanup = mod.init({ stage }) || null;
+      }
+      // a scene that reports readiness keeps the veil until its first frame
+      if(!(mod.slowLoad || SLOW_BGS.indexOf(name) >= 0)) hideBgVeil(true);
+    };
+    // let the veil paint first — init() is synchronous and can block for seconds
+    if(veiled) requestAnimationFrame(() => requestAnimationFrame(run));
+    else run();
   };
   if(window.BACKGROUNDS[name]){ start(); return; }
   _injectScript('backgrounds/' + name + '.bg.js', start);

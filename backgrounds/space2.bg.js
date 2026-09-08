@@ -485,6 +485,10 @@ window.BACKGROUNDS=window.BACKGROUNDS||{};
 window.BACKGROUNDS.space2={
   skin:'space',                 // game look:  game/skins/space.skin.css
   aids:'space',                 // aid art:    aids/space.aids.js (rocket + stars)
+  // the WebGL2 ray-tracer compiles its shaders and bakes the sky before the
+  // first frame — seconds on a weak machine — so the loader shows a veil until
+  // this scene calls BG_LOADING.done() from its first rendered frame
+  slowLoad:true,
   init({stage}){
   const layer=stage;
   let stopped=false;
@@ -2159,7 +2163,7 @@ window.BACKGROUNDS.space2={
   window.addEventListener('resize',onResize);
   apply2DScale();
   buildScene();
-  let animId=null,lastFrameT=0;
+  let animId=null,lastFrameT=0,firstPainted=false;
   function frame(ts){
     if(stopped)return;
     const t=ts/1000;
@@ -2194,6 +2198,9 @@ window.BACKGROUNDS.space2={
     drawTidal(t);
     drawAstro(t);
     drawSun(t);                           // (the vignette now lives in the GL composite)
+    // the first frame is on screen → let the loader drop its "loading" veil
+    if(!firstPainted){firstPainted=true;
+      if(window.BG_LOADING&&window.BG_LOADING.done)window.BG_LOADING.done();}
     animId=requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
