@@ -1,5 +1,5 @@
 /* ── Space aid variant — rocket number line + an asteroid capsule ───────────
-   Loaded dynamically with the space background (BACKGROUNDS.space.aids).
+   Loaded dynamically with the space background (BACKGROUNDS.space2.aids).
    A rocket flies the number line instead of the kangaroo (cool blue exhaust
    trail + neon fireworks), and the counting jar becomes a glass capsule
    that fills with rocky asteroids; the chain garden grows little ringed

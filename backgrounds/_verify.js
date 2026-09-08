@@ -202,7 +202,7 @@ check('click makes a boat blink (on & off)', blinkSamples['true'] && blinkSample
 check('blinking is fast (many toggles in 2 s)', blinksWhileActive >= 10, 'toggles=' + blinksWhileActive);
 check('blinking stops after the window', (13 < blinkUntil) === false);
 // regression: per-boat blinkUntil, no old flash-driven swell / reflection circle
-var dubaiSrc = require('fs').readFileSync(__dirname + '/dubai.bg.js', 'utf8');
+var dubaiSrc = require('fs').readFileSync(__dirname + '/dubai2.bg.js', 'utf8');
 check('boats use blinkUntil (no boat flashT)', /\.blinkUntil/.test(dubaiSrc) && dubaiSrc.indexOf('BOAT.flashT') === -1 && dubaiSrc.indexOf('b.flashT') === -1);
 check('no flash-driven glow swell / reflection circle', !/baseR \+ 4\*flash/.test(dubaiSrc) && !/0\.16\*flash/.test(dubaiSrc));
 
@@ -378,13 +378,13 @@ function winSpan(crown, h){
         'gapBelowTop=' + gapBelowTop.toFixed(0) + ' lastWy=' + s.lastWy.toFixed(0) + ' rows=' + s.rows);
 });
 // definitive insurance: windows are clipped to the body in the prerender
-var srcW = require('fs').readFileSync(__dirname + '/dubai.bg.js', 'utf8');
+var srcW = require('fs').readFileSync(__dirname + '/dubai2.bg.js', 'utf8');
 var clips = (srcW.match(/og\.clip\(\);\s*\n?\s*drawWindows/g) || []).length;
 check('windows are clipped to the body silhouette (box/twin×2/cayan)', clips >= 4, 'clip-then-drawWindows sites=' + clips);
 
 // ── boat shadows + museum click rings ──
 console.log('\n── boat shadows & museum rings ──');
-var src2 = require('fs').readFileSync(__dirname + '/dubai.bg.js', 'utf8');
+var src2 = require('fs').readFileSync(__dirname + '/dubai2.bg.js', 'utf8');
 check('boats cast a soft shadow on the water', /soft shadow cast on the water/.test(src2) && /ellipse\(b\.x, b\.y \+ 6/.test(src2));
 
 // museum rings: each click picks a new hue, rings expand then clear, list capped

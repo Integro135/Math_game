@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Savanna Animals — Character Workshop</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     STANDALONE workshop for the from-scratch SAVANNA ANIMAL rigs — one
+     animal at a time, big, on a sunset / plain / night backdrop, so each can
+     be judged on its own. Same workflow as polar_bear.html → frozen.bg.js:
+     iterate here; savanna.bg.js draws these very rigs.
+
+     Rigs (each in its own file, all sharing rig-common.js):
+       lion.js → LionRig            cats.js → LionessRig, CheetahRig
+       zebra.js → ZebraRig          giraffe.js → GiraffeRig
+       elephant.js → ElephantRig    ostrich.js → OstrichRig
+     A missing file just greys out its tab.
+
+     Pick an animal with the tabs (or ?animal=zebra). Walk toggles pacing
+     (he turns at the edges), Act plays the animal's signature action (roar,
+     trumpet, head-bury, graze …), Flip mirrors, BG cycles the backdrop, Size
+     cycles the zoom (the smallest ≈ his size in the real scene). Clicking the
+     animal also plays its action. window._zooTest exposes the instance for
+     the screenshot harness.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #2a0f22; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  .bar { position: fixed; left: 0; right: 0; display: flex; gap: 8px; flex-wrap: wrap;
+         justify-content: center; z-index: 10; }
+  #tabs { top: 18px; }
+  #ctrl { bottom: 22px; }
+  .hbtn {
+    padding: 8px 18px;
+    background: rgba(60, 24, 14, 0.5);
+    color: rgba(255, 214, 160, 0.92);
+    border: 1px solid rgba(255, 170, 90, 0.4);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(20, 5, 8, 0.45);
+    transition: background .25s, transform .15s;
+  }
+  .hbtn:hover { background: rgba(120, 50, 26, 0.6); transform: translateY(-1px); }
+  .hbtn.on { background: rgba(200, 110, 40, 0.65); }
+  .hbtn:disabled { opacity: .35; cursor: default; transform: none; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="bar" id="tabs"></div>
+<div class="bar" id="ctrl">
+  <button class="hbtn" id="walk">Walk</button>
+  <button class="hbtn" id="act">Act</button>
+  <button class="hbtn" id="flip">Flip</button>
+  <button class="hbtn" id="bg">BG</button>
+  <button class="hbtn" id="size">Size</button>
+</div>
+<script src="rig-common.js"></script>
+<script src="lion.js"></script>
+<script src="cats.js"></script>
+<script src="zebra.js"></script>
+<script src="giraffe.js"></script>
+<script src="elephant.js"></script>
+<script src="ostrich.js"></script>
+<script>
+(function(){
+  // animal presets: which rig global draws it, plus per-preset tweaks
+  const PRESETS = {
+    lion:     { rig: 'LionRig' },
+    lioness:  { rig: 'LionessRig' },
+    cub:      { rig: 'LionessRig', scale: 0.5, extra: { ribbon: true } },
+    cheetah:  { rig: 'CheetahRig' },
+    zebra:    { rig: 'ZebraRig' },
+    giraffe:  { rig: 'GiraffeRig' },
+    elephant: { rig: 'ElephantRig' },
+    ostrich:  { rig: 'OstrichRig' },
+  };
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  let W, H;
+  const BGS = ['sunset', 'plain', 'night'];
+  const SIZES = [1, 1.6, 0.42];
+  let bgI = 0, sizeI = 0;
+  let name = new URLSearchParams(location.search).get('animal') || 'lion';
+  if (!PRESETS[name] || !window[PRESETS[name].rig]) name = Object.keys(PRESETS).find(k => window[PRESETS[k].rig]) || 'lion';
+  const L = { x: 0, y: 0, s: 1, dir: 1, ph: 0.7, wt: 0, moving: false, pose: 0 };
+  let poseT0 = null, lastT = 0, walking = false;
+  const rig = () => window[PRESETS[name].rig];
+
+  function fit(){
+    L.y = H * 0.80;
+    L.s = (H * 0.62 / rig().HEIGHT) * SIZES[sizeI] * (PRESETS[name].scale || 1);
+  }
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    fit();
+    if (!L.x) L.x = W * 0.5;
+  }
+  function select(n){
+    if (!PRESETS[n] || !window[PRESETS[n].rig]) return;
+    name = n; poseT0 = null; L.pose = 0;
+    for (const k of Object.keys(L)) if (!['x', 'y', 's', 'dir', 'ph', 'wt', 'moving', 'pose'].includes(k)) delete L[k];
+    Object.assign(L, PRESETS[n].extra || {});
+    fit();
+    for (const b of tabs.children) b.classList.toggle('on', b.dataset.name === n);
+    history.replaceState(null, '', '?animal=' + n);
+  }
+  const tabs = document.getElementById('tabs');
+  for (const k of Object.keys(PRESETS)){
+    const b = document.createElement('button');
+    b.className = 'hbtn'; b.textContent = k; b.dataset.name = k;
+    b.disabled = !window[PRESETS[k].rig];
+    b.onclick = () => select(k);
+    tabs.appendChild(b);
+  }
+  addEventListener('resize', resize); resize(); select(name);
+
+  function backdrop(){
+    const bg = BGS[bgI];
+    if (bg === 'plain'){ ctx.fillStyle = '#3a3f4b'; ctx.fillRect(0, 0, W, H); return; }
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.8);
+    if (bg === 'sunset'){
+      sky.addColorStop(0, '#3a1030'); sky.addColorStop(0.45, '#b53a2a');
+      sky.addColorStop(0.78, '#f08a3c'); sky.addColorStop(1, '#f7c25a');
+    } else {
+      sky.addColorStop(0, '#060b1e'); sky.addColorStop(0.7, '#1a2a52'); sky.addColorStop(1, '#3a4a78');
+    }
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    if (bg === 'sunset'){
+      const sun = ctx.createRadialGradient(W * 0.72, H * 0.62, 0, W * 0.72, H * 0.62, H * 0.22);
+      sun.addColorStop(0, 'rgba(255,245,200,.95)'); sun.addColorStop(0.6, 'rgba(255,210,110,.75)');
+      sun.addColorStop(1, 'rgba(255,190,90,0)');
+      ctx.fillStyle = sun; ctx.fillRect(0, 0, W, H);
+    }
+    const gr = ctx.createLinearGradient(0, H * 0.8, 0, H);
+    gr.addColorStop(0, bg === 'sunset' ? '#8a5230' : '#2a2438'); gr.addColorStop(1, bg === 'sunset' ? '#4e2c18' : '#141224');
+    ctx.fillStyle = gr; ctx.fillRect(0, H * 0.8, W, H * 0.2);
+  }
+
+  function frame(ts){
+    const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
+    backdrop();
+    const R = rig();
+    L.moving = walking && poseT0 === null;
+    if (L.moving){
+      L.wt += dt * 2.2;
+      L.x += L.dir * 30 * L.s * dt;
+      if (L.x > W * 0.8) L.dir = -1;
+      if (L.x < W * 0.2) L.dir = 1;
+    }
+    L.pose = poseT0 === null ? 0 : Math.min(1, (t - poseT0) / 1.7);
+    if (L.pose >= 1){ poseT0 = null; L.pose = 0; }
+    ctx.fillStyle = 'rgba(38,14,6,.30)';                         // ground shadow
+    ctx.beginPath(); ctx.ellipse(L.x, L.y + 1.5 * L.s, R.WIDTH * 0.95 * L.s, 6 * L.s, 0, 0, Math.PI * 2); ctx.fill();
+    R.draw(ctx, L, t);
+    ctx.fillStyle = 'rgba(255,214,160,.7)'; ctx.font = '14px Georgia, serif';
+    ctx.fillText(name, 18, H - 16);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const act = () => { if (poseT0 === null) poseT0 = lastT; };
+  document.getElementById('walk').onclick = e => { walking = !walking; e.target.classList.toggle('on', walking); };
+  document.getElementById('act').onclick = act;
+  document.getElementById('flip').onclick = () => { L.dir *= -1; };
+  document.getElementById('bg').onclick = () => { bgI = (bgI + 1) % BGS.length; };
+  document.getElementById('size').onclick = () => { sizeI = (sizeI + 1) % SIZES.length; fit(); };
+  cv.addEventListener('click', e => {
+    const R = rig(), hw = R.WIDTH * L.s, hh = R.HEIGHT * L.s;
+    if (e.clientX > L.x - hw && e.clientX < L.x + hw && e.clientY > L.y - hh && e.clientY < L.y + 8 * L.s) act();
+  });
+  window._zooTest = { L, act, walk: on => { walking = on; }, setBg: i => { bgI = i; }, setSize: i => { sizeI = i; fit(); },
+                      select, current: () => name, rig };
+})();
+</script>
+</body>
+</html>

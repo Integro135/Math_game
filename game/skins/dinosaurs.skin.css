@@ -1,7 +1,8 @@
 /* ── Dinosaurs skin — "Volcano valley at dusk" ──────────────────────────────
-   The game's look over the dinosaurs background (backgrounds/dinosaurs2.bg.js:
-   sunset sky + stars + clouds + snow-capped ranges + an erupting volcano on the
-   RIGHT + foreground grass with roaming dinosaurs). Warm dusk glass that lets
+   The game's look over the dinosaurs background (backgrounds/dinosaurs3.bg.js:
+   canvas sunset sky on a day cycle + stars + clouds + snow-capped ranges + an
+   erupting volcano on the RIGHT + a green valley with the from-scratch dino_rigs
+   roaming). Warm dusk glass that lets
    the sky, the volcano and the herd glow through. The game column hugs the LEFT
    so the volcano + its plume (right) stay in full view (mirror of savanna, which
    hugs right to clear Pride Rock).
@@ -18,8 +19,8 @@
   --skin-text:   #FFF3E0;   /* warm cream           */
 }
 
-/* ── 4. POSITION — the board hugs the LEFT so the volcano (dinosaurs2 scene,
-   crater ≈ x970/1280, left flank ≈ x715/1280 ≈ 56%) stays in full view on the
+/* ── 4. POSITION — the board hugs the LEFT so the volcano (dinosaurs3 scene,
+   crater ≈ x990/1280, left flank ≈ x715/1280 ≈ 56%) stays in full view on the
    RIGHT. The card width is capped to ~half the viewport, so its right edge scales
    DOWN with the window and never crosses into the volcano (a fixed px width would
    overlap on narrower desktops). Full 700px only once the window is wide enough;

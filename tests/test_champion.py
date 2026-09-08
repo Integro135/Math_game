@@ -383,6 +383,54 @@ class TestChampMultiplication:
         assert tip.replace(" ", "") == "4+4+4", \
             f"the hover tooltip must PREVIEW the other orientation (4+4+4), got: {tip!r}"
 
+    def test_commutativity_flip_available_before_a_mistake(self, page):
+        """The 🔁 flip (8×2 זה כמו 2×8) is available in PHASE 1 — before any mistake —
+        as a labelled pill under the bare product. Tapping it swaps the shown order
+        (same product/answer); the pill always previews the other order. (User request.)"""
+        _force_mulc_tmk(page, 8, 2)
+        res = page.evaluate("""() => {
+            const t=s=>{const e=document.querySelector(s);return e?e.textContent:null;};
+            const pill=document.getElementById('mk-flip1');
+            const before={present:!!pill,
+                title:t('.mk-fa')+'x'+t('.mk-fb'), label:t('#mk-flip1-lbl'),
+                chainHidden:getComputedStyle(document.getElementById('mk-chain')).display==='none'};
+            pill.click();
+            const after={title:t('.mk-fa')+'x'+t('.mk-fb'), label:t('#mk-flip1-lbl')};
+            return {before,after};
+        }""")
+        assert res["before"]["present"], "the phase-1 🔁 flip must render before any mistake"
+        assert res["before"]["chainHidden"], "the flip appears while the chain is still hidden (phase 1)"
+        assert res["before"]["title"] == "8x2" and res["before"]["label"] == "2×8", \
+            f"phase 1 shows 8×2 with a 'like 2×8' preview, got {res['before']}"
+        assert res["after"]["title"] == "2x8" and res["after"]["label"] == "8×2", \
+            f"tapping 🔁 swaps to 2×8 (pill now previews 8×2), got {res['after']}"
+
+    def test_commutativity_flip_hidden_for_equal_factors(self, page):
+        """a×a: flipping 3×3 gives 3×3, so the phase-1 🔁 is omitted (like the aid switch)."""
+        _force_mulc_tmk(page, 3, 3)
+        assert page.evaluate("!document.getElementById('mk-flip1')"), \
+            "equal factors must NOT render the phase-1 flip (a no-op)"
+
+    def test_phase1_flip_orients_the_mistake_aid(self, page):
+        """A flip chosen in phase 1 carries into the mistake aid: after flipping 8×2→2×8
+        and missing, the repeated-addition chain opens as eight 2s (not two 8s), the
+        answer stays the product, and the phase-1 pill hides (the aid's 🔁 takes over)."""
+        _force_mulc_tmk(page, 8, 2)
+        res = page.evaluate("""() => {
+            document.getElementById('mk-flip1').click();     // 8×2 → 2×8
+            window.__mkAidTurn=1;                             // pin the CHAIN aid
+            const inp=document.getElementById('mk-ans');
+            inp.value=String(8*2+1);
+            inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+            return {
+                terms:[...document.querySelectorAll('#mk-row .mk-term')].map(e=>e.textContent),
+                finalExp:+document.querySelector('#mk-row .mk-final').getAttribute('data-exp'),
+                flipHidden:getComputedStyle(document.getElementById('mk-flip1')).display==='none'};
+        }""")
+        assert res["terms"] == ["2"] * 8, f"the flipped orientation must open eight 2s, got {res['terms']}"
+        assert res["finalExp"] == 16, "the answer stays the product (16) regardless of order"
+        assert res["flipHidden"], "the phase-1 flip hides once the aid reveals (its own 🔁 takes over)"
+
 
 # ─────────────────────────────────────────────────────────
 # Multiplication with ONE UNKNOWN (mult_unknown / TMU) — `a × □ = product`, the

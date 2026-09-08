@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Hole — GR Ray-Traced</title>
+<!-- ───────────────────────────────────────────────────────────────────────────
+     A REALISTIC black hole — standalone, single file, WebGL2.
+
+     Companion to space2.bg.js, whose no-WebGL2 black hole is a 2-D canvas
+     impression (arcs, gradients, particles). This one is the physics:
+
+       • Every pixel fires a ray BACKWARDS through Schwarzschild spacetime. The
+         null geodesic is integrated with the Binet-equation form of the light
+         ray (d²x/dλ² = −3/2·h²·x/r⁵, r_s = 1), so the SHADOW (b = 3√3/2 r_s),
+         the PHOTON RING, the EINSTEIN RING and the higher-order disk images all
+         emerge from the maths — nothing is drawn by hand.
+       • Rays that miss the marching sphere still bend: the weak-field
+         deflection (2 r_s / b) is applied analytically, so the lensed starfield
+         is continuous out to the screen edges.
+       • Thin ACCRETION DISK from the ISCO (3 r_s) outward: Novikov–Thorne-ish
+         temperature profile → black-body colour, relativistic DOPPLER BEAMING
+         (approaching side brighter + bluer) and GRAVITATIONAL REDSHIFT
+         √(1−r_s/r) — the exact combined factor √(1−3M/r) for circular orbits.
+         Two GLOWING SPIRAL density waves (trailing arms, co-rotating with the
+         flow) ride on turbulent Keplerian-sheared filaments (periodic value
+         noise, bounded-shear two-phase advection so it never smears into
+         moiré). The disk is semi-transparent, so the far side's lensed images
+         stack through the near side (Interstellar-style arch over and under).
+       • Twin relativistic JETS along the spin axis: a hot spine in a wider
+         sheath, mottled by knots streaming outward, bulk-Doppler boosted so
+         the jet pointing toward the camera outshines the counter-jet. They are
+         integrated VOLUMETRICALLY along the very same geodesics, so the base
+         of the far jet is lensed round the shadow; outside the marching
+         sphere they are integrated along the straight ray.
+       • INFALLING DUST: ~1000 grains spawned all over the frame (and streaming
+         in over its edges), simulated in 3-D under a Paczyński–Wiita
+         pseudo-potential (so they plunge inside ~3 r_s like real matter),
+         losing angular momentum to drag → ever-faster spirals into the hole.
+         Drawn as velocity-stretched streaks through the POINT-MASS LENS: grains
+         behind the hole are pushed out to their primary image and hidden by
+         the shadow, grains in front are seen against it, and all fade with
+         gravitational redshift over the last stretch to the horizon.
+       • Procedural sky: Milky Way band + dust rift + three cube-mapped star
+         layers, sampled along the DEFLECTED direction → lensed, streaked stars.
+       • HDR render → 3-level bloom → ACES tonemap → sRGB.
+
+     Controls: the camera and the stars stay put — DRAG spins the HOLE itself
+     (trackball: disk + jets + dust tilt with it, the sky does not move); wheel /
+     pinch zooms; space toggles the auto-spin (the hole precesses about the
+     vertical like a spinning top); R resets. Default quality is MEDIUM; Auto
+     adapts to frame time.
+     URL params: ?q=auto|low|medium|high|ultra · ?spin=0 · ?bloom=0 · ?dust=0 · ?jets=0
+                 ?dist= (r_s) · ?tilt= (rad, the axis lean) · ?ldr=1 (force the 8-bit path)
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #000; overflow: hidden; width: 100%; height: 100%; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  #gl.drag { cursor: grabbing; }
+  .hud { position: fixed; z-index: 10; font-family: Georgia, 'Times New Roman', serif;
+         color: rgba(190, 205, 255, 0.9); letter-spacing: .08em; user-select: none; }
+  #info { top: 22px; left: 26px; font-size: 11px; line-height: 1.75; text-transform: uppercase;
+          opacity: .8; text-shadow: 0 1px 10px rgba(0,0,0,.9); pointer-events: none; }
+  #info b { display: block; font-size: 15px; letter-spacing: .18em; color: rgba(236, 240, 255, 0.95); margin-bottom: 3px; }
+  #panel { bottom: 24px; right: 24px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .pill {
+    padding: 8px 18px;
+    background: rgba(18, 14, 48, 0.45);
+    color: rgba(190, 205, 255, 0.92);
+    border: 1px solid rgba(140, 160, 255, 0.35);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    cursor: pointer; outline: none;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(4, 2, 16, 0.45);
+    transition: background .25s, box-shadow .25s, transform .15s, opacity .25s;
+  }
+  .pill:hover { background: rgba(50, 40, 110, 0.6); box-shadow: 0 4px 24px rgba(130, 150, 255, 0.25); transform: translateY(-1px); }
+  .pill.off { opacity: .45; }
+  select.pill { appearance: none; -webkit-appearance: none; padding-right: 30px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='rgba(190,205,255,.8)'/></svg>");
+    background-repeat: no-repeat; background-position: right 12px center; }
+  select.pill option { background: #0c0a26; color: #dfe6ff; text-transform: none; letter-spacing: 0; }
+  #stats { bottom: 30px; left: 26px; font-size: 11px; opacity: .5; font-variant-numeric: tabular-nums; pointer-events: none; }
+  #err { position: fixed; inset: 0; z-index: 20; display: none; place-items: center; padding: 40px; text-align: center;
+         color: #f3d6d6; font-family: Georgia, serif; font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="info" class="hud"><b>Schwarzschild Black Hole</b>General-relativistic ray tracing · accretion disk · jets · infalling dust<br>drag to spin the hole · wheel to zoom · space: auto-spin · r: reset</div>
+<div id="panel" class="hud">
+  <select id="quality" class="pill" title="Render quality">
+    <option value="auto">Quality · Auto</option>
+    <option value="low">Quality · Low</option>
+    <option value="medium">Quality · Medium</option>
+    <option value="high">Quality · High</option>
+    <option value="ultra">Quality · Ultra</option>
+  </select>
+  <button id="jets" class="pill" title="Toggle the relativistic jets">Jets</button>
+  <button id="dust" class="pill" title="Toggle the infalling dust">Dust</button>
+  <button id="bloom" class="pill" title="Toggle bloom">Bloom</button>
+  <button id="orbit" class="pill" title="Toggle the slow auto-spin (precession)">Spin</button>
+  <button id="reset" class="pill" title="Reset the camera">Reset</button>
+</div>
+<div id="stats" class="hud"></div>
+<div id="err"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHADERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// Full-screen triangle (covers the viewport; vUv runs 0..1 across the screen)
+const VS = `#version 300 es
+layout(location=0) in vec2 aPos;
+out vec2 vUv;
+void main(){ vUv = aPos*0.5+0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+// ── PASS 1: the geodesic ray tracer (disk + jets + lensed sky) ─────────────
+const SCENE_FS = `#version 300 es
+precision highp float;
+precision highp int;
+out vec4 fragColor;
+uniform vec2  uRes;
+uniform float uTime;
+uniform vec3  uCamPos, uCamFwd, uCamRight, uCamUp;
+uniform float uTanHalf;        // tan(vertical fov / 2)
+uniform float uPixAng;         // angular size of one pixel (rad) — star anti-aliasing
+uniform int   uSteps;          // geodesic step budget
+uniform float uDiskIn, uDiskOut;   // disk radii (r_s units); inner = ISCO = 3 r_s
+uniform float uSpin;           // disk rotation sense (±1)
+uniform float uTpeak;          // disk temperature scale (K)
+uniform float uJets;           // jet gain (0 = off)
+uniform float uHalo;           // hot inner-flow plasma gain — the glowing halo / photon ring round the shadow
+uniform float uEnc;            // output encoding (1 for float targets, <1 for RGBA8 fallback)
+uniform mat3  uHoleRot, uHoleRotT;   // the hole's orientation: world→hole · hole→world (the sky stays in world)
+
+const float PI = 3.14159265, TAU = 6.28318531;
+const float R_BOUND = 15.0;    // inside: numerical geodesics · outside: analytic weak-field bend
+const float ROT = 2.0;         // visual time-scale of the disk's Keplerian rotation
+const float JET_LEN = 42.0;    // jets reach ±42 r_s along the spin axis
+const float JET_RMAX = 7.8;    // bounding cylinder of the jets
+// RGBA8 fallback: store √(c·uEnc) so faint sky values keep their levels (identity when uEnc = 1)
+vec3 enc(vec3 c){ return uEnc < 1.0 ? sqrt(max(c, 0.0)*uEnc) : c; }
+
+/* ── hashing / noise ──────────────────────────────────────────────────────── */
+float hash12(vec2 p){ vec3 p3 = fract(vec3(p.xyx)*0.1031); p3 += dot(p3, p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+float hash13(vec3 p3){ p3 = fract(p3*0.1031); p3 += dot(p3, p3.zyx+31.32); return fract((p3.x+p3.y)*p3.z); }
+vec3  hash33(vec3 p3){ p3 = fract(p3*vec3(0.1031, 0.1030, 0.0973)); p3 += dot(p3, p3.yxz+33.33); return fract((p3.xxy+p3.yxx)*p3.zyx); }
+
+// value noise, PERIODIC along x with a period of N cells (the disk's azimuth → no seam)
+float pnoise(vec2 p, float N){
+  vec2 i = floor(p), f = fract(p);
+  f = f*f*f*(f*(f*6.0-15.0)+10.0);
+  float x0 = mod(i.x, N), x1 = mod(i.x+1.0, N);
+  float a = hash12(vec2(x0, i.y)),     b = hash12(vec2(x1, i.y));
+  float c = hash12(vec2(x0, i.y+1.0)), d = hash12(vec2(x1, i.y+1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+// tangentially-stretched turbulence: u = azimuth in cells (0..N), y = radial coord
+float fbmDisk(float u, float y, float N, float seed){
+  float s = 0.0, amp = 0.55, tot = 0.0;
+  vec2 p = vec2(u, y);
+  for(int k=0; k<6; k++){
+    s += amp*pnoise(p + vec2(0.37*float(k), seed + 53.0*float(k)), N);
+    tot += amp; amp *= 0.56; p *= 2.0; N *= 2.0;
+  }
+  return s/tot;
+}
+float vnoise3(vec3 p){
+  vec3 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+  return mix(mix(mix(hash13(i),                 hash13(i+vec3(1,0,0)), f.x),
+                 mix(hash13(i+vec3(0,1,0)),     hash13(i+vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash13(i+vec3(0,0,1)),     hash13(i+vec3(1,0,1)), f.x),
+                 mix(hash13(i+vec3(0,1,1)),     hash13(i+vec3(1,1,1)), f.x), f.y), f.z);
+}
+float fbm3(vec3 p){ float s = 0.0, a = 0.5; for(int k=0; k<5; k++){ s += a*vnoise3(p); p = p*2.03 + vec3(7.1, 3.3, 5.7); a *= 0.5; } return s; }
+
+/* ── black-body colour (Kelvin → linear RGB, ~1000–40000 K) ───────────────── */
+vec3 blackbody(float T){
+  float t = clamp(T, 1000.0, 40000.0)/100.0;
+  float r, g, b;
+  if(t <= 66.0){ r = 1.0; g = clamp(0.39008158*log(t) - 0.63184144, 0.0, 1.0); }
+  else { r = clamp(1.29293619*pow(t-60.0, -0.1332047592), 0.0, 1.0); g = clamp(1.12989086*pow(t-60.0, -0.0755148492), 0.0, 1.0); }
+  if(t >= 66.0) b = 1.0; else if(t <= 19.0) b = 0.0; else b = clamp(0.54320679*log(t-10.0) - 1.19625409, 0.0, 1.0);
+  vec3 c = vec3(r, g, b);
+  return c*c;                                     // ≈ sRGB → linear
+}
+
+/* ── the sky: Milky Way + dust rift + three star layers (cube-map cells) ──── */
+const vec3 GAL_N = normalize(vec3(-0.2, 0.7, 0.685));    // galactic pole — the band crosses the upper-left at the default view
+
+vec3 starLayer(vec3 d, float N, float prob, float bright, float seed){
+  vec3 a = abs(d); vec2 uv; float face;
+  if(a.x >= a.y && a.x >= a.z){ uv = d.yz/a.x; face = d.x > 0.0 ? 0.0 : 1.0; }
+  else if(a.y >= a.z)         { uv = d.xz/a.y; face = d.y > 0.0 ? 2.0 : 3.0; }
+  else                        { uv = d.xy/a.z; face = d.z > 0.0 ? 4.0 : 5.0; }
+  vec2 c = (uv*0.5+0.5)*N; vec2 cell = floor(c); vec2 f = c - cell;
+  vec3 h = hash33(vec3(cell, face*7.0 + seed*131.0));
+  if(h.x > prob) return vec3(0.0);
+  vec2 pos = 0.22 + 0.56*hash33(vec3(cell.yx + 19.0, face*13.0 + seed*71.0)).xy;
+  // a star is a point: fixed tiny angular size, floored at ~1 px so it never flickers.
+  // Peak brightness is kept (surface brightness is conserved under lensing), so a
+  // magnified star grows AND gets brighter — exactly what happens to a point source.
+  float cellAng = 2.0/N*(1.0/(1.0+0.45*dot(uv, uv)));
+  float sig = max(0.0011, 0.7*uPixAng)/cellAng;
+  float d2 = dot(f-pos, f-pos);
+  float I = bright*(0.05 + pow(h.y, 7.0))*exp(-d2/(2.0*sig*sig));
+  float T = 2700.0 + 9500.0*pow(h.z, 2.2);
+  return blackbody(T)*I;
+}
+vec3 sky(vec3 d){
+  float lat = dot(d, GAL_N);
+  vec3 gx = normalize(cross(GAL_N, vec3(0.0, 0.0, 1.0))), gy = cross(GAL_N, gx);
+  float lon = atan(dot(d, gy), dot(d, gx));
+  float n1 = fbm3(d*2.4 + vec3(3.1)), n2 = fbm3(d*7.0 + vec3(9.7));
+  float width = 0.08 + 0.07*n1;
+  float band = exp(-lat*lat/(width*width));
+  float rift = smoothstep(0.44, 0.64, n2)*exp(-lat*lat/0.003)*0.85;      // dark dust lane along the plane
+  float core = exp(-lat*lat/0.02)*exp(-pow((lon-1.1)/0.8, 2.0));         // the golden bulge
+  vec3 mw = (vec3(0.55, 0.52, 0.66)*band*(0.15 + 1.3*n1) + vec3(0.95, 0.78, 0.55)*core*0.55)*(1.0-rift);
+  vec3 col = mw*0.045;
+  float neb = fbm3(d*1.7 + vec3(21.0));                                   // faint colour haze
+  col += vec3(0.10, 0.07, 0.20)*smoothstep(0.48, 0.78, neb)*0.04;
+  float dens = 1.0 + 2.6*band*(1.0-rift*0.7);                             // stars thicken toward the plane (thin in the rift)
+  col += starLayer(d, 16.0,  0.14,      2.6,  1.0);
+  col += starLayer(d, 50.0,  0.12*dens, 1.0,  2.0);
+  col += starLayer(d, 140.0, 0.16*dens, 0.35, 3.0);
+  return col;
+}
+
+/* ── weak-field lensing outside the marching sphere ───────────────────────── */
+// deflection still to be accrued by a ray at signed along-track position s (0 at
+// closest approach, impact parameter b) until it reaches infinity; total = 2/b.
+float residualBend(float b, float s){
+  float r = sqrt(b*b + s*s);
+  float F = s*(2.0*s*s + 3.0*b*b)/(2.0*r*r*r);
+  return (1.0 - F)*(1.0/b + 15.0*PI/(32.0*b*b));   // full bend 2/b + 15π/(16b²): 2nd order matters at the sphere's edge
+}
+vec3 bendToward(vec3 d, vec3 perp, float ang){      // rotate d by ang toward the hole
+  float L = length(perp); if(L < 1e-4) return d;
+  return normalize(d*cos(ang) - perp/L*sin(ang));
+}
+
+/* ── the relativistic jets (volumetric emission along ±y) ─────────────────── */
+float jetR(float ay){ return 0.45 + 0.30*pow(ay, 0.72); }     // parabolic collimation: beam radius at height ay
+vec3 jetEmission(vec3 p, vec3 rayDir){
+  float ay = abs(p.y);
+  if(ay < 0.8 || ay > JET_LEN) return vec3(0.0);
+  float R = jetR(ay);
+  float rho2 = dot(p.xz, p.xz);
+  if(rho2 > R*R*2.6) return vec3(0.0);
+  float q = sqrt(rho2)/R, sgn = sign(p.y);
+  float spine  = exp(-q*q*6.0)*0.85;                        // hot core
+  float sheath = exp(-q*q*1.5)*0.55;                        // wider magnetised cocoon
+  // knots + filaments streaming outward (two scales of drifting noise) on a winding helical ridge
+  float n  = vnoise3(vec3(p.x*1.6, p.y*0.45 - uTime*1.1*sgn, p.z*1.6) + 3.7);
+  float n2 = vnoise3(vec3(p.x*3.5, p.y*1.10 - uTime*2.2*sgn, p.z*3.5) + 11.0);
+  float helix = 0.72 + 0.28*cos(atan(p.z, p.x) - ay*0.9 + uTime*1.3*sgn);
+  float mottle = (0.30 + 1.15*n + 0.65*n2)*helix;
+  float fade = smoothstep(0.8, 2.2, ay)*pow(1.0 + ay/7.0, -1.6);   // launch ramp, then dimming along the beam
+  float dens = (spine + sheath)*mottle*fade;
+  // bulk Doppler: the beam moves at β_j along ±y; boost the one coming toward us
+  float cosT = -sgn*rayDir.y;                               // photon direction = −rayDir
+  const float bj = 0.62; float gj = inversesqrt(1.0 - bj*bj);
+  float D = 1.0/(gj*(1.0 - bj*cosT));
+  vec3 c = mix(vec3(0.40, 0.58, 1.0), vec3(0.85, 0.92, 1.0), spine);   // synchrotron blue-white
+  return c*dens*pow(D, 2.5)*uJets;
+}
+// straight-line integration of the jets along p0 + d·s for s in [s0, s1] (outside the marching sphere)
+vec3 jetStraight(vec3 p0, vec3 d, float s0, float s1){
+  if(uJets <= 0.0) return vec3(0.0);
+  vec2 o = p0.xz, dd = d.xz;
+  float A = dot(dd, dd), B = 2.0*dot(o, dd), C = dot(o, o) - JET_RMAX*JET_RMAX;
+  float sa, sb;
+  if(A < 1e-6){ if(C > 0.0) return vec3(0.0); sa = -1e9; sb = 1e9; }
+  else { float disc = B*B - 4.0*A*C; if(disc <= 0.0) return vec3(0.0); float sq = sqrt(disc); sa = (-B - sq)/(2.0*A); sb = (-B + sq)/(2.0*A); }
+  if(abs(d.y) > 1e-6){ float ya = (-JET_LEN - p0.y)/d.y, yb = (JET_LEN - p0.y)/d.y; sa = max(sa, min(ya, yb)); sb = min(sb, max(ya, yb)); }
+  else if(abs(p0.y) > JET_LEN) return vec3(0.0);
+  sa = max(sa, s0); sb = min(sb, s1);
+  if(sb <= sa) return vec3(0.0);
+  const int N = 18;
+  float ds = (sb - sa)/float(N);
+  vec3 acc = vec3(0.0);
+  for(int i=0; i<N; i++) acc += jetEmission(p0 + d*(sa + (float(i)+0.5)*ds), d);
+  return acc*ds;
+}
+
+/* ── the halo: hot, tenuous plasma of the inner flow between the disk's inner edge
+   and the shadow — a puffy shell around r ≈ 2.75 r_s fading toward the horizon. Its
+   light is gathered along the same curved geodesics, so rays swinging round the hole
+   near the photon sphere run a long way through it and pile up into a bright,
+   continuous, uneven PHOTON RING hugging the shadow (Doppler-brighter on the
+   approaching side, swirling turbulence). Bloom turns it into the glowing halo, and
+   the little plasma in front of the shadow softens the shadow's edge.            */
+vec3 haloEmission(vec3 p, vec3 rayDir){
+  float r = length(p);
+  float dens = exp(-pow((r-2.95)/0.55, 2.0))*smoothstep(2.0, 2.7, r)*exp(-pow(p.y/(0.85*r), 2.0));
+  if(dens < 1e-4) return vec3(0.0);
+  float ang = uSpin*uTime*0.55, cs = cos(ang), sn = sin(ang);
+  vec3 q = vec3(p.x*cs - p.z*sn, p.y, p.x*sn + p.z*cs);
+  float n = vnoise3(q*1.7 + vec3(0.0, uTime*0.35, 0.0));
+  float n2 = vnoise3(q*4.5 + vec3(uTime*0.2, 0.0, uTime*0.5));
+  dens *= 0.35 + 1.0*n + 0.5*n2;
+  vec3 tangent = uSpin*normalize(vec3(-p.z, 0.0, p.x));
+  const float beta = 0.45; float gamma = inversesqrt(1.0 - beta*beta);
+  float D = 1.0/(gamma*(1.0 + beta*dot(tangent, rayDir)));
+  float g = D*sqrt(max(1.0 - 1.0/r, 0.0));
+  return blackbody(7600.0*g)*pow(g, 2.0)*dens*uHalo;
+}
+
+/* ── the accretion disk (thin, equatorial, r in [uDiskIn, uDiskOut]) ──────── */
+void diskSample(vec3 pos, vec3 rayDir, out vec3 emis, out float alpha){
+  float r = length(pos.xz);
+  float inner = smoothstep(uDiskIn-0.45, uDiskIn+0.30, r);
+  float outer = 1.0 - smoothstep(uDiskOut-4.5, uDiskOut, r);
+  float env = inner*outer;
+  if(env <= 0.002){ emis = vec3(0.0); alpha = 0.0; return; }
+  float phi = atan(pos.z, pos.x);
+
+  // Keplerian Ω = √(M/r³), M = r_s/2, gas moving in the uSpin sense (pattern = f(φ − Ωt)).
+  // Differential rotation shears the pattern; to keep it from smearing into moiré over
+  // minutes, two noise phases are advected for a bounded time each and cross-faded
+  // (Ω_ref rigid part + bounded differential part).
+  float om    = uSpin*sqrt(0.5/(r*r*r))*ROT;
+  float omRef = uSpin*sqrt(0.5/216.0)*ROT;                 // Ω at r = 6
+  const float P = 16.0;
+  float ta = mod(uTime, P) - 0.5*P,        wa = 0.5 - 0.5*cos(TAU*uTime/P);
+  float tb = mod(uTime + 0.5*P, P) - 0.5*P, wb = 1.0 - wa;
+  float base = phi - omRef*uTime;
+  const float N0 = 4.0;                                    // 4 cells around → long filaments
+  float y = log(r)*6.5;
+  float na = fbmDisk(fract((base - (om-omRef)*ta)/TAU)*N0, y, N0, 0.0);
+  float nb = fbmDisk(fract((base - (om-omRef)*tb)/TAU)*N0, y, N0, 101.0);
+  float n = 0.5 + (na*wa + nb*wb - 0.5)/sqrt(wa*wa + wb*wb);   // contrast-preserving blend
+  float fil = smoothstep(0.41, 0.72, n);
+  // two trailing SPIRAL density waves, co-rotating with the pattern — the glowing arms
+  float arms = pow(0.5 + 0.5*cos(2.0*(base + uSpin*3.2*log(r/uDiskIn))), 3.0);
+  fil = smoothstep(0.40 + 0.14*(1.0-arms), 0.74, n);      // inter-arm flow: sparser filaments, more see-through
+  float dens = env*(0.10 + 0.90*fil)*(0.30 + 1.0*arms);
+
+  // optical depth → opacity: opaque hot inner flow, gauzy transparent rim
+  float tau = dens*mix(3.6, 0.8, smoothstep(uDiskIn, uDiskOut, r));
+  alpha = 1.0 - exp(-tau);
+
+  // temperature: Novikov–Thorne-flavoured r^-3/4 profile with a softened inner edge
+  float x = min(uDiskIn/r, 0.985);
+  float T = uTpeak*pow(x, 0.75)*(0.55 + 0.45*clamp((1.0 - sqrt(x))*4.0, 0.0, 1.0));
+
+  // relativistic Doppler (gas on a circular orbit, v = √(M/(r−2M)) seen by a static observer)
+  vec3 tangent = uSpin*normalize(vec3(-pos.z, 0.0, pos.x));
+  float beta = min(sqrt(0.5/max(r-1.0, 0.6)), 0.75);
+  float gamma = inversesqrt(1.0 - beta*beta);
+  vec3 nhat = -normalize(rayDir);                          // the photon's direction of travel
+  float D = 1.0/(gamma*(1.0 - beta*dot(tangent, nhat)));
+  float ggrav = sqrt(max(1.0 - 1.0/r, 0.0));               // gravitational redshift
+  float g = D*ggrav;                                       // = √(1−3M/r)/(1−β cosθ): exact for circular orbits
+  float Tobs = T*g;
+  // I_ν/ν³ is invariant → a black body stays a black body at gT. Colour takes the exact
+  // shifted temperature; intensity uses T³ with the beaming softened to g^2.5 (strict g³
+  // would all but erase the receding side — physically right, but a dark half-disk).
+  // The spiral arms glow: shock-heated gas is brighter than the inter-arm flow.
+  emis = blackbody(Tobs)*pow(T/8000.0, 3.0)*pow(g, 2.5)*(0.70 + 0.80*arms);
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5*uRes)/uRes.y*2.0;
+  // the ray is built in the (fixed) camera/sky frame, then rotated INTO the hole's frame:
+  // the disk and jets follow the hole's orientation, the stars stay where they are
+  vec3 d = uHoleRot*normalize(uCamFwd + uTanHalf*(uv.x*uCamRight + uv.y*uCamUp));
+  vec3 p = uHoleRot*uCamPos;
+  vec3 col = vec3(0.0); float acc = 0.0;
+
+  // ── approach: walk analytically to the marching sphere (or bend past it) ──
+  float pd = dot(p, d);
+  vec3 perp = p - pd*d; float b2 = dot(perp, perp);
+  if(dot(p, p) >= R_BOUND*R_BOUND){
+    if(b2 >= R_BOUND*R_BOUND || pd > 0.0){
+      col += jetStraight(p, d, 0.0, 1e9);                         // the jets, wherever the ray crosses them
+      vec3 dd = bendToward(d, perp, residualBend(sqrt(b2), pd));
+      fragColor = vec4(enc(col + sky(uHoleRotT*dd)), 1.0); return;
+    }
+    float sEntry = -pd - sqrt(R_BOUND*R_BOUND - b2);
+    col += jetStraight(p, d, 0.0, sEntry);                        // jet segment in front of the sphere
+    p += d*sEntry;
+  }
+
+  // ── geodesic integration (Binet form): d²x/dλ² = −3/2 h² x / r⁵, r_s = 1 ──
+  vec3 v = d;
+  vec3 hv = cross(p, v); float h2 = dot(hv, hv);
+  bool captured = false, escaped = false;
+  vec3 halo = vec3(0.0);
+  for(int i=0; i<uSteps; i++){
+    float r2 = dot(p, p), r = sqrt(r2);
+    if(r < 1.0){ captured = true; break; }                         // through the horizon
+    if(r > R_BOUND && dot(p, v) > 0.0){ escaped = true; break; }   // out of the sphere, outbound
+    float vl = length(v);
+    float step = clamp(r*0.07, 0.025, 0.4);                        // adaptive: fine near the hole
+    float dt = step/vl;
+    // volumetric jet emission along the (curved) path — the far jet's base is lensed
+    if(uJets > 0.0 && abs(p.y) > 0.8 && dot(p.xz, p.xz) < JET_RMAX*JET_RMAX)
+      col += (1.0-acc)*jetEmission(p, v/vl)*step;
+    if(uHalo > 0.0 && r < 4.6) halo += (1.0-acc)*haloEmission(p, v/vl)*step;   // the inner-flow glow
+    v += -1.5*h2*p/(r2*r2*r)*dt;
+    vec3 pn = p + v*dt;
+    if((p.y > 0.0) != (pn.y > 0.0)){                               // crossed the disk plane
+      float t = p.y/(p.y - pn.y);
+      vec3 hit = mix(p, pn, t);
+      float rh = length(hit.xz);
+      if(rh > uDiskIn-0.5 && rh < uDiskOut){
+        vec3 e; float al;
+        diskSample(hit, v, e, al);
+        col += (1.0-acc)*al*e;
+        acc += (1.0-acc)*al;
+        if(acc > 0.985) break;
+      }
+    }
+    p = pn;
+  }
+  col += halo;   // rays just inside the shadow's edge still wrap partway round through the plasma → the edge blurs, the centre stays dark
+  if(!captured && acc <= 0.985){
+    float r = length(p);
+    if(escaped || r > 2.5){
+      vec3 vn = normalize(v);
+      float s = dot(p, vn);
+      vec3 perp2 = p - s*vn;
+      if(escaped) col += (1.0-acc)*jetStraight(p, vn, 0.0, 1e9);   // jet segment beyond the sphere
+      if(escaped) vn = bendToward(vn, perp2, residualBend(max(length(perp2), 0.5), s));
+      col += (1.0-acc)*sky(uHoleRotT*vn);                         // back to the sky's frame
+    }
+  }
+  fragColor = vec4(enc(col), 1.0);
+}`;
+
+// ── PASS 1b: infalling dust — instanced streaks, projected through the lens ─
+const PART_VS = `#version 300 es
+precision highp float;
+layout(location=0) in vec2 aCorner;
+layout(location=1) in vec3 aHead;
+layout(location=2) in vec3 aTail;
+layout(location=3) in vec4 aInfo;      // half-width (px), brightness, heat, -
+uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
+uniform float uTanHalf; uniform vec2 uRes;
+uniform mat3 uHoleRotT;                // hole→world: the grains live in the hole's frame
+out vec2 vP; out float vLen, vW, vBright, vHeat;
+// camera projection THROUGH the point-mass lens: a grain behind the hole is pushed
+// outward to its primary image (never inside the Einstein radius) and hidden when its
+// image would land inside the shadow; a grain in front of the hole is seen against it.
+vec2 lensProject(vec3 P, out float vis){
+  vis = 1.0;
+  P = uHoleRotT*P;
+  vec3 w = P - uCamPos; float z = dot(w, uCamFwd);
+  if(z < 0.25){ vis = 0.0; return vec2(0.0); }
+  vec2 s = vec2(dot(w, uCamRight), dot(w, uCamUp))/z;
+  vec3 w0 = -uCamPos; float z0 = dot(w0, uCamFwd);
+  vec2 h = vec2(dot(w0, uCamRight), dot(w0, uCamUp))/z0;
+  float Dl = length(uCamPos), Ds = length(w), Dls = Ds - Dl;
+  vec2 bv = s - h; float beta = max(length(bv), 1e-5);
+  float b = beta*Dl;                                         // impact parameter at the lens plane (r_s)
+  if(Dls > 0.05){
+    float tE2 = 2.0*Dls/(Dl*Ds);                             // Einstein angle² = 2 r_s D_ls / (D_l D_s)
+    float th = 0.5*(beta + sqrt(beta*beta + 4.0*tE2));       // primary image of the point-mass lens
+    vis *= clamp(th/beta, 1.0, 2.5);                         // magnification-ish brightening near the ring
+    b = th*Dl;
+  }
+  float behind = smoothstep(-0.5, 1.0, Dls);
+  b = max(b, 2.7*behind);                                    // close behind the hole → the image hugs the photon ring
+  vis *= mix(1.0, smoothstep(2.35, 2.65, b), smoothstep(0.0, 0.8, Dls));   // the shadow hides what sits behind it
+  vec2 sN = h + bv/beta*(b/Dl);
+  return sN/vec2(uTanHalf*uRes.x/uRes.y, uTanHalf);          // NDC
+}
+void main(){
+  float visH, visT;
+  vec2 H = lensProject(aHead, visH), Tl = lensProject(aTail, visT);
+  if(visH <= 0.0){ gl_Position = vec4(2.0, 2.0, 2.0, 1.0); vP = vec2(0.0); vLen = 0.0; vW = 1.0; vBright = 0.0; vHeat = 0.0; return; }
+  if(visT <= 0.0) Tl = H;
+  vec2 hp = H*uRes*0.5, tp = Tl*uRes*0.5;
+  vec2 dpx = hp - tp; float len0 = length(dpx);
+  float len = min(len0, 60.0);                              // cap runaway streaks (lens jumps)
+  vec2 ax = len0 > 1e-3 ? dpx/len0 : vec2(1.0, 0.0);
+  vec2 ay = vec2(-ax.y, ax.x);
+  float w = aInfo.x;
+  vec2 c = hp - ax*len*0.5;
+  vec2 pos = c + ax*aCorner.x*(len*0.5 + 2.0*w) + ay*aCorner.y*2.0*w;
+  gl_Position = vec4(pos/(uRes*0.5), 0.0, 1.0);
+  vP = vec2(aCorner.x*(len*0.5 + 2.0*w), aCorner.y*2.0*w);
+  vLen = len*0.5; vW = w; vBright = aInfo.y*visH; vHeat = aInfo.z;
+}`;
+const PART_FS = `#version 300 es
+precision highp float;
+in vec2 vP; in float vLen, vW, vBright, vHeat;
+out vec4 o;
+void main(){
+  float x = clamp(vP.x, -vLen, vLen);
+  float d = length(vP - vec2(x, 0.0));
+  float sig = vW*0.5;
+  float I = exp(-d*d/(2.0*sig*sig));
+  float t = (vP.x + vLen)/max(2.0*vLen, 1e-3);              // 0 at the tail → 1 at the head
+  I *= mix(0.10, 1.0, smoothstep(0.0, 1.0, t));
+  vec3 c = mix(vec3(0.70, 0.80, 1.0), vec3(1.0, 0.72, 0.42), vHeat);   // cool grain → friction-heated ember
+  c = mix(c, vec3(1.0, 0.97, 0.90), smoothstep(0.75, 1.0, vHeat));   // → white-hot at the end
+  o = vec4(c*I*vBright, 1.0);
+}`;
+
+// ── bloom: bright-pass + 2×2 downsample ─────────────────────────────────────
+const BRIGHT_FS = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 o;
+uniform sampler2D uTex; uniform vec2 uTexel; uniform float uThr, uEnc;
+vec3 dec(vec3 c){ return uEnc < 1.0 ? c*c/uEnc : c; }
+vec3 enc(vec3 c){ return uEnc < 1.0 ? sqrt(max(c, 0.0)*uEnc) : c; }
+void main(){
+  vec3 c = dec(texture(uTex, vUv + uTexel*vec2(-1.0,-1.0)).rgb) + dec(texture(uTex, vUv + uTexel*vec2(1.0,-1.0)).rgb)
+         + dec(texture(uTex, vUv + uTexel*vec2(-1.0, 1.0)).rgb) + dec(texture(uTex, vUv + uTexel*vec2(1.0, 1.0)).rgb);
+  c *= 0.25;
+  float l = max(c.r, max(c.g, c.b));
+  float k = max(l - uThr, 0.0)/max(l, 1e-4);      // soft knee, colour-preserving
+  o = vec4(enc(c*k), 1.0);
+}`;
+// ── bloom: plain 2×2 downsample ─────────────────────────────────────────────
+const DOWN_FS = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 o;
+uniform sampler2D uTex; uniform vec2 uTexel;
+void main(){
+  o = 0.25*(texture(uTex, vUv + uTexel*vec2(-1.0,-1.0)) + texture(uTex, vUv + uTexel*vec2(1.0,-1.0))
+          + texture(uTex, vUv + uTexel*vec2(-1.0, 1.0)) + texture(uTex, vUv + uTexel*vec2(1.0, 1.0)));
+}`;
+// ── bloom: separable 9-tap gaussian ─────────────────────────────────────────
+const BLUR_FS = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 o;
+uniform sampler2D uTex; uniform vec2 uDir;
+void main(){
+  float w[5] = float[5](0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
+  vec3 c = texture(uTex, vUv).rgb*w[0];
+  for(int i=1; i<5; i++){ c += texture(uTex, vUv + uDir*float(i)).rgb*w[i]; c += texture(uTex, vUv - uDir*float(i)).rgb*w[i]; }
+  o = vec4(c, 1.0);
+}`;
+// ── composite: scene + bloom → exposure → ACES → sRGB (+ vignette, dither) ──
+const COMP_FS = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 o;
+uniform sampler2D uScene, uB1, uB2, uB3;
+uniform float uEnc, uExposure, uBloom, uTime;
+uniform vec2 uRes;
+vec3 aces(vec3 x){ return clamp((x*(2.51*x + 0.03))/(x*(2.43*x + 0.59) + 0.14), 0.0, 1.0); }
+float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233)))*43758.5453); }
+vec3 dec(vec3 c){ return uEnc < 1.0 ? c*c/uEnc : c; }
+void main(){
+  vec3 c = dec(texture(uScene, vUv).rgb);
+  vec3 b = dec(texture(uB1, vUv).rgb)*0.35 + dec(texture(uB2, vUv).rgb)*0.5 + dec(texture(uB3, vUv).rgb)*0.7;
+  c = (c + b*uBloom)*uExposure;
+  c = mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, 1.12);   // a touch of saturation
+  vec2 q = vUv*2.0 - 1.0;
+  c *= 1.0 - 0.14*pow(dot(q, q)*0.5, 1.6);
+  c = aces(c);
+  c = pow(c, vec3(1.0/2.2));
+  c += (hash(vUv*uRes + fract(uTime)) - 0.5)/255.0;
+  o = vec4(c, 1.0);
+}`;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WEBGL SETUP
+   ═══════════════════════════════════════════════════════════════════════════ */
+const canvas = document.getElementById('gl');
+const errEl  = document.getElementById('err');
+function fail(msg){ errEl.style.display = 'grid'; errEl.textContent = msg; }
+
+const gl = canvas.getContext('webgl2', { antialias:false, alpha:false, depth:false, stencil:false, powerPreference:'high-performance' });
+if(!gl){ fail('This black hole needs WebGL2.\nYour browser or GPU driver does not expose it.'); return; }
+
+const params = new URLSearchParams(location.search);
+let HDR = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
+if(params.get('ldr') === '1') HDR = false;   // test hook: force the 8-bit path
+let ENC = HDR ? 1.0 : 0.125;   // RGBA8 fallback: √(c·ENC) encoding, range 0..8
+
+function compile(type, src){
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error('Shader compile error:\n' + gl.getShaderInfoLog(s));
+  return s;
+}
+function program(fs, vs){
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs || VS)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('Program link error:\n' + gl.getProgramInfoLog(p));
+  const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for(let i=0; i<n; i++){ const info = gl.getActiveUniform(p, i); u[info.name] = gl.getUniformLocation(p, info.name); }
+  return { p, u };
+}
+let P;
+try { P = { scene:program(SCENE_FS), part:program(PART_FS, PART_VS), bright:program(BRIGHT_FS), down:program(DOWN_FS), blur:program(BLUR_FS), comp:program(COMP_FS) }; }
+catch(e){ fail(e.message); console.error(e); return; }
+
+// one big triangle for the full-screen passes
+const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+// the dust: one quad instanced per grain (corner + per-instance head/tail/info)
+const NP = 1000;
+const INST = new Float32Array(NP*10);
+const pVao = gl.createVertexArray(); gl.bindVertexArray(pVao);
+const cornerBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, cornerBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+const instBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
+gl.bufferData(gl.ARRAY_BUFFER, INST.byteLength, gl.DYNAMIC_DRAW);
+gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 40, 0);  gl.vertexAttribDivisor(1, 1);
+gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 40, 12); gl.vertexAttribDivisor(2, 1);
+gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 4, gl.FLOAT, false, 40, 24); gl.vertexAttribDivisor(3, 1);
+gl.bindVertexArray(vao);
+
+function makeTarget(w, h){
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  if(HDR) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+  else    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8,   w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  return { tex, fb, w, h, ok };
+}
+function freeTarget(t){ if(!t) return; gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fb); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QUALITY / RESOLUTION
+   ═══════════════════════════════════════════════════════════════════════════ */
+const QUALITY = [ { name:'low', scale:.42, steps:130 }, { name:'medium', scale:.62, steps:200 },
+                  { name:'high', scale:.82, steps:280 }, { name:'ultra', scale:1.0, steps:400 } ];
+let qualityMode = 'medium', qIdx = 1;                 // we work in MEDIUM; ?q= overrides (auto adapts to frame time)
+{ const q = params.get('q'); const i = QUALITY.findIndex(x => x.name === q); if(i >= 0){ qualityMode = q; qIdx = i; } else if(q === 'auto') qualityMode = 'auto'; }
+const DPR = Math.min(devicePixelRatio || 1, 2);
+let W = 0, H = 0, RW = 0, RH = 0;             // canvas px · internal render px
+let T = null;                                  // render targets
+
+function buildTargets(){
+  if(T){ Object.values(T).forEach(freeTarget); }
+  W = Math.max(1, Math.round(innerWidth*DPR)); H = Math.max(1, Math.round(innerHeight*DPR));
+  canvas.width = W; canvas.height = H;
+  const sc = QUALITY[qIdx].scale;
+  RW = Math.max(160, Math.round(W*sc)); RH = Math.max(90, Math.round(H*sc));
+  const mk = (div) => makeTarget(Math.max(8, Math.round(RW/div)), Math.max(8, Math.round(RH/div)));
+  T = { scene:mk(1), b1a:mk(2), b1b:mk(2), b2a:mk(4), b2b:mk(4), b3a:mk(8), b3b:mk(8) };
+  if(!Object.values(T).every(t => t.ok)){
+    if(HDR){ HDR = false; ENC = 0.125; buildTargets(); return; }   // float targets refused → 8-bit fallback
+    fail('Could not create render targets.');
+  }
+}
+buildTargets();
+addEventListener('resize', buildTargets);
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CAMERA & CONTROLS (spherical orbit around the hole, r_s units)
+   ═══════════════════════════════════════════════════════════════════════════ */
+// The CAMERA is fixed (a little above the plane the hole starts in) and so is the sky.
+// What moves is the HOLE: its orientation R (hole→world) — dragged like a trackball,
+// and, when auto-spin is on, precessing about the vertical like a spinning top.
+const M3 = {
+  ident: () => [1,0,0, 0,1,0, 0,0,1],                                   // column-major (GLSL order)
+  mul: (A, B) => { const C = new Array(9); for(let c=0;c<3;c++) for(let r=0;r<3;r++) C[c*3+r] = A[r]*B[c*3] + A[3+r]*B[c*3+1] + A[6+r]*B[c*3+2]; return C; },
+  transpose: A => [A[0],A[3],A[6], A[1],A[4],A[7], A[2],A[5],A[8]],
+  apply: (A, v) => [A[0]*v[0]+A[3]*v[1]+A[6]*v[2], A[1]*v[0]+A[4]*v[1]+A[7]*v[2], A[2]*v[0]+A[5]*v[1]+A[8]*v[2]],
+  axis: (u, ang) => { const c = Math.cos(ang), s = Math.sin(ang), t = 1 - c, [x,y,z] = u;      // Rodrigues
+    return [t*x*x+c, t*x*y+s*z, t*x*z-s*y,  t*x*y-s*z, t*y*y+c, t*y*z+s*x,  t*x*z+s*y, t*y*z-s*x, t*z*z+c]; },
+};
+const CAM_EL = 0.28;                            // camera elevation above the hole's rest plane
+const DEF = { dist:19.0, tilt:0.2 };            // tilt: the hole's axis leans this much toward the camera → it precesses on a cone
+{ const f = (k, lo, hi) => { const v = parseFloat(params.get(k)); if(isFinite(v)) DEF[k] = Math.max(lo, Math.min(hi, v)); };
+  f('dist', 5, 45); f('tilt', -1.2, 1.2); }                            // ?dist= (r_s) · ?tilt= (rad)
+let dist = DEF.dist, distT = DEF.dist;
+let Ruser = M3.axis([1,0,0], DEF.tilt);         // the dragged orientation (hole→world)
+let phi = 0;                                    // precession angle
+let Rh2w = M3.ident(), Rw2h = M3.ident();       // this frame's full orientation and its inverse
+let spinOn = params.get('spin') !== '0' && params.get('orbit') !== '0', bloomOn = params.get('bloom') !== '0';
+let dustOn = params.get('dust') !== '0', jetsOn = params.get('jets') !== '0';
+const SPIN_RATE = 0.11;                         // rad/s of precession — one wobble in ~1 min
+const eye = [0, DEF.dist*Math.sin(CAM_EL), DEF.dist*Math.cos(CAM_EL)];   // updated each frame (dist eases)
+let fwd = [0,0,-1], right = [1,0,0], up = [0,1,0];
+const pointers = new Map();
+canvas.addEventListener('pointerdown', e => {
+  pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag');
+});
+canvas.addEventListener('pointermove', e => {
+  if(!pointers.has(e.pointerId)) return;
+  const prev = pointers.get(e.pointerId);
+  if(pointers.size === 1){
+    // trackball: drag right → the hole's near side swings right; drag down → it swings down.
+    // Applied in WORLD axes (the camera's up/right), on top of the current precession.
+    const dx = (e.clientX - prev.x)*0.006, dy = (e.clientY - prev.y)*0.006;
+    const Rp = M3.axis([0,1,0], phi), Rpi = M3.axis([0,1,0], -phi);
+    const R = M3.mul(M3.axis(up, dx), M3.mul(M3.axis(right, dy), M3.mul(Rp, M3.mul(Ruser, Rpi))));
+    Ruser = M3.mul(Rpi, M3.mul(R, Rp));        // store it back without the precession
+  }else if(pointers.size === 2){
+    const [a, b] = [...pointers.values()];
+    const d0 = Math.hypot(a.x - b.x, a.y - b.y);
+    const me = { x:e.clientX, y:e.clientY }, other = (a === prev) ? b : a;
+    const d1 = Math.hypot(me.x - other.x, me.y - other.y);
+    if(d0 > 0 && d1 > 0) distT = Math.max(5, Math.min(45, distT*d0/d1));
+  }
+  pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+});
+const release = e => { pointers.delete(e.pointerId); if(!pointers.size) canvas.classList.remove('drag'); };
+canvas.addEventListener('pointerup', release); canvas.addEventListener('pointercancel', release);
+canvas.addEventListener('wheel', e => { e.preventDefault(); distT = Math.max(5, Math.min(45, distT*Math.exp(e.deltaY*0.0012))); }, { passive:false });
+
+const $ = id => document.getElementById(id);
+const qSel = $('quality'), bloomBtn = $('bloom'), orbitBtn = $('orbit'), dustBtn = $('dust'), jetsBtn = $('jets'), statsEl = $('stats');
+qSel.value = qualityMode;
+function syncButtons(){
+  bloomBtn.classList.toggle('off', !bloomOn); orbitBtn.classList.toggle('off', !spinOn);
+  dustBtn.classList.toggle('off', !dustOn);   jetsBtn.classList.toggle('off', !jetsOn);
+}
+syncButtons();
+qSel.addEventListener('change', () => {
+  qualityMode = qSel.value;
+  if(qualityMode !== 'auto'){ qIdx = QUALITY.findIndex(x => x.name === qualityMode); buildTargets(); }
+  qSel.blur();
+});
+bloomBtn.addEventListener('click', () => { bloomOn = !bloomOn; syncButtons(); });
+orbitBtn.addEventListener('click', () => { spinOn = !spinOn; syncButtons(); });
+dustBtn.addEventListener('click',  () => { dustOn  = !dustOn;  syncButtons(); });
+jetsBtn.addEventListener('click',  () => { jetsOn  = !jetsOn;  syncButtons(); });
+function resetView(){ Ruser = M3.axis([1,0,0], DEF.tilt); phi = 0; distT = DEF.dist; }
+$('reset').addEventListener('click', resetView);
+addEventListener('keydown', e => {
+  if(e.target !== document.body) return;
+  if(e.code === 'Space'){ e.preventDefault(); spinOn = !spinOn; syncButtons(); }
+  else if(e.key === 'r' || e.key === 'R') resetView();
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE DUST — grains all over the frame, drawn into the hole by its gravity
+   ═══════════════════════════════════════════════════════════════════════════
+   3-D simulation in r_s units (c = 1, M = ½). Paczyński–Wiita pseudo-potential
+   Φ = −M/(r − r_s) reproduces the ISCO: anything that wanders inside ~3 r_s plunges.
+   Grains spawn inside the camera frustum (initially everywhere, later streaming
+   in over the frame's edges) on sub-circular orbits biased to the disk's spin; a
+   weak drag bleeds angular momentum so they spiral inward, ever faster, heating up
+   (blue-white grain → orange ember → white-hot) and fading in the last stretch to
+   the horizon (gravitational redshift). Swallowed grains respawn at the edge.   */
+const TS = 5.0;                 // simulated seconds per real second
+const DRAG = 0.028;             // per simulated second
+const TAIL = 0.35;              // streak = the grain's path over this many simulated seconds (longer when hot/fast)
+const PS = new Float32Array(NP*8);   // x y z · vx vy vz · seed · age
+let dustInit = false;
+const smoothstep = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a)/(b - a))); return t*t*(3 - 2*t); };
+
+function spawnGrain(i, edge, eye, fwd, right, up){
+  const aspect = W/H, o = i*8;
+  for(let tries = 0; tries < 8; tries++){
+    let sx, sy;
+    if(edge){ const side = (Math.random()*4)|0, u = Math.random()*2.4 - 1.2;
+      if(side === 0){ sx = -1.2; sy = u; } else if(side === 1){ sx = 1.2; sy = u; } else if(side === 2){ sx = u; sy = -1.2; } else { sx = u; sy = 1.2; } }
+    else { sx = Math.random()*2.4 - 1.2; sy = Math.random()*2.4 - 1.2; }
+    const z = 5 + Math.pow(Math.random(), 0.8)*32;                   // depth along the view axis
+    const ox = sx*TAN_HALF*aspect*z, oy = sy*TAN_HALF*z;
+    let x = eye[0] + fwd[0]*z + right[0]*ox + up[0]*oy;
+    let y = eye[1] + fwd[1]*z + right[1]*ox + up[1]*oy;
+    const zw = eye[2] + fwd[2]*z + right[2]*ox + up[2]*oy;
+    const r = Math.hypot(x, y, zw);
+    if(r < 4) continue;
+    const ph = M3.apply(Rw2h, [x, y, zw]);                             // the grains live in the HOLE's frame
+    x = ph[0]; y = ph[1]; const zz = ph[2];
+    // orbital pole: random, biased toward the disk's spin axis
+    let nx = Math.random()*2 - 1, ny = Math.random()*2 - 1, nz = Math.random()*2 - 1;
+    let nl = Math.hypot(nx, ny, nz) || 1; nx = nx/nl*0.35; ny = ny/nl*0.35 - SPIN*0.65; nz = nz/nl*0.35;
+    nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+    const rx = x/r, ry = y/r, rz = zz/r;
+    let tx = ny*rz - nz*ry, ty = nz*rx - nx*rz, tz = nx*ry - ny*rx;    // tangent = pole × r̂
+    const tl = Math.hypot(tx, ty, tz) || 1; tx /= tl; ty /= tl; tz /= tl;
+    const vc = Math.sqrt(0.5/r), f = vc*(0.5 + 0.42*Math.random());  // sub-circular → dips inward
+    PS[o] = x; PS[o+1] = y; PS[o+2] = zz;
+    PS[o+3] = tx*f - rx*vc*0.05 + (Math.random() - .5)*vc*0.08;
+    PS[o+4] = ty*f - ry*vc*0.05 + (Math.random() - .5)*vc*0.08;
+    PS[o+5] = tz*f - rz*vc*0.05 + (Math.random() - .5)*vc*0.08;
+    PS[o+6] = Math.random(); PS[o+7] = 0;
+    return;
+  }
+  PS[o] = 60; PS[o+1] = 60; PS[o+2] = 60; PS[o+3] = PS[o+4] = PS[o+5] = 0; PS[o+6] = Math.random(); PS[o+7] = 0;
+}
+function updateDust(dt, eye, fwd, right, up){
+  if(!dustInit){ for(let i = 0; i < NP; i++) spawnGrain(i, false, eye, fwd, right, up); dustInit = true; }
+  const hSim = dt*TS, aspect = W/H;
+  for(let i = 0; i < NP; i++){
+    const o = i*8;
+    let x = PS[o], y = PS[o+1], z = PS[o+2], vx = PS[o+3], vy = PS[o+4], vz = PS[o+5];
+    let r = Math.hypot(x, y, z), dead = false;
+    const sub = r < 3 ? 6 : r < 7 ? 3 : 1, h = hSim/sub;
+    for(let s = 0; s < sub; s++){
+      r = Math.hypot(x, y, z);
+      if(r < 1.06){ dead = true; break; }                              // through the horizon
+      const rm = Math.max(r - 1, 0.15), a = -0.5/(rm*rm)/r;            // Paczyński–Wiita: −M/(r−r_s)² along −r̂
+      vx += a*x*h; vy += a*y*h; vz += a*z*h;
+      const dr = 1 - DRAG*h; vx *= dr; vy *= dr; vz *= dr;
+      const sp = Math.hypot(vx, vy, vz); if(sp > 0.95){ const k = 0.95/sp; vx *= k; vy *= k; vz *= k; }
+      x += vx*h; y += vy*h; z += vz*h;
+    }
+    PS[o+7] += dt;
+    if(!dead){                                                         // left the frustum far from the hole → recycle
+      const pw = M3.apply(Rh2w, [x, y, z]);
+      const wx = pw[0] - eye[0], wy = pw[1] - eye[1], wz = pw[2] - eye[2];
+      const dz = wx*fwd[0] + wy*fwd[1] + wz*fwd[2];
+      if(dz < 0.5) dead = r > 4;
+      else {
+        const sx = (wx*right[0] + wy*right[1] + wz*right[2])/(dz*TAN_HALF*aspect), sy = (wx*up[0] + wy*up[1] + wz*up[2])/(dz*TAN_HALF);
+        if((Math.abs(sx) > 1.7 || Math.abs(sy) > 1.7) && r > 5) dead = true;
+        if(dz > 48) dead = true;
+      }
+    }
+    if(dead){ spawnGrain(i, true, eye, fwd, right, up); continue; }
+    PS[o] = x; PS[o+1] = y; PS[o+2] = z; PS[o+3] = vx; PS[o+4] = vy; PS[o+5] = vz;
+  }
+  for(let i = 0; i < NP; i++){                                         // → instance data
+    const o = i*8, q = i*10;
+    const x = PS[o], y = PS[o+1], z = PS[o+2], r = Math.hypot(x, y, z);
+    const pw = M3.apply(Rh2w, [x, y, z]);
+    const wx = pw[0] - eye[0], wy = pw[1] - eye[1], wz = pw[2] - eye[2];
+    const dz = Math.max(0.5, wx*fwd[0] + wy*fwd[1] + wz*fwd[2]);
+    const heat = Math.min(1, Math.max(0, (7 - r)/5.5));                // friction heating on the way in
+    const fade = smoothstep(1.06, 1.5, r);                             // gravitational redshift steals the last light
+    const distF = Math.min(1.6, Math.max(0.2, Math.pow(12/dz, 0.9)));
+    const seed = PS[o+6], tail = TAIL + 0.9*heat;                      // fast, hot grains stretch into long streaks
+    INST[q] = x; INST[q+1] = y; INST[q+2] = z;
+    INST[q+3] = x - PS[o+3]*tail; INST[q+4] = y - PS[o+4]*tail; INST[q+5] = z - PS[o+5]*tail;
+    INST[q+6] = (0.9 + 1.9*heat)*(0.6 + 0.8*seed)*Math.min(1.8, Math.max(0.55, Math.sqrt(16/dz)));
+    INST[q+7] = (0.10 + 1.5*heat*heat)*(0.6 + 0.8*seed)*fade*distF;
+    INST[q+8] = heat; INST[q+9] = 0;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, instBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, INST);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RENDER LOOP
+   ═══════════════════════════════════════════════════════════════════════════ */
+const V = { sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+            norm:a=>{ const l=Math.hypot(a[0],a[1],a[2])||1; return [a[0]/l,a[1]/l,a[2]/l]; } };
+const TAN_HALF = 0.42;                          // vertical fov ≈ 45.6°
+const DISK_IN = 3.0, DISK_OUT = 12.0, SPIN = -1.0, T_PEAK = 9800, JET_GAIN = 0.5, HALO_GAIN = 0.11;
+let last = 0, t0 = performance.now(), emaMs = 16, lastQChange = 0, downshiftAt = -1e9, fpsAcc = 0, fpsN = 0, fpsShown = 0, statsAt = 0;
+
+function draw(prog, target){
+  gl.bindFramebuffer(gl.FRAMEBUFFER, target ? target.fb : null);
+  gl.viewport(0, 0, target ? target.w : W, target ? target.h : H);
+  gl.useProgram(prog.p);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function bindTex(unit, tex, loc){ gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(loc, unit); }
+
+function frame(now){
+  requestAnimationFrame(frame);
+  const rawDt = (now - (last || now))/1000, dt = Math.min(0.1, rawDt); last = now;   // clamp: no jumps after a hidden tab
+  const time = (now - t0)/1000;
+
+  // ── adaptive quality (Auto only): step down when slow, creep back up when comfortably fast ──
+  emaMs = emaMs*0.92 + (dt*1000)*0.08;
+  if(qualityMode === 'auto' && now - lastQChange > 1500){
+    if(emaMs > 27 && qIdx > 0){ qIdx--; lastQChange = now; downshiftAt = now; buildTargets(); }
+    else if(emaMs < 10.5 && qIdx < 2 && now - downshiftAt > 30000 && now - lastQChange > 5000){ qIdx++; lastQChange = now; buildTargets(); }
+  }
+
+  // ── the hole spins (precesses about the vertical) while camera and sky stay put ──
+  if(spinOn && !pointers.size) phi += SPIN_RATE*dt;
+  dist += (distT - dist)*(1 - Math.exp(-dt*7));
+  eye[0] = 0; eye[1] = dist*Math.sin(CAM_EL); eye[2] = dist*Math.cos(CAM_EL);
+  fwd = V.norm(V.sub([0,0,0], eye)); right = V.norm(V.cross(fwd, [0,1,0])); up = V.cross(right, fwd);
+  Rh2w = M3.mul(M3.axis([0,1,0], phi), M3.mul(Ruser, M3.axis([0,1,0], -phi)));   // precession = conjugation about the vertical
+  Rw2h = M3.transpose(Rh2w);
+
+  // ── pass 1: geodesic ray tracing into the HDR scene target ──
+  const S = P.scene.u;
+  gl.useProgram(P.scene.p);
+  gl.uniform2f(S.uRes, T.scene.w, T.scene.h);
+  gl.uniform1f(S.uTime, time);
+  gl.uniformMatrix3fv(S.uHoleRot, false, Rw2h); gl.uniformMatrix3fv(S.uHoleRotT, false, Rh2w);
+  gl.uniform3fv(S.uCamPos, eye); gl.uniform3fv(S.uCamFwd, fwd); gl.uniform3fv(S.uCamRight, right); gl.uniform3fv(S.uCamUp, up);
+  gl.uniform1f(S.uTanHalf, TAN_HALF);
+  gl.uniform1f(S.uPixAng, 2*TAN_HALF/T.scene.h);
+  gl.uniform1i(S.uSteps, QUALITY[qIdx].steps);
+  gl.uniform1f(S.uDiskIn, DISK_IN); gl.uniform1f(S.uDiskOut, DISK_OUT);
+  gl.uniform1f(S.uSpin, SPIN); gl.uniform1f(S.uTpeak, T_PEAK); gl.uniform1f(S.uJets, jetsOn ? JET_GAIN : 0); gl.uniform1f(S.uHalo, HALO_GAIN); gl.uniform1f(S.uEnc, ENC);
+  draw(P.scene, T.scene);
+
+  // ── pass 1b: the infalling dust, added into the same HDR target (so it blooms too) ──
+  if(dustOn){
+    updateDust(dt, eye, fwd, right, up);
+    const U = P.part.u;
+    gl.useProgram(P.part.p);
+    gl.uniform3fv(U.uCamPos, eye); gl.uniform3fv(U.uCamFwd, fwd); gl.uniform3fv(U.uCamRight, right); gl.uniform3fv(U.uCamUp, up);
+    gl.uniformMatrix3fv(U.uHoleRotT, false, Rh2w);
+    gl.uniform1f(U.uTanHalf, TAN_HALF); gl.uniform2f(U.uRes, T.scene.w, T.scene.h);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, T.scene.fb); gl.viewport(0, 0, T.scene.w, T.scene.h);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+    gl.bindVertexArray(pVao); gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, NP); gl.bindVertexArray(vao);
+    gl.disable(gl.BLEND);
+  }
+
+  // ── bloom chain: bright-pass ½ → blur · ¼ → blur · ⅛ → blur ──
+  if(bloomOn){
+    const B = P.bright.u;
+    gl.useProgram(P.bright.p); bindTex(0, T.scene.tex, B.uTex);
+    gl.uniform2f(B.uTexel, 0.5/T.scene.w, 0.5/T.scene.h); gl.uniform1f(B.uThr, 1.0); gl.uniform1f(B.uEnc, ENC);
+    draw(P.bright, T.b1a);
+    const blur = (src, dst, dx, dy) => { gl.useProgram(P.blur.p); bindTex(0, src.tex, P.blur.u.uTex); gl.uniform2f(P.blur.u.uDir, dx/src.w, dy/src.h); draw(P.blur, dst); };
+    const down = (src, dst) => { gl.useProgram(P.down.p); bindTex(0, src.tex, P.down.u.uTex); gl.uniform2f(P.down.u.uTexel, 0.5/src.w, 0.5/src.h); draw(P.down, dst); };
+    blur(T.b1a, T.b1b, 1.2, 0); blur(T.b1b, T.b1a, 0, 1.2);
+    down(T.b1a, T.b2a); blur(T.b2a, T.b2b, 1.3, 0); blur(T.b2b, T.b2a, 0, 1.3);
+    down(T.b2a, T.b3a); blur(T.b3a, T.b3b, 1.5, 0); blur(T.b3b, T.b3a, 0, 1.5);
+  }
+
+  // ── composite to the screen ──
+  const C = P.comp.u;
+  gl.useProgram(P.comp.p);
+  bindTex(0, T.scene.tex, C.uScene); bindTex(1, T.b1a.tex, C.uB1); bindTex(2, T.b2a.tex, C.uB2); bindTex(3, T.b3a.tex, C.uB3);
+  gl.uniform1f(C.uEnc, ENC); gl.uniform1f(C.uExposure, 1.2); gl.uniform1f(C.uBloom, bloomOn ? 0.55 : 0.0);
+  gl.uniform1f(C.uTime, time); gl.uniform2f(C.uRes, W, H);
+  draw(P.comp, null);
+
+  // ── stats ──
+  fpsAcc += rawDt; fpsN++;
+  if(now - statsAt > 500){
+    fpsShown = fpsN/Math.max(fpsAcc, 1e-3); fpsAcc = 0; fpsN = 0; statsAt = now;
+    statsEl.textContent = `${fpsShown.toFixed(0)} fps · ${T.scene.w}×${T.scene.h} · ${QUALITY[qIdx].steps} steps · ${QUALITY[qIdx].name}${qualityMode === 'auto' ? ' (auto)' : ''} · ${HDR ? 'HDR' : '8-bit'}`;
+  }
+}
+requestAnimationFrame(frame);
+
+// expose a little for harness/tests
+window.BLACKHOLE = { get view(){ return { dist, phi, R:Rh2w }; }, get quality(){ return QUALITY[qIdx]; }, get hdr(){ return HDR; }, get fps(){ return fpsShown; }, dust:PS, get options(){ return { dustOn, jetsOn, bloomOn, spinOn }; } };
+})();
+</script>
+</body>
+</html>

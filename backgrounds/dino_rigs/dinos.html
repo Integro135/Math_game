@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosaurs — Character Workshop</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     STANDALONE workshop for the from-scratch DINOSAUR rigs — one dinosaur
+     at a time, big, on a BLANK studio backdrop (so the character alone is
+     judged), with dusk / night backdrops one click away. The game's scene,
+     dinosaurs3.bg.js, loads these very files on demand — iterate here and
+     the scene picks the change up.
+
+     Rigs (each in its own file, all sharing rig-common.js):
+       trex.js → TrexRig        bronto.js → BrontoRig     stego.js → StegoRig
+       trike.js → TrikeRig      ptero.js → PteroRig       baby.js → BabyRig
+     A missing file just greys out its tab.
+
+     Pick a dinosaur with the tabs (or ?animal=stego). Walk toggles pacing
+     (it turns at the edges; the pterodactyl flies), Act plays the signature
+     action (roar, graze, wag, charge, squawk, hatch), Flip mirrors, Coat
+     cycles the palette, BG cycles the backdrop, Size cycles the zoom (the
+     smallest ≈ its size in the real scene). Clicking the dinosaur also plays
+     its action. window._dinoTest exposes the instance for the screenshot
+     harness (freeze(p) pins the pose for stills).
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #ece6db; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  .bar { position: fixed; left: 0; right: 0; display: flex; gap: 8px; flex-wrap: wrap;
+         justify-content: center; z-index: 10; }
+  #tabs { top: 18px; }
+  #ctrl { bottom: 22px; }
+  .hbtn {
+    padding: 8px 18px;
+    background: rgba(70, 50, 40, 0.16);
+    color: rgba(60, 40, 30, 0.9);
+    border: 1px solid rgba(90, 60, 40, 0.28);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(40, 20, 10, 0.12);
+    transition: background .25s, transform .15s;
+  }
+  .hbtn:hover { background: rgba(90, 60, 40, 0.28); transform: translateY(-1px); }
+  .hbtn.on { background: rgba(215, 120, 60, 0.55); color: #fff8ee; }
+  .hbtn:disabled { opacity: .35; cursor: default; transform: none; }
+  body.dark .hbtn { background: rgba(60, 24, 14, 0.5); color: rgba(255, 214, 160, 0.92); border-color: rgba(255, 170, 90, 0.4); }
+  body.dark .hbtn:hover { background: rgba(120, 50, 26, 0.6); }
+  body.dark .hbtn.on { background: rgba(200, 110, 40, 0.65); }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="bar" id="tabs"></div>
+<div class="bar" id="ctrl">
+  <button class="hbtn" id="walk">Walk</button>
+  <button class="hbtn" id="act">Act</button>
+  <button class="hbtn" id="flip">Flip</button>
+  <button class="hbtn" id="pal">Coat</button>
+  <button class="hbtn" id="bg">BG</button>
+  <button class="hbtn" id="size">Size</button>
+</div>
+<script src="rig-common.js"></script>
+<script src="trex.js"></script>
+<script src="bronto.js"></script>
+<script src="stego.js"></script>
+<script src="trike.js"></script>
+<script src="ptero.js"></script>
+<script src="baby.js"></script>
+<script>
+(function(){
+  // dinosaur presets: which rig global draws it, plus per-preset tweaks
+  const PRESETS = {
+    trex:   { rig: 'TrexRig' },
+    bronto: { rig: 'BrontoRig' },
+    stego:  { rig: 'StegoRig' },
+    trike:  { rig: 'TrikeRig' },
+    ptero:  { rig: 'PteroRig' },
+    baby:   { rig: 'BabyRig' },
+  };
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  let W, H;
+  const BGS = ['blank', 'slate', 'dusk', 'night'];
+  const SIZES = [1, 1.6, 0.42];
+  let bgI = 0, sizeI = 0, palI = -1;
+  let name = new URLSearchParams(location.search).get('animal') || 'trex';
+  if (!PRESETS[name] || !window[PRESETS[name].rig]) name = Object.keys(PRESETS).find(k => window[PRESETS[k].rig]) || 'trex';
+  const L = { x: 0, y: 0, s: 1, dir: 1, ph: 0.7, wt: 0, moving: false, pose: 0, pal: undefined };
+  let poseT0 = null, lastT = 0, walking = false, frozen = null;
+  const rig = () => window[PRESETS[name].rig];
+
+  function fit(){
+    L.y = H * 0.80;
+    L.s = (H * 0.62 / rig().HEIGHT) * SIZES[sizeI] * (PRESETS[name].scale || 1);
+  }
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    fit();
+    if (!L.x) L.x = W * 0.5;
+  }
+  function select(n){
+    if (!PRESETS[n] || !window[PRESETS[n].rig]) return;
+    name = n; poseT0 = null; L.pose = 0; palI = -1; L.pal = undefined;
+    for (const k of Object.keys(L)) if (!['x', 'y', 's', 'dir', 'ph', 'wt', 'moving', 'pose', 'pal'].includes(k)) delete L[k];
+    Object.assign(L, PRESETS[n].extra || {});
+    fit();
+    for (const b of tabs.children) b.classList.toggle('on', b.dataset.name === n);
+    history.replaceState(null, '', '?animal=' + n);
+  }
+  const tabs = document.getElementById('tabs');
+  for (const k of Object.keys(PRESETS)){
+    const b = document.createElement('button');
+    b.className = 'hbtn'; b.textContent = k; b.dataset.name = k;
+    b.disabled = !window[PRESETS[k].rig];
+    b.onclick = () => select(k);
+    tabs.appendChild(b);
+  }
+  addEventListener('resize', resize); resize(); select(name);
+
+  function backdrop(){
+    const bg = BGS[bgI];
+    document.body.classList.toggle('dark', bg !== 'blank');
+    if (bg === 'blank'){
+      ctx.fillStyle = lg(0, 0, 0, H, [[0, '#f5f1e9'], [0.8, '#ebe4d8'], [1, '#e2d9ca']]);
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = lg(0, H * 0.8, 0, H, [[0, 'rgba(120,95,70,.10)'], [1, 'rgba(120,95,70,.02)']]);
+      ctx.fillRect(0, H * 0.8, W, H * 0.2);
+      return;
+    }
+    if (bg === 'slate'){ ctx.fillStyle = '#3a3f4b'; ctx.fillRect(0, 0, W, H); return; }
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.8);
+    if (bg === 'dusk'){
+      sky.addColorStop(0, '#3a1030'); sky.addColorStop(0.45, '#b53a2a');
+      sky.addColorStop(0.78, '#f08a3c'); sky.addColorStop(1, '#f7c25a');
+    } else {
+      sky.addColorStop(0, '#060b1e'); sky.addColorStop(0.7, '#1a2a52'); sky.addColorStop(1, '#3a4a78');
+    }
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    if (bg === 'dusk'){
+      const sun = ctx.createRadialGradient(W * 0.72, H * 0.62, 0, W * 0.72, H * 0.62, H * 0.22);
+      sun.addColorStop(0, 'rgba(255,245,200,.95)'); sun.addColorStop(0.6, 'rgba(255,210,110,.75)');
+      sun.addColorStop(1, 'rgba(255,190,90,0)');
+      ctx.fillStyle = sun; ctx.fillRect(0, 0, W, H);
+    }
+    const gr = ctx.createLinearGradient(0, H * 0.8, 0, H);
+    gr.addColorStop(0, bg === 'dusk' ? '#6a5a30' : '#2a2438'); gr.addColorStop(1, bg === 'dusk' ? '#3e3418' : '#141224');
+    ctx.fillStyle = gr; ctx.fillRect(0, H * 0.8, W, H * 0.2);
+  }
+  function lg(x1, y1, x2, y2, st){ const g = ctx.createLinearGradient(x1, y1, x2, y2); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+
+  function frame(ts){
+    const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
+    backdrop();
+    const R = rig();
+    L.moving = walking && poseT0 === null;
+    if (L.moving){
+      L.wt += dt * 2.2;
+      L.x += L.dir * (R.FLYER ? 55 : 30) * L.s * dt;
+      if (L.x > W * 0.8) L.dir = -1;
+      if (L.x < W * 0.2) L.dir = 1;
+    }
+    L.pose = poseT0 === null ? 0 : Math.min(1, (t - poseT0) / (R.ACT_SECONDS || 1.9));
+    if (L.pose >= 1){ poseT0 = null; L.pose = 0; }
+    if (frozen !== null) L.pose = frozen;
+    const shadowA = BGS[bgI] === 'blank' ? 'rgba(70,50,35,.22)' : 'rgba(38,14,6,.30)';
+    ctx.fillStyle = shadowA;
+    if (R.FLYER){
+      ctx.fillStyle = BGS[bgI] === 'blank' ? 'rgba(70,50,35,.12)' : 'rgba(38,14,6,.16)';
+      ctx.beginPath(); ctx.ellipse(L.x, L.y + 1.5 * L.s, R.WIDTH * 0.6 * L.s, 4 * L.s, 0, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.ellipse(L.x, L.y + 1.5 * L.s, R.WIDTH * 0.95 * L.s, 6 * L.s, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    R.draw(ctx, L, t);
+    ctx.fillStyle = BGS[bgI] === 'blank' ? 'rgba(70,50,35,.6)' : 'rgba(255,214,160,.7)'; ctx.font = '14px Georgia, serif';
+    ctx.fillText(name + '  ·  ' + (L.pal || R.DEFAULT || 'default'), 18, H - 16);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const act = () => { if (poseT0 === null) poseT0 = lastT; };
+  const nextPal = () => { const P = rig().PALS || []; if (!P.length) return; palI = (palI + 1) % P.length; L.pal = P[palI]; };
+  document.getElementById('walk').onclick = e => { walking = !walking; e.target.classList.toggle('on', walking); };
+  document.getElementById('act').onclick = act;
+  document.getElementById('flip').onclick = () => { L.dir *= -1; };
+  document.getElementById('pal').onclick = nextPal;
+  document.getElementById('bg').onclick = () => { bgI = (bgI + 1) % BGS.length; };
+  document.getElementById('size').onclick = () => { sizeI = (sizeI + 1) % SIZES.length; fit(); };
+  cv.addEventListener('click', e => {
+    const R = rig(), hw = R.WIDTH * L.s, hh = R.HEIGHT * L.s;
+    if (e.clientX > L.x - hw && e.clientX < L.x + hw && e.clientY > L.y - hh && e.clientY < L.y + 8 * L.s) act();
+  });
+  window._dinoTest = { L, act, walk: on => { walking = on; }, setBg: i => { bgI = i; }, setSize: i => { sizeI = i; fit(); },
+                       select, current: () => name, rig, nextPal, setPal: p => { L.pal = p; },
+                       freeze: p => { frozen = p; }, hideUI: () => { document.querySelectorAll('.bar').forEach(b => b.style.display = 'none'); } };
+})();
+</script>
+</body>
+</html>

@@ -118,6 +118,21 @@ window.EXERCISES.types.mult_champ=(()=>{
     box-shadow:0 4px 16px rgba(0,0,0,.4);opacity:0;visibility:hidden;
     transform:translate(-50%,-4px);transition:opacity .14s,transform .14s;pointer-events:none;z-index:4}
   .mk-switch:hover .mk-switch-tip,.mk-switch:focus .mk-switch-tip,.mk-switch:focus-visible .mk-switch-tip{opacity:1;visibility:visible;transform:translate(-50%,0)}
+  /* PHASE-1 commutativity flip — available BEFORE any mistake. A labelled pill
+     "🔁 כְּמוֹ 2 × 8" under the bare product: tapping swaps the shown order
+     (8×2 ↔ 2×8); the label always previews the OTHER order, so it teaches
+     "8×2 זה כמו 2×8" at a glance and works on touch (no hover needed). */
+  .mk-flip1{margin-top:2px;cursor:pointer;line-height:1;direction:ltr;
+    font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--skin-text,#fff);
+    background:rgba(199,125,255,.20);border:2px solid var(--skin-primary,#c77dff);border-radius:999px;
+    padding:7px 16px;display:inline-flex;align-items:center;gap:8px;
+    box-shadow:0 4px 12px rgba(0,0,0,.28);transition:transform .12s,background .12s}
+  .mk-flip1:hover{background:rgba(199,125,255,.36);transform:translateY(-2px)}
+  .mk-flip1:active{transform:scale(.95)}
+  .mk-flip1 .mk-switch-ico{pointer-events:none}
+  .mk-flip1 .mk-f1-like{opacity:.9}
+  .mk-f1-eq{color:var(--skin-accent,#ffd27d)}
+  .mk-f1-eq .mk-f1-x{color:var(--skin-primary,#c77dff);margin:0 3px}
   /* the chain fits on ONE line — the inner row auto-scales down when it would overflow */
   .mk-scroll{width:100%;overflow:hidden;display:flex;justify-content:center}
   .mk-row{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:5px;direction:ltr;
@@ -161,9 +176,14 @@ window.EXERCISES.types.mult_champ=(()=>{
 
     root.innerHTML=
       '<div class="mk-root">'+
-        '<div class="mk-title" id="mk-title"><b>'+A+'</b><span class="mk-x">×</span><b>'+B+'</b>'+
+        '<div class="mk-title" id="mk-title"><b class="mk-fa">'+A+'</b><span class="mk-x">×</span><b class="mk-fb">'+B+'</b>'+
           '<span class="mk-eq">=</span>'+
           '<input class="ans-inp mk-ans blink" id="mk-ans" type="text" inputmode="numeric" maxlength="2" aria-label="הַתְּשׁוּבָה"></div>'+
+        /* commutativity flip available FROM THE START (before any mistake): tap 🔁
+           to swap 8×2 ↔ 2×8 (same product). Omitted for a×a (a no-op flip). */
+        (A===B?'':'<button class="mk-flip1" id="mk-flip1" type="button" aria-label="הָפְכִי אֶת סֵדֶר הַמִּסְפָּרִים">'+
+          '<span class="mk-switch-ico">🔁</span><span class="mk-f1-like">כְּמוֹ</span>'+
+          '<span class="mk-f1-eq" id="mk-flip1-lbl"></span></button>')+
         '<div class="mk-chain" id="mk-chain" style="display:none">'+
           '<div class="mk-sep"></div>'+
           /* "זֶה כְּמוֹ" + the CURRENT-orientation chain (matches the number line;
@@ -187,6 +207,10 @@ window.EXERCISES.types.mult_champ=(()=>{
     const switchBtn=root.querySelector('#mk-switch');
     const rowEl=root.querySelector('#mk-row');
     const likeChainEl=root.querySelector('#mk-like-chain');
+    const flip1Btn=root.querySelector('#mk-flip1');
+    const flip1Lbl=root.querySelector('#mk-flip1-lbl');
+    const titleFaEl=root.querySelector('.mk-fa');
+    const titleFbEl=root.querySelector('.mk-fb');
 
     // a read-only "rep + rep + …" chain string (styled numbers + operators),
     // used both beside "זֶה כְּמוֹ" (current orientation) and, as plain text, in
@@ -204,7 +228,22 @@ window.EXERCISES.types.mult_champ=(()=>{
       if(tip)tip.textContent=oTimes<=0?'0':oTimes===1?String(oRep):new Array(oTimes).fill(oRep).join(' + ');
     }
 
-    fb('✖️ כַּמָּה זֶה '+spoken(A,B)+'? כִּתְבִי אֶת הַתְּשׁוּבָה 💗');   // e.g. 4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ"
+    // ── phase-1 commutativity flip: swap the DISPLAYED factor order (8×2 ↔ 2×8)
+    // before any mistake. The product/answer never change; `flip` is shared with
+    // the mistake aid so a flip chosen here also orients the chain / number line. ──
+    function renderTitle(){
+      if(titleFaEl)titleFaEl.textContent=flip?B:A;
+      if(titleFbEl)titleFbEl.textContent=flip?A:B;
+    }
+    function p1Hint(){return '✖️ כַּמָּה זֶה '+spoken(flip?B:A,flip?A:B)+'? כִּתְבִי אֶת הַתְּשׁוּבָה 💗';}
+    // the pill always previews the OTHER order (what a tap swaps TO) → "כמו 2 × 8"
+    function updateFlip1(){
+      if(!flip1Lbl)return;
+      flip1Lbl.innerHTML=(flip?A:B)+'<span class="mk-f1-x">×</span>'+(flip?B:A);
+    }
+    updateFlip1();
+
+    fb(p1Hint());   // e.g. 4×3 → "אַרְבַּע פְּעָמִים שָׁלוֹשׁ"
 
     // keep the chain on ONE line — scale the row down if it overflows
     function fit(){
@@ -312,6 +351,8 @@ window.EXERCISES.types.mult_champ=(()=>{
     // window.__mkAidTurn carries the turn across cards (and lets tests pin it).
     function reveal(){
       if(revealed)return;revealed=true;
+      if(flip1Btn)flip1Btn.style.display='none';   // the aid's own 🔁 takes over now
+      renderTitle();                                // keep the greyed title in the chosen order
       // ×0 / ×1 (a factor ≤ 1): the skip-counting line is degenerate (jumps of 0, or
       // 0 jumps) — always use the count-based CHAIN aid, which states the rule.
       if(A<=1||B<=1){ aidKind='chain'; }
@@ -365,9 +406,19 @@ window.EXERCISES.types.mult_champ=(()=>{
       }
     });
 
+    // phase-1 🔁 — flip the SHOWN order before any mistake (commutativity strategy)
+    if(flip1Btn)flip1Btn.addEventListener('click',function(){
+      if(done||revealed)return;
+      flip=!flip;
+      renderTitle();updateFlip1();updateSwitchTip();
+      fb(p1Hint());
+      try{ansInp.focus();}catch(e){}
+    });
+
     // 🔁 re-renders whichever aid this card revealed (chain re-built / LINE re-configured)
     if(switchBtn)switchBtn.addEventListener('click',function(){
       flip=!flip;
+      renderTitle();
       if(aidKind==='nl')renderNlAid(); else renderChain();
     });
 

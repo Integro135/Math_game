@@ -3,49 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Savanna — Pride Rock — Dev Harness</title>
+<title>Savanna — Day Cycle — Dev Harness</title>
 <!-- ───────────────────────────────────────────────────────────────────────
-     Thin development harness for the SAVANNA background module.
-     The actual scene lives in savanna.bg.js — the SAME file the game loads
-     dynamically (single source of truth, no more copy-porting).
-     Open this file directly to iterate on the background in isolation.
+     Thin development harness for the SAVANNA background module (the
+     from-scratch savanna with the new animal rigs and a full day cycle).
+     The scene lives in savanna.bg.js — the SAME file the game loads.
+     Buttons jump the clock to each part of the day (a smooth 2.6 s tween),
+     Pause freezes the clock, Fast runs the day 20× faster, Restart re-inits.
      ─────────────────────────────────────────────────────────────────────── -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #33102e; overflow: hidden; width: 100vw; height: 100vh; }
   #stage { position: fixed; inset: 0; }
-  #toggle {
-    position: fixed; bottom: 24px; right: 24px; z-index: 10;
-    padding: 9px 22px;
+  #bar { position: fixed; bottom: 24px; left: 0; right: 0; display: flex; gap: 8px; justify-content: center; z-index: 10; }
+  .hbtn {
+    padding: 8px 18px;
     background: rgba(60, 24, 14, 0.5);
     color: rgba(255, 214, 160, 0.92);
     border: 1px solid rgba(255, 170, 90, 0.4);
     border-radius: 999px;
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
+    cursor: pointer; backdrop-filter: blur(6px);
     box-shadow: 0 4px 18px rgba(20, 5, 8, 0.45);
-    transition: background .25s, box-shadow .25s, transform .15s;
+    transition: background .25s, transform .15s;
   }
-  #toggle:hover {
-    background: rgba(120, 50, 26, 0.6);
-    box-shadow: 0 4px 24px rgba(255, 160, 80, 0.3);
-    transform: translateY(-1px);
-  }
+  .hbtn:hover { background: rgba(120, 50, 26, 0.6); transform: translateY(-1px); }
+  .hbtn.on { background: rgba(200, 110, 40, 0.65); }
+  #clock { position: fixed; top: 16px; left: 18px; color: rgba(255,230,190,.85); font: 13px Georgia, serif; letter-spacing: .1em; z-index: 10; }
 </style>
 </head>
 <body>
 <div id="stage"></div>
-<button id="toggle">Restart</button>
+<div id="clock"></div>
+<div id="bar">
+  <button class="hbtn" data-tod="0.125">Morning</button>
+  <button class="hbtn" data-tod="0.375">Noon</button>
+  <button class="hbtn" data-tod="0.625">Afternoon</button>
+  <button class="hbtn" data-tod="0.875">Night</button>
+  <button class="hbtn" id="pause">Pause</button>
+  <button class="hbtn" id="fast">Fast</button>
+  <button class="hbtn" id="restart">Restart</button>
+</div>
 <script src="savanna.bg.js"></script>
 <script>
-let cleanup = null;
-function start() {
+let cleanup = null, paused = false, fast = false;
+function start(){
   if (cleanup) cleanup();
   cleanup = window.BACKGROUNDS.savanna.init({ stage: document.getElementById('stage') });
+  paused = false; fast = false;
+  document.getElementById('pause').classList.remove('on'); document.getElementById('fast').classList.remove('on');
 }
-document.getElementById('toggle').addEventListener('click', start);
+document.querySelectorAll('[data-tod]').forEach(b => b.onclick = () => window._sav2 && window._sav2.setTod(+b.dataset.tod));
+document.getElementById('pause').onclick = e => { paused = !paused; e.target.classList.toggle('on', paused); window._sav2.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+document.getElementById('fast').onclick = e => { fast = !fast; e.target.classList.toggle('on', fast); window._sav2.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+document.getElementById('restart').onclick = start;
+setInterval(() => { if (window._sav2){ const t = window._sav2.tod(); const A = [5.5, 10.5, 14.5, 19.5, 29.5], k = Math.min(3, Math.floor(t * 4)); const h = (A[k] + (t * 4 - k) * (A[k + 1] - A[k])) % 24; document.getElementById('clock').textContent = window._sav2.phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0'); } }, 250);
 start();
 </script>
 </body>

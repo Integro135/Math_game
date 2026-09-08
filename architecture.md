@@ -134,11 +134,12 @@ subtraction_game/
 │  ├─ README.md                    ★ per-background docs (scene inventory, timers,
 │  │                               click interactions) + the HTML→.bg.js porting
 │  │                               checklist for game integration
-│  ├─ space.bg.js                  ★ background MODULES — single source of
-│  ├─ unicorns.bg.js                 truth, used by BOTH the game and the
+│  ├─ space2.bg.js                 ★ background MODULES — single source of
+│  ├─ unicorns.bg.js + unicorns/     truth, used by BOTH the game and the
 │  ├─ dubai.bg.js                    harness; themes map to them via
 │  ├─ reef.bg.js                     _BG_THEMES (themes.js)
-│  ├─ space.html                   thin dev harnesses (one per module):
+│  ├─ unicorns2.bg.js               (built 2026-09, NOT adopted — nothing loads it)
+│  ├─ space2.html                  thin dev harnesses (one per module):
 │  ├─ unicorns.html                  open directly in a browser to iterate
 │  ├─ dubai_skyline.html             on a scene in isolation
 │  └─ underwater_happy_reef.html
@@ -199,7 +200,7 @@ background's AIDS variant (§3.5), and runs the previous background's
 **Adding a background:** write `backgrounds/foo.bg.js` (same shape) +
 `game/skins/foo.skin.css`, then map a theme to `loadBackground('foo')` in
 `applyTheme` (themes.js). Iterate standalone with a copy of the
-`backgrounds/space.html` harness.
+`backgrounds/savanna.html` harness.
 
 ### 3.2 Skins — `game/skins/<name>.skin.css`
 

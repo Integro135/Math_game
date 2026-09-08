@@ -4,7 +4,7 @@ let _specialPtc=[];
 /* themes served by a canvas background module (backgrounds/<bg>.bg.js);
    these get their scene, skin and aid art from the dynamic loader, and no
    floating emoji particles (the scenes carry their own life) */
-const _BG_THEMES={galaxy:'space',girls:'unicorns',reef:'reef',dubai:'dubai',savanna:'savanna',dinosaurs:'dinosaurs2',frozen:'frozen',maldives:'maldives'};
+const _BG_THEMES={galaxy:'space2',girls:'unicorns',reef:'reef',dubai:'dubai2',savanna:'savanna',dinosaurs:'dinosaurs3',frozen:'frozen',maldives:'maldives'};
 const THEMES={
   girls:{
     titleEmoji:'',uniL:'',uniR:'',toggleIcon:'👦',

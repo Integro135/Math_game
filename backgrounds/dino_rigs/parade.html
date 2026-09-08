@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosaurs — Parade</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     ALL the from-scratch dinosaur rigs side by side, drawn at ONE shared
+     px-per-unit scale (so their relative sizes are the rigs' own
+     HEIGHT/WIDTH), on the same blank studio backdrop as dinos.html. Use it
+     to judge them as a family: same eye/brow language, same softness, same
+     palette family. Walk marches the whole parade across the screen (each
+     dinosaur wraps around when it leaves on the right; the pterodactyl
+     flies); Act plays every signature action, staggered; BG cycles the
+     backdrop. A missing rig file is simply skipped. window._paradeTest
+     exposes hooks for the screenshot harness.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #ece6db; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #ctrl { position: fixed; bottom: 22px; left: 0; right: 0; display: flex; gap: 8px;
+          justify-content: center; z-index: 10; }
+  .hbtn {
+    padding: 8px 18px;
+    background: rgba(70, 50, 40, 0.16);
+    color: rgba(60, 40, 30, 0.9);
+    border: 1px solid rgba(90, 60, 40, 0.28);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(40, 20, 10, 0.12);
+    transition: background .25s, transform .15s;
+  }
+  .hbtn:hover { background: rgba(90, 60, 40, 0.28); transform: translateY(-1px); }
+  .hbtn.on { background: rgba(215, 120, 60, 0.55); color: #fff8ee; }
+  body.dark .hbtn { background: rgba(60, 24, 14, 0.5); color: rgba(255, 214, 160, 0.92); border-color: rgba(255, 170, 90, 0.4); }
+  body.dark .hbtn.on { background: rgba(200, 110, 40, 0.65); }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ctrl">
+  <button class="hbtn" id="walk">Walk</button>
+  <button class="hbtn" id="act">Act</button>
+  <button class="hbtn" id="bg">BG</button>
+</div>
+<script src="rig-common.js"></script>
+<script src="trex.js"></script>
+<script src="bronto.js"></script>
+<script src="stego.js"></script>
+<script src="trike.js"></script>
+<script src="ptero.js"></script>
+<script src="baby.js"></script>
+<script>
+(function(){
+  // parade order (tall ones first), each with its rig global and tweaks
+  const ORDER = [
+    { name: 'bronto', rig: 'BrontoRig' },
+    { name: 'trex',   rig: 'TrexRig' },
+    { name: 'stego',  rig: 'StegoRig' },
+    { name: 'trike',  rig: 'TrikeRig' },
+    { name: 'ptero',  rig: 'PteroRig' },
+    { name: 'baby',   rig: 'BabyRig' },
+  ].filter(o => window[o.rig]);
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  const BGS = ['blank', 'slate', 'dusk', 'night'];
+  let W, H, bgI = 0, lastT = 0, walking = false, S = 1, frozen = null;
+  const GAP = 10;                                  // units between dinosaurs
+  const cast = ORDER.map((o, i) => ({
+    o, R: window[o.rig], sc: o.scale || 1,
+    L: Object.assign({ x: 0, y: 0, s: 1, dir: 1, ph: i * 0.9, wt: i * 1.3, moving: false, pose: 0 }, o.extra || {}),
+    poseT0: null,
+  }));
+
+  function layout(){
+    const maxH = Math.max(...cast.map(c => c.R.HEIGHT * c.sc));
+    const total = cast.reduce((a, c) => a + c.R.WIDTH * 2 * c.sc + GAP, 0);
+    S = Math.min(H * 0.6 / maxH, W * 0.94 / total);
+    let x = (W - total * S) / 2;
+    for (const c of cast){
+      const w = c.R.WIDTH * 2 * c.sc * S;
+      c.L.x = x + w / 2; c.L.y = H * 0.80; c.L.s = S * c.sc;
+      x += w + GAP * S;
+    }
+  }
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layout();
+  }
+  addEventListener('resize', resize); resize();
+
+  function lg(x1, y1, x2, y2, st){ const g = ctx.createLinearGradient(x1, y1, x2, y2); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+  function backdrop(){
+    const bg = BGS[bgI];
+    document.body.classList.toggle('dark', bg !== 'blank');
+    if (bg === 'blank'){
+      ctx.fillStyle = lg(0, 0, 0, H, [[0, '#f5f1e9'], [0.8, '#ebe4d8'], [1, '#e2d9ca']]);
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = lg(0, H * 0.8, 0, H, [[0, 'rgba(120,95,70,.10)'], [1, 'rgba(120,95,70,.02)']]);
+      ctx.fillRect(0, H * 0.8, W, H * 0.2);
+      return;
+    }
+    if (bg === 'slate'){ ctx.fillStyle = '#3a3f4b'; ctx.fillRect(0, 0, W, H); return; }
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.8);
+    if (bg === 'dusk'){
+      sky.addColorStop(0, '#3a1030'); sky.addColorStop(0.45, '#b53a2a');
+      sky.addColorStop(0.78, '#f08a3c'); sky.addColorStop(1, '#f7c25a');
+    } else {
+      sky.addColorStop(0, '#060b1e'); sky.addColorStop(0.7, '#1a2a52'); sky.addColorStop(1, '#3a4a78');
+    }
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    if (bg === 'dusk'){
+      const sun = ctx.createRadialGradient(W * 0.72, H * 0.62, 0, W * 0.72, H * 0.62, H * 0.22);
+      sun.addColorStop(0, 'rgba(255,245,200,.95)'); sun.addColorStop(0.6, 'rgba(255,210,110,.75)');
+      sun.addColorStop(1, 'rgba(255,190,90,0)');
+      ctx.fillStyle = sun; ctx.fillRect(0, 0, W, H);
+    }
+    const gr = ctx.createLinearGradient(0, H * 0.8, 0, H);
+    gr.addColorStop(0, bg === 'dusk' ? '#6a5a30' : '#2a2438'); gr.addColorStop(1, bg === 'dusk' ? '#3e3418' : '#141224');
+    ctx.fillStyle = gr; ctx.fillRect(0, H * 0.8, W, H * 0.2);
+  }
+
+  function frame(ts){
+    const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
+    backdrop();
+    for (const c of cast){
+      const L = c.L;
+      L.moving = walking && c.poseT0 === null;
+      if (L.moving){
+        L.wt += dt * 2.2;
+        L.x += (c.R.FLYER ? 55 : 30) * L.s * dt;
+        const w = c.R.WIDTH * 2 * L.s;
+        if (L.x - w > W) L.x = -w;                 // wrap around: a parade
+      }
+      L.pose = c.poseT0 === null ? 0 : Math.min(1, (t - c.poseT0) / (c.R.ACT_SECONDS || 1.9));
+      if (L.pose >= 1){ c.poseT0 = null; L.pose = 0; }
+      if (frozen !== null) L.pose = frozen;
+    }
+    const blank = BGS[bgI] === 'blank';
+    for (const c of cast){
+      if (c.R.FLYER){
+        ctx.fillStyle = blank ? 'rgba(70,50,35,.12)' : 'rgba(38,14,6,.16)';
+        ctx.beginPath(); ctx.ellipse(c.L.x, c.L.y + 1.5 * c.L.s, c.R.WIDTH * 0.6 * c.L.s, 4 * c.L.s, 0, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = blank ? 'rgba(70,50,35,.22)' : 'rgba(38,14,6,.30)';
+        ctx.beginPath(); ctx.ellipse(c.L.x, c.L.y + 1.5 * c.L.s, c.R.WIDTH * 0.95 * c.L.s, 6 * c.L.s, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      c.R.draw(ctx, c.L, t);
+    }
+    ctx.fillStyle = blank ? 'rgba(70,50,35,.6)' : 'rgba(255,214,160,.7)'; ctx.font = '13px Georgia, serif';
+    for (const c of cast) ctx.fillText(c.o.name, c.L.x - ctx.measureText(c.o.name).width / 2, H * 0.80 + 26);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const act = () => cast.forEach((c, i) => { if (c.poseT0 === null) c.poseT0 = lastT + i * 0.18; });
+  document.getElementById('walk').onclick = e => { walking = !walking; e.target.classList.toggle('on', walking); };
+  document.getElementById('act').onclick = act;
+  document.getElementById('bg').onclick = () => { bgI = (bgI + 1) % BGS.length; };
+  cv.addEventListener('click', e => {
+    for (const c of cast){
+      const hw = c.R.WIDTH * c.L.s, hh = c.R.HEIGHT * c.L.s;
+      if (e.clientX > c.L.x - hw && e.clientX < c.L.x + hw && e.clientY > c.L.y - hh && e.clientY < c.L.y + 8 * c.L.s){
+        if (c.poseT0 === null) c.poseT0 = lastT; return;
+      }
+    }
+  });
+  window._paradeTest = { act, walk: on => { walking = on; }, setBg: i => { bgI = i; }, names: () => cast.map(c => c.o.name),
+                         freeze: p => { frozen = p; }, hideUI: () => { document.getElementById('ctrl').style.display = 'none'; } };
+})();
+</script>
+</body>
+</html>

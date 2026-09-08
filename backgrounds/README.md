@@ -4,59 +4,88 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space.bg.js`, `unicorns.bg.js`, `dubai.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs2.bg.js` | Loaded by the game at runtime |
-| **Thin dev harness** (`<name>.html`) | `space.html`, `unicorns.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs2.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
-| **Reusable scene parts** (`dinasours/*.js`) | `baby-trex-egg.js` | The rolling/hatching egg, loaded on demand by `dinosaurs2.bg.js`. (The old `volcano.js`/`meteor.js`/`*-walker.js` modules were removed when the self-contained `dinosaurs2.bg.js` replaced the composed `dinosaurs.bg.js`.) |
+| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns.bg.js`, `dubai.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `frozen.bg.js`, `maldives.bg.js` | Loaded by the game at runtime |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
+| **Built, NOT adopted** | `unicorns2.bg.js`, `unicorns2.html`, `_verify_unicorns2.py` | A 2026-09 from-scratch canvas rebuild of the unicorn valley (one module, full day cycle, canvas unicorn rig). Reviewed and **not** kept: the original `unicorns.bg.js` scene reads better, so `girls` still maps to `unicorns`. Nothing loads these; see its section below. |
+| **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around the GR black hole: a WebGL2 sky layer with ADAPTIVE quality (starts low, climbs to medium/high while the frame time allows; `AUTO_QUALITY` pins it) — dark sky, sparse stars, a structured Milky Way with a warm core, the ray-traced black hole (spiral disk, jets, infalling dust, and a glowing HALO: hot inner-flow plasma between the disk and the shadow whose light piles up along the geodesics into an uneven photon ring that softens the shadow's edge) positioned/sized exactly where the old 2-D hole was and slowly PRECESSING like a top (the sky stays put) — under the 2-D canvas world with rebuilt Earth (orthographic globe, real continents) and Saturn (oblate, structured rings + shadows) — both WANDER: slow curved paths out by the left/top/bottom edges and back in from another edge, never near the hole (only the Sun and the hole stay put) — and Sun (limb darkening, granulation, sunspots, spicules), PASSING WORLDS (Mercury, Venus, Mars, Jupiter + its four moons, Uranus with rings, Neptune, Pluto + an asteroid drift across in a shuffled cycle — each a procedurally painted 256×128 surface map wrapped onto an orthographic sphere by longitude strips, rotating, Sun-lit with limb darkening, entering from the left on lanes clear of the hole whose gravity visibly bends their path without ever capturing them, clickable with facts), plus galaxies, comets, constellations, supernova, click reactions. Without WebGL2 the sky layer is a STILL PAINTED sky on the same canvas (the composite shader's gradient + nebulae, a soft Milky Way band, a plain 2-D hole: shadow, photon ring, tilted disk glow) while the whole 2-D world keeps running — no second module. Theme `galaxy` → `space2`. |
+| **Dubai v2** (`dubai2.bg.js` + `dubai2.html`) | `dubai2.bg.js`, `dubai2.html` | The Dubai dusk scene recreated from scratch with every element of `dubai.bg.js` kept (same constants and cadences — `_verify.js` now checks this file): the city redrawn — layered dusk sky with lit cirrus and an earthshine moon, a two-layer hazy far skyline, towers with two-face 3-D massing / glass sheen / floor banding / mullions / lit podiums / detailed crowns, and the hallmarks built with care (Burj Khalifa's rounded setback lobes + needle spire over the mall lake, the Burj Al Arab's exoskeleton sail with glowing atrium wall, helipad and Al Muntaha on its island, the wave-shaped Jumeirah Beach Hotel, the twisting Cayan, the Emirates Towers, the torus Museum of the Future with calligraphy, the golden Dubai Frame, the Address towers + Sky View bridge, Ain Dubai) mirrored in rippled water. Theme `dubai` → `dubai2`. |
+| **Standalone study** (`blackhole.html`) | `blackhole.html` | A physically realistic black hole (WebGL2, single file, not wired into the game): GR ray tracing through Schwarzschild spacetime; Doppler-beamed + gravitationally-redshifted thin accretion disk with two glowing trailing spiral arms; volumetric relativistic jets integrated along the same geodesics; ~1000 infalling dust grains (3-D Paczyński–Wiita sim, drawn through the point-mass lens); lensed starfield; HDR bloom. Default quality MEDIUM. Drag/wheel to orbit/zoom; `?q=`, `?jets=0`, `?dust=0`, `?az= ?el= ?dist=`. Counterpart of the 2-D canvas black hole `space2.bg.js` paints when WebGL2 is missing. |
 
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns`,
-`galaxy→space`, `reef→reef`, `dubai→dubai`, `savanna→savanna`, `dinosaurs→dinosaurs2`
+`galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
 (🏙️, 🦁 and 🦕 are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
 #stars-layer {display:block}` rule in themes.css, or the stage stays hidden.
 
-**savanna.bg.js — Pride Rock at sunset.** Two animal systems:
+**savanna.bg.js — Pride Rock through a full DAY CYCLE.** Harness:
+`savanna.html` (Morning/Noon/Afternoon/Night jump the clock, Pause, Fast ×20).
+A whole day takes `DAY_SEC` = 240 s: MORNING (pink-violet dawn, sun rising
+right of Pride Rock), NOON (blue sky, small white sun high up), AFTERNOON (the
+golden sunset, big orange sun sinking right, warm-tinted animals), NIGHT (deep
+blue, moon with craters, twinkling + shooting stars, fireflies, blue-tinted
+animals). Each look is a keyframe (`LOOKS`); every colour is interpolated
+across a 0.12-day window around each phase boundary and the sky + scenery
+layers are repainted as the palette drifts (`repaintIfNeeded`). Sun and moon
+travel real arcs (`sunP`/`moonP`), ground shadows lean away from the sun and
+fade at night; the waterhole catches whichever is up. Clicking the SUN, the
+MOON or the WATERHOLE (always reachable under the game panel) tweens the clock
+to the next phase centre.
 
-*The resident pride* lives on Pride Rock (flush to the left screen edge so its
-base/“start” is hidden, drawn BEHIND the foreground plain so animals walk in
-front of it). It never leaves: a male LION (layered blob mane with depth/shade
-layers, breathing torso, blinking amber eye, swishing tufted tail), a LIONESS,
-a medium-sized lioness and a CUB. All pace the full ridge from the left edge to
-the overhanging tip via `updateWalker` + the shared `ridgeY` (paws ride the
-sloping ridge; `hi` keeps the lion’s front legs from walking off the tip). The
-two young lionesses wear a pink hair-ribbon bow. A floating ❤️ appears only
-while two pride members meet FACE-TO-FACE (from ~½cm before contact through
-~1cm of overlap). The lion’s ROAR is on a slow cadence — once every 5 minutes
-OR every 5th click on the lion — and fires 3 sky lightning bolts + expanding
-shockwave rings + a whole-frame screen shake.
+Animals are the `savanna_animals/` rigs (below), loaded on demand relative to
+the module file (`needScript`; `preload()` warms them during the intro): the
+resident PRIDE on Pride Rock (flush to the left edge, drawn behind the plain so
+herds pass in front) — lion, lioness, medium lioness + cub with ribbons —
+paces the ridge in staggered patrol ranges via the shared `ridgeY`; HERDS
+(`KINDS`: zebra, ostrich, elephant, cheetah, giraffe, lionesses) cross the plain
+in depth lanes, 2–5 strong with young, per-individual tints, up to two at once.
+Acts on a schedule and on click (document listener + game-UI filter): the rig's
+signature `pose` (roar / yawn / crouch / bray / graze / trumpet / head-bury), a
+jump, the cheetah's tail-chase spin, and (rarer, ~1/3 as often) the FART — an
+embarrassed shimmy with soft green puffs drifting off the rear (`vent` per
+kind); the lion's roar fires shockwave rings + a screen shake, the elephant's
+trumpet sound rings; ❤️ when two pride members meet face to face. Animals are
+drawn on their own layer and tinted with the hour (`source-atop`). Ambient:
+drifting clouds (dimmed at night), bird flocks by day, golden dust motes at
+sunset, swaying foreground grass. `window._sav2` exposes tod/setTod/setSpeed/
+phase/pride/herd/spawn/act for the harness and tests. Skin:
+`game/skins/savanna.skin.css`. Aids: `savanna` (cheetah number-line rider +
+amber fruit jar).
 
-*Roaming herds* cross the plain, one species at a time (up to 2 concurrent):
-ZEBRA, OSTRICH, ELEPHANT, GIRAFFE, LION (lionesses) and CHEETAH (built on the
-lioness rig — slimmer tucked belly, black coat spots, tear-stripes, a thin
-black-tipped tail). A herd is 1–4 grown members plus a few medium/small
-(cub-sized) ones; it enters from a side, ambles across and exits, then a
-different herd arrives. Per-individual colour variety via a cheap `shade()`
-(lighter/darker lionesses & elephant greys) plus browner giraffe-spot variants.
-Speeds: cheetah ≈10×, ostrich ≈5×, ground-lionesses ≈2× the other animals.
-Acts on a random schedule AND on click (`animalAct`/`drawWithAct`, document
-listener + UI filter): jumps, rear-ups, dust ROLLS (zebra/lioness), the
-cheetah’s tail-chasing SPIN, the elephant’s TRUMPET (sound rings) and dust
-SHOWER, the ostrich’s head-BURY, and rarer green toots (~⅓ as frequent). The
-grounding shadow is drawn in world space so it stays flat during jumps/rears.
-**Every animal blinks** — the eye scales shut briefly on its own `pow(sin(t·k +
-ph), 240)` spike (lion, lioness/cub, cheetah, ostrich, zebra, giraffe, elephant).
-The sine frequency `k` sets the *interval* between blinks; the high exponent
-keeps each individual blink fast/snappy (~0.36 s closed) without changing that
-interval.
+**rumi/ — the roaming character "rumi" (2026-09 realistic redesign).** One
+module, `rumi/chibi-walker.js` (file/global `ChibiWalker` keep the historical
+"chibi" name for compatibility), holds the art AND the behaviour: a three-
+quarter-view figure with real proportions (~6 heads), two-segment limbs whose
+knees and elbows bend in a real walk cycle (thighs ±17°, arms counter-swing,
+inverted-pendulum body bob, head nod, ponytail swing), soft gradient shading,
+thin plum outlines; an anime face after the reference picture (big amber eyes,
+thin arched brows, tiny nose, small confident smile, side-swept bangs), purple
+bubble-braid high ponytail, hoop earring, yellow bomber jacket with patches open
+over a white CROP TOP + pendant with a bare midriff, baggy lavender pants, white
+sneakers with pink soles. Behaviours: blink, floating
+hearts, click → zap / jump / fly-out, and the reef's FLY ("swim") mode (rotated
+90°, near arm raised, ripples at the hand). API: `ChibiWalker.walk / patrol /
+trigger`. Preview + design notes: `rumi/rumi.html`; sandboxes `rumi-test.html`,
+`reef-test.html`, `walker-demo.html`. Used by savanna.bg.js (strolls the plain
+every 2–4 min, first after 1–3 min), dinosaurs3.bg.js (strolls the valley every
+2–4 min, first after ~45 s–2¼ min; `_dino3.rumi()` forces one) and reef.bg.js
+(fly mode).
 
-Sky & scenery: layered snow-capped mountains, a low SUN that — when clicked —
-spins (sunspots + corona rays) AND sends a flying unicorn across the sky;
-drifting puffy clouds (ported from the unicorns scene), bird flocks, golden
-dust motes, twinkling stars + occasional shooting stars, hazy far plains,
-acacias and extra flora (baobab, round trees, doum palm, aloes, tall grass),
-swaying foreground grass. `window._savAnimals` exposes the pride + `herd()` for
-harness/tests. Skin: `game/skins/savanna.skin.css` (game column lower-right so
-Pride Rock and the lions stay visible). Aids: `savanna` (cheetah number-line
-rider + amber fruit jar).
+**savanna_animals/ — the from-scratch animal rigs used by savanna.bg.js.**
+A new soft cartoon take on every savanna animal, each drawn on canvas in its
+own file on top of `rig-common.js` (`window.SavRig`: gradients, `fluff` lobe
+rings, round-jointed `leg`, big `eye`, `blink`, `shade` tints): `lion.js`
+(LionRig — halo mane, roar), `cats.js` (LionessRig with `ribbon` for the young
+ones + yawn, CheetahRig — tear stripes, spots, ringed tail, crouch), `zebra.js`
+(bray), `giraffe.js` (graze), `elephant.js` (trumpet), `ostrich.js` (head-bury).
+Shared API: `Rig.draw(ctx, L, t)` with `L = {x, y, s, dir, ph, wt, moving, pose,
+tint}` in one unit space (paws on y = 0, facing +x; `pose` 0..1 plays the
+signature action), plus `HEIGHT`/`WIDTH` in units. House style: body in
+profile, head turned three-quarters so both eyes show, heavy brows, no
+outlines, no spikes, sunset palette. Workshops: `animals.html` (one animal at
+a time; tabs, Walk/Act/Flip/BG/Size, `?animal=zebra`), `parade.html` (all of
+them side by side at one scale), `lion.html` (the lion alone). The scene
+picks up rig changes directly.
 
 The game side of the contract is `game/js/bg-loader.js` and `architecture.md` §3.1:
 
@@ -80,8 +109,8 @@ Themes map to backgrounds in `applyTheme` (`game/js/themes.js`).
 
 ## Porting checklist: standalone HTML → `.bg.js`
 
-`space.bg.js` is the reference port — diff it against `space.html`'s harness to
-see the seam. For each playground:
+`savanna.bg.js` is the reference port — diff it against `savanna.html`'s harness
+to see the seam. For each playground:
 
 1. **Wrap the whole `<script>` body** in the module shape above. Everything that
    is global in the playground (`let CLOUDS…`, helper functions) moves inside
@@ -92,7 +121,7 @@ see the seam. For each playground:
    `position:fixed;inset:0;width:100%;height:100%`.
 3. **Move the click listener from the canvas to `document`** and filter out the
    game UI first (the game's form sits *above* the stage, so canvas clicks never
-   fire). Copy the filter from `space.bg.js`:
+   fire). Copy the filter from `savanna.bg.js`:
    ```js
    if(e.target.closest('.wrap,button,input,#particles,.special-uni,#games-menu,#theme-menu,#sad-ov,#report-ov'))return;
    ```
@@ -105,7 +134,7 @@ see the seam. For each playground:
    position — see §3.2 of `architecture.md` and the per-background "game column"
    notes below) and map a theme to `loadBackground('<name>')`.
 7. **Keep a thin dev harness** (`<name>.html`) that just loads the module, like
-   `space.html` — single source of truth, no copy-porting.
+   `savanna.html` — single source of truth, no copy-porting.
 
 All scenes share the same internals, so the port is mechanical:
 **static prerender** (offscreen canvas painted once per resize) + **dynamic
@@ -148,7 +177,7 @@ and the aurora surges every ~18–34 s; clicking a glowing curtain triggers the
 same 2.6 s brightness+amplitude **surge** (`AURORA_FX.t0` + `clickEnv`, eased
 in/out), and clicking bare sky/lake flings a flurry of shooting stars from the
 tap (`spawnMeteor`). `clickEnv(t0,t,dur)` is the fast-attack/slow-release
-envelope borrowed from `space.bg.js`.
+envelope borrowed from `space2.bg.js`.
 
 **Game integration notes (when ported):** the lake bottom ~26% and the aurora
 band (top ~20–60%) are the busy zones; the calm strip is the horizon line
@@ -479,7 +508,7 @@ garden) — set `aids:'reef'` in the module.
 
 ---
 
-## unicorns.html — unicorn valley
+## unicorns.html — unicorn valley (the 🦄 theme, integrated)
 
 Static prerender (`skyLayer` via `paintScenery`: candy sky, sun halo, three
 mountain ridges with snow caps, rainbow, princess castle on a broad earthen
@@ -561,11 +590,119 @@ line with a rainbow trail + crystal cupcake jar + crystal-flower garden).
 
 ---
 
-## space.bg.js — deep space (already integrated)
+## unicorns2.bg.js — Unicorn Valley v2 (BUILT, **NOT ADOPTED** — nothing loads it)
 
-The reference module: registered as `BACKGROUNDS.space` with `skin:'space'`,
-`aids:'space'`; `space.html` is its thin dev harness. Scene inventory and the
-discovery-bubble (click-to-learn facts) are documented in the file header.
+> **Status:** written 2026-09 as a from-scratch alternative to the unicorn
+> valley, then **rejected on review** — the original `unicorns.bg.js` scene
+> (section above) reads better, so `_BG_THEMES` keeps `girls→unicorns` and no
+> theme points here. The files stay in the repo as a reference/starting point;
+> delete them if the idea is dropped for good. Everything below describes what
+> the module does when mounted (its harness still runs it standalone).
+
+**`unicorns2.bg.js`** — the unicorn valley rebuilt from scratch as ONE
+self-contained canvas module (no DOM actors, no sub-files), structured like
+`savanna.bg.js`: prerendered sky + scenery layers repainted only while the
+palette drifts, an actor layer tinted by the hour, per-frame ambient life on
+top. Registers `BACKGROUNDS.unicorns2` with `skin:'unicorns'`,
+`aids:'unicorns'` (it reuses the existing skin and aid art unchanged).
+Harness: `unicorns2.html` (Dawn/Day/Sunset/Night jump the clock, Pause,
+Fast ×20, Herd/Flyer spawn, Magic fires every effect, Restart); verify via
+`python backgrounds/_verify_unicorns2.py` (in-game by default; set
+`STANDALONE` to the harness path for the scene alone). Test hooks:
+`window._uni2` — `tod/setTod/setSpeed/phase`, `herd/flyers/spawn/flyer/act`,
+`fx.{rainbow,castle,fish,bloom,glitter}`, `castle/pond/fall` geometry,
+`rumiLayer`.
+
+**The day** — `DAY_SEC` = 240 s, four `LOOKS` keyframes interpolated across a
+0.12-day window at each boundary (`phaseAt`/`lookAt`); the sky + scenery
+layers are repainted only when the blend actually changes
+(`repaintIfNeeded`). **DAWN** (peach-rose-lavender, a big soft sun low at the
+LEFT), **DAY** (candy-blue, cotton clouds, a small bright sun), **SUNSET**
+(pink-gold-violet blaze, the sun sinking at the RIGHT), **NIGHT** (indigo,
+twinkling + shooting stars, a cratered moon in the top-right sky, AURORA
+ribbons, fireflies, glowing mushrooms, lit castle windows; the actors are
+tinted blue-violet via `source-atop`). The sun arc runs left→right (`sunP`);
+the moon rides a lower arc that stays top-right (`moonP`) — both sit beside
+the centred game card at their keyframes. Starts late in the dawn (`tod`
+0.22).
+
+**The valley** (fractions of W/H; the game card covers x 23–77 %, y 0–56 %
+at 1280×800, so every hero sits outside it): two lilac `mountainRange`s with
+snow caps at the horizon (0.63 H); the RAINBOW (`RB`: centre 0.5 W / 0.66 H,
+r = min(0.36 W, 0.58 H), six pastel bands, alpha per look — a faint moonbow
+at night) drawn behind the mountains; the CASTLE on a hill at the RIGHT
+(`castleLayout`/`paintCastle`: keep wall with merlons, a golden gate + heart,
+five towers with purple conical roofs and gold bands, arched windows whose
+positions feed the live night glow, fluttering pennants); the CLIFF at the
+LEFT (`cliffPath`/`paintCliff`: lilac rock with strata, a light→shade
+gradient, bushes, a blossom tree) with the WATERFALL (`FALL`, 0.105–0.15 W ×
+0.48–0.75 H: scrolling streaks, a white lip, pulsing mist, ripples clipped to
+the pond) into the POND (`POND`, 0.13 W / 0.758 H, lily pads; catches the
+sun/moon in `drawPondLight`); four `hillBand`s of meadow with 340 flower
+dots; foreground grass tufts, 14 big swaying flowers, 4 mushrooms. Ambient:
+7 drifting cotton-candy clouds (dimmed at night), 20 falling petals, 30
+twinkling sparkle motes, 4 butterflies by day, 16 fireflies by night, a rose
+vignette.
+
+**The unicorn rig** (`drawUni(c, L, t)`, module scope, rig units × `L.s`;
+`UNI.WIDTH/HEIGHT` for the hit boxes): three parts — `bodyPath`, `neckPath`,
+`headPath` — each stroked with a fat outline first and filled after, so the
+union has one clean outline; the head group is scaled about `HEAD_PIVOT`
+(×1.12 adults, ×1.28 foals — big-headed foals). Two-segment legs
+(`legAngles`/`drawLeg`, hips `LEG_HIND`/`LEG_FRONT`, 21+21 units) with golden
+hooves and a diagonal-pair gait — knees bend on the forward swing, wider and
+faster for `gallop`; in the air (`L.fly`, `L.leap` during a jump) the front
+legs tuck and the hind legs stretch; `L.rear` lifts the front legs pawing
+while the body rotates about the hind hooves; `L.bow` rotates neck + head
+down to graze. A flowing tail (5 strands) and mane (6 strands off the crest
+cubic via `crestPt`, plus a forelock) wave with `t` and stream back when
+moving; the spiralled golden horn (`drawHorn`: gold gradient, 6 ridge
+chevrons) twinkles briefly every ~26 s and glows during horn magic; a big
+eye with lashes that blinks every ~3.6 s (staggered by `L.ph`), blush,
+nostril, smile; a star or heart cutie-mark; feathered wings (`drawWing`, 5
+feathers, flapping) on the flyers. `PALS`: classic white + rainbow mane,
+pink/lilac, lilac/mint, mint/pink, sky/gold, and a rare (8 %) midnight one.
+
+**Cast** — WALKERS (`HERD`, ≤4 incl. foals): groups spawn from an edge
+(`spawnGroup`) in depth lanes (feet at 0.80–0.96 H, scale by lane), singles
+or mother + foal (the foal trots behind its parent — `updateWalker` lerps to
+a spot behind — and copies its jumps a beat later via `mimicAt`); ~30 %
+gallop with rainbow stardust from the hooves; the valley opens with a pair
+at the left and a single at the right and never empties (cadence
+`nextGroupAt` while adults < 2). FLYERS (`FLYERS`, ≤2): winged unicorns
+cross the sky at 0.10–0.33 H trailing a rainbow sparkle ribbon and
+somersault (`flip`). Acts (`ACT_DUR`, `startAct`/`pickAct`/`actFx`, on a
+schedule AND on click): **jump** (parabola, legs stretched, dust), **rear**,
+**horn** (rainbow `RINGS` + 16 sparkles + 3 white stars from `hornTip`),
+**toot** (rainbow `PUFFS` from the rear + an embarrassed shimmy), **graze**
+(scheduled only). ❤ (`HEARTS`, drawn hearts) when two adults meet face to
+face. Ground shadows lean away from the sun and fade at night.
+
+**Clicks** (document listener + the game-UI filter, `onClick`): a unicorn →
+act · the castle box → `fireworks` (3 staggered bursts + rings + a window
+flare) · the pond → `fishLeap` (1–3 rainbow fish arcs with splashes) · the
+SUN / MOON / WATERFALL → tween the clock to the next phase centre (2.6 s; the
+falls are always visible beside the card) — the sun also spins its rays · a
+cloud → `glitter` rain · the rainbow band → `rainFx` shimmer sweep · the
+meadow (y > 0.66 H) → `bloom` (6–9 flowers grow where you click, fade after
+~10 s) · the sky → `skyBurst`. Ambient on its own every 12–30 s: the rainbow
+shimmers or the castle windows flare; fish leap every 25–50 s. "Rumi"
+(`rumi/chibi-walker.js`, loaded relative to this file, warmed by
+`preload()`) strolls the meadow every 2–4 min, first after 1–3 min.
+
+The frame loop schedules the next rAF before rendering and logs a render
+error once, so a bad frame can never freeze the valley. `cleanup()` stops the
+loop, Rumi's patrol and both listeners and empties the stage.
+
+---
+
+## The deep-space click reactions (now owned by `space2.bg.js`)
+
+> The original 2-D `space.bg.js` + `space.html` were **removed in 2026-09** —
+> `space2.bg.js` (the row at the top of this file) is the only space module
+> and it inherited the 2-D world, the discovery bubble and every click
+> reaction below, so this section still applies to the live scene. Scene
+> inventory and the bubble are documented in `space2.bg.js`'s file header.
 
 **Click reactions** (added on top of the fact bubble — both happen together):
 - **Black hole** → 3.5 s feeding frenzy (`bhFrenzyT`): disk ×3 spin, photon
@@ -596,37 +733,83 @@ release) and `lapExtra(o,t)`.
 
 ---
 
-## dinosaurs2.bg.js — volcano valley at dusk (the 🦕 theme, integrated)
+## dinosaurs3.bg.js — volcano valley at dusk (the 🦕 theme, integrated)
 
-The 🦕 theme is served by **`dinosaurs2.bg.js`** — a single self-contained module
-that draws its OWN art (SVG/WAAPI, ES5, file://-safe, all classes/keyframes
-`d2`-namespaced). It replaced the older `dinosaurs.bg.js` (which composed separate
-`dinasours/volcano.js` + `*-walker.js` modules); those building-block modules were
-removed. The one external dependency it still loads on demand is
-`dinasours/baby-trex-egg.js` (the rolling egg), warmed during the intro splash via
-`mod.preload()`.
+The 🦕 theme is served by **`dinosaurs3.bg.js`** — a canvas scene that draws
+its own scenery and animates the from-scratch **`dino_rigs/`** (loaded on
+demand by path-relative script injection, warmed during the intro splash via
+`mod.preload()`). It replaced the old `dinosaurs2.bg.js` (SVG/WAAPI walkers),
+which was deleted in 2026-09 (recoverable from git history).
 
-**Scene:** sunset sky with a slow day-cycle + twinkling stars, drifting clouds,
-snow-capped mountain ranges, and a plum **volcano on the RIGHT** (click → erupt +
-countdown; every 10th click → a meteor storm). Foreground grass with lush plants.
+**Scene:** a soft sunset sky on a slow DAY CYCLE (`DAY_SEC` 300 s: dusk → night
+with twinkling stars, a crescent moon and Dubai-look shooting stars → dawn →
+back to dusk; the looks are keyed along `tod` and interpolated), a low sun
+setting behind two hazy snow-capped mountain ranges, drifting puffy clouds, a
+plum **volcano on the RIGHT** trailing smoke, a rolling green valley floor with
+ferns, round bushes, palms and rocks, a worn path, and swaying foreground grass.
+Static layers (sky, scenery) are repainted only when the look changes; the
+animals draw on their own layer sorted far → near; one gradient night veil
+darkens the valley.
 
-**Dinosaurs:** from-scratch SVG walkers (bronto, stego, trex, + the two original
-quadrupeds trikec/stegoc) plus a flying **pterodactyl**. Every species appears in
-several palettes (green/pink/teal; the ptero in coral/violet/sky/sun) and 2 sizes.
-**Clicking a dino recolours it** (and plays its reaction). The scene is kept calm:
-**max 2 ground dinos + 1 pterodactyl + ~1 egg** at a time.
+**Dinosaurs:** up to **2 ground dinosaurs** (trex, bronto, stego, trike — never
+the same species twice in a row) roam across in two depths/sizes with random
+coats (`L.pal` from each rig's `PALS`) and tints, pausing to play their
+signature action (roar, graze, wag, charge) on a random schedule. **One
+pterodactyl** flies past overhead, squawks, and may **LAY AN EGG** mid-flight:
+it falls, bounces with a dust puff, rests, then HATCHES (BabyRig) and fades.
+**Clicking a dinosaur plays its action AND recolours it**; clicking the egg
+hatches it. The scene stays calm: 2 walkers + 1 flyer + ≤ 1 egg.
 
-**Eggs arrive, never fixed:** the pterodactyl LAYS an egg mid-flight — usually a
-**hatching** egg (falls, cracks open, a baby peeks out, then fades) or a rolling
-egg; one legacy `BabyTrexEgg` also rolls across occasionally. Shooting stars use
-the Dubai look (white head + icy-blue gradient tail).
+**Volcano — two shows, clicks alternate:** odd clicks → an ERUPTION (a 3-2-1
+countdown floats over the crater, then a lava fountain, crater glow, ash
+cloud, screen shake); even clicks → a DESTRUCTIVE ASTEROID STORM: 16
+fireballs with fire + smoke trails (the last one huge), each impact a
+blinding flash + shockwave ring + embers and rock debris flung up + a burning
+crater that flames, smokes and stays scorched for ~30 s, screen shake, a
+white screen flash and ash haze over the sky; plants near an impact are
+CHARRED (snapped palm, blackened bush, ash mound) and regrow after 30 s; a
+resting egg nearby is startled into hatching. Every ground dinosaur BOLTS for
+the nearest edge (a startled hop, legs pumping at ~3.6× speed, another hop
+per nearby impact), the pterodactyl squawks and speeds off, and no newcomer
+wanders in until the sky is quiet. Clicking the sun or the moon fast-forwards
+the day to the next look.
 
-**Game position — the card hugs the LEFT so the volcano stays clear.** The volcano
-sits on the RIGHT, so `game/skins/dinosaurs.skin.css` pins `.wrap` to the LEFT
-(`max-width:700px`, nudged right of the left edge; narrowed to 600px on ≤1120px
-windows; re-centres on ≤840px screens).
-Skin: `dinosaurs.skin.css` (warm dusk glass, sunset-gold / grass-green accents).
-Aids: `dinosaurs`. Theme wiring: `_BG_THEMES.dinosaurs → dinosaurs2`,
-`THEMES.dinosaurs`, `body.theme-dinosaurs`, the 🦕 menu button + toggle-cycle
-entry (themes.js, index.html), and `dinosaurs.skin.css`. Dev harness:
-`dinosaurs2.html` (Restart / Gallery); verify via `_verify_dino2.py`.
+**Game position — the card hugs the LEFT so the volcano stays clear** (crater
+≈ x0.775·W, left flank from ≈ 0.56·W): `game/skins/dinosaurs.skin.css` pins
+`.wrap` to the LEFT (`max-width:min(700px, 50vw − 0.5cm)`; re-centres on
+≤840px screens). Skin: `dinosaurs.skin.css` (warm dusk glass, sunset-gold /
+grass-green accents). Aids: `dinosaurs`. Theme wiring: `_BG_THEMES.dinosaurs →
+dinosaurs3`, `THEMES.dinosaurs`, `body.theme-dinosaurs`, the 🦕 menu button +
+toggle-cycle entry (themes.js, index.html), and `dinosaurs.skin.css`. Dev
+harness: `dinosaurs3.html` (Restart / Erupt / Storm / Egg / Night); verify via
+`_verify_dino3.py` (STANDALONE or in-game mode). Test hooks: `window._dino3`
+= `{ seek, erupt, boom, storm, egg, spawn, ptero, act, walkers, look, tod }`.
+
+**dino_rigs/ — the from-scratch dinosaur rigs (used by dinosaurs3.bg.js).**
+A new soft cartoon take on every dinosaur of the 🦕 theme, each drawn on
+canvas in its own file on top of `rig-common.js` (`window.DinoRig`: named
+`PALETTES` + `palette()`, `blob` smooth silhouettes, `taper` tubes for
+tails/necks/horns, round-jointed `leg` with a flat clawed `foot`, big glossy
+`eye`, `blink`, `brow`, `spots`, `stripes`, `rim` light, `heart`, `rings`,
+`dust`): `trex.js` (TrexRig — roar: squat, head back, jaw + fangs, brows
+knit, arms up, sound rings), `bronto.js` (BrontoRig — graze: the neck arcs
+down to a fern and munches), `stego.js` (StegoRig — two staggered rows of
+accent-coloured plates + cream tail spikes; wag: tail whip, plates shimmy
+and glow), `trike.js` (TrikeRig — knobbed frill, three horns, parrot beak;
+charge stance: head down + shake, pawing foot, dust, snorts), `ptero.js`
+(PteroRig — FLYER: hovers above the ground line, side-view wing beats,
+crest, beak; squawk), `baby.js` (BabyRig — the hatchling egg: rests closed
+and rattles; hatch: lid swings open, baby rises with huge eyes + shell hat,
+hands grip the rim, a heart floats). Shared API: `Rig.draw(ctx, L, t)` with
+`L = {x, y, s, dir, ph, wt, moving, pose, pal, tint}` in one unit space
+(feet on y = 0, facing +x; `pose` 0..1 plays the signature action; `pal`
+picks a coat from the rig's `PALS`, `DEFAULT` names its own), plus
+`HEIGHT`/`WIDTH` in units, `ACT_SECONDS`, and `FLYER` on the pterodactyl.
+House style: everything in TRUE PROFILE — one big glossy eye under a heavy
+brow (only the baby in its egg faces the viewer) — blush, cream belly panel
+with soft stripes, back spots, warm rim light, no outlines. Workshops: `dinos.html` (one dinosaur at a time
+on a BLANK studio backdrop; tabs, Walk/Act/Flip/Coat/BG/Size,
+`?animal=stego`), `parade.html` (all of them side by side at one scale).
+Verify via `_verify_dinos.py` (idle + mid-action stills of each, plus the
+parade, to `c:\tmp\dino_rigs`). These rigs ARE the game's dinosaurs now:
+`dinosaurs3.bg.js` loads them on demand.

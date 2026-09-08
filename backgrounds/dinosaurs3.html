@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosaurs v3 — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the DINOSAURS v3 background module (the
+     canvas valley with the from-scratch dino_rigs). The actual scene lives in
+     dinosaurs3.bg.js — the SAME file the game loads dynamically (single
+     source of truth, no copy-porting). Open this file directly to iterate on
+     the background in isolation. Buttons poke the test hooks
+     (window._dino3): Restart, Erupt, Storm, Egg, Night (fast-forward).
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #2a1a3d; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  #ctrl { position: fixed; bottom: 24px; right: 24px; z-index: 10; display: flex; gap: 8px; }
+  .hbtn {
+    padding: 9px 20px;
+    background: rgba(48, 24, 14, 0.5);
+    color: rgba(255, 226, 180, 0.92);
+    border: 1px solid rgba(255, 185, 105, 0.35);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(20, 5, 4, 0.45);
+    transition: background .25s, box-shadow .25s, transform .15s;
+  }
+  .hbtn:hover { background: rgba(110, 60, 25, 0.6); box-shadow: 0 4px 24px rgba(255, 170, 90, 0.25); transform: translateY(-1px); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="ctrl">
+  <button class="hbtn" id="restart">Restart</button>
+  <button class="hbtn" id="erupt">Erupt</button>
+  <button class="hbtn" id="storm">Storm</button>
+  <button class="hbtn" id="egg">Egg</button>
+  <button class="hbtn" id="night">Night</button>
+</div>
+<script src="dinosaurs3.bg.js"></script>
+<script>
+let cleanup = null;
+function start() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.dinosaurs3.init({ stage: document.getElementById('stage') });
+}
+document.getElementById('restart').addEventListener('click', start);
+document.getElementById('erupt').addEventListener('click', () => window._dino3 && window._dino3.erupt());
+document.getElementById('storm').addEventListener('click', () => window._dino3 && window._dino3.storm());
+document.getElementById('egg').addEventListener('click', () => window._dino3 && window._dino3.egg());
+document.getElementById('night').addEventListener('click', () => window._dino3 && window._dino3.seek(0.5));
+start();
+</script>
+</body>
+</html>

@@ -72,7 +72,8 @@ window.BACKGROUNDS.<name> = {
 - Know your scene's **hero objects** and which screen region they occupy — the
   skin (piece 2) positions the game column to avoid covering them.
 
-Standalone-HTML → module porting is mechanical; `space.bg.js` is the reference.
+Standalone-HTML → module porting is mechanical; `savanna.bg.js` is the reference
+(a canvas scene with day-cycle keyframes, on-demand rigs and a clean teardown).
 
 ---
 
@@ -152,9 +153,10 @@ objects appear when a child hovers a number.
 ## Piece 4 — the dev harness `backgrounds/<name>.html`
 
 A thin page that loads only your `.bg.js` so you can iterate on the scene in
-isolation (single source of truth — no copy-porting). Mirror `space.html`:
+isolation (single source of truth — no copy-porting). Mirror `savanna.html`:
 a `#stage` div + a Restart button, load `<name>.bg.js`, call
-`window.BACKGROUNDS.<name>.init({stage})`.
+`window.BACKGROUNDS.<name>.init({stage})` (mirror `savanna.html` or
+`space2.html`).
 
 ---
 
@@ -211,7 +213,7 @@ choice persists across refresh (localStorage `gameTheme`), and the chosen
       `.ans-ok/.ans-err` or the aid-toggle icons.
 - [ ] `aids/<name>.aids.js` (optional) — `numberLine` + `jar`; every `itemSVG`
       has a `viewBox`.
-- [ ] `backgrounds/<name>.html` (optional) — thin harness like `space.html`.
+- [ ] `backgrounds/<name>.html` (optional) — thin harness like `savanna.html`.
 - [ ] Wiring: `THEMES` entry, `_BG_THEMES` map, body-class + `_themeIcons`,
       theme-menu button, `themes.css` `#stars-layer`/`#bg` rules.
 - [ ] Verify: pick the theme → scene paints, UI recolors, number line + box use

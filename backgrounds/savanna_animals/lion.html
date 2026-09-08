@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lion — Character Workshop</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     STANDALONE character workshop for the NEW LION (backgrounds/savanna_animals/lion.js)
+     — no scene, just the lion big on a sunset / plain / night backdrop so
+     he can be judged on his own. Same workflow as polar_bear.html →
+     frozen.bg.js: iterate here; savanna.bg.js draws this very rig.
+
+     Buttons: Walk toggles pacing (he turns at the edges), Roar fires a roar,
+     Flip mirrors him, BG cycles the backdrop, Size cycles the zoom.
+     Clicking the lion also roars. window._lionTest exposes the instance for
+     the screenshot harness.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #2a0f22; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #bar { position: fixed; bottom: 22px; left: 0; right: 0; display: flex; gap: 10px;
+         justify-content: center; z-index: 10; }
+  .hbtn {
+    padding: 9px 20px;
+    background: rgba(60, 24, 14, 0.5);
+    color: rgba(255, 214, 160, 0.92);
+    border: 1px solid rgba(255, 170, 90, 0.4);
+    border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    cursor: pointer; backdrop-filter: blur(6px);
+    box-shadow: 0 4px 18px rgba(20, 5, 8, 0.45);
+    transition: background .25s, transform .15s;
+  }
+  .hbtn:hover { background: rgba(120, 50, 26, 0.6); transform: translateY(-1px); }
+  .hbtn.on { background: rgba(200, 110, 40, 0.65); }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="bar">
+  <button class="hbtn" id="walk">Walk</button>
+  <button class="hbtn" id="roar">Roar</button>
+  <button class="hbtn" id="flip">Flip</button>
+  <button class="hbtn" id="bg">BG</button>
+  <button class="hbtn" id="size">Size</button>
+</div>
+<script src="rig-common.js"></script>
+<script src="lion.js"></script>
+<script>
+(function(){
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  let W, H;
+  const BGS = ['sunset', 'plain', 'night'];
+  const SIZES = [1, 1.6, 0.55];
+  let bgI = 0, sizeI = 0;
+  const L = { x: 0, y: 0, s: 1, dir: 1, ph: 0.7, wt: 0, moving: false, roar: 0 };
+  let roarT0 = null, lastT = 0, walking = false;
+
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    L.y = H * 0.80;
+    L.s = (H * 0.62 / LionRig.HEIGHT) * SIZES[sizeI];
+    if (!L.x) L.x = W * 0.5;
+  }
+  addEventListener('resize', resize); resize();
+
+  function backdrop(t){
+    const bg = BGS[bgI];
+    if (bg === 'plain'){ ctx.fillStyle = '#3a3f4b'; ctx.fillRect(0, 0, W, H); return; }
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.8);
+    if (bg === 'sunset'){
+      sky.addColorStop(0, '#3a1030'); sky.addColorStop(0.45, '#b53a2a');
+      sky.addColorStop(0.78, '#f08a3c'); sky.addColorStop(1, '#f7c25a');
+    } else {
+      sky.addColorStop(0, '#060b1e'); sky.addColorStop(0.7, '#1a2a52'); sky.addColorStop(1, '#3a4a78');
+    }
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    if (bg === 'sunset'){
+      const sun = ctx.createRadialGradient(W * 0.72, H * 0.62, 0, W * 0.72, H * 0.62, H * 0.22);
+      sun.addColorStop(0, 'rgba(255,245,200,.95)'); sun.addColorStop(0.6, 'rgba(255,210,110,.75)');
+      sun.addColorStop(1, 'rgba(255,190,90,0)');
+      ctx.fillStyle = sun; ctx.fillRect(0, 0, W, H);
+    }
+    const gr = ctx.createLinearGradient(0, H * 0.8, 0, H);
+    gr.addColorStop(0, bg === 'sunset' ? '#8a5230' : '#2a2438'); gr.addColorStop(1, bg === 'sunset' ? '#4e2c18' : '#141224');
+    ctx.fillStyle = gr; ctx.fillRect(0, H * 0.8, W, H * 0.2);
+  }
+
+  function frame(ts){
+    const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
+    backdrop(t);
+    // walk: pace the middle 60% of the screen, turning at the ends
+    L.moving = walking && roarT0 === null;
+    if (L.moving){
+      L.wt += dt * 2.2;
+      L.x += L.dir * 30 * L.s * dt;
+      if (L.x > W * 0.8) L.dir = -1;
+      if (L.x < W * 0.2) L.dir = 1;
+    }
+    L.roar = roarT0 === null ? 0 : Math.min(1, (t - roarT0) / 1.7);
+    if (L.roar >= 1) roarT0 = null;
+    // ground shadow
+    ctx.fillStyle = 'rgba(38,14,6,.30)';
+    ctx.beginPath(); ctx.ellipse(L.x, L.y + 1.5 * L.s, 54 * L.s, 6 * L.s, 0, 0, Math.PI * 2); ctx.fill();
+    LionRig.draw(ctx, L, t);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const roar = () => { if (roarT0 === null) roarT0 = lastT; };
+  document.getElementById('walk').onclick = e => { walking = !walking; e.target.classList.toggle('on', walking); };
+  document.getElementById('roar').onclick = roar;
+  document.getElementById('flip').onclick = () => { L.dir *= -1; };
+  document.getElementById('bg').onclick = () => { bgI = (bgI + 1) % BGS.length; };
+  document.getElementById('size').onclick = () => { sizeI = (sizeI + 1) % SIZES.length; resize(); };
+  cv.addEventListener('click', e => {
+    const hw = LionRig.WIDTH * L.s, hh = LionRig.HEIGHT * L.s;
+    if (e.clientX > L.x - hw && e.clientX < L.x + hw && e.clientY > L.y - hh && e.clientY < L.y + 8 * L.s) roar();
+  });
+  window._lionTest = { L, roar, walk: on => { walking = on; }, setBg: i => { bgI = i; } };
+})();
+</script>
+</body>
+</html>
