@@ -150,7 +150,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       // the volcano, in the proportions of the ORIGINAL dinosaurs scene: a
       // TRUNCATED cone (flat crater rim ≈ 0.34 of the base width) with slightly
       // concave flanks, its mouth seen a little from above
-      const VOL = () => ({ l: W * 0.56, r: W * 0.995, cl: W * 0.700, cr: W * 0.850, cy: H * 0.40, base: H * 0.81 });
+      const VOL = () => ({ l: W * 0.615, r: W * 0.935, cl: W * 0.721, cr: W * 0.829, cy: H * 0.40, base: H * 0.81 });
 
       // ── scene objects ──
       function buildScene(){

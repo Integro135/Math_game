@@ -1071,7 +1071,9 @@ that stop well above the ground (two left, one centre, two right; the thick
 orange tongues carry a warm core, the thin ones are pale yellow). The right
 flank is shaded and two soft gullies run down the face. Everything still takes
 the hour's haze, except the rim, which stays dark so the crater reads at night.
-Geometry lives in `VOL()`; the click hit-test follows the same cone.
+Geometry lives in `VOL()` (base ≈ 0.615–0.935·W — narrowed in 2026-09 so the
+cone stands as tall as it is wide, like the original, instead of sprawling
+across the right half); the click hit-test follows the same cone.
 
 **Volcano — two shows, clicks alternate:** odd clicks → an ERUPTION (a 3-2-1
 countdown floats over the crater, then a lava fountain, crater glow, ash
