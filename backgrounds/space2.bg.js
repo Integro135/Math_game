@@ -17,9 +17,10 @@
      angle changes). Thin accretion disk (Novikov–Thorne temperature → black-
      body colour, Doppler beaming, gravitational redshift, two glowing trailing
      spiral arms on sheared turbulent filaments), twin relativistic jets
-     integrated volumetrically along the same geodesics, ~600 dust grains
+     integrated volumetrically along the same geodesics, ~260 dust grains
      simulated in 3-D (Paczyński–Wiita pseudo-potential) spiralling into the
-     hole from all over the frame and drawn through the point-mass lens, the
+     hole from all over the frame — projected through the point-mass lens but
+     DRAWN on the crisp 2-D layer above (the GL layer is low-res), the
      MILKY WAY (a structured band with a warm core bulge and dark dust rift
      across the frame) plus a sparse star field, all sampled along the
      DEFLECTED ray (they streak round the hole), HDR bloom, ACES tonemap, and
@@ -42,8 +43,9 @@
    No WebGL2 → the GL sky is replaced by a STILL PAINTED sky on the same
    canvas (the composite shader's deep-space gradient + its four nebulae, a
    soft Milky Way band and a simple 2-D black hole: shadow, photon ring and a
-   tilted disk glow) while the whole 2-D world above keeps running, so the
-   theme never goes dark and needs no second module.
+   tilted disk glow) while the whole 2-D world above keeps running — dust
+   grains included, since they are drawn in 2-D now — so the theme never goes
+   dark and needs no second module.
    Skin: game/skins/space.skin.css · Aids: space.
    Loaded by game/js/bg-loader.js (theme galaxy → space2 in themes.js).
    Harness: backgrounds/space2.html. Docs: backgrounds/README.md.         */
@@ -59,22 +61,11 @@ layout(location=0) in vec2 aPos;
 out vec2 vUv;
 void main(){ vUv = aPos*0.5+0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
-const SCENE_FS=`#version 300 es
-precision highp float;
-precision highp int;
-out vec4 fragColor;
-uniform vec2  uRes, uHolePx;   // internal resolution · where the hole sits on it (off-axis projection)
-uniform float uTime, uDiskTime;
-uniform vec3  uCamPos, uCamFwd, uCamRight, uCamUp, uGalN, uGalCore;
-uniform mat3  uHoleRot, uHoleRotT;   // world→hole · hole→world (the hole's orientation; the sky stays in world)
-uniform float uTanHalf, uPixAng;
-uniform int   uSteps;
-uniform float uDiskIn, uDiskOut, uSpin, uTpeak, uJets, uBoost, uHalo, uEnc;
-
-const float PI = 3.14159265, TAU = 6.28318531;
-const float R_BOUND = 15.0, ROT = 2.0, JET_LEN = 42.0, JET_RMAX = 7.8;
-vec3 enc(vec3 c){ return uEnc < 1.0 ? sqrt(max(c, 0.0)*uEnc) : c; }
-
+// ── the sky library: noise, black body, star layers, the Milky Way. Shared by the
+//    scene shader (as a fallback) and the SKY BAKE shader, which renders the whole
+//    sky ONCE into a texture — the camera and the sky never move, so the per-pixel
+//    procedural sky (~60 hashes + 3 black-body curves) was the single biggest cost
+const SKY_LIB=`
 float hash12(vec2 p){ vec3 p3 = fract(vec3(p.xyx)*0.1031); p3 += dot(p3, p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
 float hash13(vec3 p3){ p3 = fract(p3*0.1031); p3 += dot(p3, p3.zyx+31.32); return fract((p3.x+p3.y)*p3.z); }
 vec3  hash33(vec3 p3){ p3 = fract(p3*vec3(0.1031, 0.1030, 0.0973)); p3 += dot(p3, p3.yxz+33.33); return fract((p3.xxy+p3.yxx)*p3.zyx); }
@@ -90,6 +81,7 @@ float fbmDisk(float u, float y, float N, float seed){
   float s = 0.0, amp = 0.55, tot = 0.0;
   vec2 p = vec2(u, y);
   for(int k=0; k<5; k++){
+    if(uLite > 0.5 && k >= 3) break;                          // cheap tiers: three octaves
     s += amp*pnoise(p + vec2(0.37*float(k), seed + 53.0*float(k)), N);
     tot += amp; amp *= 0.56; p *= 2.0; N *= 2.0;
   }
@@ -146,11 +138,61 @@ vec3 sky(vec3 d){
           + vec3(1.0, 0.86, 0.62)*core*(0.45 + 0.55*n1)*(1.0 - rift*0.6)
           + vec3(1.0, 0.94, 0.80)*kern*0.6;
   vec3 col = mw*0.058;
+  if(uLite > 0.5) return col;                               // cheap tiers: the crisp 2-D layer carries the stars (GL ones would upscale into blobs)
   float dens = 0.45 + 2.6*band*(1.0 - rift*0.7) + 2.5*core; // stars thicken toward the plane and the core
   col += starLayer(d, 24.0,  0.05,      2.0,  1.0);
   col += starLayer(d, 70.0,  0.035*dens, 0.85, 2.0);
   col += starLayer(d, 190.0, 0.05*dens,  0.28, 3.0);
   return col;
+}`;
+
+// ── the sky bake: one full-frame pass per layout/quality change into a texture that
+//    covers the frustum plus a margin for lensing deflection (uv = tan-plane coords)
+const SKYBAKE_FS=`#version 300 es
+precision highp float;
+precision highp int;
+out vec4 fragColor;
+uniform vec2  uRes, uSkyUv0, uSkyUvRange;
+uniform vec3  uCamFwd, uCamRight, uCamUp, uGalN, uGalCore;
+uniform float uTanHalf, uPixAng, uEnc, uLite;
+vec3 enc(vec3 c){ return uEnc < 1.0 ? sqrt(max(c, 0.0)*uEnc) : c; }
+${SKY_LIB}
+void main(){
+  vec2 uv = uSkyUv0 + (gl_FragCoord.xy/uRes)*uSkyUvRange;
+  vec3 d = normalize(uCamFwd + uTanHalf*(uv.x*uCamRight + uv.y*uCamUp));
+  fragColor = vec4(enc(sky(d)), 1.0);
+}`;
+
+const SCENE_FS=`#version 300 es
+precision highp float;
+precision highp int;
+out vec4 fragColor;
+uniform vec2  uRes, uHolePx;   // internal resolution · where the hole sits on it (off-axis projection)
+uniform float uTime, uDiskTime;
+uniform vec3  uCamPos, uCamFwd, uCamRight, uCamUp, uGalN, uGalCore;
+uniform mat3  uHoleRot, uHoleRotT;   // world→hole · hole→world (the hole's orientation; the sky stays in world)
+uniform float uTanHalf, uPixAng;
+uniform int   uSteps;
+uniform float uDiskIn, uDiskOut, uSpin, uTpeak, uJets, uBoost, uHalo, uEnc;
+uniform float uLite;                  // 1 on the cheap tiers: fewer noise octaves, fewer jet samples
+uniform sampler2D uSky;               // the baked sky
+uniform vec2  uSkyUv0, uSkyUvRange;   // its tan-plane coverage
+
+const float PI = 3.14159265, TAU = 6.28318531;
+const float R_BOUND = 15.0, ROT = 2.0, JET_LEN = 42.0, JET_RMAX = 7.8;
+vec3 enc(vec3 c){ return uEnc < 1.0 ? sqrt(max(c, 0.0)*uEnc) : c; }
+vec3 dec(vec3 c){ return uEnc < 1.0 ? c*c/uEnc : c; }
+${SKY_LIB}
+// the sky along a world direction: one texture fetch from the bake; the procedural
+// sky only for the few rays bent past the bake's margin (or behind the camera)
+vec3 skyLookup(vec3 d){
+  float z = dot(d, uCamFwd);
+  if(z > 0.05){
+    vec2 uv = vec2(dot(d, uCamRight), dot(d, uCamUp))/(z*uTanHalf);
+    vec2 tc = (uv - uSkyUv0)/uSkyUvRange;
+    if(tc.x >= 0.0 && tc.x <= 1.0 && tc.y >= 0.0 && tc.y <= 1.0) return dec(texture(uSky, tc).rgb);
+  }
+  return sky(d);
 }
 // deflection still to be accrued from along-track position s (0 at closest approach) to
 // infinity; the full bend is 2/b + 15π/(16b²) (second order matters at the sphere's edge)
@@ -196,7 +238,7 @@ vec3 jetStraight(vec3 p0, vec3 d, float s0, float s1){
   else if(abs(p0.y) > JET_LEN) return vec3(0.0);
   sa = max(sa, s0); sb = min(sb, s1);
   if(sb <= sa) return vec3(0.0);
-  const int N = 12;
+  int N = uLite > 0.5 ? 6 : 12;
   float ds = (sb - sa)/float(N);
   vec3 acc = vec3(0.0);
   for(int i=0; i<N; i++) acc += jetEmission(p0 + d*(sa + (float(i)+0.5)*ds), d);
@@ -215,13 +257,16 @@ vec3 haloEmission(vec3 p, vec3 rayDir){
   float ang = uSpin*uDiskTime*0.55, cs = cos(ang), sn = sin(ang);              // the turbulence swirls with the flow
   vec3 q = vec3(p.x*cs - p.z*sn, p.y, p.x*sn + p.z*cs);
   float n = vnoise3(q*1.7 + vec3(0.0, uDiskTime*0.35, 0.0));                   // big uneven lobes, never a clean ring
-  float n2 = vnoise3(q*4.5 + vec3(uDiskTime*0.2, 0.0, uDiskTime*0.5));
+  float n2 = uLite > 0.5 ? 0.5 : vnoise3(q*4.5 + vec3(uDiskTime*0.2, 0.0, uDiskTime*0.5));
   dens *= 0.35 + 1.0*n + 0.5*n2;
   vec3 tangent = uSpin*normalize(vec3(-p.z, 0.0, p.x));                        // fast inner flow → Doppler
   const float beta = 0.45; float gamma = inversesqrt(1.0 - beta*beta);
   float D = 1.0/(gamma*(1.0 + beta*dot(tangent, rayDir)));
   float g = D*sqrt(max(1.0 - 1.0/r, 0.0));
-  return blackbody(7600.0*g)*pow(g, 2.0)*dens*uHalo;
+  // a two-stop ramp stands in for the black-body curve here (this runs every march step):
+  // redshifted → ember orange, blueshifted → white
+  vec3 c = mix(vec3(1.0, 0.55, 0.28), vec3(1.0, 0.95, 0.85), clamp((g - 0.55)*1.6, 0.0, 1.0));
+  return c*g*g*dens*uHalo;
 }
 void diskSample(vec3 pos, vec3 rayDir, out vec3 emis, out float alpha){
   float r = length(pos.xz);
@@ -269,7 +314,7 @@ void main(){
     if(b2 >= R_BOUND*R_BOUND || pd > 0.0){
       col += jetStraight(p, d, 0.0, 1e9);
       vec3 dd = bendToward(d, perp, residualBend(sqrt(b2), pd));
-      fragColor = vec4(enc(col + sky(uHoleRotT*dd)), 1.0); return;
+      fragColor = vec4(enc(col + skyLookup(uHoleRotT*dd)), 1.0); return;
     }
     float sEntry = -pd - sqrt(R_BOUND*R_BOUND - b2);
     col += jetStraight(p, d, 0.0, sEntry);
@@ -314,78 +359,14 @@ void main(){
       vec3 perp2 = p - s*vn;
       if(escaped) col += (1.0-acc)*jetStraight(p, vn, 0.0, 1e9);
       if(escaped) vn = bendToward(vn, perp2, residualBend(max(length(perp2), 0.5), s));
-      col += (1.0-acc)*sky(uHoleRotT*vn);
+      col += (1.0-acc)*skyLookup(uHoleRotT*vn);
     }
   }
   fragColor = vec4(enc(col), 1.0);
 }`;
 
-const PART_VS=`#version 300 es
-precision highp float;
-layout(location=0) in vec2 aCorner;
-layout(location=1) in vec3 aHead;
-layout(location=2) in vec3 aTail;
-layout(location=3) in vec4 aInfo;
-uniform vec3 uCamPos, uCamFwd, uCamRight, uCamUp;
-uniform mat3 uHoleRotT;                 // hole→world: the grains live in the hole's frame
-uniform float uTanHalf; uniform vec2 uRes, uHolePx;
-out vec2 vP; out float vLen, vW, vBright, vHeat;
-vec2 lensProject(vec3 P, out float vis){
-  vis = 1.0;
-  P = uHoleRotT*P;
-  vec3 w = P - uCamPos; float z = dot(w, uCamFwd);
-  if(z < 0.25){ vis = 0.0; return vec2(0.0); }
-  vec2 s = vec2(dot(w, uCamRight), dot(w, uCamUp))/z;
-  vec3 w0 = -uCamPos; float z0 = dot(w0, uCamFwd);
-  vec2 h = vec2(dot(w0, uCamRight), dot(w0, uCamUp))/z0;
-  float Dl = length(uCamPos), Ds = length(w), Dls = Ds - Dl;
-  vec2 bv = s - h; float beta = max(length(bv), 1e-5);
-  float b = beta*Dl;
-  if(Dls > 0.05){
-    float tE2 = 2.0*Dls/(Dl*Ds);
-    float th = 0.5*(beta + sqrt(beta*beta + 4.0*tE2));
-    vis *= clamp(th/beta, 1.0, 2.5);
-    b = th*Dl;
-  }
-  float behind = smoothstep(-0.5, 1.0, Dls);
-  b = max(b, 2.7*behind);
-  vis *= mix(1.0, smoothstep(2.35, 2.65, b), smoothstep(0.0, 0.8, Dls));
-  vec2 sN = h + bv/beta*(b/Dl);
-  vec2 px = uHolePx + sN/uTanHalf*uRes.y*0.5;                   // off-axis: same mapping as the scene pass
-  return px/uRes*2.0 - 1.0;
-}
-void main(){
-  float visH, visT;
-  vec2 H = lensProject(aHead, visH), Tl = lensProject(aTail, visT);
-  if(visH <= 0.0){ gl_Position = vec4(2.0, 2.0, 2.0, 1.0); vP = vec2(0.0); vLen = 0.0; vW = 1.0; vBright = 0.0; vHeat = 0.0; return; }
-  if(visT <= 0.0) Tl = H;
-  vec2 hp = H*uRes*0.5, tp = Tl*uRes*0.5;
-  vec2 dpx = hp - tp; float len0 = length(dpx);
-  float len = min(len0, 60.0);
-  vec2 ax = len0 > 1e-3 ? dpx/len0 : vec2(1.0, 0.0);
-  vec2 ay = vec2(-ax.y, ax.x);
-  float w = aInfo.x;
-  vec2 c = hp - ax*len*0.5;
-  vec2 pos = c + ax*aCorner.x*(len*0.5 + 2.0*w) + ay*aCorner.y*2.0*w;
-  gl_Position = vec4(pos/(uRes*0.5), 0.0, 1.0);
-  vP = vec2(aCorner.x*(len*0.5 + 2.0*w), aCorner.y*2.0*w);
-  vLen = len*0.5; vW = w; vBright = aInfo.y*visH; vHeat = aInfo.z;
-}`;
-const PART_FS=`#version 300 es
-precision highp float;
-in vec2 vP; in float vLen, vW, vBright, vHeat;
-out vec4 o;
-void main(){
-  float x = clamp(vP.x, -vLen, vLen);
-  float d = length(vP - vec2(x, 0.0));
-  float sig = vW*0.5;
-  float I = exp(-d*d/(2.0*sig*sig));
-  float t = (vP.x + vLen)/max(2.0*vLen, 1e-3);
-  I *= mix(0.10, 1.0, smoothstep(0.0, 1.0, t));
-  vec3 c = mix(vec3(0.70, 0.80, 1.0), vec3(1.0, 0.72, 0.42), vHeat);
-  c = mix(c, vec3(1.0, 0.97, 0.90), smoothstep(0.75, 1.0, vHeat));
-  o = vec4(c*I*vBright, 1.0);
-}`;
+// (the dust grains are simulated here but DRAWN on the crisp 2-D layer — see drawDust2D —
+//  because anything drawn into the low-resolution GL layer upscales into soft blobs)
 const BRIGHT_FS=`#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
@@ -452,6 +433,11 @@ void main(){
   bg += nebula(px, uRes*vec2(.85,.18), m*.34, vec3(160.,50.,130.)/255., .045);
   bg += nebula(px, uRes*vec2(.70,.60), m*.50, vec3(50.,40.,120.)/255., .04);
   c = c + bg*(1.0 - c);
+  // the vignette (was a full-screen 2-D blit every frame; here it is free)
+  float mn = min(uRes.x, uRes.y), mx = max(uRes.x, uRes.y);
+  float vt = clamp((length((vUv - 0.5)*uRes) - 0.45*mn)/(0.8*mx - 0.45*mn), 0.0, 1.0);
+  float va = vt < 0.7 ? 0.18*vt/0.7 : 0.18 + 0.37*(vt - 0.7)/0.3;
+  c = mix(c, vec3(2.0, 1.0, 8.0)/255.0, va);
   c += (hash(vUv*uRes + fract(uTime)) - 0.5)/255.0;
   o = vec4(c, 1.0);
 }`;
@@ -476,6 +462,7 @@ window.BACKGROUNDS.space2={
   let stopped=false;
   layer.innerHTML='';layer.style.overflow='hidden';
   const DPR=Math.min(devicePixelRatio||1,2),TAU=Math.PI*2,DEG=Math.PI/180;
+  let DPR2=DPR;                       // the 2-D layer's pixel ratio — capped by the quality tier
   let W=innerWidth,H=innerHeight;
 
   // ── the sky (bottom): WebGL2 when available, else a still painted sky ──
@@ -500,19 +487,22 @@ window.BACKGROUNDS.space2={
   let factTimer=null;
   function lg(c,x1,y1,x2,y2,st){const g=c.createLinearGradient(x1,y1,x2,y2);st.forEach(([t,col])=>g.addColorStop(t,col));return g;}
   function rg(c,x,y,r1,r2,st){const g=c.createRadialGradient(x,y,r1,x,y,r2);st.forEach(([t,col])=>g.addColorStop(t,col));return g;}
-  function makeLayer(){const c=document.createElement('canvas');c.width=W*DPR;c.height=H*DPR;const x=c.getContext('2d');x.setTransform(DPR,0,0,DPR,0,0);return{cv:c,cx:x};}
   let STARS_FAR,STARS_NEAR,GALAXIES,COMETS,PLANET,EARTH,TRAVELERS,BH,SUN,TIDAL;
-  let spaceLayer,vigLayer,granTile=null,nova=null,nextNovaAt=25+Math.random()*35,lastT=0;
+  let granTile=null,nova=null,nextNovaAt=25+Math.random()*35,lastT=0;
   let bhFrenzyT=null;   // click on the black hole → short feeding frenzy
   let ASTRO=null;       // click on the black hole → an astronaut spirals in
   let SURGE=0;          // the frenzy's 0..1 envelope — boosts bhPull + the GL disk/jets/dust each frame
   let sunFlareT=null,sunFlareAng=0,nextSunFlareAt=null;   // limb-flare schedule
 
   /* ═════════════════════════ GL: the black hole & the lensed sky ═══════════ */
-  // adaptive quality: start LOW, climb while the frame time allows, drop when it doesn't
-  const GLQS=[{name:'low',scale:.42,steps:130},{name:'medium',scale:.62,steps:200},{name:'high',scale:.82,steps:280}];
-  const AUTO_QUALITY=true;                     // false → stays at GLQS[0] (low)
-  let qIdx=0,emaMs=16,lastQChange=0,downshiftAt=-1e9;
+  // adaptive quality: start LOW, climb while the frame time allows, drop when it doesn't —
+  // down to POTATO for weak devices. scale = GL internal resolution in CSS px (the DPR is
+  // deliberately ignored: a retina screen must not quadruple the ray-marching work);
+  // lite = fewer noise octaves / jet samples; dpr = the 2-D layer's pixel-ratio cap.
+  const GLQS=[{name:'potato',scale:.28,steps:90,lite:1,dpr:1},{name:'low',scale:.42,steps:120,lite:1,dpr:1.25},
+              {name:'medium',scale:.62,steps:200,lite:0,dpr:1.5},{name:'high',scale:.82,steps:280,lite:0,dpr:2}];
+  const AUTO_QUALITY=true;                     // false → stays at the starting tier
+  let qIdx=1,emaMs=16,lastQChange=0,downshiftAt=-1e9;
   const TAN_HALF=0.25;                         // narrow fov: the hole is far & small, the off-axis view stays sane
   const DISK_IN=3.0,DISK_OUT=12.0,SPIN=-1.0,T_PEAK=9800,JET_GAIN=0.5,HALO_GAIN=0.11;
   const CAM_EL=0.28;                           // camera ~16° above the hole's rest plane
@@ -520,7 +510,7 @@ window.BACKGROUNDS.space2={
   const SPIN_RATE=0.16;                        // rad/s of precession — one wobble in ~40 s
   let HDR=!NOGL&&!!(gl.getExtension('EXT_color_buffer_float')||gl.getExtension('EXT_color_buffer_half_float'));
   let ENC=HDR?1.0:0.125;
-  let glLost=NOGL,P=null,T=null,vao=null,pVao=null,instBuf=null,RW=1,RH=1;
+  let glLost=NOGL,P=null,T=null,vao=null,RW=1,RH=1;
   let camPos=[0,0,1],camFwd=[0,0,-1],camRight=[1,0,0],camUp=[0,1,0],camD=60,galN=[0,1,0],galCore=[0,0,-1],holePx=[0,0];
   let diskTime=0,phi=0;
   const Ruser=M3.axis([1,0,0],HOLE_TILT);
@@ -543,35 +533,48 @@ window.BACKGROUNDS.space2={
     return{tex,fb,w,h,ok};
   }
   function freeTarget(t){if(!t)return;gl.deleteTexture(t.tex);gl.deleteFramebuffer(t.fb);}
-  const NP=600;
-  const INST=new Float32Array(NP*10);
+  const NP=260;                       // dust grains (fewer, crisp — drawn on the 2-D layer)
   function setupGL(){
-    P={scene:program(SCENE_FS),part:program(PART_FS,PART_VS),bright:program(BRIGHT_FS),down:program(DOWN_FS),blur:program(BLUR_FS),comp:program(COMP_FS)};
+    P={scene:program(SCENE_FS),skybake:program(SKYBAKE_FS),bright:program(BRIGHT_FS),down:program(DOWN_FS),blur:program(BLUR_FS),comp:program(COMP_FS)};
     vao=gl.createVertexArray();gl.bindVertexArray(vao);
     const vbo=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
-    pVao=gl.createVertexArray();gl.bindVertexArray(pVao);
-    const cb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,cb);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
-    instBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);
-    gl.bufferData(gl.ARRAY_BUFFER,INST.byteLength,gl.DYNAMIC_DRAW);
-    gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,40,0);gl.vertexAttribDivisor(1,1);
-    gl.enableVertexAttribArray(2);gl.vertexAttribPointer(2,3,gl.FLOAT,false,40,12);gl.vertexAttribDivisor(2,1);
-    gl.enableVertexAttribArray(3);gl.vertexAttribPointer(3,4,gl.FLOAT,false,40,24);gl.vertexAttribDivisor(3,1);
-    gl.bindVertexArray(vao);
     T=null;buildTargets();
   }
   function buildTargets(){
     if(T)Object.values(T).forEach(freeTarget);
-    const s=GLQS[qIdx].scale*Math.min(DPR,1.5);
+    const s=GLQS[qIdx].scale;
     RW=Math.max(160,Math.round(W*s));RH=Math.max(90,Math.round(H*s));
     glcv.width=RW;glcv.height=RH;                          // the GL canvas IS the internal resolution (CSS upscales)
     const mk=div=>makeTarget(Math.max(8,Math.round(RW/div)),Math.max(8,Math.round(RH/div)));
     T={scene:mk(1),b1a:mk(2),b1b:mk(2),b2a:mk(4),b2b:mk(4),b3a:mk(8),b3b:mk(8)};
     if(!Object.values(T).every(t=>t.ok)){if(HDR){HDR=false;ENC=0.125;buildTargets();return;}}
     if(BH)holePx=[BH.x/W*RW,(1-BH.y/H)*RH];
+  }
+  // the 2-D layer's backing resolution follows the tier (full-screen canvas work is fill-rate bound)
+  function apply2DScale(){
+    DPR2=Math.min(DPR,GLQS[qIdx].dpr);
+    cv.width=Math.round(W*DPR2);cv.height=Math.round(H*DPR2);ctx.setTransform(DPR2,0,0,DPR2,0,0);
+  }
+  // bake the sky (direction → colour) into a texture covering the frustum + a lensing margin
+  let skyUv0=[0,0],skyUvRange=[1,1];
+  function bakeSky(){
+    if(glLost||!P||!BH)return;
+    const M=0.7;                                           // margin in tan-plane units (≈10° of deflection)
+    const x0=-holePx[0]/RH*2-M,x1=(RW-holePx[0])/RH*2+M,y0=-holePx[1]/RH*2-M,y1=(RH-holePx[1])/RH*2+M;
+    skyUv0=[x0,y0];skyUvRange=[x1-x0,y1-y0];
+    const dens=RH/2*1.1;                                   // 1.1 texels per internal pixel
+    const tw=Math.min(2048,Math.round(skyUvRange[0]*dens)),th=Math.min(2048,Math.round(skyUvRange[1]*dens));
+    if(T.sky)freeTarget(T.sky);
+    T.sky=makeTarget(tw,th);
+    const K=P.skybake.u;
+    gl.useProgram(P.skybake.p);
+    gl.uniform2f(K.uRes,tw,th);gl.uniform2f(K.uSkyUv0,skyUv0[0],skyUv0[1]);gl.uniform2f(K.uSkyUvRange,skyUvRange[0],skyUvRange[1]);
+    gl.uniform3fv(K.uCamFwd,camFwd);gl.uniform3fv(K.uCamRight,camRight);gl.uniform3fv(K.uCamUp,camUp);
+    gl.uniform3fv(K.uGalN,galN);gl.uniform3fv(K.uGalCore,galCore);
+    gl.uniform1f(K.uTanHalf,TAN_HALF);gl.uniform1f(K.uPixAng,2*TAN_HALF/RH/1.1);gl.uniform1f(K.uEnc,ENC);gl.uniform1f(K.uLite,GLQS[qIdx].lite);
+    drawPass(P.skybake,T.sky);
   }
   // direction of a 2-D screen point (CSS px, y down) on this camera's off-axis rays
   function screenDir(fx,fy){
@@ -596,6 +599,7 @@ window.BACKGROUNDS.space2={
     const g=[dC[1]*d2[2]-dC[2]*d2[1],dC[2]*d2[0]-dC[0]*d2[2],dC[0]*d2[1]-dC[1]*d2[0]];
     const gL=Math.hypot(...g);galN=[g[0]/gL,g[1]/gL,g[2]/gL];
     galCore=screenDir(C[0]-Math.cos(th)*W*.30,C[1]+Math.sin(th)*W*.30);
+    bakeSky();
   }
   // 2-D screen (CSS px, y down) → WORLD point at depth z along the view axis
   function screenToWorld(fx,fy,z){
@@ -684,23 +688,57 @@ window.BACKGROUNDS.space2={
       if(dead){spawnGrain(i,true);continue;}
       PS[o]=x;PS[o+1]=y;PS[o+2]=z;PS[o+3]=vx;PS[o+4]=vy;PS[o+5]=vz;
     }
+  }
+  // a grain (hole frame) → its lensed screen image (CSS px): behind the hole the image is
+  // pushed out to the Einstein radius and hidden inside the shadow; in front it shows
+  // against the shadow (the same point-mass lens the old GL vertex shader used)
+  function lensProjectJS(x,y,z){
+    const pw=M3.apply(Rh2w,[x,y,z]);
+    const wx=pw[0]-camPos[0],wy=pw[1]-camPos[1],wz=pw[2]-camPos[2];
+    const zc=wx*camFwd[0]+wy*camFwd[1]+wz*camFwd[2];
+    if(zc<.25)return null;
+    const sx=(wx*camRight[0]+wy*camRight[1]+wz*camRight[2])/zc,sy=(wx*camUp[0]+wy*camUp[1]+wz*camUp[2])/zc;
+    const Dl=camD,Ds=Math.hypot(wx,wy,wz),Dls=Ds-Dl,beta=Math.max(Math.hypot(sx,sy),1e-5);
+    let b=beta*Dl,vis=1;
+    if(Dls>.05){const tE2=2*Dls/(Dl*Ds),th=.5*(beta+Math.sqrt(beta*beta+4*tE2));vis*=Math.min(2.5,Math.max(1,th/beta));b=th*Dl;}
+    b=Math.max(b,2.7*sstep(-.5,1,Dls));
+    vis*=1-(1-sstep(2.35,2.65,b))*sstep(0,.8,Dls);
+    const k=(b/Dl)/beta/TAN_HALF*(H/2);
+    return{x:BH.x+sx*k,y:BH.y-sy*k,vis,dz:zc};
+  }
+  // the grains, drawn CRISP on the full-resolution 2-D layer: a sharp point, plus a short
+  // streak for the fast hot ones near the hole (cool blue-white grain → ember → white-hot)
+  function drawDust2D(){
+    const surge=dustSurgeT==null?0:Math.max(0,1-(lastT-dustSurgeT)/3.5);
+    ctx.save();ctx.lineCap='round';
     for(let i=0;i<NP;i++){
-      const o=i*8,q=i*10;
-      const x=PS[o],y=PS[o+1],z=PS[o+2],r=Math.hypot(x,y,z);
-      const pw=M3.apply(Rh2w,[x,y,z]);
-      const wx=pw[0]-camPos[0],wy=pw[1]-camPos[1],wz=pw[2]-camPos[2];
-      const dz=Math.max(1,wx*camFwd[0]+wy*camFwd[1]+wz*camFwd[2]);
-      const heat=Math.min(1,Math.max(0,(7-r)/5.5));
-      const fade=sstep(1.06,1.5,r);
-      const distF=Math.min(1.6,Math.max(.3,Math.pow(camD/dz,.9)));
-      const seed=PS[o+6],tail=TAIL+.9*heat;
-      INST[q]=x;INST[q+1]=y;INST[q+2]=z;
-      INST[q+3]=x-PS[o+3]*tail;INST[q+4]=y-PS[o+4]*tail;INST[q+5]=z-PS[o+5]*tail;
-      INST[q+6]=(.8+1.6*heat)*(.6+.8*seed)*Math.min(1.6,Math.max(.6,Math.sqrt(camD/dz)));
-      INST[q+7]=(.12+1.5*heat*heat)*(.6+.8*seed)*fade*distF*(1+surge*.8);
-      INST[q+8]=heat;INST[q+9]=0;
+      const o=i*8,x=PS[o],y=PS[o+1],z=PS[o+2],r=Math.hypot(x,y,z);
+      const hp=lensProjectJS(x,y,z);if(!hp||hp.vis<=.02)continue;
+      const heat=Math.min(1,Math.max(0,(7-r)/5.5)),fade=sstep(1.06,1.5,r),seed=PS[o+6];
+      const distF=Math.min(1.4,Math.max(.35,Math.pow(camD/hp.dz,.7)));
+      const a=Math.min(1,(.28+.9*heat*heat)*(.6+.8*seed)*fade*distF*(1+surge*.6)*Math.min(1.6,hp.vis));
+      if(a<.04)continue;
+      const s=(1+1.6*heat)*(.7+.6*seed)*Math.min(1.5,Math.max(.7,Math.sqrt(camD/hp.dz)));
+      let c;if(heat<.75){const u=heat/.75;c=[180+75*u,205-20*u,255-145*u];}else{const u=(heat-.75)/.25;c=[255,185+61*u,110+120*u];}
+      const col=(c[0]|0)+','+(c[1]|0)+','+(c[2]|0);
+      // a short motion streak behind the head — long enough on the far, slow grains to
+      // tell them apart from a star, a real trail on the fast ones near the hole
+      const tail=TAIL*(1+2.2*(1-heat))+.9*heat;
+      const tp=lensProjectJS(x-PS[o+3]*tail,y-PS[o+4]*tail,z-PS[o+5]*tail);
+      if(tp&&tp.vis>.02){
+        const dx=hp.x-tp.x,dy=hp.y-tp.y,L=Math.hypot(dx,dy);
+        if(L>.9){const cap=Math.min(L,26);ctx.strokeStyle='rgba('+col+','+(a*.45).toFixed(3)+')';ctx.lineWidth=Math.max(.75,s*.65);
+          ctx.beginPath();ctx.moveTo(hp.x-dx/L*cap,hp.y-dy/L*cap);ctx.lineTo(hp.x,hp.y);ctx.stroke();}
+      }
+      ctx.fillStyle='rgba('+col+','+a.toFixed(3)+')';
+      if(s<2)ctx.fillRect(hp.x-s/2,hp.y-s/2,s,s);            // a single hard pixel — no blur
+      else{ctx.beginPath();ctx.arc(hp.x,hp.y,s*.5,0,6.2832);ctx.fill();}
+      if(heat>.8){                                            // the ember about to go over: a tight glow
+        ctx.fillStyle='rgba('+col+','+(a*.16).toFixed(3)+')';
+        ctx.beginPath();ctx.arc(hp.x,hp.y,s*1.9,0,6.2832);ctx.fill();
+      }
     }
-    gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);gl.bufferSubData(gl.ARRAY_BUFFER,0,INST);
+    ctx.restore();
   }
   function drawPass(prog,target){
     gl.bindFramebuffer(gl.FRAMEBUFFER,target?target.fb:null);
@@ -712,8 +750,8 @@ window.BACKGROUNDS.space2={
     if(glLost)return;                                      // no GL (or a lost context): never rebuild targets
     emaMs=emaMs*.92+dt*1000*.08;
     if(!AUTO_QUALITY||now-lastQChange<3000)return;
-    if(emaMs>27&&qIdx>0){qIdx--;lastQChange=now;downshiftAt=now;buildTargets();}
-    else if(emaMs<11&&qIdx<GLQS.length-1&&now-downshiftAt>30000&&now-lastQChange>6000){qIdx++;lastQChange=now;buildTargets();}
+    if(emaMs>27&&qIdx>0){qIdx--;lastQChange=now;downshiftAt=now;buildTargets();apply2DScale();bakeSky();}
+    else if(emaMs<11&&qIdx<GLQS.length-1&&now-downshiftAt>30000&&now-lastQChange>6000){qIdx++;lastQChange=now;buildTargets();apply2DScale();bakeSky();}
   }
   function renderGL(t,dt){
     if(glLost||!P)return;
@@ -733,18 +771,10 @@ window.BACKGROUNDS.space2={
     gl.uniform1i(S.uSteps,GLQS[qIdx].steps);
     gl.uniform1f(S.uDiskIn,DISK_IN);gl.uniform1f(S.uDiskOut,DISK_OUT);gl.uniform1f(S.uSpin,SPIN);gl.uniform1f(S.uTpeak,T_PEAK);
     gl.uniform1f(S.uJets,JET_GAIN*(1+fz));gl.uniform1f(S.uBoost,1+.8*fz);gl.uniform1f(S.uHalo,HALO_GAIN*(1+1.2*fz));gl.uniform1f(S.uEnc,ENC);
+    gl.uniform1f(S.uLite,GLQS[qIdx].lite);
+    if(T.sky){bindTex(0,T.sky.tex,S.uSky);gl.uniform2f(S.uSkyUv0,skyUv0[0],skyUv0[1]);gl.uniform2f(S.uSkyUvRange,skyUvRange[0],skyUvRange[1]);}
+    else gl.uniform2f(S.uSkyUvRange,0,0);                    // no bake yet → every lookup falls back to the procedural sky
     drawPass(P.scene,T.scene);
-    // the dust, added into the same HDR target (so it blooms too)
-    updateDust(dt);
-    const U=P.part.u;
-    gl.useProgram(P.part.p);
-    gl.uniform3fv(U.uCamPos,camPos);gl.uniform3fv(U.uCamFwd,camFwd);gl.uniform3fv(U.uCamRight,camRight);gl.uniform3fv(U.uCamUp,camUp);
-    gl.uniformMatrix3fv(U.uHoleRotT,false,Rh2w);
-    gl.uniform1f(U.uTanHalf,TAN_HALF);gl.uniform2f(U.uRes,T.scene.w,T.scene.h);gl.uniform2f(U.uHolePx,holePx[0],holePx[1]);
-    gl.bindFramebuffer(gl.FRAMEBUFFER,T.scene.fb);gl.viewport(0,0,T.scene.w,T.scene.h);
-    gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
-    gl.bindVertexArray(pVao);gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,NP);gl.bindVertexArray(vao);
-    gl.disable(gl.BLEND);
     // bloom chain
     const B=P.bright.u;
     gl.useProgram(P.bright.p);bindTex(0,T.scene.tex,B.uTex);
@@ -808,11 +838,13 @@ window.BACKGROUNDS.space2={
     c.fillStyle=rg(c,0,0,R*1.1,R*3.4,[[0,'rgba(255,190,110,.30)'],[.45,'rgba(255,140,60,.14)'],[1,'rgba(255,120,40,0)']]);
     c.beginPath();c.ellipse(0,0,R*3.4,R*1.15,0,0,TAU);c.fill();
     c.restore();
+    // the halo FIRST — a radial gradient starting at r=R also paints its whole
+    // interior with the inner stop, so painting it last washed the shadow khaki
+    c.fillStyle=rg(c,BH.x,BH.y,R,R*1.9,[[0,'rgba(255,210,150,.35)'],[1,'rgba(255,190,120,0)']]);
+    c.beginPath();c.arc(BH.x,BH.y,R*1.9,0,TAU);c.fill();
     c.fillStyle='#000000';c.beginPath();c.arc(BH.x,BH.y,R,0,TAU);c.fill();
     c.strokeStyle='rgba(255,214,150,.85)';c.lineWidth=Math.max(1.4,R*.055);
     c.beginPath();c.arc(BH.x,BH.y,R*1.035,0,TAU);c.stroke();
-    c.fillStyle=rg(c,BH.x,BH.y,R,R*1.9,[[0,'rgba(255,210,150,.35)'],[1,'rgba(255,190,120,0)']]);
-    c.beginPath();c.arc(BH.x,BH.y,R*1.9,0,TAU);c.fill();
   }
   const onLost=e=>{e.preventDefault();glLost=true;};
   const onRestored=()=>{try{setupGL();updateCamera();glLost=false;}catch(err){console.error(err);}};
@@ -1035,8 +1067,6 @@ window.BACKGROUNDS.space2={
     EARTH.mv={margin:EARTH.r*2.7+12,speed:W/140,pause:[15,25],startAt:lastT+14+Math.random()*12};
     planPath(EARTH.mv,{x:EARTH.x,y:EARTH.y},-1);
     nova=null;
-    spaceLayer=makeLayer();vigLayer=makeLayer();
-    paintConstellations(spaceLayer.cx);paintVignette(vigLayer.cx);
     granTile=makeGranulation();
     if(!glLost){buildTargets();dustInit=false;}
     updateCamera();                                        // pure math — also wanted without GL
@@ -1127,10 +1157,6 @@ window.BACKGROUNDS.space2={
         c.beginPath();c.arc(qx,qy,1.7,0,TAU);c.fill();
       }
     }
-  }
-  function paintVignette(c){
-    c.fillStyle=rg(c,W/2,H*.5,Math.min(W,H)*.45,Math.max(W,H)*.8,[[0,'rgba(2, 1, 8, 0)'],[.7,'rgba(2, 1, 8, 0.18)'],[1,'rgba(2, 1, 8, 0.55)']]);
-    c.fillRect(0,0,W,H);
   }
   // the Sun's granulation: a tile of bright cells with darker lanes, multiplied over the disc
   function makeGranulation(){
@@ -1909,7 +1935,7 @@ window.BACKGROUNDS.space2={
       ctx.globalCompositeOperation='multiply';ctx.globalAlpha=.55;
       const pat=ctx.createPattern(granTile,'repeat');
       ctx.translate((t*3)%256,(t*1.1)%256);ctx.fillStyle=pat;
-      ctx.fillRect(-300,-300,W+600,H+600);
+      ctx.fillRect(-300,s.y-s.r-300,W+600,H-(s.y-s.r)+600);   // only the Sun's visible cap, not the whole frame
       ctx.restore();
     }
     // sunspots (umbra + penumbra), drifting with the rotation, foreshortened at the limb
@@ -2089,9 +2115,9 @@ window.BACKGROUNDS.space2={
     factEl.style.opacity='0';
   };
   document.addEventListener('click',skyClick);
-  function onResize(){W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);buildScene();}
+  function onResize(){W=innerWidth;H=innerHeight;apply2DScale();buildScene();}
   window.addEventListener('resize',onResize);
-  cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  apply2DScale();
   buildScene();
   let animId=null,lastFrameT=0;
   function frame(ts){
@@ -2103,8 +2129,14 @@ window.BACKGROUNDS.space2={
     adaptQuality(dt,ts);
     renderGL(t,dt);                       // the sky + the black hole (GL layer, underneath)
     ctx.clearRect(0,0,W,H);
-    ctx.drawImage(spaceLayer.cv,0,0,W,H);   // constellations
+    paintConstellations(ctx);             // a few lines and dots — cheaper than blitting a full-screen layer
     drawStars(t);
+    if(glLost){                           // no GL: keep the hole's frame turning so the swirl still precesses
+      phi+=SPIN_RATE*dt;
+      Rh2w=M3.mul(M3.axis([0,1,0],phi),M3.mul(Ruser,M3.axis([0,1,0],-phi)));
+      Rw2h=M3.transpose(Rh2w);
+    }
+    updateDust(dt);drawDust2D();          // the infalling grains — simulated in 3-D, drawn crisp here
     drawNova(t);
     drawTravelers(t);
     for(const g of GALAXIES)drawGalaxy(g,t,dt);
@@ -2121,8 +2153,7 @@ window.BACKGROUNDS.space2={
     drawComets(t,dt);
     drawTidal(t);
     drawAstro(t);
-    ctx.drawImage(vigLayer.cv,0,0,W,H);
-    drawSun(t);
+    drawSun(t);                           // (the vignette now lives in the GL composite)
     animId=requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

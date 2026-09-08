@@ -4,13 +4,13 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns.bg.js`, `dubai.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `frozen.bg.js`, `maldives.bg.js` | Loaded by the game at runtime |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns.bg.js`, `dubai2.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `frozen.bg.js`, `maldives.bg.js` | Loaded by the game at runtime (`dubai.bg.js` is the legacy Dubai scene — nothing loads it) |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
 | **Built, NOT adopted** | `unicorns2.bg.js`, `unicorns2.html`, `_verify_unicorns2.py` | A 2026-09 from-scratch canvas rebuild of the unicorn valley (one module, full day cycle, canvas unicorn rig). Reviewed and **not** kept: the original `unicorns.bg.js` scene reads better, so `girls` still maps to `unicorns`. Nothing loads these; see its section below. |
-| **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around the GR black hole: a WebGL2 sky layer with ADAPTIVE quality (starts low, climbs to medium/high while the frame time allows; `AUTO_QUALITY` pins it) — dark sky, sparse stars, a structured Milky Way with a warm core, the ray-traced black hole (spiral disk, jets, infalling dust, and a glowing HALO: hot inner-flow plasma between the disk and the shadow whose light piles up along the geodesics into an uneven photon ring that softens the shadow's edge) positioned/sized exactly where the old 2-D hole was and slowly PRECESSING like a top (the sky stays put) — under the 2-D canvas world with rebuilt Earth (orthographic globe, real continents) and Saturn (oblate, structured rings + shadows) — both WANDER: slow curved paths out by the left/top/bottom edges and back in from another edge, never near the hole (only the Sun and the hole stay put) — and Sun (limb darkening, granulation, sunspots, spicules), PASSING WORLDS (Mercury, Venus, Mars, Jupiter + its four moons, Uranus with rings, Neptune, Pluto + an asteroid drift across in a shuffled cycle — each a procedurally painted 256×128 surface map wrapped onto an orthographic sphere by longitude strips, rotating, Sun-lit with limb darkening, entering from the left on lanes clear of the hole whose gravity visibly bends their path without ever capturing them, clickable with facts), plus galaxies, comets, constellations, supernova, click reactions. Without WebGL2 the sky layer is a STILL PAINTED sky on the same canvas (the composite shader's gradient + nebulae, a soft Milky Way band, a plain 2-D hole: shadow, photon ring, tilted disk glow) while the whole 2-D world keeps running — no second module. Theme `galaxy` → `space2`. |
-| **Dubai v2** (`dubai2.bg.js` + `dubai2.html`) | `dubai2.bg.js`, `dubai2.html` | The Dubai dusk scene recreated from scratch with every element of `dubai.bg.js` kept (same constants and cadences — `_verify.js` now checks this file): the city redrawn — layered dusk sky with lit cirrus and an earthshine moon, a two-layer hazy far skyline, towers with two-face 3-D massing / glass sheen / floor banding / mullions / lit podiums / detailed crowns, and the hallmarks built with care (Burj Khalifa's rounded setback lobes + needle spire over the mall lake, the Burj Al Arab's exoskeleton sail with glowing atrium wall, helipad and Al Muntaha on its island, the wave-shaped Jumeirah Beach Hotel, the twisting Cayan, the Emirates Towers, the torus Museum of the Future with calligraphy, the golden Dubai Frame, the Address towers + Sky View bridge, Ain Dubai) mirrored in rippled water. Theme `dubai` → `dubai2`. |
-| **Standalone study** (`blackhole.html`) | `blackhole.html` | A physically realistic black hole (WebGL2, single file, not wired into the game): GR ray tracing through Schwarzschild spacetime; Doppler-beamed + gravitationally-redshifted thin accretion disk with two glowing trailing spiral arms; volumetric relativistic jets integrated along the same geodesics; ~1000 infalling dust grains (3-D Paczyński–Wiita sim, drawn through the point-mass lens); lensed starfield; HDR bloom. Default quality MEDIUM. Drag/wheel to orbit/zoom; `?q=`, `?jets=0`, `?dust=0`, `?az= ?el= ?dist=`. Counterpart of the 2-D canvas black hole `space2.bg.js` paints when WebGL2 is missing. |
+| **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
+| **Dubai v2** (`dubai2.bg.js` + `dubai2.html`) | `dubai2.bg.js`, `dubai2.html` | The Dubai dusk scene recreated from scratch — same design space, constants and cadences as the legacy scene, city and hallmarks redrawn (Burj Khalifa, Burj Al Arab, Cayan, Emirates Towers, Museum of the Future, Dubai Frame, Ain Dubai), mirrored in rippled water. Theme `dubai` → `dubai2`. **Full section below.** |
+| **Standalone study** (`blackhole.html`) | `blackhole.html` | The physics study the space hole came from: a GR ray-traced black hole in one WebGL2 file, not wired into the game — drag to spin the hole, wheel to zoom, quality/bloom/jets/dust toggles. **Full section below.** |
 
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns`,
 `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
@@ -187,7 +187,65 @@ fits **center** comfortably. Skin direction: deep-navy glass, teal/mint accents
 
 ---
 
-## dubai_skyline.html — Dubai at dusk
+## dubai2.bg.js — Dubai at dusk, redrawn (the 🏙️ theme, integrated)
+
+Theme `dubai` → `dubai2` (`_BG_THEMES`). Harness `dubai2.html`; skin
+`game/skins/dubai.skin.css`; aids `dubai`. The city was rebuilt from scratch in
+2026-09; `dubai.bg.js` + `dubai_skyline.html` are the **legacy** scene and stay
+in the folder unloaded. `_verify.js` now checks `dubai2.bg.js`.
+
+**Same stage, same clock.** Identical fixed design space — 1600×900
+(`DW×DH`), waterline `HZ = 780`, sunset glow at `SUNX/SUNY = 560/772`, Burj
+Khalifa at `BX = 1330` scale `BS = 1.44`, moon at `300,140`, Ain Dubai at
+`410,618` r 120 — cover-fitted and bottom-anchored, with hit-tests mapping
+screen→design. Static scene (sky, far skyline, towers, water, vignette)
+prerenders into `off` once per resize; the per-frame layer draws only lights,
+effects and moving things. **Every element, constant and cadence of the legacy
+scene is kept** — the Burj LED show (`SHOW_PERIOD 180`/`SHOW_LEN 22`),
+fireworks (`120/5`), the five-movement fountain (`210/30`), the drone light show
+(`150/14`) + crossing drones, the oil gusher (`150/8`), the dusk→night cycle
+(`DAY_PERIOD 200`), the thunderstorm (`STORM_LEN 12`), the missile-defense show,
+helicopters (including the Burj Al Arab helipad shuttle), aircraft, birds,
+dolphins, the boat fleet, crane + gondola, and every click zone. **The
+"Scheduled shows", "Click interactions" and "Game integration notes" tables in
+the legacy section below still describe this scene** — only the drawing changed.
+
+**What the redraw actually changed:**
+
+- **The sky** (`drawSky`): banded dusk gradient, a low sun glow, 360 stars with
+  84 twinkles, eleven cirrus streaks (the low six catch the sunset from below),
+  and a crescent moon with earthshine.
+- **Two hazy far layers** (`drawFar`, `FAR`/`FAR2`) behind the city for depth.
+- **The generic tower** (`drawBuilding`/`drawBoxBody`/`drawCrown`): two-face 3-D
+  massing (a lit face and a shaded return), glass sheen, floor banding,
+  mullions, a podium with lit shopfronts, and a detailed crown per `crown` kind
+  (`flat`, `spire`, `dome`, `emir1`, `emir2`, `slantL`). Glass palettes come from
+  `STYLE` (`blue`, `navy`, `teal`, `bronze`, `silver`, `sand`, each `base`/`tint`/
+  `warm`); the `BUILDINGS` array keeps the original composition left→right (later
+  = in front), each entry carrying its own animated light scheme (`anim.type`:
+  `crown`, `edges`, `scan`, `pulse`, `sail`, `twist`, `museum`, `frame`).
+  Windows (`drawWindows`) are clipped to the body silhouette and start a clear
+  gap below the roof, so lit windows never poke past the crown.
+- **The hallmarks, each its own renderer**: `drawBurj` (rounded setback lobes
+  climbing to the needle spire, banded glass, over the Dubai Mall lake),
+  `drawBurjAlArab` (the white exoskeleton sail on its island, glowing atrium
+  wall, helipad and Al Muntaha), `drawJBH` (the breaking-wave low-rise next
+  door), `drawCayan` (the 90° twist read as helical facets, with its own window
+  clip), `drawTwin` (the Emirates Towers), `drawMuseum` (the upright torus with
+  calligraphy on a green mound), `drawFrame` (the golden Dubai Frame's two clad
+  towers + glass sky bridge), `drawFerris` (Ain Dubai over the water).
+- **The water** (`drawWater`): deep gradient plus a *sliced, rippled mirror* of
+  the finished city — the reflection is drawn in horizontal slices with a
+  per-slice horizontal offset, so it wobbles instead of being a flat flip —
+  then the sun's path and glints.
+
+---
+
+## dubai_skyline.html / dubai.bg.js — Dubai at dusk (LEGACY — superseded by `dubai2`)
+
+> Kept for reference and because the schedules, click zones and game-integration
+> notes below are shared verbatim with `dubai2.bg.js` (the section above), which
+> is what the `dubai` theme actually loads now.
 
 Canvas painting in a fixed **1600×900 design space** (`DW×DH`, waterline
 `HZ=780`), cover-fitted and bottom-anchored to the window (`scale/ox/oy`); all
@@ -696,10 +754,175 @@ loop, Rumi's patrol and both listeners and empties the stage.
 
 ---
 
+## space2.bg.js — deep space around a ray-traced black hole (the 🌌 galaxy theme, integrated)
+
+Theme `galaxy` → `space2` (`_BG_THEMES`). Harness `space2.html`; skin
+`game/skins/space.skin.css`; aids `space` (rocket + stars). The legacy 2-D
+`space.bg.js`/`space.html` were **removed in 2026-09** — this module is
+self-contained and paints its own sky when WebGL2 is missing. Its file header
+is the short version of everything below; the click reactions have their own
+section right after this one.
+
+**Two stacked canvases inside the stage.** BOTTOM (`glcv`) = WebGL2, rendered
+at a *fraction* of the CSS resolution and upscaled by the browser: the sky and
+the black hole. TOP (`cv`) = a transparent 2-D canvas at up to `DPR2`: the Sun,
+Earth, Saturn, the passing worlds, stars, galaxies, comets, the infalling dust,
+the discovery bubble and every click effect. All gameplay geometry lives in the
+2-D layer's pixels, and the GL hole is *placed to match the old 2-D one
+exactly* — centre `x = 0.90 W, y = 0.36 H`, shadow radius `0.075·min(W,H)`
+(`BH`) — so the click targets, `bhPull` and `lensImage` survived the rewrite
+untouched.
+
+**The GR sky pass (`SCENE_FS`).** Every pixel fires a ray *backwards* through
+Schwarzschild spacetime, integrated in the Binet form of the null geodesic
+(`d²x/dλ² = −1.5·h²·x/r⁵`, `r_s = 1`) with an adaptive step
+(`clamp(r·0.07, 0.025, 0.4)/|v|`) inside a marching sphere `R_BOUND = 15`; rays
+that miss it get the analytic weak-field deflection *plus* its second-order term
+(`1/b + 15π/32b²` — the first-order-only version left a visible seam ring at the
+boundary). The shadow (`b = 3√3/2 r_s`), the photon ring, the Einstein ring and
+the disk's arch over and under the hole all fall out of that integration.
+On top of it:
+
+- **Thin accretion disk**, `DISK_IN = 3` (the ISCO) to `DISK_OUT = 12`:
+  Novikov–Thorne temperature profile → black-body colour (`T_PEAK = 9800`),
+  relativistic Doppler beaming `D = 1/(γ(1−β cosθ))` and gravitational redshift
+  `√(1−1/r)`, two glowing trailing spiral arms riding Keplerian-sheared
+  turbulent filaments (periodic value noise, period 16, two-phase bounded-shear
+  advection so it never smears into moiré). Semi-transparent, so the far side's
+  lensed image stacks through the near side.
+- **Twin relativistic jets** along the spin axis (`JET_GAIN = 0.5`): a hot spine
+  in a wider sheath with a helical twist and outward-streaming knots,
+  bulk-Doppler boosted (`β_j = 0.62`) so the near jet outshines the counter-jet.
+  Integrated volumetrically along the *same* geodesics inside the sphere and
+  along the straight ray outside it (`jetStraight`).
+- **The halo** (`haloEmission`, `HALO_GAIN = 0.11`): a hot plasma shell just
+  outside the shadow (r ≈ 2.95, σ ≈ 0.55) whose light piles up along the
+  geodesics into an uneven photon ring. This is what softens the shadow's
+  boundary so the inner circle no longer reads as a hard-edged disc — the
+  effect asked for in place of the old scene's flat glow ring.
+- **Off-axis camera**: `uv = (frag − uHolePx)/RH·2`,
+  `camD = 2.598·H/(2·TAN_HALF·BH.r)` with `TAN_HALF = 0.25`, i.e. the camera
+  distance is *solved* from where the 2-D scene wants the shadow.
+
+**The hole precesses; the camera and the sky do not.** Orientation is a 3×3
+column-major matrix (`M3.ident/mul/transpose/apply/axis`) built each frame as
+`Rh2w = Ry(φ)·Ruser·Ry(−φ)` with `φ += SPIN_RATE·dt` (`SPIN_RATE = 0.16` rad/s)
+and `HOLE_TILT = 0.25` — the axis leans toward the camera and walks round a
+cone, like a spinning top. The shader gets both directions (`uHoleRot` =
+world→hole, `uHoleRotT` = hole→world); the camera stays at a fixed elevation
+`CAM_EL = 0.28`. Because *only* the matrix changes, the star field and the Milky
+Way stay nailed in place while disk, jets and dust swing around.
+
+**Cost control** — this scene used to be the heaviest thing in the folder, and
+on slow devices it simply did not keep up. What it does now:
+
+| tier | GL scale | steps | `lite` | 2-D DPR cap |
+|---|---|---|---|---|
+| `potato` | 0.28× | 90 | on | 1.0 |
+| `low` (start) | 0.42× | 120 | on | 1.25 |
+| `medium` | 0.62× | 200 | off | 1.5 |
+| `high` | 0.82× | 280 | off | 2.0 |
+
+`AUTO_QUALITY` (on) starts at `low` and adapts on an EMA of the frame time
+(`emaMs`): above 27 ms → down a tier; below 11 ms → up, but only ≥30 s after the
+last downshift and ≥6 s after any change. Every change rebuilds the targets,
+re-caps the 2-D canvas (`apply2DScale`) and re-bakes the sky. Where the cost
+went:
+
+- **The sky is baked.** The procedural sky (~60 hashes + three black-body curves
+  per pixel) was the single biggest cost, and neither the camera nor the sky
+  ever moves — so `bakeSky`/`SKYBAKE_FS` render it **once per layout/tier** into
+  `T.sky`, covering the frustum plus a margin (`M = 0.7` in tan-plane units) for
+  rays bent in from outside the frame, and `skyLookup` just samples it. No bake
+  yet → each lookup falls back to the procedural path, so a frame is never wrong,
+  only slower.
+- **`lite` tiers** cut `fbmDisk` to three octaves, halve the jet samples and skip
+  the GL star layers entirely (upscaled from 0.3× they were soft blobs anyway —
+  the 2-D layer's stars stay crisp).
+- **The GL layer ignores `devicePixelRatio` on purpose**: a retina screen must
+  not quadruple the ray-marching work. Only the 2-D layer scales with the DPR,
+  and the tier caps that too.
+- **The 2-D layer does no full-screen blits at all**: the vignette moved into the
+  GL composite, the constellations are drawn straight onto the canvas, and the
+  Sun's granulation tile is filled only inside the Sun's cap.
+
+**HDR path.** RGBA16F targets when `EXT_color_buffer_float` allows, else 8-bit
+with a sqrt encode/decode (`ENC = 0.125`) so the bloom doesn't band. Then a
+three-level bloom, ACES tonemap (exposure 1.2, bloom 0.55) and the old scene's
+dark gradient + four nebulae as a screen-space backdrop.
+
+**The infalling dust — simulated in 3-D, drawn in 2-D.** `NP = 260` grains live
+in the *hole's* frame under a Paczyński–Wiita pseudo-potential
+(`a = −0.5/(r−1)²/r`, `TS = 5`, `DRAG = 0.028`), so anything wandering inside
+~3 r_s plunges; they are spawned all over the frame (`spawnGrain`, re-spawned at
+the edges when they cross the horizon or drift out) and sub-stepped 6×/3× when
+close in. `lensProjectJS` — a JS port of the old vertex shader — maps a grain
+through the point-mass lens: behind the hole its image is pushed out to the
+Einstein radius and hidden inside the shadow, in front it is seen against it.
+`drawDust2D` then paints them on the **full-resolution 2-D canvas**: a hard
+pixel (a small disc when big), a short motion streak behind the head — long
+enough on the far, slow grains to read as motion rather than a star — and a
+tight glow on the hottest embers, coloured cool blue-white → ember → white-hot.
+They used to be instanced GL quads in the low-res layer, where the upscale
+turned every grain into an unfocused blob; there were 600 of them then.
+Clicking the hole runs `dustSurge` (every grain yanked inward, drag ×10).
+
+**The 2-D world.** Rebuilt bodies:
+
+- **Earth** (`drawEarth`) — an orthographic globe: `globeProject`/`globePath`
+  map the `CONTINENTS` lon/lat outlines onto the sphere (back-side vertices
+  pinned to the limb), plus deserts and ice, streaky clouds, a Rayleigh rim, the
+  terminator with city lights and an aurora. Orbiters: the Moon and two
+  mini-satellites (`drawEarthOrbiters`, drawn behind and in front).
+- **Saturn** (`drawPlanet`) — an oblate banded gas giant with a structured ring
+  system (`ringProfile`: C · B · Cassini · A · F, `RING_IN = 1.24`,
+  `RING_OUT = 2.32`), the planet's shadow on the rings and the rings' shadow on
+  the planet (a clipped far half-annulus + a soft ellipse — the earlier
+  `source-atop` version left a translucent black square travelling with the
+  planet), orbiting gravel and two drifting storm ovals.
+- **The Sun** (`drawSun`) — an enormous disc parked below the frame, only its
+  limb showing: limb darkening, a boiling granulation tile (`makeGranulation`,
+  multiplied inside the cap only), sunspots, a red chromosphere, spicules,
+  prominence loops, corona streamers and scheduled limb flares.
+- **Passing worlds** (`spawnPasser`/`updatePassers`/`drawPasser`) — Mercury,
+  Venus, Mars, Jupiter + its four moons, Uranus with rings, Neptune, Pluto and
+  an asteroid, drifting across in a shuffled cycle. Each is a procedurally
+  painted 256×128 surface map (`makeWorldTexture`) wrapped onto an orthographic
+  sphere by 36 longitude strips (`drawTexturedSphere`), rotating and Sun-lit with
+  limb darkening. They **enter from the left** on lanes clear of the hole, whose
+  gravity visibly bends their path (a visual bump, not a real kick) without ever
+  capturing them, and they carry Hebrew facts.
+- **Wanderers** (`planPath`/`updateMover`) — Saturn and Earth do not sit still:
+  each drifts along a slow curved path, leaves by the left/top/bottom edge,
+  waits, and comes back in from another edge, never near the hole. Only the Sun
+  and the hole are fixed.
+- Plus the sparse twinkling stars (pulled and lensed by `bhPull`/`lensImage`),
+  spiral galaxies, comets, travellers, constellations, tidal streaks, the
+  scheduled supernova (`buildNova`/`drawNova`) and the doomed astronaut.
+
+**No WebGL2** → `paintStillSky()` paints one still sky per layout onto the same
+bottom canvas (the composite shader's gradient and its four nebulae in 2-D, a
+soft Milky Way band on the shader's −0.5 rad diagonal, and a plain hole: shadow,
+photon ring, tilted disk glow) while the whole 2-D world above keeps running.
+The theme never goes dark, and no second module is needed. Since the dust is
+pure 2-D now, the fallback gets the swirling grains for free (the frame keeps
+turning the hole's frame so they still precess). Watch the paint ORDER there:
+a canvas radial gradient starting at `r0 = R` also fills its whole *interior*
+with the inner stop, so the halo must be painted **before** the black shadow
+disc — painted after, it washed the shadow khaki.
+
+**Test hooks** — `window._space2`: `bh`, `gl` (`hdr`, `lost`, `nogl`, `rw/rh`,
+`camD`, `quality`, `emaMs`, `phi`), `dust` (the raw `PS` array), `passers`,
+`passStats`, `movers`, `simulateMovers(sec)` (fast-forwards the wanderers and
+reports how close they came to the hole — it must stay 0 swallowed),
+`spawnAll()`, `simulate(sec)`.
+
+---
+
 ## The deep-space click reactions (now owned by `space2.bg.js`)
 
 > The original 2-D `space.bg.js` + `space.html` were **removed in 2026-09** —
-> `space2.bg.js` (the row at the top of this file) is the only space module
+> `space2.bg.js` (the section above) is the only space module
 > and it inherited the 2-D world, the discovery bubble and every click
 > reaction below, so this section still applies to the live scene. Scene
 > inventory and the bubble are documented in `space2.bg.js`'s file header.
@@ -730,6 +953,56 @@ radius (orbiters clear the whole orbit) so it never covers the show.
 
 Envelope helpers shared by these: `clickEnv(t0,t,dur)` (fast attack, slow
 release) and `lapExtra(o,t)`.
+
+---
+
+## blackhole.html — the GR black-hole study (standalone, not in the game)
+
+One self-contained WebGL2 file: the physics the space scene's hole came from.
+Nothing loads it — open it directly. `space2.bg.js` shares its shader library
+(adapted for an off-axis camera, the hole's rotation, a placed Milky Way core
+and the old scene's backdrop), so **fix the physics here and port it over**, or
+change both.
+
+What it adds over the in-game version:
+
+- **A free camera.** DRAG spins the *hole* itself, trackball-style — disk, jets
+  and dust tilt with it while the camera and the stars stay put (that was the
+  point: the background must not move). Wheel/pinch zooms (`DEF.dist = 19` r_s,
+  eased), SPACE toggles the auto-precession (`SPIN_RATE = 0.11` rad/s → one
+  wobble in ~57 s), R resets. `DEF.tilt = 0.2` leans the axis toward the camera
+  so the precession sweeps a cone; `CAM_EL = 0.28` is the camera's elevation
+  above the hole's rest plane.
+- **Higher quality tiers.** `QUALITY` = `low` (0.42×, 130 steps, lite) ·
+  `medium` (0.62×, 200) · `high` (0.82×, 280) · `ultra` (1.0×, 400 steps).
+  **Default is `medium`** (`?q=` overrides). `?q=auto` adapts on the frame-time
+  EMA the same way space2 does — down above 27 ms, up below 10.5 ms after a
+  quiet 30 s — but it never climbs past `high`; `ultra` is a deliberate choice.
+- **More dust.** `NP = 1000` grains (vs 260), and here they *are* drawn in GL:
+  velocity-stretched instanced streaks through the point-mass lens, inside the
+  same HDR target, so they bloom. The full-resolution pass makes that look
+  right; the in-game low-res pass did not, which is why space2 draws its grains
+  on the 2-D layer instead.
+- **The same everything else**: Binet-form geodesics, the analytic weak-field
+  bend for rays that miss the marching sphere, the Novikov–Thorne disk with
+  Doppler beaming + gravitational redshift and two trailing spiral arms,
+  volumetric jets, the plasma halo (`HALO_GAIN = 0.11`), the baked procedural
+  sky (`bakeSky`, once per resolution change), HDR → 3-level bloom → ACES, and
+  the 8-bit sqrt-encoded fallback.
+- **On-screen stats** (fps · internal resolution · steps · tier · HDR/8-bit) and
+  toggles for quality, bloom, spin, dust and jets. The fps figure uses the
+  *unclamped* delta, so it reports the truth on a slow machine.
+
+URL params: `?q=auto|low|medium|high|ultra` · `?spin=0` · `?bloom=0` ·
+`?dust=0` · `?jets=0` · `?dist=` (r_s) · `?tilt=` (rad) · `?ldr=1` (force the
+8-bit path). Test hook: `window.BLACKHOLE` → `view` (`dist`, `phi`, `R`),
+`quality`, `hdr`, `fps`, `dust`, `options`.
+
+> Headless verification note: Playwright has no bundled browser on this machine
+> — drive system Chrome with `--use-gl=angle --use-angle=swiftshader
+> --enable-unsafe-swiftshader`. Software rendering runs at ~1 fps, so the frame
+> times and the auto tier (it bottoms out at `potato`/`low`) mean nothing there;
+> only the pixels do.
 
 ---
 

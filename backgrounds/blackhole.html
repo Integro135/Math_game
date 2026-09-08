@@ -123,32 +123,11 @@ out vec2 vUv;
 void main(){ vUv = aPos*0.5+0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
 // ── PASS 1: the geodesic ray tracer (disk + jets + lensed sky) ─────────────
-const SCENE_FS = `#version 300 es
-precision highp float;
-precision highp int;
-out vec4 fragColor;
-uniform vec2  uRes;
-uniform float uTime;
-uniform vec3  uCamPos, uCamFwd, uCamRight, uCamUp;
-uniform float uTanHalf;        // tan(vertical fov / 2)
-uniform float uPixAng;         // angular size of one pixel (rad) — star anti-aliasing
-uniform int   uSteps;          // geodesic step budget
-uniform float uDiskIn, uDiskOut;   // disk radii (r_s units); inner = ISCO = 3 r_s
-uniform float uSpin;           // disk rotation sense (±1)
-uniform float uTpeak;          // disk temperature scale (K)
-uniform float uJets;           // jet gain (0 = off)
-uniform float uHalo;           // hot inner-flow plasma gain — the glowing halo / photon ring round the shadow
-uniform float uEnc;            // output encoding (1 for float targets, <1 for RGBA8 fallback)
-uniform mat3  uHoleRot, uHoleRotT;   // the hole's orientation: world→hole · hole→world (the sky stays in world)
-
-const float PI = 3.14159265, TAU = 6.28318531;
-const float R_BOUND = 15.0;    // inside: numerical geodesics · outside: analytic weak-field bend
-const float ROT = 2.0;         // visual time-scale of the disk's Keplerian rotation
-const float JET_LEN = 42.0;    // jets reach ±42 r_s along the spin axis
-const float JET_RMAX = 7.8;    // bounding cylinder of the jets
-// RGBA8 fallback: store √(c·uEnc) so faint sky values keep their levels (identity when uEnc = 1)
-vec3 enc(vec3 c){ return uEnc < 1.0 ? sqrt(max(c, 0.0)*uEnc) : c; }
-
+// ── the sky library (noise, black body, stars, Milky Way): shared by the scene shader
+//    (as a fallback) and the SKY BAKE, which renders the sky ONCE into a texture — the
+//    camera basis and the sky never move, so the per-pixel procedural sky (~60 hashes
+//    and three black-body curves for every escaped ray) was the frame's biggest cost
+const SKY_LIB = `
 /* ── hashing / noise ──────────────────────────────────────────────────────── */
 float hash12(vec2 p){ vec3 p3 = fract(vec3(p.xyx)*0.1031); p3 += dot(p3, p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
 float hash13(vec3 p3){ p3 = fract(p3*0.1031); p3 += dot(p3, p3.zyx+31.32); return fract((p3.x+p3.y)*p3.z); }
@@ -168,6 +147,7 @@ float fbmDisk(float u, float y, float N, float seed){
   float s = 0.0, amp = 0.55, tot = 0.0;
   vec2 p = vec2(u, y);
   for(int k=0; k<6; k++){
+    if(uLite > 0.5 && k >= 4) break;                          // low tier: four octaves
     s += amp*pnoise(p + vec2(0.37*float(k), seed + 53.0*float(k)), N);
     tot += amp; amp *= 0.56; p *= 2.0; N *= 2.0;
   }
@@ -233,6 +213,65 @@ vec3 sky(vec3 d){
   col += starLayer(d, 50.0,  0.12*dens, 1.0,  2.0);
   col += starLayer(d, 140.0, 0.16*dens, 0.35, 3.0);
   return col;
+}`;
+
+// ── the sky bake: one pass per resolution change into a texture covering the frustum
+//    plus a margin for lensing deflection (uv = tan-plane coordinates, centred)
+const SKYBAKE_FS = `#version 300 es
+precision highp float;
+precision highp int;
+out vec4 fragColor;
+uniform vec2  uRes, uSkyUv0, uSkyUvRange;
+uniform vec3  uCamFwd, uCamRight, uCamUp;
+uniform float uTanHalf, uPixAng, uEnc, uLite;
+vec3 enc(vec3 c){ return uEnc < 1.0 ? sqrt(max(c, 0.0)*uEnc) : c; }
+${SKY_LIB}
+void main(){
+  vec2 uv = uSkyUv0 + (gl_FragCoord.xy/uRes)*uSkyUvRange;
+  vec3 d = normalize(uCamFwd + uTanHalf*(uv.x*uCamRight + uv.y*uCamUp));
+  fragColor = vec4(enc(sky(d)), 1.0);
+}`;
+
+const SCENE_FS = `#version 300 es
+precision highp float;
+precision highp int;
+out vec4 fragColor;
+uniform vec2  uRes;
+uniform float uTime;
+uniform vec3  uCamPos, uCamFwd, uCamRight, uCamUp;
+uniform float uTanHalf;        // tan(vertical fov / 2)
+uniform float uPixAng;         // angular size of one pixel (rad) — star anti-aliasing
+uniform int   uSteps;          // geodesic step budget
+uniform float uDiskIn, uDiskOut;   // disk radii (r_s units); inner = ISCO = 3 r_s
+uniform float uSpin;           // disk rotation sense (±1)
+uniform float uTpeak;          // disk temperature scale (K)
+uniform float uJets;           // jet gain (0 = off)
+uniform float uHalo;           // hot inner-flow plasma gain — the glowing halo / photon ring round the shadow
+uniform float uEnc;            // output encoding (1 for float targets, <1 for RGBA8 fallback)
+uniform float uLite;           // 1 on the low tier: fewer noise octaves, fewer jet samples
+uniform mat3  uHoleRot, uHoleRotT;   // the hole's orientation: world→hole · hole→world (the sky stays in world)
+uniform sampler2D uSky;               // the baked sky
+uniform vec2  uSkyUv0, uSkyUvRange;   // its tan-plane coverage
+
+const float PI = 3.14159265, TAU = 6.28318531;
+const float R_BOUND = 15.0;    // inside: numerical geodesics · outside: analytic weak-field bend
+const float ROT = 2.0;         // visual time-scale of the disk's Keplerian rotation
+const float JET_LEN = 42.0;    // jets reach ±42 r_s along the spin axis
+const float JET_RMAX = 7.8;    // bounding cylinder of the jets
+// RGBA8 fallback: store √(c·uEnc) so faint sky values keep their levels (identity when uEnc = 1)
+vec3 enc(vec3 c){ return uEnc < 1.0 ? sqrt(max(c, 0.0)*uEnc) : c; }
+vec3 dec(vec3 c){ return uEnc < 1.0 ? c*c/uEnc : c; }
+${SKY_LIB}
+// the sky along a world direction: one texture fetch from the bake; the procedural sky
+// only for the few rays bent past the bake's margin (or behind the camera)
+vec3 skyLookup(vec3 d){
+  float z = dot(d, uCamFwd);
+  if(z > 0.05){
+    vec2 uv = vec2(dot(d, uCamRight), dot(d, uCamUp))/(z*uTanHalf);
+    vec2 tc = (uv - uSkyUv0)/uSkyUvRange;
+    if(tc.x >= 0.0 && tc.x <= 1.0 && tc.y >= 0.0 && tc.y <= 1.0) return dec(texture(uSky, tc).rgb);
+  }
+  return sky(d);
 }
 
 /* ── weak-field lensing outside the marching sphere ───────────────────────── */
@@ -285,7 +324,7 @@ vec3 jetStraight(vec3 p0, vec3 d, float s0, float s1){
   else if(abs(p0.y) > JET_LEN) return vec3(0.0);
   sa = max(sa, s0); sb = min(sb, s1);
   if(sb <= sa) return vec3(0.0);
-  const int N = 18;
+  int N = uLite > 0.5 ? 9 : 18;
   float ds = (sb - sa)/float(N);
   vec3 acc = vec3(0.0);
   for(int i=0; i<N; i++) acc += jetEmission(p0 + d*(sa + (float(i)+0.5)*ds), d);
@@ -306,13 +345,16 @@ vec3 haloEmission(vec3 p, vec3 rayDir){
   float ang = uSpin*uTime*0.55, cs = cos(ang), sn = sin(ang);
   vec3 q = vec3(p.x*cs - p.z*sn, p.y, p.x*sn + p.z*cs);
   float n = vnoise3(q*1.7 + vec3(0.0, uTime*0.35, 0.0));
-  float n2 = vnoise3(q*4.5 + vec3(uTime*0.2, 0.0, uTime*0.5));
+  float n2 = uLite > 0.5 ? 0.5 : vnoise3(q*4.5 + vec3(uTime*0.2, 0.0, uTime*0.5));
   dens *= 0.35 + 1.0*n + 0.5*n2;
   vec3 tangent = uSpin*normalize(vec3(-p.z, 0.0, p.x));
   const float beta = 0.45; float gamma = inversesqrt(1.0 - beta*beta);
   float D = 1.0/(gamma*(1.0 + beta*dot(tangent, rayDir)));
   float g = D*sqrt(max(1.0 - 1.0/r, 0.0));
-  return blackbody(7600.0*g)*pow(g, 2.0)*dens*uHalo;
+  // a two-stop ramp stands in for the black-body curve here (this runs every march step):
+  // redshifted → ember orange, blueshifted → white
+  vec3 c = mix(vec3(1.0, 0.55, 0.28), vec3(1.0, 0.95, 0.85), clamp((g - 0.55)*1.6, 0.0, 1.0));
+  return c*g*g*dens*uHalo;
 }
 
 /* ── the accretion disk (thin, equatorial, r in [uDiskIn, uDiskOut]) ──────── */
@@ -384,7 +426,7 @@ void main(){
     if(b2 >= R_BOUND*R_BOUND || pd > 0.0){
       col += jetStraight(p, d, 0.0, 1e9);                         // the jets, wherever the ray crosses them
       vec3 dd = bendToward(d, perp, residualBend(sqrt(b2), pd));
-      fragColor = vec4(enc(col + sky(uHoleRotT*dd)), 1.0); return;
+      fragColor = vec4(enc(col + skyLookup(uHoleRotT*dd)), 1.0); return;
     }
     float sEntry = -pd - sqrt(R_BOUND*R_BOUND - b2);
     col += jetStraight(p, d, 0.0, sEntry);                        // jet segment in front of the sphere
@@ -432,7 +474,7 @@ void main(){
       vec3 perp2 = p - s*vn;
       if(escaped) col += (1.0-acc)*jetStraight(p, vn, 0.0, 1e9);   // jet segment beyond the sphere
       if(escaped) vn = bendToward(vn, perp2, residualBend(max(length(perp2), 0.5), s));
-      col += (1.0-acc)*sky(uHoleRotT*vn);                         // back to the sky's frame
+      col += (1.0-acc)*skyLookup(uHoleRotT*vn);                   // back to the sky's frame
     }
   }
   fragColor = vec4(enc(col), 1.0);
@@ -596,7 +638,7 @@ function program(fs, vs){
   return { p, u };
 }
 let P;
-try { P = { scene:program(SCENE_FS), part:program(PART_FS, PART_VS), bright:program(BRIGHT_FS), down:program(DOWN_FS), blur:program(BLUR_FS), comp:program(COMP_FS) }; }
+try { P = { scene:program(SCENE_FS), skybake:program(SKYBAKE_FS), part:program(PART_FS, PART_VS), bright:program(BRIGHT_FS), down:program(DOWN_FS), blur:program(BLUR_FS), comp:program(COMP_FS) }; }
 catch(e){ fail(e.message); console.error(e); return; }
 
 // one big triangle for the full-screen passes
@@ -636,8 +678,8 @@ function freeTarget(t){ if(!t) return; gl.deleteTexture(t.tex); gl.deleteFramebu
 /* ═══════════════════════════════════════════════════════════════════════════
    QUALITY / RESOLUTION
    ═══════════════════════════════════════════════════════════════════════════ */
-const QUALITY = [ { name:'low', scale:.42, steps:130 }, { name:'medium', scale:.62, steps:200 },
-                  { name:'high', scale:.82, steps:280 }, { name:'ultra', scale:1.0, steps:400 } ];
+const QUALITY = [ { name:'low', scale:.42, steps:130, lite:1 }, { name:'medium', scale:.62, steps:200, lite:0 },
+                  { name:'high', scale:.82, steps:280, lite:0 }, { name:'ultra', scale:1.0, steps:400, lite:0 } ];
 let qualityMode = 'medium', qIdx = 1;                 // we work in MEDIUM; ?q= overrides (auto adapts to frame time)
 { const q = params.get('q'); const i = QUALITY.findIndex(x => x.name === q); if(i >= 0){ qualityMode = q; qIdx = i; } else if(q === 'auto') qualityMode = 'auto'; }
 const DPR = Math.min(devicePixelRatio || 1, 2);
@@ -656,9 +698,30 @@ function buildTargets(){
     if(HDR){ HDR = false; ENC = 0.125; buildTargets(); return; }   // float targets refused → 8-bit fallback
     fail('Could not create render targets.');
   }
+  T.sky = null;                                  // (re)baked lazily by the next frame
 }
 buildTargets();
 addEventListener('resize', buildTargets);
+// bake the sky (direction → colour) into a texture covering the frustum + a lensing margin.
+// The camera's orientation is fixed (only its distance changes), so this holds until the
+// resolution changes.
+let skyUv0 = [0,0], skyUvRange = [1,1];
+function bakeSky(){
+  const M = 0.7, asp = RW/RH;                    // margin in tan-plane units (≈16° at this fov)
+  skyUv0 = [-asp - M, -1 - M]; skyUvRange = [2*asp + 2*M, 2 + 2*M];
+  const dens = RH/2*1.1;                         // 1.1 texels per internal pixel
+  const tw = Math.min(4096, Math.round(skyUvRange[0]*dens)), th = Math.min(4096, Math.round(skyUvRange[1]*dens));
+  if(T.sky) freeTarget(T.sky);
+  T.sky = makeTarget(tw, th);
+  const e = [0, Math.sin(CAM_EL), Math.cos(CAM_EL)];
+  const f = V.norm(V.sub([0,0,0], e)), r = V.norm(V.cross(f, [0,1,0])), u = V.cross(r, f);
+  const K = P.skybake.u;
+  gl.useProgram(P.skybake.p);
+  gl.uniform2f(K.uRes, tw, th); gl.uniform2f(K.uSkyUv0, skyUv0[0], skyUv0[1]); gl.uniform2f(K.uSkyUvRange, skyUvRange[0], skyUvRange[1]);
+  gl.uniform3fv(K.uCamFwd, f); gl.uniform3fv(K.uCamRight, r); gl.uniform3fv(K.uCamUp, u);
+  gl.uniform1f(K.uTanHalf, TAN_HALF); gl.uniform1f(K.uPixAng, 2*TAN_HALF/RH/1.1); gl.uniform1f(K.uEnc, ENC); gl.uniform1f(K.uLite, QUALITY[qIdx].lite);
+  draw(P.skybake, T.sky);
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CAMERA & CONTROLS (spherical orbit around the hole, r_s units)
@@ -878,11 +941,15 @@ function frame(now){
   Rh2w = M3.mul(M3.axis([0,1,0], phi), M3.mul(Ruser, M3.axis([0,1,0], -phi)));   // precession = conjugation about the vertical
   Rw2h = M3.transpose(Rh2w);
 
+  if(!T.sky) bakeSky();                                     // once per resolution change
+
   // ── pass 1: geodesic ray tracing into the HDR scene target ──
   const S = P.scene.u;
   gl.useProgram(P.scene.p);
   gl.uniform2f(S.uRes, T.scene.w, T.scene.h);
   gl.uniform1f(S.uTime, time);
+  gl.uniform1f(S.uLite, QUALITY[qIdx].lite);
+  bindTex(0, T.sky.tex, S.uSky); gl.uniform2f(S.uSkyUv0, skyUv0[0], skyUv0[1]); gl.uniform2f(S.uSkyUvRange, skyUvRange[0], skyUvRange[1]);
   gl.uniformMatrix3fv(S.uHoleRot, false, Rw2h); gl.uniformMatrix3fv(S.uHoleRotT, false, Rh2w);
   gl.uniform3fv(S.uCamPos, eye); gl.uniform3fv(S.uCamFwd, fwd); gl.uniform3fv(S.uCamRight, right); gl.uniform3fv(S.uCamUp, up);
   gl.uniform1f(S.uTanHalf, TAN_HALF);

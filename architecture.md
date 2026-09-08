@@ -136,13 +136,25 @@ subtraction_game/
 │  │                               checklist for game integration
 │  ├─ space2.bg.js                 ★ background MODULES — single source of
 │  ├─ unicorns.bg.js + unicorns/     truth, used by BOTH the game and the
-│  ├─ dubai.bg.js                    harness; themes map to them via
-│  ├─ reef.bg.js                     _BG_THEMES (themes.js)
-│  ├─ unicorns2.bg.js               (built 2026-09, NOT adopted — nothing loads it)
+│  ├─ dubai2.bg.js                   harness; themes map to them via
+│  ├─ reef.bg.js                     _BG_THEMES (themes.js). LIVE: space2,
+│  ├─ savanna.bg.js + savanna_animals/   unicorns, dubai2, reef, savanna,
+│  ├─ dinosaurs3.bg.js + dino_rigs/      dinosaurs3, frozen, maldives
+│  ├─ frozen.bg.js
+│  ├─ maldives.bg.js
+│  ├─ rumi/                        the roaming character (savanna/dino/reef)
+│  ├─ dubai.bg.js                  legacy, unloaded (superseded by dubai2)
+│  ├─ unicorns2.bg.js              built 2026-09, NOT adopted — nothing loads it
+│  ├─ whales.bg.js                 playground, not game-integrated
+│  ├─ blackhole.html               standalone GR black-hole study (WebGL2) —
+│  │                               the physics space2.bg.js renders its hole with
 │  ├─ space2.html                  thin dev harnesses (one per module):
 │  ├─ unicorns.html                  open directly in a browser to iterate
-│  ├─ dubai_skyline.html             on a scene in isolation
-│  └─ underwater_happy_reef.html
+│  ├─ dubai2.html / dubai_skyline.html   on a scene in isolation
+│  ├─ savanna.html / dinosaurs3.html
+│  ├─ frozen.html / maldives.html
+│  ├─ underwater_happy_reef.html
+│  └─ _verify.js, _verify*.py      per-scene marker/render checks
 │
 ├─ subtraction_game.html           frozen pruned monolith (superseded, reference)
 ├─ legacy_subtraction_game_v6.52.html   pristine pre-restructure original
@@ -180,7 +192,7 @@ digit hint, report, gift goals, themes, discovery bubble.
 
 ```js
 window.BACKGROUNDS = window.BACKGROUNDS || {};
-window.BACKGROUNDS.space = {
+window.BACKGROUNDS.space2 = {          // the file's own name: space2.bg.js
   skin: 'space',                       // → game/skins/space.skin.css
   aids: 'space',                       // → aids/space.aids.js   (optional,
                                        //   defaults to 'classic' — see §3.5)
@@ -194,7 +206,7 @@ window.BACKGROUNDS.space = {
 `game/js/bg-loader.js` exposes `loadBackground(name)` / `unloadBackground()`:
 it injects the module script on demand, swaps the skin `<link>`, loads the
 background's AIDS variant (§3.5), and runs the previous background's
-`cleanup()`. `applyTheme('galaxy')` → `loadBackground('space')`;
+`cleanup()`. `applyTheme('galaxy')` → `loadBackground('space2')`;
 `unloadBackground()` reverts skin → none and aids → `classic`.
 
 **Adding a background:** write `backgrounds/foo.bg.js` (same shape) +
@@ -472,6 +484,8 @@ Each ships a thin dev harness (single source of truth) — e.g.
 
 | Gate | Result |
 |---|---|
+| **The 🌌 galaxy scene rebuilt around a REAL black hole, then made cheap enough for slow devices (`backgrounds/space2.bg.js` + the `blackhole.html` study).** The hole is no longer painted — every pixel of the sky layer ray-traces backwards through Schwarzschild spacetime (Binet-form null geodesics), so the shadow, photon ring, Einstein ring and the disk's arch over/under the hole fall out of the maths; plus a Novikov–Thorne disk with Doppler beaming + gravitational redshift and two trailing spiral arms, volumetric relativistic jets, a plasma HALO that softens the shadow's edge (the old scene's hard "inner circle" complaint), a lensed Milky Way + star field, and 3-D infalling dust. It is placed to match the OLD 2-D hole exactly (centre 0.90 W / 0.36 H, shadow 0.075·min(W,H)) so every click target, `bhPull` and `lensImage` kept working. `galaxy` → **`space2`**; the legacy `space.bg.js`/`space.html` were deleted and space2 paints its own still sky without WebGL2. Earth (orthographic globe, real continents), Saturn (structured rings + mutual shadows) and the Sun (granulation, spicules, prominences) rebuilt; Saturn + Earth now WANDER off the edges and back while the Sun and the hole stay put; the other solar-system worlds pass through as procedurally textured spheres entering **from the left** on lanes clear of the hole (0 swallowed). **The cost pass** (user: "does not work properly on slower devices"): the procedural sky is BAKED once per layout/tier into a texture instead of being computed per pixel per frame (the single biggest cost), a 4-tier adaptive ladder `potato → low → medium → high` drives GL resolution + step budget + a `lite` flag (fewer octaves/jet samples, no GL stars) + a 2-D DPR cap, the GL layer ignores `devicePixelRatio` on purpose, and the 2-D layer stopped blitting full-screen layers (vignette moved into the GL composite). Finally the dust moved OUT of the low-res GL layer, where the upscale turned each grain into a soft blob (user: "the flying particles… does not look focused"): 600 instanced GL streaks → **260 grains still simulated in 3-D and lensed in JS but drawn crisp on the 2-D canvas**. Fixes on the way: a seam ring at the marching boundary (second-order weak-field term), a grey ring from the lensed galaxy behind the hole, an overexposed disk, and a translucent black square travelling with Saturn (`source-atop` → a clipped half-annulus) | **verified by headless render on software WebGL (system Chrome + SwiftShader): no console errors at any tier, the sky bake compiles and the adaptive ladder bottoms out at `potato` under software rendering, the real game loads `space2` through `bg-loader`, and `simulateMovers` reports **0 planets swallowed** (closest approach 2.99 shadow radii)** |
+| **The 🏙️ Dubai scene redrawn from scratch (`backgrounds/dubai2.bg.js` + `dubai2.html`), `dubai` → `dubai2`.** Same fixed 1600×900 design space, same waterline, same landmark positions and **every constant and cadence of the legacy scene kept** (Burj LED show, fireworks, five-movement fountain, drone show, oil gusher, day cycle, storm, missile-defense show, helicopters, boats, dolphins, crane + gondola and all click zones — so the legacy README tables still describe it). What changed is the drawing: a layered dusk sky with lit cirrus and an earthshine moon, two hazy far skylines, towers with two-face 3-D massing / glass sheen / floor banding / mullions / lit podiums / per-kind crowns off a six-palette `STYLE` table, the hallmarks each with their own renderer (Burj Khalifa's setback lobes + needle, the Burj Al Arab's exoskeleton sail with glowing atrium on its island, Jumeirah Beach Hotel, Cayan's twist, Emirates Towers, the Museum of the Future torus, the Dubai Frame, Ain Dubai), and a sliced rippled water mirror | **`backgrounds/_verify.js` retargeted at `dubai2.bg.js` — ALL PASS; headless render clean; the game loads `dubai2` through `bg-loader`** |
 | **Three Maya fixes (v9.76).** (1) **Bigger reading text** — all six reading modules bumped content ~0.2rem (story/sentence/question/options/words) incl. mobile media-queries; rhyme option cards widened 122→132px so longer words fit. Pure CSS values, no test pins them. (2) **גָּשֵׁר 20 number line no longer reveals the answer** — the kang line was a fixed `Math.max(20, b20?24)` and additions' sums weren't counted, so a bridge-20 sum of 24/25 (19+6, 25−9 minuend) sat on the right EDGE. core.js now computes `_nlHi` = the biggest value that must be on the line (minuend for sub, SUM for add) and, in bridge games, extends `+2` past it (`_nlMax`), so the answer starts below and ends beyond (19+6 → 0..27). (3) **Space/plus hopped BACKWARD in `___+___+___=N`** — the spacebar handler infers direction from ptype, and TRA (three unknowns) + TDA (two unknowns) — both additions — were missing from the `_add` list in BOTH the kangaroo path (main.js:99) and the jar path (main.js:106, had TDA but not TRA), so space stepped −1. Added both. 3 new tests (`test_bridge20_line_extends_past_the_answer`, `test_tri_unknown_space_hops_forward_not_back`, `test_double_unknown_add_hops_forward_sub_hops_back`) — all confirmed to FAIL pre-fix (git-stash: TRA/TDA `dir:-1`) | **132 champion + 55 (bridging/var/flow) + 17 double-unknown + number-line pass; verified visually** |
 | Baseline (pre-restructure monolith) | 114 passed, 2 rotating timing flakes, 7 skips |
 | Phase 1 — after pruning mini-games/hearts/abacus | **73 passed / 0 failed** / 8 skips |
