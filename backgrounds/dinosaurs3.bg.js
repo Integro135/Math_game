@@ -5,8 +5,9 @@
 
    THE SCENE: a soft sunset sky on a slow day cycle (dusk → night with stars,
    a moon and shooting stars → dawn → back to dusk), a low sun, drifting puffy
-   clouds, two hazy snow-capped mountain ranges, a plum VOLCANO on the right
-   trailing smoke, a rolling green valley floor with ferns, round bushes,
+   clouds, two hazy snow-capped mountain ranges, the ORIGINAL scene's indigo
+   VOLCANO on the right (a truncated cone with a wide flat crater, a glowing
+   lava lake and short drips over the rim) trailing smoke, a rolling green valley floor with ferns, round bushes,
    palms and rocks, and swaying foreground grass.
 
    THE DINOSAURS: canvas rigs (TrexRig, BrontoRig, StegoRig, TrikeRig,
@@ -146,7 +147,10 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       const groundTopY = x => H * 0.80 + Math.sin(x / W * 5.2 + 0.7) * H * 0.008 + Math.sin(x / W * 11.3) * H * 0.004;
       const groundY = depth => H * (0.845 + 0.075 * depth);
       const scaleAt = depth => U * (0.62 + 0.38 * depth);
-      const VOL = () => ({ l: W * 0.56, r: W * 0.995, cl: W * 0.745, cr: W * 0.805, cy: H * 0.40, base: H * 0.81 });
+      // the volcano, in the proportions of the ORIGINAL dinosaurs scene: a
+      // TRUNCATED cone (flat crater rim ≈ 0.34 of the base width) with slightly
+      // concave flanks, its mouth seen a little from above
+      const VOL = () => ({ l: W * 0.56, r: W * 0.995, cl: W * 0.700, cr: W * 0.850, cy: H * 0.40, base: H * 0.81 });
 
       // ── scene objects ──
       function buildScene(){
@@ -306,21 +310,71 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         // far range — hazy, melting into the sky; near range — plum, snow-capped
         ridge(g, H * 0.70, H * 0.22, 9, 11, mix(L.haze, L.sky[2], 0.45), mix('#fff4ea', L.sky[3], 0.35));
         ridge(g, H * 0.76, H * 0.17, 7, 31, mix('#5a3050', L.haze, 0.35), mix('#fff4ea', L.sky[3], 0.2));
-        // the volcano on the right — a broad cone, lighter on the sunlit (left) flank, lava streaks
+        // ── the volcano on the right — the ORIGINAL scene's truncated cone:
+        //    slightly concave flanks flaring to a broad base, a wide flat crater
+        //    rim seen a little from above with a glowing lava lake inside, and
+        //    short lava drips spilling over the rim (they do NOT run to the
+        //    ground); the right flank is in shadow, two soft gullies down the face
         const v = VOL();
-        g.fillStyle = lg(g, v.l, 0, v.r, 0, [[0, mix('#7a4062', L.haze, 0.25)], [0.45, mix('#55284a', L.haze, 0.25)], [1, mix('#3a1a34', L.haze, 0.25)]]);
-        g.beginPath(); g.moveTo(v.l - W * 0.04, v.base + 8);
-        g.quadraticCurveTo(v.l + (v.cl - v.l) * 0.55, v.cy + (v.base - v.cy) * 0.55, v.cl, v.cy);
-        g.lineTo(v.cr, v.cy - 4);
-        g.quadraticCurveTo(v.cr + (v.r - v.cr) * 0.45, v.cy + (v.base - v.cy) * 0.5, v.r + W * 0.02, v.base + 8);
-        g.closePath(); g.fill();
-        g.fillStyle = rgba('#2a1026', 0.9);                            // the crater's dark mouth
-        g.beginPath(); g.ellipse((v.cl + v.cr) / 2, v.cy - 1, (v.cr - v.cl) * 0.5, H * 0.012, 0, 0, TAU); g.fill();
-        g.strokeStyle = rgba('#ff8a3a', 0.55); g.lineCap = 'round'; g.lineWidth = Math.max(1.5, U * 2.2);
-        for (const [f0, f1, dx] of [[0.1, 0.55, -0.02], [0.5, 0.9, 0.01], [0.3, 0.7, 0.04]]){   // cooling lava streaks
-          const x0 = v.cl + (v.cr - v.cl) * (0.5 + dx * 8), y0 = v.cy + 4;
+        const rimR = (v.cr - v.cl) * 0.5, rimY = H * 0.026, cx0 = (v.cl + v.cr) / 2;
+        // the flank curve: control points as fractions of (run, rise) — a hair
+        // concave, exactly like the old cone's cubic
+        const up = (x0, y0, x1, y1) => g.bezierCurveTo(          // base → rim
+          x0 + (x1 - x0) * 0.32, y0 - (y0 - y1) * 0.435,
+          x0 + (x1 - x0) * 0.679, y0 - (y0 - y1) * 0.808, x1, y1);
+        const down = (x0, y0, x1, y1) => g.bezierCurveTo(        // rim → base (the same profile, mirrored)
+          x0 + (x1 - x0) * 0.321, y0 + (y1 - y0) * 0.192,
+          x0 + (x1 - x0) * 0.68, y0 + (y1 - y0) * 0.565, x1, y1);
+        const conePath = () => {
+          g.beginPath();
+          g.moveTo(v.l - W * 0.02, v.base + 8);
+          up(v.l - W * 0.02, v.base + 8, v.cl, v.cy);
+          g.lineTo(v.cr, v.cy);
+          down(v.cr, v.cy, v.r + W * 0.01, v.base + 8);
+          g.closePath();
+        };
+        g.fillStyle = lg(g, v.l, 0, v.r, 0, [[0, mix('#7a5aa8', L.haze, 0.25)], [0.5, mix('#5b4792', L.haze, 0.25)], [1, mix('#453573', L.haze, 0.3)]]);
+        conePath(); g.fill();
+        g.save(); conePath(); g.clip();
+        g.fillStyle = rgba(mix('#3a2c66', L.haze, 0.3), 0.55);         // the shaded right flank
+        g.beginPath(); g.moveTo(cx0 + rimR * 0.5, v.cy); g.lineTo(v.cr, v.cy);
+        g.lineTo(v.r + W * 0.02, v.base + 10); g.lineTo(cx0 + (v.r - cx0) * 0.42, v.base + 10); g.closePath(); g.fill();
+        g.strokeStyle = rgba(mix('#3a2c66', L.haze, 0.3), 0.22); g.lineCap = 'round';   // two soft gullies
+        g.lineWidth = Math.max(2, U * 3.2);
+        for (const dx of [-0.45, 0.38]){
+          const x0 = cx0 + rimR * dx;
+          g.beginPath(); g.moveTo(x0, v.cy + rimY * 1.4);
+          g.quadraticCurveTo(x0 + dx * W * 0.02, v.cy + (v.base - v.cy) * 0.28, x0 + dx * W * 0.05, v.cy + (v.base - v.cy) * 0.56);
+          g.stroke();
+        }
+        g.restore();
+        // the crater: a dark rim ellipse with a warm lava lake inside it. The rim
+        // barely takes the haze, so it still reads as a dark ring at night.
+        g.fillStyle = mix('#2b2350', L.haze, 0.08);
+        g.beginPath(); g.ellipse(cx0, v.cy, rimR, rimY, 0, 0, TAU); g.fill();
+        g.strokeStyle = rgba('#171233', 0.5); g.lineWidth = Math.max(1, U * 1.2);
+        g.beginPath(); g.ellipse(cx0, v.cy, rimR, rimY, 0, 0, TAU); g.stroke();
+        g.strokeStyle = rgba('#8a78c4', 0.35);                         // lit far lip
+        g.beginPath(); g.ellipse(cx0, v.cy, rimR * 0.99, rimY * 0.98, 0, Math.PI * 1.08, Math.PI * 1.92); g.stroke();
+        g.fillStyle = lg(g, 0, v.cy - rimY, 0, v.cy + rimY, [[0, mix('#c4682e', L.haze, 0.15)], [1, mix('#ff9a4d', L.haze, 0.1)]]);
+        g.beginPath(); g.ellipse(cx0, v.cy + rimY * 0.12, rimR * 0.68, rimY * 0.62, 0, 0, TAU); g.fill();
+        // short lava spills over the near rim — fat orange tongues that stop well
+        // short of the ground, with a couple of pale-yellow strands beside them
+        // (exactly the old scene's arrangement: two left, one centre, one right)
+        g.lineCap = 'round';
+        for (const [dx, len, w, hot] of [[-0.62, 0.21, 5.4, 0], [-0.55, 0.16, 2.4, 1],
+                                         [-0.02, 0.11, 3.2, 1], [0.55, 0.23, 4.8, 0], [0.63, 0.14, 2.2, 1]]){
+          const x0 = cx0 + rimR * dx, y0 = v.cy + rimY * 0.6;
+          const y1 = y0 + (v.base - v.cy) * len, bend = dx * W * 0.006;
+          g.strokeStyle = rgba(hot ? '#ffd27d' : '#ff7a3d', hot ? 0.9 : 0.88);
+          g.lineWidth = Math.max(2, U * w);
           g.beginPath(); g.moveTo(x0, y0);
-          g.quadraticCurveTo(x0 + dx * W * 1.2 + (dx > 0 ? W * 0.02 : -W * 0.02), y0 + (v.base - v.cy) * f0, x0 + dx * W * 2.4, y0 + (v.base - v.cy) * f1); g.stroke();
+          g.quadraticCurveTo(x0 + bend, (y0 + y1) / 2, x0 + bend * 1.7, y1); g.stroke();
+          if (!hot){                                                   // a warm core inside the fat tongues
+            g.strokeStyle = rgba('#ffc46a', 0.75); g.lineWidth = Math.max(1, U * w * 0.34);
+            g.beginPath(); g.moveTo(x0, y0);
+            g.quadraticCurveTo(x0 + bend, (y0 + y1) / 2, x0 + bend * 1.7, y1 - (v.base - v.cy) * 0.03); g.stroke();
+          }
         }
         // the valley floor — rolling green, darker toward the front
         g.fillStyle = lg(g, 0, H * 0.78, 0, H, [[0, mix('#7aa856', L.haze, 0.14)], [0.35, mix('#4f8a40', L.haze, 0.18)], [1, mix('#243f22', L.haze, 0.25)]]);
@@ -520,8 +574,11 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         const boom = erupt && erupt.phase === 'erupt' ? clamp01((t - erupt.t0) / 0.6) * (1 - clamp01((t - erupt.t0 - 3.2) / 2.5)) : 0;
         // crater glow
         const glow = 0.28 + 0.1 * Math.sin(t * 1.7) + boom * 0.9;
-        ctx.fillStyle = rg(ctx, cx, cy, 0, (v.cr - v.cl) * (0.9 + boom * 1.6), [[0, rgba('#ffb060', 0.55 * glow)], [1, rgba('#ff7a30', 0)]]);
+        ctx.fillStyle = rg(ctx, cx, cy, 0, (v.cr - v.cl) * (0.55 + boom * 1.1), [[0, rgba('#ffb060', 0.5 * glow)], [1, rgba('#ff7a30', 0)]]);
         ctx.fillRect(cx - W * 0.3, cy - H * 0.3, W * 0.6, H * 0.45);
+        // the lava lake brightens and breathes with the glow
+        ctx.fillStyle = rgba('#ffb44f', 0.30 + 0.12 * Math.sin(t * 1.7) + boom * 0.5);
+        ctx.beginPath(); ctx.ellipse(cx, cy + H * 0.003, (v.cr - v.cl) * 0.34, H * 0.016 * (1 + boom * 0.3), 0, 0, TAU); ctx.fill();
         // gentle smoke puffs
         if (Math.random() < dt * (1.6 + boom * 12)) PUFFS.push({ x: cx + rnd(-8, 8) * U, y: cy - 6, t0: t, col: boom ? '#5a4a58' : '#a89aa8', smoke: true, big: boom });
         // eruption particles

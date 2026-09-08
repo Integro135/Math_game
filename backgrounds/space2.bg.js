@@ -4,15 +4,18 @@
 
    Two canvases are stacked inside the stage:
 
-   • BOTTOM — WebGL2, ADAPTIVE quality (starts LOW ≈ 0.42× internal resolution
-     and climbs to medium/high while the frame time allows; CSS-upscaled): the
+   • BOTTOM — WebGL2, ADAPTIVE quality (starts MEDIUM ≈ 0.72× internal
+     resolution and climbs to 1.0× while the frame time allows, dropping to
+     low/potato on a device that can't hold it; CSS-upscaled): the
      sky. Every pixel fires a ray backwards through Schwarzschild spacetime
      (Binet-form null geodesics, r_s = 1) toward an off-axis camera, so the hole
      sits where the old one did (x = 0.90 W, y = 0.36 H) with the same shadow
      radius (0.075·min(W,H)) — all the 2-D gameplay geometry (click targets,
      bhPull swallow radius, lensImage) keeps working unchanged. The shadow,
      photon ring, Einstein ring and the disk's arch over/under the hole emerge
-     from the maths. The HOLE SPINS: its orientation precesses slowly about the
+     from the maths. Pixels straddling the critical curve are box-filtered
+     radially — the photon ring is narrower than a pixel, and one sample each
+     renders it as a dotted chain of beads (worse at some hole angles). The HOLE SPINS: its orientation precesses slowly about the
      vertical like a top (the camera and the sky stay put — only the hole's
      angle changes). Thin accretion disk (Novikov–Thorne temperature → black-
      body colour, Doppler beaming, gravitational redshift, two glowing trailing
@@ -302,8 +305,7 @@ void diskSample(vec3 pos, vec3 rayDir, out vec3 emis, out float alpha){
   float g = D*ggrav;
   emis = blackbody(T*g)*pow(T/8000.0, 3.0)*pow(g, 2.5)*(0.70 + 0.80*arms)*uBoost;
 }
-void main(){
-  vec2 uv = (gl_FragCoord.xy - uHolePx)/uRes.y*2.0;             // off-axis: the hole is at uHolePx
+vec3 traceUV(vec2 uv){
   // the ray is built in the fixed camera/sky frame, then rotated INTO the hole's frame
   vec3 d = uHoleRot*normalize(uCamFwd + uTanHalf*(uv.x*uCamRight + uv.y*uCamUp));
   vec3 p = uHoleRot*uCamPos;
@@ -314,7 +316,7 @@ void main(){
     if(b2 >= R_BOUND*R_BOUND || pd > 0.0){
       col += jetStraight(p, d, 0.0, 1e9);
       vec3 dd = bendToward(d, perp, residualBend(sqrt(b2), pd));
-      fragColor = vec4(enc(col + skyLookup(uHoleRotT*dd)), 1.0); return;
+      return col + skyLookup(uHoleRotT*dd);
     }
     float sEntry = -pd - sqrt(R_BOUND*R_BOUND - b2);
     col += jetStraight(p, d, 0.0, sEntry);
@@ -362,7 +364,33 @@ void main(){
       col += (1.0-acc)*skyLookup(uHoleRotT*vn);
     }
   }
-  fragColor = vec4(enc(col), 1.0);
+  return col;
+}
+void main(){
+  vec2 uv = (gl_FragCoord.xy - uHolePx)/uRes.y*2.0;             // off-axis: the hole is at uHolePx
+  // Near the CRITICAL CURVE (b = 3√3/2 r_s) the lensing magnification diverges: the photon
+  // ring is a band far narrower than a pixel carrying enormous brightness, so ONE sample per
+  // pixel renders it as a dotted chain of beads — only the pixels whose centre happens to
+  // land on the band light up. That is the "pixelated at some angles" look (which stretch of
+  // the ring is bright depends on the hole's orientation), and no resolution fixes it —
+  // PRE-FILTERING does. So for pixels whose impact parameter is near critical, box-filter
+  // the pixel RADIALLY, the direction the ring's brightness varies fastest: 2-3 marches in
+  // ~2% of the frame. (b comes from the pixel's own ray, so it holds at any zoom.)
+  vec3 d0 = uHoleRot*normalize(uCamFwd + uTanHalf*(uv.x*uCamRight + uv.y*uCamUp));
+  vec3 p0 = uHoleRot*uCamPos;
+  float b = length(p0 - dot(p0, d0)*d0);
+  if(b > 2.42 && b < 3.5){                                      // 0.93 … 1.35 × b_crit
+    int NS = uLite > 0.5 ? 2 : 3;
+    vec2 rdir = normalize(uv + vec2(1e-6))*(2.0/uRes.y);        // one internal pixel, radially, in uv units
+    vec3 sum = vec3(0.0);
+    for(int i=0; i<3; i++){
+      if(i >= NS) break;
+      sum += traceUV(uv + rdir*((float(i) - float(NS-1)*0.5)/float(NS)));
+    }
+    fragColor = vec4(enc(sum/float(NS)), 1.0);
+    return;
+  }
+  fragColor = vec4(enc(traceUV(uv)), 1.0);
 }`;
 
 // (the dust grains are simulated here but DRAWN on the crisp 2-D layer — see drawDust2D —
@@ -495,14 +523,17 @@ window.BACKGROUNDS.space2={
   let sunFlareT=null,sunFlareAng=0,nextSunFlareAt=null;   // limb-flare schedule
 
   /* ═════════════════════════ GL: the black hole & the lensed sky ═══════════ */
-  // adaptive quality: start LOW, climb while the frame time allows, drop when it doesn't —
-  // down to POTATO for weak devices. scale = GL internal resolution in CSS px (the DPR is
-  // deliberately ignored: a retina screen must not quadruple the ray-marching work);
-  // lite = fewer noise octaves / jet samples; dpr = the 2-D layer's pixel-ratio cap.
-  const GLQS=[{name:'potato',scale:.28,steps:90,lite:1,dpr:1},{name:'low',scale:.42,steps:120,lite:1,dpr:1.25},
-              {name:'medium',scale:.62,steps:200,lite:0,dpr:1.5},{name:'high',scale:.82,steps:280,lite:0,dpr:2}];
+  // adaptive quality: start at MEDIUM, climb while the frame time allows, drop when it
+  // doesn't — down to POTATO for weak devices. scale = GL internal resolution in CSS px
+  // (the DPR is deliberately ignored: a retina screen must not quadruple the ray-marching
+  // work); lite = fewer noise octaves / jet samples; dpr = the 2-D layer's pixel-ratio cap.
+  // The GL canvas is CSS-upscaled, so `scale` IS how pixelated the hole looks: potato is
+  // the last-resort floor, everything above it was raised a notch (0.42 read as blocky).
+  const GLQS=[{name:'potato',scale:.28,steps:90,lite:1,dpr:1},{name:'low',scale:.48,steps:130,lite:1,dpr:1.25},
+              {name:'medium',scale:.72,steps:220,lite:0,dpr:1.5},{name:'high',scale:1.0,steps:300,lite:0,dpr:2}];
   const AUTO_QUALITY=true;                     // false → stays at the starting tier
-  let qIdx=1,emaMs=16,lastQChange=0,downshiftAt=-1e9;
+  let qIdx=2,emaMs=16,lastQChange=0,downshiftAt=-1e9,qCeil=GLQS.length-1;
+  const qFails=GLQS.map(()=>0);                // a tier that stalled twice is taken off the table
   const TAN_HALF=0.25;                         // narrow fov: the hole is far & small, the off-axis view stays sane
   const DISK_IN=3.0,DISK_OUT=12.0,SPIN=-1.0,T_PEAK=9800,JET_GAIN=0.5,HALO_GAIN=0.11;
   const CAM_EL=0.28;                           // camera ~16° above the hole's rest plane
@@ -750,8 +781,17 @@ window.BACKGROUNDS.space2={
     if(glLost)return;                                      // no GL (or a lost context): never rebuild targets
     emaMs=emaMs*.92+dt*1000*.08;
     if(!AUTO_QUALITY||now-lastQChange<3000)return;
-    if(emaMs>27&&qIdx>0){qIdx--;lastQChange=now;downshiftAt=now;buildTargets();apply2DScale();bakeSky();}
-    else if(emaMs<11&&qIdx<GLQS.length-1&&now-downshiftAt>30000&&now-lastQChange>6000){qIdx++;lastQChange=now;buildTargets();apply2DScale();bakeSky();}
+    // rAF is VSYNC-LOCKED: a frame with plenty of GPU headroom still measures ~16.7 ms on a
+    // 60 Hz screen, so the old "climb below 11 ms" gate was unreachable there and the scene
+    // sat at its starting tier forever. Keeping up with the refresh IS the signal to climb;
+    // a GPU that can't hold 60 Hz quantises to ~33 ms, well past the 27 ms downshift.
+    if(emaMs>27&&qIdx>0){
+      if(++qFails[qIdx]>=2&&qIdx-1<qCeil)qCeil=qIdx-1;     // this tier stalled twice — stop climbing back into it
+      qIdx--;lastQChange=now;downshiftAt=now;buildTargets();apply2DScale();bakeSky();
+    }
+    else if(emaMs<19&&qIdx<qCeil&&now-downshiftAt>45000&&now-lastQChange>6000){
+      qIdx++;lastQChange=now;buildTargets();apply2DScale();bakeSky();
+    }
   }
   function renderGL(t,dt){
     if(glLost||!P)return;

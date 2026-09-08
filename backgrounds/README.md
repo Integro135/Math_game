@@ -47,25 +47,21 @@ kind); the lion's roar fires shockwave rings + a screen shake, the elephant's
 trumpet sound rings; ❤️ when two pride members meet face to face. Animals are
 drawn on their own layer and tinted with the hour (`source-atop`). Ambient:
 drifting clouds (dimmed at night), bird flocks by day, golden dust motes at
-sunset, swaying foreground grass. `window._sav2` exposes tod/setTod/setSpeed/
+sunset, swaying foreground grass, and "rumi" strolling the plain every 2–4 min
+(first after 1–3 min; her own overlay layer, stopped by `cleanup()`). `window._sav2` exposes tod/setTod/setSpeed/
 phase/pride/herd/spawn/act for the harness and tests. Skin:
 `game/skins/savanna.skin.css`. Aids: `savanna` (cheetah number-line rider +
 amber fruit jar).
 
-**rumi/ — the roaming character "rumi" (2026-09 realistic redesign).** One
-module, `rumi/chibi-walker.js` (file/global `ChibiWalker` keep the historical
-"chibi" name for compatibility), holds the art AND the behaviour: a three-
-quarter-view figure with real proportions (~6 heads), two-segment limbs whose
-knees and elbows bend in a real walk cycle (thighs ±17°, arms counter-swing,
-inverted-pendulum body bob, head nod, ponytail swing), soft gradient shading,
-thin plum outlines; an anime face after the reference picture (big amber eyes,
-thin arched brows, tiny nose, small confident smile, side-swept bangs), purple
-bubble-braid high ponytail, hoop earring, yellow bomber jacket with patches open
-over a white CROP TOP + pendant with a bare midriff, baggy lavender pants, white
-sneakers with pink soles. Behaviours: blink, floating
-hearts, click → zap / jump / fly-out, and the reef's FLY ("swim") mode (rotated
-90°, near arm raised, ripples at the hand). API: `ChibiWalker.walk / patrol /
-trigger`. Preview + design notes: `rumi/rumi.html`; sandboxes `rumi-test.html`,
+**rumi/ — the roaming chibi character "rumi".** One module, `rumi/chibi-walker.js`
+(global `ChibiWalker`), holds the SVG art AND the behaviour: the July-2026 chibi
+design (purple bubble-ponytail + swirled updo, purple-iris eyes, yellow bomber
+jacket with patches over a white tee + pendant, baggy purple pants, white
+sneakers with pink soles), a CSS walk (arm swing + leg step, bob, ground
+shadow), blink, floating hearts, click → zap / jump / fly-out, and the reef's FLY
+("swim") mode (rotated 90°, arm raised, ripples). API: `ChibiWalker.walk /
+patrol / trigger`. Design source + preview: `rumi/rumi.html` (the same figure,
+documented; mirror art edits into the module); sandboxes `rumi-test.html`,
 `reef-test.html`, `walker-demo.html`. Used by savanna.bg.js (strolls the plain
 every 2–4 min, first after 1–3 min), dinosaurs3.bg.js (strolls the valley every
 2–4 min, first after ~45 s–2¼ min; `_dino3.rumi()` forces one) and reef.bg.js
@@ -800,6 +796,21 @@ On top of it:
   geodesics into an uneven photon ring. This is what softens the shadow's
   boundary so the inner circle no longer reads as a hard-edged disc — the
   effect asked for in place of the old scene's flat glow ring.
+- **A radial pre-filter at the critical curve** (`traceUV` + the `b > 2.42 && b < 3.5`
+  branch in `main`). Near the critical curve `b = 3√3/2 r_s` the lensing
+  magnification *diverges*: the photon ring is a band far narrower than a pixel
+  carrying enormous brightness, so one sample per pixel renders it as a **dotted
+  chain of beads** — only the pixels whose centre happens to land on the band
+  light up. That is the "pixelated at some angles" artefact: which stretch of the
+  ring is bright moves as the hole precesses, so the beading comes and goes with
+  the orientation, and **no amount of resolution fixes it** (it is an infinitely
+  thin feature). Pre-filtering does: pixels whose *own* impact parameter is near
+  critical are box-filtered **radially** — the direction the ring's brightness
+  varies fastest — with 3 marches (2 on `lite` tiers). The gate is computed from
+  the pixel's ray, so it holds at any zoom, and the box filter preserves the
+  ring's total energy (measured: beading down 45 %, ring peak brightness
+  unchanged) for ~2 % of the frame's pixels — +14 % frame time measured on the
+  software renderer at the lowest tier, less on a real GPU.
 - **Off-axis camera**: `uv = (frag − uHolePx)/RH·2`,
   `camD = 2.598·H/(2·TAN_HALF·BH.r)` with `TAN_HALF = 0.25`, i.e. the camera
   distance is *solved* from where the 2-D scene wants the shadow.
@@ -819,15 +830,28 @@ on slow devices it simply did not keep up. What it does now:
 | tier | GL scale | steps | `lite` | 2-D DPR cap |
 |---|---|---|---|---|
 | `potato` | 0.28× | 90 | on | 1.0 |
-| `low` (start) | 0.42× | 120 | on | 1.25 |
-| `medium` | 0.62× | 200 | off | 1.5 |
-| `high` | 0.82× | 280 | off | 2.0 |
+| `low` | 0.48× | 130 | on | 1.25 |
+| `medium` (start) | 0.72× | 220 | off | 1.5 |
+| `high` | 1.0× | 300 | off | 2.0 |
 
-`AUTO_QUALITY` (on) starts at `low` and adapts on an EMA of the frame time
-(`emaMs`): above 27 ms → down a tier; below 11 ms → up, but only ≥30 s after the
-last downshift and ≥6 s after any change. Every change rebuilds the targets,
-re-caps the 2-D canvas (`apply2DScale`) and re-bakes the sky. Where the cost
-went:
+`scale` **is** how pixelated the hole looks — the GL canvas is CSS-upscaled — so
+`potato` is the last-resort floor and everything above it sits a notch higher
+than it first did (0.42× read as blocky). `AUTO_QUALITY` (on) starts at
+`medium` and adapts on an EMA of the frame time (`emaMs`): above 27 ms → down a
+tier; below **19 ms** → up, but only ≥45 s after the last downshift and ≥6 s
+after any change, and never back into a tier that has already stalled twice
+(`qFails`/`qCeil`). Every change rebuilds the targets, re-caps the 2-D canvas
+(`apply2DScale`) and re-bakes the sky.
+
+> **Why 19 ms and not 11.** `requestAnimationFrame` is vsync-locked: a frame
+> with plenty of GPU headroom still measures ~16.7 ms on a 60 Hz screen, so the
+> original "climb below 11 ms" gate was **unreachable there** and the scene sat
+> at its starting tier forever, however fast the GPU was — which is exactly what
+> made the hole look permanently low-res. Holding the refresh interval is the
+> climb signal; a GPU that *can't* hold 60 Hz quantises to ~33 ms, well past the
+> 27 ms downshift, so the two rules don't overlap.
+
+Where the cost went:
 
 - **The sky is baked.** The procedural sky (~60 hashes + three black-body curves
   per pixel) was the single biggest cost, and neither the camera nor the sky
@@ -975,9 +999,10 @@ What it adds over the in-game version:
   above the hole's rest plane.
 - **Higher quality tiers.** `QUALITY` = `low` (0.42×, 130 steps, lite) ·
   `medium` (0.62×, 200) · `high` (0.82×, 280) · `ultra` (1.0×, 400 steps).
-  **Default is `medium`** (`?q=` overrides). `?q=auto` adapts on the frame-time
-  EMA the same way space2 does — down above 27 ms, up below 10.5 ms after a
-  quiet 30 s — but it never climbs past `high`; `ultra` is a deliberate choice.
+  **Default is `high`** (`?q=` overrides). `?q=auto` adapts on the frame-time
+  EMA the same way space2 does — down above 27 ms, up below 19 ms after a quiet
+  45 s (see the vsync note in the space2 section) — but it never climbs past
+  `high`; `ultra` is a deliberate choice.
 - **More dust.** `NP = 1000` grains (vs 260), and here they *are* drawn in GL:
   velocity-stretched instanced streaks through the point-mass lens, inside the
   same HDR target, so they bloom. The full-resolution pass makes that look
@@ -987,8 +1012,9 @@ What it adds over the in-game version:
   bend for rays that miss the marching sphere, the Novikov–Thorne disk with
   Doppler beaming + gravitational redshift and two trailing spiral arms,
   volumetric jets, the plasma halo (`HALO_GAIN = 0.11`), the baked procedural
-  sky (`bakeSky`, once per resolution change), HDR → 3-level bloom → ACES, and
-  the 8-bit sqrt-encoded fallback.
+  sky (`bakeSky`, once per resolution change), the radial pre-filter at the
+  critical curve (same `traceUV`/`b`-gate code as space2 — keep the two in
+  step), HDR → 3-level bloom → ACES, and the 8-bit sqrt-encoded fallback.
 - **On-screen stats** (fps · internal resolution · steps · tier · HDR/8-bit) and
   toggles for quality, bloom, spin, dust and jets. The fps figure uses the
   *unclamped* delta, so it reports the truth on a slow machine.
@@ -1018,7 +1044,7 @@ which was deleted in 2026-09 (recoverable from git history).
 with twinkling stars, a crescent moon and Dubai-look shooting stars → dawn →
 back to dusk; the looks are keyed along `tod` and interpolated), a low sun
 setting behind two hazy snow-capped mountain ranges, drifting puffy clouds, a
-plum **volcano on the RIGHT** trailing smoke, a rolling green valley floor with
+**volcano on the RIGHT** trailing smoke, a rolling green valley floor with
 ferns, round bushes, palms and rocks, a worn path, and swaying foreground grass.
 Static layers (sky, scenery) are repainted only when the look changes; the
 animals draw on their own layer sorted far → near; one gradient night veil
@@ -1032,6 +1058,20 @@ pterodactyl** flies past overhead, squawks, and may **LAY AN EGG** mid-flight:
 it falls, bounces with a dust puff, rests, then HATCHES (BabyRig) and fades.
 **Clicking a dinosaur plays its action AND recolours it**; clicking the egg
 hatches it. The scene stays calm: 2 walkers + 1 flyer + ≤ 1 egg.
+
+**The volcano's look — the ORIGINAL scene's cone, restored in 2026-09.** The
+first canvas version was a pointed plum pyramid with long thin lava lines down
+its flanks; it was replaced by a port of `dinosaurs2.bg.js`'s indigo volcano
+(recovered from git history and redrawn on canvas in the same proportions):
+a **truncated cone** with slightly concave flanks flaring to a broad base, a
+**wide flat crater** (rim ≈ 0.34 of the base width) seen a little from above —
+a dark rim ellipse with a lit far lip and a glowing **lava lake** inside that
+breathes with the crater glow — and **short fat lava spills** over the near rim
+that stop well above the ground (two left, one centre, two right; the thick
+orange tongues carry a warm core, the thin ones are pale yellow). The right
+flank is shaded and two soft gullies run down the face. Everything still takes
+the hour's haze, except the rim, which stays dark so the crater reads at night.
+Geometry lives in `VOL()`; the click hit-test follows the same cone.
 
 **Volcano — two shows, clicks alternate:** odd clicks → an ERUPTION (a 3-2-1
 countdown floats over the crater, then a lava fountain, crater glow, ash
@@ -1047,6 +1087,13 @@ per nearby impact), the pterodactyl squawks and speeds off, and no newcomer
 wanders in until the sky is quiet. Clicking the sun or the moon fast-forwards
 the day to the next look.
 
+**Ambient:** "rumi" (`rumi/chibi-walker.js`, see the rumi paragraph above)
+strolls the valley every 2–4 minutes, first after ~45 s–2¼ min of play — the
+same cadence the old dinosaurs scene used. She is loaded on demand next to the
+rigs, warmed by `preload()`, lives on her own overlay layer above the canvas,
+is not counted against the dinosaur cap, and is stopped by `cleanup()`.
+`_dino3.rumi()` forces an immediate stroll.
+
 **Game position — the card hugs the LEFT so the volcano stays clear** (crater
 ≈ x0.775·W, left flank from ≈ 0.56·W): `game/skins/dinosaurs.skin.css` pins
 `.wrap` to the LEFT (`max-width:min(700px, 50vw − 0.5cm)`; re-centres on
@@ -1056,7 +1103,8 @@ dinosaurs3`, `THEMES.dinosaurs`, `body.theme-dinosaurs`, the 🦕 menu button +
 toggle-cycle entry (themes.js, index.html), and `dinosaurs.skin.css`. Dev
 harness: `dinosaurs3.html` (Restart / Erupt / Storm / Egg / Night); verify via
 `_verify_dino3.py` (STANDALONE or in-game mode). Test hooks: `window._dino3`
-= `{ seek, erupt, boom, storm, egg, spawn, ptero, act, walkers, look, tod }`.
+= `{ seek, erupt, boom, storm, egg, spawn, ptero, act, walkers, look, tod,
+rumi, rumiLayer }`.
 
 **dino_rigs/ — the from-scratch dinosaur rigs (used by dinosaurs3.bg.js).**
 A new soft cartoon take on every dinosaur of the 🦕 theme, each drawn on

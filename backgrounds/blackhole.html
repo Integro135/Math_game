@@ -14,7 +14,10 @@
          null geodesic is integrated with the Binet-equation form of the light
          ray (d²x/dλ² = −3/2·h²·x/r⁵, r_s = 1), so the SHADOW (b = 3√3/2 r_s),
          the PHOTON RING, the EINSTEIN RING and the higher-order disk images all
-         emerge from the maths — nothing is drawn by hand.
+         emerge from the maths — nothing is drawn by hand. Pixels straddling the
+         critical curve are box-filtered RADIALLY (2-3 marches): the ring is a
+         band narrower than a pixel, so one sample each renders it as a dotted
+         chain of beads that shifts as the hole turns.
        • Rays that miss the marching sphere still bend: the weak-field
          deflection (2 r_s / b) is applied analytically, so the lensed starfield
          is continuous out to the screen edges.
@@ -48,8 +51,9 @@
      Controls: the camera and the stars stay put — DRAG spins the HOLE itself
      (trackball: disk + jets + dust tilt with it, the sky does not move); wheel /
      pinch zooms; space toggles the auto-spin (the hole precesses about the
-     vertical like a spinning top); R resets. Default quality is MEDIUM; Auto
-     adapts to frame time.
+     vertical like a spinning top); R resets. Default quality is HIGH (0.82×);
+     Auto adapts to frame time — and since rAF is vsync-locked, "fast enough to
+     climb" means holding the refresh interval, not beating 10 ms.
      URL params: ?q=auto|low|medium|high|ultra · ?spin=0 · ?bloom=0 · ?dust=0 · ?jets=0
                  ?dist= (r_s) · ?tilt= (rad, the axis lean) · ?ldr=1 (force the 8-bit path)
      ─────────────────────────────────────────────────────────────────────── -->
@@ -411,8 +415,7 @@ void diskSample(vec3 pos, vec3 rayDir, out vec3 emis, out float alpha){
   emis = blackbody(Tobs)*pow(T/8000.0, 3.0)*pow(g, 2.5)*(0.70 + 0.80*arms);
 }
 
-void main(){
-  vec2 uv = (gl_FragCoord.xy - 0.5*uRes)/uRes.y*2.0;
+vec3 traceUV(vec2 uv){
   // the ray is built in the (fixed) camera/sky frame, then rotated INTO the hole's frame:
   // the disk and jets follow the hole's orientation, the stars stay where they are
   vec3 d = uHoleRot*normalize(uCamFwd + uTanHalf*(uv.x*uCamRight + uv.y*uCamUp));
@@ -426,7 +429,7 @@ void main(){
     if(b2 >= R_BOUND*R_BOUND || pd > 0.0){
       col += jetStraight(p, d, 0.0, 1e9);                         // the jets, wherever the ray crosses them
       vec3 dd = bendToward(d, perp, residualBend(sqrt(b2), pd));
-      fragColor = vec4(enc(col + skyLookup(uHoleRotT*dd)), 1.0); return;
+      return col + skyLookup(uHoleRotT*dd);
     }
     float sEntry = -pd - sqrt(R_BOUND*R_BOUND - b2);
     col += jetStraight(p, d, 0.0, sEntry);                        // jet segment in front of the sphere
@@ -477,7 +480,32 @@ void main(){
       col += (1.0-acc)*skyLookup(uHoleRotT*vn);                   // back to the sky's frame
     }
   }
-  fragColor = vec4(enc(col), 1.0);
+  return col;
+}
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5*uRes)/uRes.y*2.0;
+  // Near the CRITICAL CURVE (b = 3√3/2 r_s) the magnification diverges: the photon ring is a
+  // band far narrower than a pixel carrying enormous brightness, so ONE sample per pixel
+  // renders it as a dotted chain of BEADS — only the pixels whose centre lands on the band
+  // light up, and which stretch of the ring is bright moves as the hole turns. No resolution
+  // fixes that; pre-filtering does. For pixels whose own impact parameter is near critical,
+  // box-filter the pixel RADIALLY (the direction the ring's brightness varies fastest):
+  // 2-3 marches in ~2% of the frame, and b comes from the ray itself, so it holds at any zoom.
+  vec3 d0 = uHoleRot*normalize(uCamFwd + uTanHalf*(uv.x*uCamRight + uv.y*uCamUp));
+  vec3 p0 = uHoleRot*uCamPos;
+  float b = length(p0 - dot(p0, d0)*d0);
+  if(b > 2.42 && b < 3.5){                                        // 0.93 … 1.35 × b_crit
+    int NS = uLite > 0.5 ? 2 : 3;
+    vec2 rdir = normalize(uv + vec2(1e-6))*(2.0/uRes.y);          // one internal pixel, radially, in uv units
+    vec3 sum = vec3(0.0);
+    for(int i=0; i<3; i++){
+      if(i >= NS) break;
+      sum += traceUV(uv + rdir*((float(i) - float(NS-1)*0.5)/float(NS)));
+    }
+    fragColor = vec4(enc(sum/float(NS)), 1.0);
+    return;
+  }
+  fragColor = vec4(enc(traceUV(uv)), 1.0);
 }`;
 
 // ── PASS 1b: infalling dust — instanced streaks, projected through the lens ─
@@ -680,7 +708,8 @@ function freeTarget(t){ if(!t) return; gl.deleteTexture(t.tex); gl.deleteFramebu
    ═══════════════════════════════════════════════════════════════════════════ */
 const QUALITY = [ { name:'low', scale:.42, steps:130, lite:1 }, { name:'medium', scale:.62, steps:200, lite:0 },
                   { name:'high', scale:.82, steps:280, lite:0 }, { name:'ultra', scale:1.0, steps:400, lite:0 } ];
-let qualityMode = 'medium', qIdx = 1;                 // we work in MEDIUM; ?q= overrides (auto adapts to frame time)
+let qualityMode = 'high', qIdx = 2;                   // default HIGH (0.82× — medium's 0.62 upscale read as blocky);
+                                                      // ?q= overrides, auto adapts to frame time
 { const q = params.get('q'); const i = QUALITY.findIndex(x => x.name === q); if(i >= 0){ qualityMode = q; qIdx = i; } else if(q === 'auto') qualityMode = 'auto'; }
 const DPR = Math.min(devicePixelRatio || 1, 2);
 let W = 0, H = 0, RW = 0, RH = 0;             // canvas px · internal render px
@@ -926,11 +955,13 @@ function frame(now){
   const rawDt = (now - (last || now))/1000, dt = Math.min(0.1, rawDt); last = now;   // clamp: no jumps after a hidden tab
   const time = (now - t0)/1000;
 
-  // ── adaptive quality (Auto only): step down when slow, creep back up when comfortably fast ──
+  // ── adaptive quality (Auto only): step down when slow, creep back up when comfortably fast.
+  //    rAF is vsync-locked, so a frame with GPU headroom still measures ~16.7 ms at 60 Hz —
+  //    keeping up with the refresh is the climb signal (a GPU that can't quantises to ~33 ms) ──
   emaMs = emaMs*0.92 + (dt*1000)*0.08;
   if(qualityMode === 'auto' && now - lastQChange > 1500){
     if(emaMs > 27 && qIdx > 0){ qIdx--; lastQChange = now; downshiftAt = now; buildTargets(); }
-    else if(emaMs < 10.5 && qIdx < 2 && now - downshiftAt > 30000 && now - lastQChange > 5000){ qIdx++; lastQChange = now; buildTargets(); }
+    else if(emaMs < 19 && qIdx < 2 && now - downshiftAt > 45000 && now - lastQChange > 5000){ qIdx++; lastQChange = now; buildTargets(); }
   }
 
   // ── the hole spins (precesses about the vertical) while camera and sky stay put ──
