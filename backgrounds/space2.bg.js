@@ -4,9 +4,10 @@
 
    Two canvases are stacked inside the stage:
 
-   • BOTTOM — WebGL2, ADAPTIVE quality (starts MEDIUM ≈ 0.72× internal
-     resolution and climbs to 1.0× while the frame time allows, dropping to
-     low/potato on a device that can't hold it; CSS-upscaled): the
+   • BOTTOM — WebGL2, ADAPTIVE quality (opens at the highest tier that fits a
+     650k-marched-pixel budget for THIS window — medium ≈ 0.72× at most — then
+     climbs to 1.0× while the frame time allows and drops to low/potato on a
+     device that can't hold it; CSS-upscaled): the
      sky. Every pixel fires a ray backwards through Schwarzschild spacetime
      (Binet-form null geodesics, r_s = 1) toward an off-axis camera, so the hole
      sits where the old one did (x = 0.90 W, y = 0.36 H) with the same shadow
@@ -141,11 +142,16 @@ vec3 sky(vec3 d){
           + vec3(1.0, 0.86, 0.62)*core*(0.45 + 0.55*n1)*(1.0 - rift*0.6)
           + vec3(1.0, 0.94, 0.80)*kern*0.6;
   vec3 col = mw*0.058;
-  if(uLite > 0.5) return col;                               // cheap tiers: the crisp 2-D layer carries the stars (GL ones would upscale into blobs)
+  // A SPARSE lensed star field, deliberately TIER-INDEPENDENT. Gating this on uLite meant a
+  // quality change made hundreds of stars appear or vanish: on load the scene came up at a
+  // tier the device couldn't hold, showed a swarm of blurry upscaled dots for several
+  // seconds, then popped them all away when it downshifted. The crisp 2-D layer carries the
+  // bright stars; these exist only so the field STREAKS around the hole, so they are few and
+  // faint — and the dense speckle layer (N=190, the main source of the blur) is gone: at any
+  // GL resolution below 1× it upscaled into mush.
   float dens = 0.45 + 2.6*band*(1.0 - rift*0.7) + 2.5*core; // stars thicken toward the plane and the core
-  col += starLayer(d, 24.0,  0.05,      2.0,  1.0);
-  col += starLayer(d, 70.0,  0.035*dens, 0.85, 2.0);
-  col += starLayer(d, 190.0, 0.05*dens,  0.28, 3.0);
+  col += starLayer(d, 24.0, 0.05,       1.7,  1.0);
+  col += starLayer(d, 70.0, 0.028*dens, 0.65, 2.0);
   return col;
 }`;
 
@@ -536,7 +542,14 @@ window.BACKGROUNDS.space2={
   const GLQS=[{name:'potato',scale:.28,steps:90,lite:1,dpr:1},{name:'low',scale:.48,steps:130,lite:1,dpr:1.25},
               {name:'medium',scale:.72,steps:220,lite:0,dpr:1.5},{name:'high',scale:1.0,steps:300,lite:0,dpr:2}];
   const AUTO_QUALITY=true;                     // false → stays at the starting tier
-  let qIdx=2,emaMs=16,lastQChange=0,downshiftAt=-1e9,qCeil=GLQS.length-1;
+  // The work scales with the WINDOW's pixel count, not with the tier alone, so the STARTING
+  // tier comes from a pixel budget: a 1080p or 4K window opens lower than a 720p one instead
+  // of spending its first seconds too slow and then downshifting — which is visible as a
+  // swarm of blurry dots that pops away. PX_MAX is a hard ceiling on ray-marched pixels so a
+  // huge window can't ask for absurd work even after climbing.
+  const PX_START=6.5e5, PX_MAX=1.6e6;
+  const startTier=()=>{let i=2;while(i>0&&W*H*GLQS[i].scale*GLQS[i].scale>PX_START)i--;return i;};
+  let qIdx=startTier(),emaMs=16,lastQChange=0,downshiftAt=-1e9,qCeil=GLQS.length-1;
   const qFails=GLQS.map(()=>0);                // a tier that stalled twice is taken off the table
   const TAN_HALF=0.25;                         // narrow fov: the hole is far & small, the off-axis view stays sane
   const DISK_IN=3.0,DISK_OUT=12.0,SPIN=-1.0,T_PEAK=9800,JET_GAIN=0.5,HALO_GAIN=0.11;
@@ -579,7 +592,7 @@ window.BACKGROUNDS.space2={
   }
   function buildTargets(){
     if(T)Object.values(T).forEach(freeTarget);
-    const s=GLQS[qIdx].scale;
+    const s=Math.min(GLQS[qIdx].scale,Math.sqrt(PX_MAX/Math.max(W*H,1)));   // never more than PX_MAX marched pixels
     RW=Math.max(160,Math.round(W*s));RH=Math.max(90,Math.round(H*s));
     glcv.width=RW;glcv.height=RH;                          // the GL canvas IS the internal resolution (CSS upscales)
     const mk=div=>makeTarget(Math.max(8,Math.round(RW/div)),Math.max(8,Math.round(RH/div)));
@@ -592,14 +605,19 @@ window.BACKGROUNDS.space2={
     DPR2=Math.min(DPR,GLQS[qIdx].dpr);
     cv.width=Math.round(W*DPR2);cv.height=Math.round(H*DPR2);ctx.setTransform(DPR2,0,0,DPR2,0,0);
   }
-  // bake the sky (direction → colour) into a texture covering the frustum + a lensing margin
+  // bake the sky (direction → colour) into a texture covering the frustum + a lensing margin.
+  // The margin makes the baked area ~2.4× the frame, so this ONE pass is the heaviest thing
+  // at load (and on every tier change) — hence a density below one texel per internal pixel:
+  // the result is upscaled anyway, and the frame's own high-frequency detail lives in the
+  // crisp 2-D layer. (uPixAng below must track SKY_DENS: it is the star-AA footprint.)
+  const SKY_DENS=0.85;
   let skyUv0=[0,0],skyUvRange=[1,1];
   function bakeSky(){
     if(glLost||!P||!BH)return;
     const M=0.7;                                           // margin in tan-plane units (≈10° of deflection)
     const x0=-holePx[0]/RH*2-M,x1=(RW-holePx[0])/RH*2+M,y0=-holePx[1]/RH*2-M,y1=(RH-holePx[1])/RH*2+M;
     skyUv0=[x0,y0];skyUvRange=[x1-x0,y1-y0];
-    const dens=RH/2*1.1;                                   // 1.1 texels per internal pixel
+    const dens=RH/2*SKY_DENS;                              // texels per internal pixel
     const tw=Math.min(2048,Math.round(skyUvRange[0]*dens)),th=Math.min(2048,Math.round(skyUvRange[1]*dens));
     if(T.sky)freeTarget(T.sky);
     T.sky=makeTarget(tw,th);
@@ -608,7 +626,7 @@ window.BACKGROUNDS.space2={
     gl.uniform2f(K.uRes,tw,th);gl.uniform2f(K.uSkyUv0,skyUv0[0],skyUv0[1]);gl.uniform2f(K.uSkyUvRange,skyUvRange[0],skyUvRange[1]);
     gl.uniform3fv(K.uCamFwd,camFwd);gl.uniform3fv(K.uCamRight,camRight);gl.uniform3fv(K.uCamUp,camUp);
     gl.uniform3fv(K.uGalN,galN);gl.uniform3fv(K.uGalCore,galCore);
-    gl.uniform1f(K.uTanHalf,TAN_HALF);gl.uniform1f(K.uPixAng,2*TAN_HALF/RH/1.1);gl.uniform1f(K.uEnc,ENC);gl.uniform1f(K.uLite,GLQS[qIdx].lite);
+    gl.uniform1f(K.uTanHalf,TAN_HALF);gl.uniform1f(K.uPixAng,2*TAN_HALF/RH/SKY_DENS);gl.uniform1f(K.uEnc,ENC);gl.uniform1f(K.uLite,GLQS[qIdx].lite);
     drawPass(P.skybake,T.sky);
   }
   // direction of a 2-D screen point (CSS px, y down) on this camera's off-axis rays

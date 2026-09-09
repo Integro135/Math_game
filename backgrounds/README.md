@@ -846,13 +846,14 @@ on slow devices it simply did not keep up. What it does now:
 |---|---|---|---|---|
 | `potato` | 0.28× | 90 | on | 1.0 |
 | `low` | 0.48× | 130 | on | 1.25 |
-| `medium` (start) | 0.72× | 220 | off | 1.5 |
+| `medium` | 0.72× | 220 | off | 1.5 |
 | `high` | 1.0× | 300 | off | 2.0 |
 
 `scale` **is** how pixelated the hole looks — the GL canvas is CSS-upscaled — so
 `potato` is the last-resort floor and everything above it sits a notch higher
-than it first did (0.42× read as blocky). `AUTO_QUALITY` (on) starts at
-`medium` and adapts on an EMA of the frame time (`emaMs`): above 27 ms → down a
+than it first did (0.42× read as blocky). `AUTO_QUALITY` (on) starts at the
+highest tier that fits the pixel budget (`startTier()`, `medium` at most — see
+the bullets below) and adapts on an EMA of the frame time (`emaMs`): above 27 ms → down a
 tier; below **19 ms** → up, but only ≥45 s after the last downshift and ≥6 s
 after any change, and never back into a tier that has already stalled twice
 (`qFails`/`qCeil`). Every change rebuilds the targets, re-caps the 2-D canvas
@@ -874,16 +875,36 @@ Where the cost went:
   `T.sky`, covering the frustum plus a margin (`M = 0.7` in tan-plane units) for
   rays bent in from outside the frame, and `skyLookup` just samples it. No bake
   yet → each lookup falls back to the procedural path, so a frame is never wrong,
-  only slower.
-- **`lite` tiers** cut `fbmDisk` to three octaves, halve the jet samples and skip
-  the GL star layers entirely (upscaled from 0.3× they were soft blobs anyway —
-  the 2-D layer's stars stay crisp).
+  only slower. That margin makes the baked area ~2.4× the frame, which makes this
+  one pass the heaviest thing at **load** (and on every tier change), so its
+  density is `SKY_DENS = 0.85` texels per internal pixel — below 1:1 on purpose,
+  since the result is upscaled anyway. `uPixAng` (the star-AA footprint) must
+  track `SKY_DENS`.
+- **`lite` tiers** cut `fbmDisk` to three octaves and halve the jet samples.
+  They deliberately do **not** change *content* — see the star-field note below.
 - **The GL layer ignores `devicePixelRatio` on purpose**: a retina screen must
   not quadruple the ray-marching work. Only the 2-D layer scales with the DPR,
   and the tier caps that too.
 - **The 2-D layer does no full-screen blits at all**: the vignette moved into the
   GL composite, the constellations are drawn straight onto the canvas, and the
   Sun's granulation tile is filled only inside the Sun's cap.
+- **The starting tier comes from a pixel budget, not from the tier list.** The
+  work scales with the *window's* pixel count, so a fixed starting tier means a
+  1080p or 4K window opens far heavier than a 720p one: `startTier()` walks down
+  from `medium` until `W·H·scale² ≤ PX_START` (650 k marched pixels), and
+  `buildTargets` additionally clamps any tier to `PX_MAX` (1.6 M) so even a
+  climbed-to `high` on a huge window can't ask for absurd work. Opening at a tier
+  the device can actually hold is what stops the first seconds being slow.
+- **A quality change must never change *content*.** The GL sky's star layers used
+  to be skipped on `lite` tiers. On load that read as a bug: the scene opened at
+  a tier the device couldn't hold, showed a swarm of blurry upscaled star dots
+  for several seconds, then **popped them all away** when it downshifted. The
+  star field is now tier-independent and sparser (two layers instead of three —
+  the dense `N = 190` speckle layer is gone; it was mush at any scale below 1×),
+  so a tier change alters sharpness only. Measured across a medium → potato
+  change with the 2-D layer hidden: GL-sky mean luminance 35.96 → 36.04 and
+  stddev 20.36 → 20.40, i.e. the same sky, only softer. The bright stars were
+  always the 2-D layer's job; these exist so the field streaks around the hole.
 
 **HDR path.** RGBA16F targets when `EXT_color_buffer_float` allows, else 8-bit
 with a sqrt encode/decode (`ENC = 0.125`) so the bloom doesn't band. Then a
