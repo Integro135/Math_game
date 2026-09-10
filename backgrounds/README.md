@@ -606,12 +606,50 @@ above the canvas:
   mountains, still a faint moonbow at night. The click shine flares the whole
   arc brighter while the white sweep and star pops run along it.
 - **Small improvements to the unicorns without replacing them:** the canvas
-  paints a soft **ground shadow** under each roaming unicorn from its live box
-  (leaning away from the sun, fading at night), and after sundown the actor
-  layer gets a faint **moonlit rim glow**; both actors and castle **dim with
-  the hour** (`tintActors`: brightness/saturation from the look's `daylight`,
-  `Castle.setNight`). The rig itself (blink, mane wave, horn glow, stardust)
-  is untouched.
+  paints a soft **ground shadow** under each roaming unicorn from its position
+  (leaning away from the sun, fading at night), and both actors and castle
+  **dim with the hour** (`tintActors`: a brightness/saturation filter on each
+  actor from the look's `daylight`, `Castle.setNight`). The rig itself (blink,
+  mane wave, horn glow, stardust) is untouched. (The after-dark moonlit rim
+  glow of the first cut was a `drop-shadow` on the whole actor layer and went
+  in the performance pass below.)
+
+**Performance pass (2026-09).** The scene ran with high latency next to the
+game's blurred glass card, and headless frame gaps cannot show why (headless
+Chrome is capped at ~32 fps for every theme), so the pass was measured with
+Chrome's main-thread metrics (script / style / layout / task ms per second via
+CDP `Performance.getMetrics`; the probe pattern is in `_verify_unicorns3.py`'s
+sibling scripts of that session). Findings and fixes, biggest first:
+
+- **DOM actors, not the canvas, carried ~80 % of the main-thread time.** Each
+  unicorn rig is ~100 elements under ~80 CSS animations, and `roam()` moved
+  it by writing `left` every frame — a layout + repaint of the whole rig per
+  frame per unicorn. `unicorn.item.js` now positions with a compositor-only
+  `transform: translate(vw, px)` (bob included), `.uc-uni` carries
+  `will-change: transform`, and exposes `inst.x/y` + `setX(pct)`; the host's
+  `drawActorShadows` reads `inst.x` instead of `getBoundingClientRect` (a
+  forced layout per unicorn per frame). Main-thread task time fell ~25 %.
+- **No CSS filter on the full-screen layer, no drop-shadow anywhere.** The
+  night tint was `brightness() saturate() drop-shadow()` on the actor layer —
+  a filter over the whole viewport re-run every frame a rig animated, with a
+  blur pass. It is now a plain colour filter on each small actor (rigs,
+  bunnies, the waterfall stage), nothing at all by day. The castle's root
+  `drop-shadow` (re-blurring the castle every frame its flags waved) became a
+  static ground shadow painted into the canvas scenery layer, and its window
+  flicker animates `opacity` over a static glow instead of the `filter`.
+- **The transition repaint storm.** `repaintIfNeeded` keyed the sky + scenery
+  repaint on 400 colour steps per 29 s dawn/sunset window — a full repaint of
+  both layers (and the blurred rainbow) ~14× a second for half a minute, four
+  times a day, and the scene starts inside one (tod .22). It is 24 steps now
+  (a repaint every ~1.2 s, invisible).
+- **Canvas backing store** capped at 1.5× DPR and ~2.4 MP (`pickDPR`,
+  recomputed on resize) — four full-screen layers are composited per frame.
+- **Adaptive pacing.** The rAF loop tracks the frame gap and its own render
+  cost (EMAs); when frames run long (gap > 21 ms or cost > 7 ms) the canvas
+  renders every 2nd display frame and returns to full rate after 6 quiet
+  seconds; touch devices start at half rate. The DOM actors animate at
+  display rate regardless. `_uni3.perf()` → `{dpr, halfRate, gapEma,
+  costEma, repaints, frames, drawn}`; the harness clock shows the rate.
 
 Built from the (now deleted) unicorns2 by a generator (the canvas cast, `paintCastle` and the
 castle's live windows/flags were removed; the DOM layers, `setupUnicorns`, `setupBunnies`, `mountWaterfall`/`rainbowFall`, `paintRainbow`,
@@ -623,7 +661,7 @@ every on-stage unicorn's magic, Restart); verify via `_verify_unicorns3.py`
 (in-game by default; set `STANDALONE` to the harness path for the scene alone;
 four looks to `c:/tmp/unicorns3`). Test hooks: `window._uni3` —
 `tod/setTod/setSpeed/phase`, `unicorns/onStage/magic(i)`, `bunnies`, `wf`, `castleEl`,
-`fx.{rainbow,rainbowFall,castle,fish,bloom,glitter}`, `castle/pond/fall`, `rumiLayer`.
+`fx.{rainbow,rainbowFall,castle,fish,bloom,glitter}`, `castle/pond/fall`, `rumiLayer`, `perf`.
 
 ---
 

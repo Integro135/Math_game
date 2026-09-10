@@ -17,6 +17,9 @@
      inst : { el, remove(), setPos(leftPct, topPct), setScale(s),
               setNight(k)       — 0 day … 1 night: dims the walls, the windows
                                   keep their warm flicker so they read as lit }
+   PERF: the root carries no drop-shadow (paint the ground shadow in the host —
+   a root filter re-renders the whole castle every frame its flags wave) and
+   the window flicker animates opacity over a static glow, not the filter.
    Zero dependencies; injects its <style> once.
    ───────────────────────────────────────────────────────────────────────── */
 (function () {
@@ -31,7 +34,6 @@
   margin-left: -45vmin; margin-top: -76.05vmin;  /* anchor = 50% / 84.5% (the castle's ground line) */
   transform: scale(.62);
   transform-origin: 50% 84.5%;
-  filter: drop-shadow(0 1vmin 2.2vmin rgba(90,30,80,.30));
 }
 .uc-castle div { position: absolute; box-sizing: border-box; }
 .uc-castle .hb::before, .uc-castle .ha::after { content: ""; display: block; position: absolute; }
@@ -87,9 +89,13 @@
     24.125vmin -3.66vmin 0 -0.125vmin, 25.75vmin -3.66vmin 0 -0.125vmin;
   animation: uc-castle-flicker 4.5s ease-in-out infinite;
 }
+/* PERF: the windows' warm glow is a STATIC drop-shadow (rasterised once); the
+   flicker animates opacity, which the compositor does for free — animating the
+   filter itself re-blurred every window every frame */
+.uc-castle .window, .uc-castle .window-curved { filter: drop-shadow(0 0 .8vmin rgba(255,205,100,.85)); }
 @keyframes uc-castle-flicker {
-  0%, 100% { filter: drop-shadow(0 0 .55vmin rgba(255,200,90,.7)); }
-  50%      { filter: drop-shadow(0 0 1.1vmin rgba(255,210,110,1)); }
+  0%, 100% { opacity: .8; }
+  50%      { opacity: 1; }
 }
 .uc-castle .roof {
   color: #8b48c8; width: 4.75%; height: 5%;
@@ -306,8 +312,10 @@
     var scale = opts.scale != null ? opts.scale : 0.62, night = 0;
     function apply() {
       el.style.transform = 'scale(' + scale + ')';
-      var b = (1 - 0.34 * night).toFixed(3), s = (1 - 0.2 * night).toFixed(3);
-      el.style.filter = 'brightness(' + b + ') saturate(' + s + ') drop-shadow(0 1vmin 2.2vmin rgba(90,30,80,.30))';
+      // PERF: no drop-shadow on the root (the host paints the castle's ground shadow) —
+      // a filter here re-renders the whole castle every frame the flags wave, so it
+      // carries only the night dimming, and nothing at all by day
+      el.style.filter = night > 0.02 ? 'brightness(' + (1 - 0.34 * night).toFixed(3) + ') saturate(' + (1 - 0.2 * night).toFixed(3) + ')' : '';
     }
     var inst = {
       el: el,

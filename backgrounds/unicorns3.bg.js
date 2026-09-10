@@ -30,6 +30,19 @@
    desktop, 1 on touch). Clicks: a unicorn → its magic · the castle → canvas
    fireworks + flare · everything else as in v2. "Rumi" strolls by as before.
 
+   PERF (the valley must stay smooth on a tablet next to the game's blurred
+   glass card): the canvas backing store is capped at 1.5× and ~2.4 MP; the
+   sky + scenery layers repaint 24 times per dawn/sunset transition, not 400;
+   the night tint is a CSS filter on each small actor, never on the
+   full-screen layer (a layer filter re-runs over the whole viewport every
+   frame a rig animates) and there is no drop-shadow anywhere; the rigs move
+   by a compositor-only transform (unicorn.item.js), never `left`; the castle's
+   ground shadow is painted on the canvas and its windows flicker by opacity
+   over a static glow; the actors' ground shadows are computed from their
+   inline styles (no forced layout); and the canvas paces itself — every 2nd
+   display frame whenever frames run long (always on touch devices), back to
+   full rate after 6 quiet seconds. window._uni3.perf() reports the state.
+
    Docs: backgrounds/README.md. Registers window.BACKGROUNDS.unicorns3
    (skin 'unicorns', aids 'unicorns'); init() mounts into the given stage
    and returns a cleanup (canvas, DOM actors, castle, Rumi, listeners).
@@ -67,6 +80,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
     needItem('Bunny', 'bunny.item.js', done);
   }
 
+  const IS_TOUCH = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
   const TAU = Math.PI * 2;
   const DAY_SEC = 240;                       // a whole day; 60 s per phase
   const PHASE_NAMES = ['dawn', 'day', 'sunset', 'night'];
@@ -424,7 +438,11 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
       stage.appendChild(canvas);
       const ctx = canvas.getContext('2d');
-      const DPR = Math.min(devicePixelRatio || 1, 2);
+      // PERF: several full-screen layers are composited every frame — cap the backing
+      // store at 1.5× AND at ~2.4 MP overall (a 2× retina tablet otherwise fills 4× the
+      // pixels of a 1× laptop for the same picture; the v1 valley learned this too)
+      const pickDPR = () => Math.max(0.75, Math.min(devicePixelRatio || 1, 1.5, Math.sqrt(2.4e6 / Math.max(1, innerWidth * innerHeight))));
+      let DPR = pickDPR();
       let W, H, U, K;
       let skyL, sceneL, vigL, lookKey = null, curLook = LOOKS[0];
       let tod = 0.22, todSpeed = 1, todTween = null;          // start late in the dawn
@@ -432,6 +450,8 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       let ROAMERS = [], BUNNIES = [], actorLayer = null, castleLayer = null, castleInst = null, lastTintKey = null;
       let wfStage = null, wfCleanup = null, wfOpts = null, wfRainbowUntil = 0, rbL = null, rbKey = null;
       let hooks = null;                                       // window._uni3 (dropped on cleanup, so a torn-down scene isn't pinned)
+      const perf = { repaints: 0, gapEma: 16.7, costEma: 0, halfRate: IS_TOUCH, frames: 0, drawn: 0 };
+      let prevTs = null, lastDrawTs = -1e9, lastDecide = 0, calmSince = 0;
       let CLOUDS, STARS, MOTES, PETALS, BFLY, FLIES, GRASS, FLOWERS, MUSH, CASTLE, POND, FALL, RB;
       let SPARK = [], RINGS = [], PUFFS = [], HEARTS = [], FISH = [], BLOOMS = [], SHOOTERS = [], FW = [];
       let rainFx = null, castleFx = null, sunBoost = null, nextAmbientAt = 12, nextShootAt = 0, nextFishAt = 25;
@@ -512,6 +532,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
           unicorns: () => ROAMERS, onStage: () => ROAMERS.filter(i => i.active).length,
           magic: i => { const u = i == null ? ROAMERS.filter(r => r.active) : [ROAMERS[i]]; u.forEach(r => r && uniReact(r)); },
           castleEl: () => castleInst && castleInst.el, bunnies: () => BUNNIES, wf: () => !!(wfStage && wfStage.querySelector('canvas')),
+          perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), repaints: perf.repaints, frames: perf.frames, drawn: perf.drawn }),
           fx: { rainbow: () => { rainFx = { t0: lastT }; }, rainbowFall: () => rainbowFall(), castle: () => fireworks(lastT), fish: () => fishLeap(lastT),
                 bloom: (x, y) => bloom(x, y, lastT), glitter: i => glitter(CLOUDS[i || 0], lastT) },
           castle: () => CASTLE, pond: () => POND, fall: () => FALL, rumiLayer: () => rumiLayer,
@@ -647,6 +668,11 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         c.fillStyle = L.hillFar;
         c.beginPath(); c.moveTo(W * 0.62, H * 0.70); c.quadraticCurveTo(W * 0.86, H * 0.575, W * 1.1, H * 0.70); c.lineTo(W * 1.1, H * 0.72); c.lineTo(W * 0.62, H * 0.72); c.closePath(); c.fill();
         // (the castle itself is the ORIGINAL CSS castle — a DOM layer above the canvas, planted on this hill)
+        // its soft ground shadow lives here: a CSS drop-shadow on the castle would re-blur
+        // the whole castle every frame its flags wave
+        c.save(); c.translate(CASTLE.cx, CASTLE.by + 12 * K); c.scale(1, 0.16);
+        c.fillStyle = rg(c, 0, 0, 0, 120 * K, [[0, 'rgba(90,30,80,.30)'], [0.6, 'rgba(90,30,80,.14)'], [1, 'rgba(90,30,80,0)']]);
+        c.beginPath(); c.arc(0, 0, 120 * K, 0, TAU); c.fill(); c.restore();
         hillBand(c, H * 0.655, L.hillFar, 5, 1);
         flowerDots(c, H * 0.66, H * 0.72, 60, 40, 0.5);
         hillBand(c, H * 0.72, L.hillMid, 6, 5);
@@ -666,9 +692,12 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         c.fillRect(0, 0, W, H);
       }
       function repaintIfNeeded(){
-        const ph = phaseAt(tod), key = ph.a * 1000 + Math.round(ph.w * 400) + (ph.a === ph.b ? 0 : ph.b * 0.1);
+        // PERF: 24 colour steps per 29 s transition (a repaint every ~1.2 s, invisible);
+        // 400 steps meant repainting the whole sky + scenery ~14× a second for half a
+        // minute at every dawn and sunset — and the scene starts inside one
+        const ph = phaseAt(tod), key = ph.a * 1000 + Math.round(ph.w * 24) + (ph.a === ph.b ? 0 : ph.b * 0.1);
         if (key === lookKey) return;
-        lookKey = key; curLook = lookAt(tod);
+        lookKey = key; curLook = lookAt(tod); perf.repaints++;
         paintSky(skyL.cx, curLook); paintScenery(sceneL.cx, curLook);
       }
 
@@ -680,8 +709,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       function setupUnicorns(){
         if (stopped || !window.Unicorn || !actorLayer || ROAMERS.length) return;
         const UI = window.Unicorn;
-        const LITE = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
-        const MAX_ON_STAGE = LITE ? 1 : 2;
+        const MAX_ON_STAGE = IS_TOUCH ? 1 : 2;
         const gate = () => ROAMERS.reduce((n, i) => n + (i.active ? 1 : 0), 0) < MAX_ON_STAGE;
         const UC = Math.max(0.45, Math.min(1, Math.min(innerWidth, innerHeight) / 800));
         const SZ = px => Math.round(px * UC);
@@ -700,6 +728,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         walker.el.style.setProperty('--speed', '.9s');
         walker.roam({ bandMinPct: 4, bandMaxPct: 11, speedPctPerSec: WALK_MOVE, waitMinSec: 6, waitMaxSec: 15, gate });
         ROAMERS.push(walker);
+        lastTintKey = null;                                   // pick up the hour's tint on the next frame
       }
       function unicornAt(x, y){
         let hit = null;
@@ -714,16 +743,17 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       // rainbow / star shower), every few clicks a toot; the flyer also somersaults
       function uniReact(inst){ inst.magic(); if (inst.isFlyer) inst.somersault(); }
       // the DOM actors and the castle follow the hour: dimmer and cooler at night,
-      // with a faint moonlit rim glow around the unicorns once the sun is down
       function tintActors(L){
         const key = Math.round(L.daylight * 40);
         if (key === lastTintKey) return;
         lastTintKey = key;
-        if (actorLayer){
-          const b = (0.58 + 0.42 * L.daylight).toFixed(3), sat = (0.8 + 0.2 * L.daylight).toFixed(3);
-          const moon = L.daylight < 0.6 ? ' drop-shadow(0 0 6px rgba(200,190,255,' + (0.45 * (1 - L.daylight)).toFixed(2) + '))' : '';
-          actorLayer.style.filter = L.daylight > 0.97 ? '' : 'brightness(' + b + ') saturate(' + sat + ')' + moon;
-        }
+        // PERF: the tint goes on each small actor, never on the full-screen layer (a
+        // layer filter is re-run over the whole viewport every frame a rig animates),
+        // and it is a plain colour filter — no drop-shadow (a blur pass per frame)
+        const f = L.daylight > 0.97 ? '' : 'brightness(' + (0.58 + 0.42 * L.daylight).toFixed(3) + ') saturate(' + (0.8 + 0.2 * L.daylight).toFixed(3) + ')';
+        for (const r of ROAMERS) r.el.style.filter = f;
+        for (const b of BUNNIES) b.el.style.filter = f;
+        if (wfStage) wfStage.style.filter = f;
         if (castleInst) castleInst.setNight(1 - L.daylight);
       }
       // soft ground shadows under the roaming unicorns — the canvas reads each DOM
@@ -735,9 +765,13 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         ctx.fillStyle = 'rgba(40,10,50,' + (0.10 + 0.14 * L.daylight).toFixed(3) + ')';
         for (const inst of ROAMERS){
           if (!inst.active || inst.isFlyer) continue;
-          const r = inst._horse.getBoundingClientRect();
-          if (!(r.width > 0)) continue;
-          ctx.beginPath(); ctx.ellipse(r.left + r.width * (0.5 + lean), r.bottom - r.height * 0.02, r.width * 0.40, r.height * 0.055, 0, 0, TAU); ctx.fill();
+          // PERF: the box comes from the item itself (inst.x = % across, it moves by
+          // transform) and its inline bottom (% of the layer) / font-size (3.8em × 2.5em)
+          // — no getBoundingClientRect, no forced layout
+          const st = inst.el.style, bottom = parseFloat(st.bottom), size = parseFloat(st.fontSize);
+          if (!(size > 0) || isNaN(bottom) || typeof inst.x !== 'number') continue;
+          const w = 3.8 * size, h = 2.5 * size, x = inst.x / 100 * W, yb = H - bottom / 100 * H;
+          ctx.beginPath(); ctx.ellipse(x + w * (0.5 + lean), yb - h * 0.02, w * 0.40, h * 0.055, 0, 0, TAU); ctx.fill();
         }
       }
       // the castle's ground line rides the canvas hill top (0.86 W / 0.63 H)
@@ -770,6 +804,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         wfStage.style.cssText = 'position:fixed;pointer-events:none;overflow:hidden';
         actorLayer.insertBefore(wfStage, actorLayer.firstChild);    // under the unicorns, tinted with them
         placeWaterfall(); startWaterfall(WF_AQUA);
+        lastTintKey = null;
       }
       function rainbowFall(){
         const now = performance.now();
@@ -788,6 +823,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         const b2 = B.place(actorLayer, { size: 6, z: 4 });
         b2.roam({ bandMinPct: 4.5, bandMaxPct: 8, hopPct: 2.0, hopSec: 0.5, restMinSec: 0.2, restMaxSec: 0.7, waitMinSec: 1, waitMaxSec: 3, startOnScreen: true });
         BUNNIES.push(b1, b2);
+        lastTintKey = null;
       }
       function bunnyAt(x, y){
         for (const b of BUNNIES){
@@ -1189,13 +1225,28 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         if (stopped) return;
         if (t0 === null) t0 = ts;
         rafId = requestAnimationFrame(frame);          // scheduled first: a bad frame never kills the loop
+        // PERF pacing: the DOM actors animate at display rate on their own; the canvas
+        // (ambient motion) renders every 2nd display frame while frames run long
+        if (prevTs !== null) perf.gapEma += ((ts - prevTs) - perf.gapEma) * 0.08;
+        prevTs = ts; perf.frames++;
+        if (perf.halfRate && ts - lastDrawTs < perf.gapEma * 1.5) return;
+        lastDrawTs = ts; perf.drawn++;
+        const c0 = performance.now();
         try { renderFrame((ts - t0) / 1000); }
         catch (e){ if (!renderErr){ renderErr = true; console.error('unicorns3 frame error', e); } }
+        perf.costEma += ((performance.now() - c0) - perf.costEma) * 0.08;
+        if (ts - lastDecide > 1500){
+          lastDecide = ts;
+          const heavy = perf.costEma > 7 || perf.gapEma > 21;
+          if (heavy){ perf.halfRate = true; calmSince = ts; }
+          else if (perf.costEma > 3.5 || perf.gapEma > 17.5) calmSince = ts;
+          else if (perf.halfRate && !IS_TOUCH && ts - calmSince > 6000) perf.halfRate = false;
+        }
       }
 
       // ── layout / input ──
       function resize(){
-        W = innerWidth; H = innerHeight;
+        W = innerWidth; H = innerHeight; DPR = pickDPR();
         canvas.width = W * DPR; canvas.height = H * DPR;
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
         skyL = makeLayer(); sceneL = makeLayer(); vigL = makeLayer();

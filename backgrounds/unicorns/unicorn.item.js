@@ -13,7 +13,7 @@
               flip   = false             — mirror horizontally
               z }                        — z-index
      inst : { el, remove(), setGait(g), setColor(c), setWings(on), setFlip(f),
-              setPaused(p), setPos(left, top),
+              setPaused(p), setPos(left, top), setX(pct), x, y,
               magic(), lightning(), toot(), hop(), shake()   — the unicorn.html
               click-magic + idle FX (the ONLY animation sources are that file),
               roam({fly,bandMinPct,bandMaxPct,speedPctPerSec,
@@ -28,6 +28,13 @@
    from a (random) edge at a fresh height/speed. fly:true adds a gentle bob.
    patrol() bounces edge-to-edge on-screen; glide() wraps around — both facing
    their travel direction.
+   PERF: the movers place the rig with a compositor-only TRANSFORM (translate
+   in vw — the parent is expected to span the viewport width, as every host
+   has) instead of writing `left`, which re-laid-out and repainted the
+   ~100-part rig every frame. inst.x is the current % across, inst.y the bob
+   in px; setX(pct) moves a roamer. .uc-uni carries will-change:transform so
+   each rig is its own layer and the move never touches the main thread's
+   layout or paint.
 
    The rig is rem→em converted (one font-size scales the whole horse), every
    selector is scoped under .uc-uni and every keyframe prefixed uc-*, so it
@@ -2945,6 +2952,10 @@
   })();
 
   var EXTRA_CSS = '.uc-uni{position:absolute;width:3.8em;height:2.5em;pointer-events:none}'
+    /* PERF: each rig is its own compositor layer, moved by transform (the fx host is
+       excluded: will-change would turn its position:fixed fx-layer's containing block
+       into the zero-size host) */
+    + '.uc-uni:not(.uc-fx-host){left:0;will-change:transform}'
     + '.uc-uni.uc-paused *{animation-play-state:paused!important}'
     /* the rig was authored under the DEFAULT content-box: every part carries a
        transparent 1px border and sizes its children in %, so a host page's
@@ -3060,9 +3071,17 @@
     if (opts.z      != null) el.style.zIndex = opts.z;
     (parent || document.body).appendChild(el);
 
+    /* the rig's placement transform: translate(vw, px) + the facing flip — the
+       ONLY per-frame write the movers make (compositor-only, see header) */
+    function applyXf() {
+      var t = (inst._tx || inst._ty) ? 'translate(' + inst._tx.toFixed(3) + 'vw,' + inst._ty.toFixed(2) + 'px)' : '';
+      el.style.transform = t + (inst._flip ? (t ? ' ' : '') + 'scaleX(-1)' : '');
+    }
+    function moveTo(pct, y) { inst._tx = inst.x = pct; inst._ty = inst.y = y || 0; applyXf(); }
+
     var inst = {
       el: el,
-      _dead: false, _raf: 0, _flip: false,
+      _dead: false, _raf: 0, _flip: false, _tx: 0, _ty: 0, x: 0, y: 0,
       remove: function () {
         inst._dead = true;
         if (inst._raf) cancelAnimationFrame(inst._raf);
@@ -3079,10 +3098,8 @@
       },
       setFly: function (on) { el.classList.toggle('uc-fly', !!on); },
       setWings: function (on) { el.classList.toggle('uc-wings', !!on); },
-      setFlip: function (f) {
-        inst._flip = !!f;
-        el.style.transform = f ? 'scaleX(-1)' : '';
-      },
+      setFlip: function (f) { inst._flip = !!f; applyXf(); },
+      setX: function (pct) { if (inst._setPct) inst._setPct(pct); else moveTo(pct, 0); },
       setPaused: function (p) { el.classList.toggle('uc-paused', !!p); },
       /* ── CLICK MAGIC + idle life — the unicorn.html behaviours, verbatim ── */
       hop: function () {
@@ -3095,7 +3112,7 @@
       },
       /* an eased 360° somersault of the whole rig — for a FLYING unicorn on
          click (as the old background did). Spins the rig root only, so the
-         roam positioning (left/marginTop on the outer el) is untouched. */
+         roam positioning (the translate on the outer el) is untouched. */
       somersault: function () {
         if (inst._busy || !inst._horse.animate) return; inst._busy = true;
         var h = inst._horse, prev = h.style.transformOrigin;
@@ -3187,6 +3204,7 @@
         var dir, pct, exitPad, waiting = false, waitUntil = 0;
         var bobPhase = Math.random() * 6.28;
         var last = performance.now();
+        inst._setPct = function (v) { pct = v; moveTo(pct, 0); };   // setX() while roaming
 
         function elemWidthPct() {          // element width as % of viewport + slack
           return (el.getBoundingClientRect().width / window.innerWidth) * 100 + 2;
@@ -3201,13 +3219,13 @@
           pct = seedVisible ? rnd(12, 88)                   // first run: already on-screen
                             : (dir > 0 ? -exitPad : 100 + exitPad);
           inst.setFlip(FACES_LEFT ? dir > 0 : dir < 0);
-          el.style.left = pct + '%';
+          moveTo(pct, 0);
           waiting = false;
           el.classList.remove('uc-paused');                 // resume the leg cycle for the trip
           inst.active = true;                               // on a trip (the host can count these)
         }
         if (o.startOnScreen !== false && (!o.gate || o.gate())) newTrip(true);
-        else { waiting = true; waitUntil = last + rnd(waitMin, waitMax) * 1000; inst.active = false; el.style.left = '-200%'; el.classList.add('uc-paused'); }
+        else { waiting = true; waitUntil = last + rnd(waitMin, waitMax) * 1000; inst.active = false; moveTo(-200, 0); el.classList.add('uc-paused'); }
 
         function step(now) {
           if (inst._dead) return;
@@ -3221,8 +3239,7 @@
             return;
           }
           pct += dir * inst._spd * dt;
-          el.style.left = pct + '%';
-          if (fly) el.style.marginTop = (Math.sin(now / 900 + bobPhase) * amp) + 'px';
+          moveTo(pct, fly ? Math.sin(now / 900 + bobPhase) * amp : 0);
           if ((dir > 0 && pct > 100 + exitPad) || (dir < 0 && pct < -exitPad)) {
             waiting = true;                                  // fully off-stage → wait
             inst.active = false;
@@ -3246,14 +3263,14 @@
         var last = performance.now();
         var face = function () { inst.setFlip(FACES_LEFT ? dir > 0 : dir < 0); };
         face();
-        el.style.left = pct + '%';
+        moveTo(pct, 0);
         function step(now) {
           if (inst._dead) return;
           var dt = Math.min(0.05, (now - last) / 1000); last = now;
           pct += dir * spd * dt;
           if (pct >= max) { pct = max; dir = -1; face(); }
           if (pct <= min) { pct = min; dir = 1; face(); }
-          el.style.left = pct + '%';
+          moveTo(pct, 0);
           inst._raf = requestAnimationFrame(step);
         }
         inst._raf = requestAnimationFrame(step);
@@ -3274,8 +3291,7 @@
           pct += dir * spd * dt;
           if (pct > 112) pct = -12;
           if (pct < -12) pct = 112;
-          el.style.left = pct + '%';
-          el.style.marginTop = (Math.sin(now / 900) * amp) + 'px';
+          moveTo(pct, Math.sin(now / 900) * amp);
           inst._raf = requestAnimationFrame(step);
         }
         inst._raf = requestAnimationFrame(step);

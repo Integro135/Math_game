@@ -11,7 +11,8 @@
      game loads. Buttons jump the clock to each part of the day (a smooth
      2.6 s tween), Pause freezes the clock, Fast runs the day 20× faster,
      Magic fires the scenery effects + every on-stage unicorn's click magic,
-     Restart re-inits.
+     Restart re-inits. The clock line also shows the canvas pacing state
+     (full / ½ rate) and backing-store scale from window._uni3.perf().
      ─────────────────────────────────────────────────────────────────────── -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -63,7 +64,7 @@ document.getElementById('pause').onclick = e => { paused = !paused; e.target.cla
 document.getElementById('fast').onclick = e => { fast = !fast; e.target.classList.toggle('on', fast); window._uni3.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
 document.getElementById('magic').onclick = () => { const f = window._uni3.fx; f.rainbow(); f.rainbowFall(); f.castle(); f.fish(); f.glitter(2); window._uni3.magic(); };
 document.getElementById('restart').onclick = start;
-setInterval(() => { if (window._uni3){ const t = window._uni3.tod(); const A = [5.5, 10.5, 14.5, 19.5, 29.5], k = Math.min(3, Math.floor(t * 4)); const h = (A[k] + (t * 4 - k) * (A[k + 1] - A[k])) % 24; document.getElementById('clock').textContent = window._uni3.phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0') + ' · ' + window._uni3.onStage() + ' unicorn(s) on stage'; } }, 250);
+setInterval(() => { if (window._uni3){ const t = window._uni3.tod(); const A = [5.5, 10.5, 14.5, 19.5, 29.5], k = Math.min(3, Math.floor(t * 4)); const h = (A[k] + (t * 4 - k) * (A[k + 1] - A[k])) % 24; const p = window._uni3.perf ? window._uni3.perf() : null; document.getElementById('clock').textContent = window._uni3.phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0') + ' · ' + window._uni3.onStage() + ' unicorn(s) on stage' + (p ? ' · ' + (p.halfRate ? '½ rate' : 'full rate') + ' · ' + p.dpr + '×' : ''); } }, 250);
 start();
 </script>
 </body>

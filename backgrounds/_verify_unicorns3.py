@@ -38,7 +38,7 @@ EVAL = r"""(async function(){
   await sleep(1200);
   // park two roamers in view for the still (the item moves them by left %)
   var us=u.unicorns(); var shown=0;
-  us.forEach(function(r,i){ if(!r.active) return; shown++; r.el.style.left=(30+shown*24)+'%'; });
+  us.forEach(function(r,i){ if(!r.active) return; shown++; r.setX(30+shown*24); });
   u.fx.rainbow(); u.fx.castle(); u.fx.fish(); u.fx.bloom(innerWidth*0.5, innerHeight*0.9); u.fx.rainbowFall();
   await sleep(700);
   var c=u.castleEl().getBoundingClientRect();
