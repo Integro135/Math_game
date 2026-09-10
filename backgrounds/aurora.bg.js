@@ -22,13 +22,18 @@
    with a breath of wind; ice sparkles; the odd shooting star.
 
    Layers: skyL (static: gradient, Milky Way, dim stars) · auroraL (half-res,
-   redrawn every OTHER frame) → auroraLo (1/8-res, its upscale is the glow) →
+   AS TALL AS THE CURTAINS, redrawn every OTHER frame with the bloom folded in,
+   so the sky takes one partial additive blit) → auroraLo (1/8-res, the glow) →
    reflL (1/8-res: the lake's mirror of the aurora, rebuilt with it) · midL
    (static: ranges + castle + ice + cracks + patches + igloo + the ranges' dim
    mirror in the ice) · foreL (static: icebergs, shore, drifts). Per frame:
-   twinkle, moon, aurora composite (2 blits), midL, castle fx, reflL (1 blit),
-   figures, foreL, sparkles, snow — about six full-screen blits, DPR capped at
-   1.5. PERF (see _perf_aurora.py): figures' gradients are memoised (lgc/rgc),
+   twinkle, moon, the aurora (ONE additive blit of its band), midL, castle fx,
+   reflL, figures, foreL, sparkles, snow. Every static layer is blitted over
+   the band it actually paints (layerBounds, measured on resize), so only the
+   foreground — which carries the full-screen vignette — still costs a whole
+   screen. The backing store is capped at 1.5x AND ~2.4 MP, and the loop drops
+   to every 2nd display frame while frames run long.
+   PERF (see _perf_aurora.py): figures' gradients are memoised (lgc/rgc),
    glows and mist are sprites, the moon glow is baked, the princess SVG frames
    are rasterised once into bitmaps, the noise hash is a table lookup, and
    _aurora.prof() reports per-section ms/frame.
@@ -122,8 +127,18 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
       stage.appendChild(canvas);
       const ctx = canvas.getContext('2d');
-      const DPR = Math.min(devicePixelRatio || 1, 1.5);         // 1.5 is plenty for a painterly scene; vs 2 it cuts every fill/blit by ~44%
-      let W, H, LAKE, U;
+      // The backing store is the single biggest lever on the GPU side: every
+      // fill and every blit scales with its area. Capped at 1.5x AND at ~2.4 MP,
+      // so a big window drops the ratio instead of paying for it (1920x1200 →
+      // ~1.0x). Same cap as unicorns3.
+      const IS_TOUCH = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+      const pickDPR = () => Math.max(0.75, Math.min(devicePixelRatio || 1, 1.5, Math.sqrt(2.4e6 / Math.max(1, innerWidth * innerHeight))));
+      let DPR = pickDPR(), FDPR = 1;
+      let W, H, LAKE, U, AURH = 0;
+      // the painted band of each static layer (CSS px, measured on resize) — a
+      // layer is blitted over ITS band, not over the whole screen
+      let B_SKY = 0, MID_Y0 = 0, FORE_Y0 = 0, FORE_Y1 = 0;
+      const perf = { gapEma: 16.7, costEma: 0, halfRate: IS_TOUCH, frames: 0, drawn: 0 };
       let skyL, mtnL, lakeL, midL, foreL, auroraL, auroraLo, reflL, auroraReady = false;
       let STARS, TWINKLE, FLAKES, SPARKS, MIST, SHOOTERS = [], nextShootAt = 4;
       let CHANNEL, SEALS, ORCAS, PR, MAGIC = [], SPOUTS = [], SPLASH = [], nextBreachAt = 14;
@@ -153,6 +168,37 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         const col = name === 'glowCyan' ? '190,240,255' : name === 'glowWhite' ? '255,255,255' : '210,230,245';
         g.fillStyle = rg(g, 64, 64, 0, 64, [[0, 'rgba(' + col + ',1)'], [1, 'rgba(' + col + ',0)']]); g.fillRect(0, 0, 128, 128);
         return (SPR[name] = cv);
+      }
+      // How far down a static layer actually paints, and from which row it is
+      // OPAQUE all the way to the bottom (everything above that row still needs
+      // the sky behind it; everything below is hidden by this layer). Measured
+      // once per resize from a 48x192 thumbnail — exact enough at ±1 thumbnail
+      // row, and padded by one.
+      function layerBounds(L){
+        const TW = 48, TH = 192;
+        const c = doc.createElement('canvas'); c.width = TW; c.height = TH;
+        const g = c.getContext('2d', { willReadFrequently: true });
+        g.drawImage(L.cv, 0, 0, TW, TH);
+        let d; try { d = g.getImageData(0, 0, TW, TH).data; } catch (e){ return { y0: 0, y1: H, solid: H }; }
+        const full = new Uint8Array(TH); let top = -1, bot = -1;
+        for (let y = 0; y < TH; y++){
+          let any = false, all = true;
+          for (let x = 0; x < TW; x++){ const a = d[(y * TW + x) * 4 + 3]; if (a > 3) any = true; if (a < 250) all = false; }
+          full[y] = all ? 1 : 0;
+          if (any){ if (top < 0) top = y; bot = y; }
+        }
+        let solid = TH;                                                  // the first row with nothing but opaque rows below it
+        for (let y = TH - 1; y >= 0 && full[y]; y--) solid = y;
+        const k = H / TH;
+        return { y0: top < 0 ? 0 : Math.max(0, (top - 1) * k),
+                 y1: bot < 0 ? 0 : Math.min(H, (bot + 2) * k),
+                 solid: Math.min(H, (solid + 2) * k) };
+      }
+      // blit rows y0..y1 of a full-screen layer (the rest of it is empty or hidden)
+      function band(L, y0, y1){
+        if (y1 <= y0) return;
+        const d = L.cv.width / L.w;                                      // the layer's own device ratio
+        ctx.drawImage(L.cv, 0, y0 * d, L.cv.width, (y1 - y0) * d, 0, y0, W, y1 - y0);
       }
       function makeLayer(w, h, dpr){
         const cv = doc.createElement('canvas');
@@ -1254,17 +1300,17 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         g.save(); g.beginPath(); g.rect(0, LAKE, W, H - LAKE); g.clip();
         g.translate(0, LAKE); g.scale(1, -0.75); g.translate(0, -LAKE);
         g.globalCompositeOperation = 'lighter';
-        for (const [dy, a] of [[0, 0.20], [-H * 0.014, 0.11], [H * 0.014, 0.11], [H * 0.03, 0.06]]){ g.globalAlpha = a; g.drawImage(auroraLo.cv, 0, dy, W, H); }   // smeared vertically
+        for (const [dy, a] of [[0, 0.20], [-H * 0.014, 0.11], [H * 0.014, 0.11], [H * 0.03, 0.06]]){ g.globalAlpha = a; g.drawImage(auroraLo.cv, 0, dy, W, AURH); }   // smeared vertically
         g.restore();
         g.save(); channelPath(g); g.clip();                             // the open water mirrors it far more brightly
         g.translate(0, LAKE); g.scale(1, -0.75); g.translate(0, -LAKE);
         g.globalCompositeOperation = 'lighter';
-        for (const [dy, a] of [[0, 0.30], [-H * 0.01, 0.16], [H * 0.01, 0.16]]){ g.globalAlpha = a; g.drawImage(auroraLo.cv, 0, dy, W, H); }
+        for (const [dy, a] of [[0, 0.30], [-H * 0.01, 0.16], [H * 0.01, 0.16]]){ g.globalAlpha = a; g.drawImage(auroraLo.cv, 0, dy, W, AURH); }
         g.restore();
       }
       function drawReflections(){
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        ctx.drawImage(reflL.cv, 0, 0, W, H);
+        band(reflL, LAKE, H);                                            // the mirror only exists in the lake
         ctx.globalAlpha = Math.min(1, intensity);                        // the aurora's light on the far ice and the snow line
         ctx.fillStyle = lgc('horizonGlow', ctx, 0, H * 0.5, 0, H * 0.72, [[0, 'rgba(60,200,140,0)'], [0.55, 'rgba(60,200,140,0.07)'], [1, 'rgba(60,200,140,0)']]);
         ctx.fillRect(0, H * 0.5, W, H * 0.22);
@@ -1303,7 +1349,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         const sk = surge ? Math.sin(clamp01((t - surge.t0) / 5) * Math.PI) : 0;
         if (surge && t - surge.t0 > 5) surge = null;
         auroraT += dt * (1 + 2.6 * sk); surgeBoost = 1 + 1.1 * sk;
-        ctx.drawImage(skyL.cv, 0, 0, W, H);
+        band(skyL, 0, B_SKY);                                          // below B_SKY the mid layer is opaque
         drawTwinkle(t);
         drawMoon(t);
         mark('sky');
@@ -1311,18 +1357,23 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         // the sky. The curtains move slowly, so they (and the lake's mirror of them)
         // are re-rendered every OTHER frame — halving the heaviest pass.
         if ((PROF.frames & 1) === 0 || !auroraReady){
-          drawAurora(auroraL.cx, auroraL.w, auroraL.h, auroraT);
+          drawAurora(auroraL.cx, auroraL.w, auroraL.hDraw, auroraT);   // hDraw: the band is a WINDOW on a full-height coordinate space
           auroraLo.cx.clearRect(0, 0, auroraLo.w, auroraLo.h);
           auroraLo.cx.drawImage(auroraL.cv, 0, 0, auroraLo.w, auroraLo.h);
           buildRefl();
+          // the bloom (the 1/8-res copy, upscaled) is folded INTO the curtain
+          // layer, so the sky takes ONE additive blit of the band instead of two
+          // full-screen ones. 0.85 splits the old pair (curtains .8, bloom .9).
+          auroraL.cx.save(); auroraL.cx.globalCompositeOperation = 'lighter';
+          auroraL.cx.drawImage(auroraLo.cv, 0, 0, auroraL.w, auroraL.h);
+          auroraL.cx.restore();
           auroraReady = true;
         }
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        ctx.globalAlpha = 0.9; ctx.drawImage(auroraLo.cv, 0, 0, W, H);
-        ctx.globalAlpha = 0.8; ctx.drawImage(auroraL.cv, 0, 0, W, H);
+        ctx.globalAlpha = 0.85; ctx.drawImage(auroraL.cv, 0, 0, W, AURH);
         ctx.restore();
         mark('aurora');
-        ctx.drawImage(midL.cv, 0, 0, W, H);                          // ranges + castle + ice + the ranges' mirror, one blit
+        band(midL, MID_Y0, H);                                       // ranges + castle + ice + the ranges' mirror, one blit
         drawCastleFx(t);
         mark('layers');
         drawReflections();
@@ -1335,7 +1386,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         const sealPoses = SEALS.map(S => [S, sealPose(S, t)]);
         for (const [S, P] of sealPoses) if (P.swim) drawSeal(ctx, S, t, P);          // swimming seals: behind the icebergs
         drawMist(t, dt);
-        ctx.drawImage(foreL.cv, 0, 0, W, H);
+        band(foreL, FORE_Y0, FORE_Y1);
         for (const [S, P] of sealPoses) if (!P.swim) drawSeal(ctx, S, t, P);
         mark('seals+fore');
         updateBears(t, dt); for (const B of BEARS) drawBear(ctx, B, t); drawFurFx(ctx, t);
@@ -1353,26 +1404,51 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         drawLightning(fxCtx, t);
         mark('fx');
       }
+      // The canvas paces itself: while frames run long it renders every 2nd
+      // display frame and returns to full rate after 6 quiet seconds (Olaf is a
+      // DOM/CSS rig and keeps animating at display rate either way). Touch
+      // devices start there. Ported from unicorns3.
+      let prevTs = null, lastDrawTs = 0, lastDecide = 0, calmSince = 0, frameErr = false;
       function frame(ts){
         if (stopped) return;
         if (t0 === null) t0 = ts;
-        renderFrame((ts - t0) / 1000);
-        rafId = requestAnimationFrame(frame);
+        rafId = requestAnimationFrame(frame);                          // scheduled first: a bad frame never kills the loop
+        if (prevTs !== null) perf.gapEma += ((ts - prevTs) - perf.gapEma) * 0.08;
+        prevTs = ts; perf.frames++;
+        if (perf.halfRate && ts - lastDrawTs < perf.gapEma * 1.5) return;
+        lastDrawTs = ts; perf.drawn++;
+        const c0 = performance.now();
+        try { renderFrame((ts - t0) / 1000); }
+        catch (e){ if (!frameErr){ frameErr = true; console.error('aurora frame error', e); } }
+        perf.costEma += ((performance.now() - c0) - perf.costEma) * 0.08;
+        if (ts - lastDecide > 1500){
+          lastDecide = ts;
+          const heavy = perf.costEma > 7 || perf.gapEma > 21;
+          if (heavy){ perf.halfRate = true; calmSince = ts; }
+          else if (perf.costEma > 3.5 || perf.gapEma > 17.5) calmSince = ts;
+          else if (perf.halfRate && !IS_TOUCH && ts - calmSince > 6000) perf.halfRate = false;
+        }
       }
 
       function resize(){
-        W = innerWidth; H = innerHeight;
+        W = innerWidth; H = innerHeight; DPR = pickDPR(); FDPR = Math.min(DPR, 1);
         canvas.width = W * DPR; canvas.height = H * DPR;
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-        fxCv.width = W * DPR; fxCv.height = H * DPR;
-        fxCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        fxCv.width = W * FDPR; fxCv.height = H * FDPR;                 // snow / magic / lightning are soft — 1x is plenty
+        fxCtx.setTransform(FDPR, 0, 0, FDPR, 0, 0);
         buildScene();
         fitOlaf();
         skyL = makeLayer(W, H, DPR); mtnL = makeLayer(W, H, DPR); lakeL = makeLayer(W, H, DPR); midL = makeLayer(W, H, DPR); foreL = makeLayer(W, H, DPR);
         reflL = makeLayer(W, H, 0.125);                                // the aurora's lake mirror, 1/8 res
         GCACHE = {}; auroraReady = false;
-        auroraL = makeLayer(Math.round(W / 2), Math.round(H / 2), 1);
-        auroraLo = makeLayer(Math.round(W / 8), Math.round(H / 8), 1);
+        // the curtains hang in the top ~43% of the sky (BANDS: the lowest edge a
+        // band can reach is y+amp+.015 = .425H) — the layer is only that tall, so
+        // the render, the mirror source and the sky blit all shrink with it. It
+        // stays a WINDOW on a full-height space (hDraw), so the bands keep their
+        // proportions.
+        AURH = Math.round(H * 0.46);
+        auroraL = makeLayer(Math.round(W / 2), Math.round(AURH / 2), 1); auroraL.hDraw = H / 2;
+        auroraLo = makeLayer(Math.round(W / 8), Math.round(AURH / 8), 1);
         auroraLo.cx.imageSmoothingEnabled = true;
         paintSky(skyL.cx); paintMountains(mtnL.cx); paintLake(lakeL.cx); paintFore(foreL.cx);
         // ONE static mid layer: the ranges + castle, the ice, and the ranges' dim mirror in it
@@ -1381,6 +1457,8 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
           g.save(); g.beginPath(); g.rect(0, LAKE, W, H - LAKE); g.clip();
           g.translate(0, LAKE); g.scale(1, -0.75); g.translate(0, -LAKE);
           g.globalAlpha = 0.20; g.drawImage(mtnL.cv, 0, 0, W, H); g.restore(); }
+        { const mid = layerBounds(midL), fore = layerBounds(foreL);
+          MID_Y0 = mid.y0; B_SKY = mid.solid; FORE_Y0 = fore.y0; FORE_Y1 = fore.y1; }
       }
 
       const onClick = e => {
@@ -1432,6 +1510,9 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         lightning: () => castleStorm(lastT),
         busy: () => ({ strikes: STRIKES.length, surge: !!surge, castleBox: CASTLE && CASTLE.box }),
         prof: () => { const o = {}; for (const k in PROF) o[k] = k === 'frames' ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
+        perf: () => ({ dpr: +DPR.toFixed(2), fdpr: FDPR, halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1),
+                       costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn,
+                       bands: { sky: Math.round(B_SKY), mid: Math.round(MID_Y0), fore: [Math.round(FORE_Y0), Math.round(FORE_Y1)], aurora: AURH, H } }),
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },
         olaf: () => OLAF,
         princess: () => PRINCESSES, orcas: () => ORCAS, bears: () => BEARS,

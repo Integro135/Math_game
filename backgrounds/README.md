@@ -1212,8 +1212,37 @@ per size into bitmaps (drawing an SVG `<img>` to canvas re-rasterises every
 frame); fewer stars twinkle. Gotcha from the DPR cap: the mountains' 1-px
 columns must be ONE DEVICE PIXEL wide and snapped to the device grid — at a
 fractional DPR a CSS-pixel column straddles device pixels and its
-anti-aliased edges read as vertical hatching. `_aurora.prof()` /
-`profReset()` remain for the next pass. Test hooks: `window._aurora =
+anti-aliased edges read as vertical hatching.
+
+A second pass went after the GPU side, which those main-thread numbers do not
+show at all (six full-screen blits at DPR 1.5 on a 1920×1200 window is ~31 MP
+of fill per frame). (1) The backing store is now capped at ~2.4 MP as well as
+1.5× (`pickDPR`, unicorns3's) — a 1920×1200 window lands on ~1.0×, which alone
+cuts every fill by 2.2×. (2) `layerBounds` measures, once per resize from a
+48×192 thumbnail of each static layer, the rows it actually paints AND the row
+from which it is opaque to the bottom; `band()` then blits each layer over
+just that stripe — the sky stops where the mountains become opaque (413 of 800
+px), the mid layer starts at its highest ridge (200), the lake mirror is drawn
+only in the lake. The foreground is the exception: its vignette covers the
+whole screen, so it still costs one. (3) The curtains live in a layer only as
+tall as they hang (0.46 H, a WINDOW on a full-height coordinate space via
+`hDraw`), and the bloom is folded into that layer, so the sky takes ONE partial
+additive blit where it took two full-screen ones. Total per-frame fill: ~6
+screens → ~2.1. (4) The rAF loop paces itself like unicorns3 — while frames run
+long (gap > 21 ms or cost > 7 ms) the canvas renders every 2nd display frame
+and returns to full rate after 6 quiet seconds; touch devices start there.
+`_aurora.perf()` → `{dpr, fdpr, halfRate, gapEma, costEma, frames, drawn,
+bands}`; `_aurora.prof()` / `profReset()` remain for the next pass.
+
+The other half of that pass was NOT in the canvas: `frozen.skin.css` still had
+`backdrop-filter:blur(5px)` on `.glass` and `.card`. A backdrop blur over a
+scene that repaints every frame makes the compositor re-blur the panel every
+frame — it is the most expensive thing you can put over an animating canvas,
+and the space / unicorns / reef / dubai / maldives skins had already all set
+`backdrop-filter:none` for exactly this reason. Frozen now does too, with a
+deeper fill (`.card` .72→.55) so the equation stays crisp. Headless Chrome
+cannot measure this (its compositor is not the user's GPU); the trace shows
+23% more `Commit` time with the blur on. Test hooks: `window._aurora =
 BACKGROUNDS.aurora._test = { intensity(v), snow(on), wind(v), shoot(),
 cast(), breach(), surge(), wave(), sniff(), dive(), roll(), sit(), slide(),
 fox(), hop(), lightning(), busy(), princess(), orcas(), bears(), olaf() }`

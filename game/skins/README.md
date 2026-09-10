@@ -48,6 +48,12 @@ Every skin header documents the same four families it is allowed to own:
    veil (`backdrop-filter:blur(24px)`). **Most skins set
    `backdrop-filter:none`** with a low-opacity tinted fill so the scene stays
    sharp through the panels. (Reef is the documented exception — see §4.)
+   This is a PERFORMANCE rule as much as a look: over a background that
+   repaints every frame (every canvas scene) a backdrop filter makes the
+   compositor re-blur the panel every frame, on the GPU, where none of our
+   main-thread probes can see it. A skin that dresses an animating scene sets
+   `none` on `.glass` and `.card` and buys its contrast with fill opacity —
+   `frozen` was the last one still blurring and was changed in v9.86.
 4. **Position on screen** — `.wrap` `max-width` / `margin` / `padding`, used to
    shrink and place the game column so the scene's hero objects (Saturn, the
    Burj, Pride Rock + lions, the herd, etc.) stay visible around it.
