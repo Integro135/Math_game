@@ -26,9 +26,10 @@ body.theme-dinosaurs #bg{
   animation:none;
 }
 
-/* ── Frozen (ice palace) — night-ice load-flash fallback behind the scene ── */
+/* ── Frozen (aurora & ice) — polar-night load-flash fallback behind the scene
+   (matches the aurora.bg.js sky gradient) ── */
 body.theme-frozen #bg{
-  background:linear-gradient(180deg,#14235A 0%,#24478A 45%,#4A7CB8 80%,#8FC4E2 100%);
+  background:linear-gradient(180deg,#04050F 0%,#0A1230 35%,#132A4E 62%,#1D4463 78%,#1D4463 100%);
   animation:none;
 }
 

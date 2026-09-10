@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora &amp; Ice — background dev harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     DEV HARNESS for the AURORA & ICE background (a polar night over a frozen
+     lake). The actual scene lives in aurora.bg.js — the SAME file the game
+     would load; this page just gives it a stage. Buttons poke the test hooks
+     (window._aurora): Restart · Aurora bright / calm · Snow on/off · Wind ·
+     Shooting star · Cast (the sisters conjure snowflakes) · Breach (an orca
+     leaps) · Surge (the aurora flares, as a click on the sky does) · Wave (the
+     seals wave a flipper) · Dive (a seal slides into the water) · Bears (the
+     mother sits up, the cub stands) · Fox (the fox comes out of the igloo).
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: #060a1c; }
+  #stage { position: fixed; inset: 0; }
+  #ctrl { position: fixed; bottom: 18px; right: 18px; z-index: 10; display: flex; gap: 8px; }
+  .hbtn {
+    padding: 8px 18px;
+    background: rgba(10, 18, 44, 0.55);
+    color: rgba(225, 238, 255, 0.95);
+    border: 1px solid rgba(150, 200, 255, 0.35);
+    border-radius: 999px;
+    font-family: Georgia, serif; font-size: 12px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; backdrop-filter: blur(6px);
+  }
+  .hbtn:hover { background: rgba(30, 50, 100, 0.7); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="ctrl">
+  <button id="bright"  class="hbtn">Aurora bright</button>
+  <button id="calm"    class="hbtn">Aurora calm</button>
+  <button id="snow"    class="hbtn">Snow</button>
+  <button id="wind"    class="hbtn">Wind</button>
+  <button id="shoot"   class="hbtn">Shooting star</button>
+  <button id="cast"    class="hbtn">Cast</button>
+  <button id="breach"  class="hbtn">Breach</button>
+  <button id="surge"   class="hbtn">Surge</button>
+  <button id="wave"    class="hbtn">Wave</button>
+  <button id="dive"    class="hbtn">Dive</button>
+  <button id="sit"     class="hbtn">Bears</button>
+  <button id="fox"     class="hbtn">Fox</button>
+  <button id="restart" class="hbtn">Restart</button>
+</div>
+<script src="aurora.bg.js"></script>
+<script>
+let cleanup = null, snow = true, windy = false;
+function start() {
+  if (cleanup) cleanup();
+  cleanup = window.BACKGROUNDS.aurora.init({ stage: document.getElementById('stage') });
+}
+const T = () => window._aurora;
+document.getElementById('restart').addEventListener('click', start);
+document.getElementById('bright').addEventListener('click', () => T() && T().intensity(1.6));
+document.getElementById('calm').addEventListener('click', () => T() && T().intensity(0.55));
+document.getElementById('snow').addEventListener('click', () => { snow = !snow; T() && T().snow(snow); });
+document.getElementById('wind').addEventListener('click', () => { windy = !windy; T() && T().wind(windy ? 1 : 0); });
+document.getElementById('shoot').addEventListener('click', () => T() && T().shoot());
+document.getElementById('cast').addEventListener('click', () => T() && T().cast());
+document.getElementById('breach').addEventListener('click', () => T() && T().breach());
+document.getElementById('surge').addEventListener('click', () => T() && T().surge());
+document.getElementById('wave').addEventListener('click', () => T() && T().wave());
+document.getElementById('dive').addEventListener('click', () => T() && T().dive());
+document.getElementById('sit').addEventListener('click', () => T() && T().sit());
+document.getElementById('fox').addEventListener('click', () => T() && T().fox());
+start();
+</script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 r"""
 Regenerate unicorn.item.js's BASE_CSS from unicorn.html — the SINGLE SOURCE.
 
-The background scenes (meadow.scene.js / unicorns.bg.js) mount the reusable rig
+The background scene (unicorns3.bg.js) mounts the reusable rig
 via window.Unicorn.place() from unicorn.item.js. That file's rig CSS is a scoped
 extraction of the workshop unicorn.html; keeping it hand-synced drifted (walk/fly
 gaits went stale as STUBS, the kawaii eye / colors / cutie marks lagged). This

@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unicorn Valley v2 — Day Cycle — Dev Harness</title>
+<title>Unicorn Valley v3 — Dev Harness</title>
 <!-- ───────────────────────────────────────────────────────────────────────
-     Thin development harness for the UNICORNS v2 background module (the
-     from-scratch canvas valley with the unicorn rig and a full day cycle).
-     The scene lives in unicorns2.bg.js — the SAME file the game loads.
-     Buttons jump the clock to each part of the day (a smooth 2.6 s tween),
-     Pause freezes the clock, Fast runs the day 20× faster, Herd / Flyer
-     spawn unicorns, Magic fires the click effects, Restart re-inits.
+     Thin development harness for the UNICORNS v3 background module: the v2
+     canvas valley + day cycle carrying the ORIGINAL CSS unicorns and castle
+     as DOM layers. The scene lives in unicorns3.bg.js — the SAME file the
+     game loads. Buttons jump the clock to each part of the day (a smooth
+     2.6 s tween), Pause freezes the clock, Fast runs the day 20× faster,
+     Magic fires the scenery effects + every on-stage unicorn's click magic,
+     Restart re-inits.
      ─────────────────────────────────────────────────────────────────────── -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,28 +46,24 @@
   <button class="hbtn" data-tod="0.875">Night</button>
   <button class="hbtn" id="pause">Pause</button>
   <button class="hbtn" id="fast">Fast</button>
-  <button class="hbtn" id="herd">Herd</button>
-  <button class="hbtn" id="flyer">Flyer</button>
   <button class="hbtn" id="magic">Magic</button>
   <button class="hbtn" id="restart">Restart</button>
 </div>
-<script src="unicorns2.bg.js"></script>
+<script src="unicorns3.bg.js"></script>
 <script>
 let cleanup = null, paused = false, fast = false;
 function start(){
   if (cleanup) cleanup();
-  cleanup = window.BACKGROUNDS.unicorns2.init({ stage: document.getElementById('stage') });
+  cleanup = window.BACKGROUNDS.unicorns3.init({ stage: document.getElementById('stage') });
   paused = false; fast = false;
   document.getElementById('pause').classList.remove('on'); document.getElementById('fast').classList.remove('on');
 }
-document.querySelectorAll('[data-tod]').forEach(b => b.onclick = () => window._uni2 && window._uni2.setTod(+b.dataset.tod));
-document.getElementById('pause').onclick = e => { paused = !paused; e.target.classList.toggle('on', paused); window._uni2.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
-document.getElementById('fast').onclick = e => { fast = !fast; e.target.classList.toggle('on', fast); window._uni2.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
-document.getElementById('herd').onclick = () => window._uni2.spawn({});
-document.getElementById('flyer').onclick = () => window._uni2.flyer();
-document.getElementById('magic').onclick = () => { const f = window._uni2.fx; f.rainbow(); f.castle(); f.fish(); f.glitter(2); window._uni2.herd().forEach((a, i) => window._uni2.act(a, ['horn', 'jump', 'rear', 'toot'][i % 4])); };
+document.querySelectorAll('[data-tod]').forEach(b => b.onclick = () => window._uni3 && window._uni3.setTod(+b.dataset.tod));
+document.getElementById('pause').onclick = e => { paused = !paused; e.target.classList.toggle('on', paused); window._uni3.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+document.getElementById('fast').onclick = e => { fast = !fast; e.target.classList.toggle('on', fast); window._uni3.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+document.getElementById('magic').onclick = () => { const f = window._uni3.fx; f.rainbow(); f.rainbowFall(); f.castle(); f.fish(); f.glitter(2); window._uni3.magic(); };
 document.getElementById('restart').onclick = start;
-setInterval(() => { if (window._uni2){ const t = window._uni2.tod(); const A = [5.5, 10.5, 14.5, 19.5, 29.5], k = Math.min(3, Math.floor(t * 4)); const h = (A[k] + (t * 4 - k) * (A[k + 1] - A[k])) % 24; document.getElementById('clock').textContent = window._uni2.phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0') + ' · ' + window._uni2.herd().length + ' on the meadow, ' + window._uni2.flyers().length + ' flying'; } }, 250);
+setInterval(() => { if (window._uni3){ const t = window._uni3.tod(); const A = [5.5, 10.5, 14.5, 19.5, 29.5], k = Math.min(3, Math.floor(t * 4)); const h = (A[k] + (t * 4 - k) * (A[k + 1] - A[k])) % 24; document.getElementById('clock').textContent = window._uni3.phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0') + ' · ' + window._uni3.onStage() + ' unicorn(s) on stage'; } }, 250);
 start();
 </script>
 </body>

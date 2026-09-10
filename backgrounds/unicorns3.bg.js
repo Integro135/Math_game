@@ -1,52 +1,39 @@
-/* ── Unicorn Valley v2 — a rainbow meadow through a full DAY CYCLE ──────────
-   The 🦄 (girls) theme's backdrop, rebuilt from scratch as ONE self-contained
-   canvas module (the previous DOM/CSS scene is unicorns.bg.js + unicorns/,
-   kept as legacy). Same structure as savanna.bg.js: prerendered sky/scenery
-   layers that are repainted only while the palette drifts, an actor layer
-   tinted by the hour, and per-frame ambient life on top.
+/* ── Unicorn Valley v3 — the v2 canvas valley + the ORIGINAL unicorns and castle ──
+   The 🦄 (girls) theme's backdrop. The best of both earlier scenes:
+     · the WORLD and its animations come from the v2 valley (unicorns2.bg.js,
+       since deleted) — one canvas
+       module with a full DAY CYCLE (dawn / day / sunset / night with stars,
+       aurora, fireflies, a moon), lilac snow-capped ranges, the rainbow, the
+       cliff with its waterfall and pond, rolling flower meadows, clouds,
+       petals, sparkles, butterflies, and all the click magic (fireworks,
+       fish, blooms, glitter, rainbow shimmer, sun/moon/waterfall → next hour);
+     · the UNICORNS and the CASTLE come from the original valley — the CSS
+       galloping rainbow unicorn (unicorns/unicorn.item.js: runners in four
+       coats, a winged sky flyer, a calm walker, each with the workshop's
+       click magic — lightning, coat change, hearts / rainbow / star shower,
+       the occasional toot; the flyer somersaults) and the enchanted CSS
+       castle (unicorns/castle.item.js, extracted from meadow.scene.js) —
+       both mounted as DOM layers ABOVE the canvas inside the stage, dimmed
+       with the hour (the castle windows keep their warm flicker at night);
+     · also from the original: the WATERFALL's water (unicorns/waterfall.item.js
+       — the particle falls in a DOM stage over the v2 cliff; click the falls
+       for 7 s of RAINBOW water), the two hopping BUNNIES (unicorns/bunny.item.js,
+       a click startles them) and the RAINBOW's look (six thin translucent
+       bands with gaps, softly blurred, breathing — repainted on the canvas so
+       it still stands behind the mountains and fades to a moonbow at night).
 
-   THE DAY (DAY_SEC seconds, four looks, colours interpolated across a soft
-   window at every boundary): DAWN — peach-rose-lavender sky, a big soft sun
-   climbing at the left; DAY — candy-blue sky, cotton clouds, small bright sun;
-   SUNSET — pink-gold-violet blaze, the sun sinking at the right; NIGHT —
-   indigo sky with twinkling + shooting stars, a glowing moon top-right,
-   AURORA ribbons, fireflies, glowing mushrooms and lit castle windows.
+   The canvas draws sky → scenery (the castle HILL only) → waterfall/pond →
+   fx → foreground; the DOM castle sits on the hill (its ground line pinned
+   to 0.86 W / 0.63 H), the DOM unicorns roam the bottom band (runners 3–13 %
+   up, the walker 4–11 %) and the flyer crosses the sky (8–28 % down) via the
+   item's come-and-go `roam()` with a shared on-stage gate (2 at once on
+   desktop, 1 on touch). Clicks: a unicorn → its magic · the castle → canvas
+   fireworks + flare · everything else as in v2. "Rumi" strolls by as before.
 
-   THE VALLEY: two lilac mountain ranges with snow caps, a RAINBOW spanning
-   the sky, a fairytale CASTLE on a hill at the right (purple spires, golden
-   trim, fluttering flags), a CLIFF at the left with a blossom tree and a
-   WATERFALL pouring into a pond (streaks, mist, ripples, the sun/moon caught
-   in the water), rolling flower meadows and a foreground of swaying grass,
-   big flowers and mushrooms. Petals fall, sparkles twinkle, butterflies
-   flutter by day, fireflies glow by night.
-
-   THE UNICORNS are a from-scratch canvas rig (drawUni): one body silhouette
-   with a fat-stroke outline, two-segment legs with golden hooves and a
-   diagonal walk/gallop gait, a flowing rainbow (or pastel) mane and tail
-   that wave, a spiralled golden horn that twinkles now and then, a big
-   blinking eye with lashes + blush, a star/heart cutie-mark, and feathered
-   wings for the flyers. Five palettes (classic white + rainbow, pink,
-   lilac, mint, sky) and a rare midnight one. WALKERS cross the meadow in
-   depth lanes — singles and mother+foal pairs (the foal trots behind and
-   copies its mother's jumps) — some GALLOP with stardust from the hooves;
-   FLYERS cross the sky trailing sparkles and somersault. At most 4 on the
-   meadow + 2 in the air. On a schedule AND on click a unicorn acts: JUMP,
-   REAR UP, HORN MAGIC (a rainbow ring + sparkles from the horn tip), a
-   rainbow TOOT with an embarrassed shimmy, or (scheduled only) GRAZE. ❤ float
-   up when two adults meet face to face.
-
-   CLICKS: unicorn → act · castle → fireworks + window flare · rainbow →
-   a shimmer sweeps the arc · a cloud → glitter rain · the pond → rainbow
-   fish leap · the meadow → flowers bloom where you click · the sky → a
-   sparkle burst · the SUN, the MOON or the WATERFALL (always visible beside
-   the game card) → fast-forward to the next part of the day.
-   Ambient: the rainbow shimmers / the castle windows flare on their own
-   every 12–30 s; fish leap every so often. "Rumi" (rumi/chibi-walker.js)
-   strolls across the meadow every 2–4 minutes, first after 1–3 minutes.
-
-   Docs: backgrounds/README.md. Registers window.BACKGROUNDS.unicorns2
+   Docs: backgrounds/README.md. Registers window.BACKGROUNDS.unicorns3
    (skin 'unicorns', aids 'unicorns'); init() mounts into the given stage
-   and returns a cleanup. Test hooks: window._uni2. */
+   and returns a cleanup (canvas, DOM actors, castle, Rumi, listeners).
+   Test hooks: window._uni3. */
 window.BACKGROUNDS = window.BACKGROUNDS || {};
 (function(){
   const doc = document;
@@ -60,6 +47,24 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
     s.src = BASE + 'rumi/chibi-walker.js'; s.setAttribute('data-chibi-walker', '1');
     s.onload = cb; s.onerror = cb;
     doc.head.appendChild(s);
+  }
+
+  // the ORIGINAL scene's DOM items (backgrounds/unicorns/): the CSS unicorn rig and the CSS castle
+  function needItem(globalName, file, cb){
+    if (window[globalName]){ cb(); return; }
+    const ex = doc.querySelector('script[data-uni3dep="' + globalName + '"]');
+    if (ex){ ex.addEventListener('load', cb); ex.addEventListener('error', cb); return; }
+    const sc = doc.createElement('script');
+    sc.src = BASE + 'unicorns/' + file; sc.setAttribute('data-uni3dep', globalName);
+    sc.onload = cb; sc.onerror = cb;
+    doc.head.appendChild(sc);
+  }
+  function needItems(cb){
+    let left = 4, done = () => { if (--left === 0) cb(); };
+    needItem('Unicorn', 'unicorn.item.js', done);
+    needItem('Castle', 'castle.item.js', done);
+    needItem('WaterfallFX', 'waterfall.item.js', done);
+    needItem('Bunny', 'bunny.item.js', done);
   }
 
   const TAU = Math.PI * 2;
@@ -408,9 +413,9 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
     c.restore();
   }
 
-  window.BACKGROUNDS.unicorns2 = {
+  window.BACKGROUNDS.unicorns3 = {
     skin: 'unicorns', aids: 'unicorns',
-    preload(){ needRumi(function(){}); },
+    preload(){ needRumi(function(){}); needItems(function(){}); },
     init({ stage }){
       let stopped = false;
       stage.innerHTML = '';
@@ -421,10 +426,12 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       const ctx = canvas.getContext('2d');
       const DPR = Math.min(devicePixelRatio || 1, 2);
       let W, H, U, K;
-      let skyL, sceneL, actL, vigL, lookKey = null, curLook = LOOKS[0];
+      let skyL, sceneL, vigL, lookKey = null, curLook = LOOKS[0];
       let tod = 0.22, todSpeed = 1, todTween = null;          // start late in the dawn
       let lastT = 0, rafId = null, t0 = null;
-      let HERD = [], FLYERS = [], seq = 0, nextGroupAt = 0, nextFlyerAt = 0;
+      let ROAMERS = [], BUNNIES = [], actorLayer = null, castleLayer = null, castleInst = null, lastTintKey = null;
+      let wfStage = null, wfCleanup = null, wfOpts = null, wfRainbowUntil = 0, rbL = null, rbKey = null;
+      let hooks = null;                                       // window._uni3 (dropped on cleanup, so a torn-down scene isn't pinned)
       let CLOUDS, STARS, MOTES, PETALS, BFLY, FLIES, GRASS, FLOWERS, MUSH, CASTLE, POND, FALL, RB;
       let SPARK = [], RINGS = [], PUFFS = [], HEARTS = [], FISH = [], BLOOMS = [], SHOOTERS = [], FW = [];
       let rainFx = null, castleFx = null, sunBoost = null, nextAmbientAt = 12, nextShootAt = 0, nextFishAt = 25;
@@ -497,15 +504,15 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         }));
         MUSH = [[0.30, 0.965, 0.75], [0.56, 0.99, 0.6], [0.93, 0.955, 0.95], [0.72, 0.975, 0.55]]
           .map(([fx, fy, s], i) => ({ x: W * fx, y: H * fy, s: U * s, ph: i * 1.7 }));
-        HERD = []; FLYERS = []; SPARK = []; RINGS = []; PUFFS = []; HEARTS = []; FISH = []; BLOOMS = []; SHOOTERS = []; FW = [];
+        SPARK = []; RINGS = []; PUFFS = []; HEARTS = []; FISH = []; BLOOMS = []; SHOOTERS = []; FW = [];
         rainFx = null; castleFx = null; sunBoost = null;
-        window._uni2 = {
+        hooks = window._uni3 = {
           tod: () => tod, setTod: v => { tod = ((v % 1) + 1) % 1; todTween = null; },
           setSpeed: v => { todSpeed = v; }, phase: () => PHASE_NAMES[Math.floor(tod / P) % 4],
-          herd: () => HERD, flyers: () => FLYERS,
-          spawn: (o) => spawnGroup(lastT, o || {}), flyer: () => spawnFlyer(lastT),
-          act: (a, type) => startAct(a, type || 'jump', lastT),
-          fx: { rainbow: () => { rainFx = { t0: lastT }; }, castle: () => fireworks(lastT), fish: () => fishLeap(lastT),
+          unicorns: () => ROAMERS, onStage: () => ROAMERS.filter(i => i.active).length,
+          magic: i => { const u = i == null ? ROAMERS.filter(r => r.active) : [ROAMERS[i]]; u.forEach(r => r && uniReact(r)); },
+          castleEl: () => castleInst && castleInst.el, bunnies: () => BUNNIES, wf: () => !!(wfStage && wfStage.querySelector('canvas')),
+          fx: { rainbow: () => { rainFx = { t0: lastT }; }, rainbowFall: () => rainbowFall(), castle: () => fireworks(lastT), fish: () => fishLeap(lastT),
                 bloom: (x, y) => bloom(x, y, lastT), glitter: i => glitter(CLOUDS[i || 0], lastT) },
           castle: () => CASTLE, pond: () => POND, fall: () => FALL, rumiLayer: () => rumiLayer,
         };
@@ -584,40 +591,6 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         c.fillStyle = 'rgba(255,255,255,.85)';
         for (const [dx, dy, r] of [[-6, -18, 2], [2, -21, 2.4], [8, -16, 1.6]]){ c.beginPath(); c.arc(x + dx * s, y + dy * s, r * s, 0, TAU); c.fill(); }
       }
-      function paintCastle(c, L, C){
-        const { cx, by, k } = C;
-        const tower = tw => {
-          const x = cx + tw.dx * k, w = tw.w * k, h = tw.h * k;
-          c.fillStyle = lg(c, x - w / 2, 0, x + w / 2, 0, [[0, L.wall], [0.55, L.wall], [1, L.wallD]]);
-          c.fillRect(x - w / 2, by - h, w, h + 2);
-          c.strokeStyle = 'rgba(90,42,82,.22)'; c.lineWidth = 1; c.strokeRect(x - w / 2, by - h, w, h + 2);
-          // gold band + conical roof with a highlight
-          c.fillStyle = L.gold; c.fillRect(x - tw.rw * k / 2, by - h - 3 * k, tw.rw * k, 3 * k);
-          c.fillStyle = lg(c, x - tw.rw * k / 2, 0, x + tw.rw * k / 2, 0, [[0, L.roofL], [0.45, L.roof], [1, L.roof]]);
-          c.beginPath(); c.moveTo(x - tw.rw * k / 2, by - h - 3 * k); c.lineTo(x, by - h - tw.rh * k - 3 * k); c.lineTo(x + tw.rw * k / 2, by - h - 3 * k); c.closePath(); c.fill();
-          c.fillStyle = L.gold; c.beginPath(); c.arc(x, by - h - tw.rh * k - 3 * k, 2.2 * k, 0, TAU); c.fill();
-          // battlement-style lower trim
-          c.fillStyle = L.wallD; c.fillRect(x - w / 2, by - h * 0.28, w, 2 * k);
-        };
-        // keep wall with merlons
-        c.fillStyle = lg(c, 0, by - 72 * k, 0, by, [[0, L.wall], [1, L.wallD]]);
-        c.fillRect(cx - 62 * k, by - 72 * k, 124 * k, 74 * k);
-        c.fillStyle = L.wall;
-        for (let i = 0; i < 8; i++) c.fillRect(cx - 62 * k + (i * 16.5 + 2) * k, by - 80 * k, 9 * k, 9 * k);
-        c.strokeStyle = 'rgba(90,42,82,.22)'; c.lineWidth = 1; c.strokeRect(cx - 62 * k, by - 72 * k, 124 * k, 74 * k);
-        // gate
-        c.fillStyle = L.gold; c.beginPath(); c.moveTo(cx - 15 * k, by); c.lineTo(cx - 15 * k, by - 24 * k); c.arc(cx, by - 24 * k, 15 * k, Math.PI, 0); c.lineTo(cx + 15 * k, by); c.closePath(); c.fill();
-        c.fillStyle = '#6b3a5a'; c.beginPath(); c.moveTo(cx - 11 * k, by); c.lineTo(cx - 11 * k, by - 22 * k); c.arc(cx, by - 22 * k, 11 * k, Math.PI, 0); c.lineTo(cx + 11 * k, by); c.closePath(); c.fill();
-        c.strokeStyle = 'rgba(255,220,150,.35)'; c.lineWidth = k; c.beginPath(); c.moveTo(cx, by - 31 * k); c.lineTo(cx, by); c.stroke();
-        TOWERS.forEach(tower);
-        // windows (arched, plum by day — the live layer paints their glow at night)
-        C.windows.forEach(w => {
-          c.fillStyle = 'rgba(90,42,82,.55)';
-          c.beginPath(); c.moveTo(w.x - w.w / 2, w.y + w.h / 2); c.lineTo(w.x - w.w / 2, w.y - w.h / 4); c.arc(w.x, w.y - w.h / 4, w.w / 2, Math.PI, 0); c.lineTo(w.x + w.w / 2, w.y + w.h / 2); c.closePath(); c.fill();
-        });
-        // heart above the gate
-        c.fillStyle = '#ff6fb5'; heartPath(c, cx, by - 52 * k, 5 * k); c.fill();
-      }
       function cliffPath(c){
         const F = FALL;
         c.beginPath();
@@ -673,7 +646,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         // the castle hill + castle
         c.fillStyle = L.hillFar;
         c.beginPath(); c.moveTo(W * 0.62, H * 0.70); c.quadraticCurveTo(W * 0.86, H * 0.575, W * 1.1, H * 0.70); c.lineTo(W * 1.1, H * 0.72); c.lineTo(W * 0.62, H * 0.72); c.closePath(); c.fill();
-        paintCastle(c, L, CASTLE);
+        // (the castle itself is the ORIGINAL CSS castle — a DOM layer above the canvas, planted on this hill)
         hillBand(c, H * 0.655, L.hillFar, 5, 1);
         flowerDots(c, H * 0.66, H * 0.72, 60, 40, 0.5);
         hillBand(c, H * 0.72, L.hillMid, 6, 5);
@@ -699,162 +672,129 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         paintSky(skyL.cx, curLook); paintScenery(sceneL.cx, curLook);
       }
 
-      // ── unicorns ──
-      function spawnGroup(t, o){
-        const adults = HERD.filter(a => a.kind === 'adult').length;
-        if (HERD.length >= 4) return null;
-        let foal = o.foal != null ? o.foal : Math.random() < 0.45;
-        if (HERD.length >= 3) foal = false;
-        const fromLeft = o.fromLeft != null ? o.fromLeft : Math.random() < 0.5, dir = fromLeft ? 1 : -1;
-        const lane = o.lane != null ? o.lane : Math.random();
-        const pal = o.pal ? PALS.find(p => p.name === o.pal) || pickPal() : pickPal();
-        const gallop = o.gallop != null ? o.gallop : (!foal && adults > 0 && Math.random() < 0.3);
-        const s = U * 0.56 * (0.86 + 0.24 * lane);
-        const speed = gallop ? rnd(72, 95) : rnd(19, 29);
-        const x = o.x != null ? o.x : (fromLeft ? -UNI.WIDTH * s - 30 : W + UNI.WIDTH * s + 30);
-        const y = H * (0.80 + lane * 0.16);
-        const a = { kind: 'adult', id: seq++, entered: o.x != null, speed,
-          L: { x, y, s, dir, ph: Math.random() * TAU, wt: Math.random() * TAU, moving: true, pal, gallop,
-               mark: Math.random() < 0.5 ? 'star' : 'heart', bow: 0, rear: 0, leap: 0, hornGlow: 0 },
-          nextActAt: t + rnd(3, 9) };
-        HERD.push(a);
-        if (foal){
-          const f = { kind: 'foal', id: seq++, parent: a, entered: a.entered, speed,
-            L: { x: x - dir * 74 * s, y: y + rnd(-6, 6), s: s * 0.58, dir, ph: Math.random() * TAU, wt: Math.random() * TAU, moving: true,
-                 pal: Math.random() < 0.6 ? pal : pickPal(), gallop, mark: 'heart', foal: true, bow: 0, rear: 0, leap: 0, hornGlow: 0 },
-            nextActAt: t + rnd(5, 12) };
-          HERD.push(f);
+      // ── the unicorns: the ORIGINAL CSS galloping rig (unicorns/unicorn.item.js),
+      //    roaming as DOM actors in a layer above the canvas — four gallop runners
+      //    in different coats, one winged sky flyer, one calm walker; a shared gate
+      //    keeps 2 on stage at once (1 on touch devices — each rig is ~60 CSS
+      //    animations). Travel speed and leg cadence are independent (item docs).
+      function setupUnicorns(){
+        if (stopped || !window.Unicorn || !actorLayer || ROAMERS.length) return;
+        const UI = window.Unicorn;
+        const LITE = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+        const MAX_ON_STAGE = LITE ? 1 : 2;
+        const gate = () => ROAMERS.reduce((n, i) => n + (i.active ? 1 : 0), 0) < MAX_ON_STAGE;
+        const UC = Math.max(0.45, Math.min(1, Math.min(innerWidth, innerHeight) / 800));
+        const SZ = px => Math.round(px * UC);
+        const RUN_MOVE = 19.2, FLY_MOVE = 17.28, WALK_MOVE = 4.9;
+        ['pink', 'sky', 'mint', 'night'].forEach((coat, i) => {
+          const r = UI.place(actorLayer, { size: SZ(84 - i * 6), color: coat, z: 4 });
+          r.el.style.setProperty('--speed', '.9s');
+          r.roam({ bandMinPct: 3, bandMaxPct: 13, speedPctPerSec: RUN_MOVE, waitMinSec: 2, waitMaxSec: 8, gate });
+          ROAMERS.push(r);
+        });
+        const flyer = UI.place(actorLayer, { size: SZ(80), wings: true, gait: 'fly', color: 'sky', z: 3 });
+        flyer.roam({ fly: true, bandMinPct: 8, bandMaxPct: 28, speedPctPerSec: FLY_MOVE, waitMinSec: 3, waitMaxSec: 9, bobAmpPx: 12, gate });
+        flyer.isFlyer = true;
+        ROAMERS.push(flyer);
+        const walker = UI.place(actorLayer, { size: SZ(84), gait: 'walk', color: 'pearl', z: 5 });
+        walker.el.style.setProperty('--speed', '.9s');
+        walker.roam({ bandMinPct: 4, bandMaxPct: 11, speedPctPerSec: WALK_MOVE, waitMinSec: 6, waitMaxSec: 15, gate });
+        ROAMERS.push(walker);
+      }
+      function unicornAt(x, y){
+        let hit = null;
+        for (const inst of ROAMERS){
+          if (!inst.active) continue;
+          const r = inst._horse.getBoundingClientRect();
+          if (r.width > 0 && x >= r.left - 10 && x <= r.right + 10 && y >= r.top - 10 && y <= r.bottom + 10) hit = inst;
         }
-        return a;
+        return hit;
       }
-      function spawnFlyer(t){
-        if (FLYERS.length >= 2) return null;
-        const fromLeft = Math.random() < 0.5, dir = fromLeft ? 1 : -1, s = U * rnd(0.36, 0.48);
-        const f = { kind: 'flyer', id: seq++, entered: false, speed: rnd(38, 56), lastTrail: 0, nextActAt: t + rnd(4, 9),
-          L: { x: fromLeft ? -UNI.WIDTH * s - 40 : W + UNI.WIDTH * s + 40, y: H * rnd(0.10, 0.33), s, dir, ph: Math.random() * TAU, wt: Math.random() * TAU,
-               moving: true, fly: true, wings: true, pal: pickPal(), mark: 'star', bow: 0, rear: 0, leap: 0, hornGlow: 0 } };
-        FLYERS.push(f);
-        return f;
-      }
-      function startAct(a, type, t){
-        if (!a || a.act) return;
-        if (!ACT_DUR[type]) type = 'jump';
-        a.act = { type, t0: t };
-        // the foal copies its mother's jump a beat later
-        if (type === 'jump') HERD.forEach(f => { if (f.parent === a && !f.act) f.mimicAt = t + 0.35; });
-      }
-      function pickAct(a, clicked){
-        const r = Math.random();
-        if (a.kind === 'flyer') return 'flip';
-        if (!clicked && r < 0.22) return 'graze';
-        if (r < 0.45) return 'jump';
-        if (r < 0.65) return 'rear';
-        if (r < 0.87) return 'horn';
-        return 'toot';
-      }
-      // per-frame act state: returns { yOff, rot } and sets the rig's pose fields
-      function actFx(a, t){
-        const L = a.L; L.bow = 0; L.rear = 0; L.leap = 0; L.hornGlow = 0;
-        if (a.mimicAt != null && t >= a.mimicAt){ a.mimicAt = null; if (!a.act) a.act = { type: 'jump', t0: t }; }
-        if (!a.act) return null;
-        const type = a.act.type, p = (t - a.act.t0) / ACT_DUR[type];
-        if (p >= 1){ a.act = null; return null; }
-        if (type === 'jump'){
-          const h = (a.kind === 'foal' ? 24 : 32) * L.s;
-          L.leap = Math.sin(p * Math.PI);
-          if (p > 0.05 && p < 0.12 && !a.act.dust){ a.act.dust = true; for (let i = 0; i < 6; i++) SPARK.push({ x: L.x + rnd(-20, 20) * L.s, y: L.y, vx: rnd(-25, 25), vy: rnd(-30, -5), g: 40, t0: t, life: 0.7, r: rnd(2, 4), col: pick(RAINBOW), kind: 'dot' }); }
-          return { yOff: -Math.sin(p * Math.PI) * h, rot: -Math.sin(p * TAU) * 0.08 * L.dir };
+      // the workshop's click magic: lightning + coat change + a bonus (hearts /
+      // rainbow / star shower), every few clicks a toot; the flyer also somersaults
+      function uniReact(inst){ inst.magic(); if (inst.isFlyer) inst.somersault(); }
+      // the DOM actors and the castle follow the hour: dimmer and cooler at night,
+      // with a faint moonlit rim glow around the unicorns once the sun is down
+      function tintActors(L){
+        const key = Math.round(L.daylight * 40);
+        if (key === lastTintKey) return;
+        lastTintKey = key;
+        if (actorLayer){
+          const b = (0.58 + 0.42 * L.daylight).toFixed(3), sat = (0.8 + 0.2 * L.daylight).toFixed(3);
+          const moon = L.daylight < 0.6 ? ' drop-shadow(0 0 6px rgba(200,190,255,' + (0.45 * (1 - L.daylight)).toFixed(2) + '))' : '';
+          actorLayer.style.filter = L.daylight > 0.97 ? '' : 'brightness(' + b + ') saturate(' + sat + ')' + moon;
         }
-        if (type === 'rear'){ L.rear = Math.sin(p * Math.PI); return { yOff: 0, rot: 0 }; }
-        if (type === 'graze'){ L.bow = p < 0.22 ? smooth(p / 0.22) : p > 0.82 ? smooth((1 - p) / 0.18) : 1; return { yOff: 0, rot: 0 }; }
-        if (type === 'horn'){
-          L.hornGlow = p < 0.15 ? p / 0.15 : p > 0.75 ? (1 - p) / 0.25 : 1;
-          if (p > 0.2 && !a.act.fired){
-            a.act.fired = true;
-            const tip = hornTip(a);
-            RINGS.push({ x: tip.x, y: tip.y, t0: t, s: L.s * 0.9, rainbow: true });
-            for (let i = 0; i < 16; i++){
-              const an = rnd(0, TAU), sp = rnd(40, 120) * L.s;
-              SPARK.push({ x: tip.x, y: tip.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp - 30 * L.s, g: 30, t0: t, life: rnd(0.8, 1.4), r: rnd(3, 6) * L.s * 0.8, col: RAINBOW[i % 6], kind: i % 3 ? 'star' : 'dot' });
-            }
-            for (let i = 0; i < 3; i++) SPARK.push({ x: tip.x, y: tip.y, vx: rnd(-20, 20), vy: rnd(-90, -60) * L.s, g: 20, t0: t + i * 0.1, life: 1.6, r: 7 * L.s, col: '#ffffff', kind: 'star' });
-          }
-          return { yOff: 0, rot: 0 };
-        }
-        if (type === 'toot'){
-          if ((a.lastPuff || 0) < t - 0.14 && p < 0.55){
-            a.lastPuff = t;
-            PUFFS.push({ x: L.x - 44 * L.s * L.dir, y: L.y - 50 * L.s, dx: -L.dir * rnd(8, 16) * L.s, t0: t, r: rnd(6, 10) * L.s, ph: Math.random() * TAU, col: pick(RAINBOW) });
-            if (Math.random() < 0.5) SPARK.push({ x: L.x - 46 * L.s * L.dir, y: L.y - 50 * L.s, vx: -L.dir * rnd(10, 40), vy: rnd(-30, 0), g: 10, t0: t, life: 1.2, r: 3 * L.s, col: '#ffffff', kind: 'star' });
-          }
-          return { yOff: -Math.abs(Math.sin(p * Math.PI * 3)) * 3 * L.s, rot: Math.sin(p * 40) * 0.015 * (1 - p) * L.dir };
-        }
-        // flip: the flyer's eased somersault
-        return { yOff: 0, rot: -ease(p) * TAU * L.dir, pivot: -55 };
+        if (castleInst) castleInst.setNight(1 - L.daylight);
       }
-      function hornTip(a){
-        const L = a.L, hm = HEAD_SCALE(L.foal), ty = L.foal ? -134 : -142;
-        const x = HEAD_PIVOT[0] + (57 - HEAD_PIVOT[0]) * hm, y = HEAD_PIVOT[1] + (ty - HEAD_PIVOT[1]) * hm;
-        return { x: L.x + L.dir * x * L.s, y: L.y + y * L.s };
-      }
-      function updateWalker(a, t, dt){
-        const L = a.L;
-        if (a.kind === 'foal'){
-          const p = a.parent, target = p.L.x - p.L.dir * 74 * p.L.s;
-          const dx = target - L.x;
-          L.dir = p.L.dir;
-          L.x += dx * Math.min(1, dt * 2.4);
-          L.y += (p.L.y + 4 - L.y) * Math.min(1, dt * 1.5);
-          L.moving = Math.abs(dx) > 3 * L.s && !a.act;
-          if (L.moving) L.wt += dt * (a.speed / 6) * (L.gallop ? 1.2 : 1.9);
-          if (!a.act && a.entered && t >= a.nextActAt){ startAct(a, Math.random() < 0.6 ? 'jump' : 'graze', t); a.nextActAt = t + rnd(9, 18); }
-        } else {
-          if (!a.act && a.entered && t >= a.nextActAt){ startAct(a, pickAct(a, false), t); a.nextActAt = t + rnd(8, 16); }
-          L.moving = !a.act;
-          if (L.moving){
-            L.wt += dt * (a.speed / 6) * (L.gallop ? 1.15 : 1.6);
-            L.x += L.dir * a.speed * U * dt;
-            if (L.gallop && (a.lastDust || 0) < t - 0.08){
-              a.lastDust = t;
-              SPARK.push({ x: L.x - L.dir * rnd(10, 40) * L.s, y: L.y - rnd(0, 6) * L.s, vx: -L.dir * rnd(10, 30), vy: rnd(-40, -15), g: 30, t0: t, life: rnd(0.5, 0.9), r: rnd(1.5, 3.5) * L.s, col: pick(RAINBOW), kind: 'star' });
-            }
-          }
-        }
-        if (L.x > 0 && L.x < W) a.entered = true;
-      }
-      function updateFlyer(f, t, dt){
-        const L = f.L;
-        if (!f.act && f.entered && t >= f.nextActAt){ startAct(f, 'flip', t); f.nextActAt = t + rnd(7, 14); }
-        L.wt += dt * 9;
-        L.x += L.dir * f.speed * U * dt;
-        L.y += Math.sin(t * 0.9 + L.ph) * 12 * dt;
-        if (L.x > 0 && L.x < W) f.entered = true;
-        if (f.lastTrail < t - 0.045){
-          f.lastTrail = t;
-          SPARK.push({ x: L.x - L.dir * 44 * L.s, y: L.y - 52 * L.s + rnd(-8, 8) * L.s, vx: -L.dir * 8, vy: rnd(8, 20), g: 6, t0: t, life: rnd(0.9, 1.5), r: rnd(1.6, 3.4) * L.s, col: RAINBOW[Math.floor(t * 9) % 6], kind: Math.random() < 0.4 ? 'star' : 'dot' });
+      // soft ground shadows under the roaming unicorns — the canvas reads each DOM
+      // actor's live box and paints an ellipse at its hooves, leaning away from
+      // the sun and fading at night (the sky flyer casts none)
+      function drawActorShadows(L, cel){
+        if (!ROAMERS.length) return;
+        const lean = cel.sun ? (0.5 - clamp(cel.sp, 0, 1)) * 0.12 : 0;
+        ctx.fillStyle = 'rgba(40,10,50,' + (0.10 + 0.14 * L.daylight).toFixed(3) + ')';
+        for (const inst of ROAMERS){
+          if (!inst.active || inst.isFlyer) continue;
+          const r = inst._horse.getBoundingClientRect();
+          if (!(r.width > 0)) continue;
+          ctx.beginPath(); ctx.ellipse(r.left + r.width * (0.5 + lean), r.bottom - r.height * 0.02, r.width * 0.40, r.height * 0.055, 0, 0, TAU); ctx.fill();
         }
       }
-      function drawActor(c, a, t){
-        const L = a.L, fx = actFx(a, t);
-        if (!fx){ drawUni(c, L, t); return; }
-        c.save();
-        if (fx.rot){ const py = L.y + (fx.pivot || 0) * L.s; c.translate(L.x, py); c.rotate(fx.rot); c.translate(-L.x, -py); }
-        const sy = L.y; L.y += fx.yOff;
-        drawUni(c, L, t);
-        L.y = sy;
-        c.restore();
+      // the castle's ground line rides the canvas hill top (0.86 W / 0.63 H)
+      function placeCastle(){
+        if (!castleInst) return;
+        castleInst.setPos(86, 63);
+        castleInst.setScale(Math.max(0.40, Math.min(0.62, 0.62 * Math.min(1, W / 1100))));
       }
-      function checkHearts(t){
-        const A = HERD.filter(a => a.kind === 'adult');
-        for (let i = 0; i < A.length; i++) for (let j = i + 1; j < A.length; j++){
-          const a = A[i], b = A[j], left = a.L.x <= b.L.x ? a : b, right = left === a ? b : a;
-          if (!(left.L.dir > 0 && right.L.dir < 0)) continue;
-          const gap = (right.L.x - 62 * right.L.s) - (left.L.x + 62 * left.L.s), key = a.id + '-' + b.id;
-          if (gap < 16 && gap > -40 && !HEARTS.some(h => h.key === key)){
-            const s = Math.max(left.L.s, right.L.s);
-            HEARTS.push({ key, t0: t, x: (left.L.x + right.L.x) / 2, y: Math.min(left.L.y, right.L.y) - 120 * s, r: 9 * s });
-          }
+      // ── the waterfall's WATER: the original valley's particle falls (unicorns/
+      //    waterfall.item.js) in a DOM stage over the canvas cliff, sized to FALL;
+      //    aqua by default, RAINBOW water for 7 s when the falls are clicked
+      const WF_AQUA = { hueMin: 185, hueMax: 210, saturation: [40, 70], lightness: [55, 80], margin: 4, poolY: 14 };
+      const WF_RAINBOW = { hueMin: 0, hueMax: 360, saturation: [75, 95], lightness: [55, 75], margin: 4, poolY: 14 };
+      function startWaterfall(opts){
+        if (!window.WaterfallFX || !wfStage) return;
+        if (wfCleanup) wfCleanup();
+        wfOpts = opts;
+        wfCleanup = window.WaterfallFX.init({ stage: wfStage, opts });
+      }
+      function placeWaterfall(){
+        if (!wfStage) return;
+        const F = FALL;
+        wfStage.style.left = F.x0 + 'px'; wfStage.style.top = F.yTop + 'px';
+        wfStage.style.width = (F.x1 - F.x0) + 'px'; wfStage.style.height = (F.yBot - F.yTop + H * 0.012) + 'px';
+        if (wfCleanup) startWaterfall(wfOpts);                  // a fresh canvas for the new size
+      }
+      function mountWaterfall(){
+        if (stopped || !window.WaterfallFX || wfStage || !actorLayer) return;
+        wfStage = doc.createElement('div');
+        wfStage.style.cssText = 'position:fixed;pointer-events:none;overflow:hidden';
+        actorLayer.insertBefore(wfStage, actorLayer.firstChild);    // under the unicorns, tinted with them
+        placeWaterfall(); startWaterfall(WF_AQUA);
+      }
+      function rainbowFall(){
+        const now = performance.now();
+        if (now < wfRainbowUntil || !wfCleanup) return;
+        wfRainbowUntil = now + 7000;
+        startWaterfall(WF_RAINBOW);
+        setTimeout(() => { if (!stopped && wfCleanup) startWaterfall(WF_AQUA); }, 7000);
+      }
+      // ── the bunnies: the original valley's two hopping rabbits (unicorns/bunny.item.js),
+      //    roaming the front meadow in little parabolic hops; a click startles them
+      function setupBunnies(){
+        if (stopped || !window.Bunny || !actorLayer || BUNNIES.length) return;
+        const B = window.Bunny;
+        const b1 = B.place(actorLayer, { size: 8, z: 4 });
+        b1.roam({ bandMinPct: 3, bandMaxPct: 8, hopPct: 2.4, hopSec: 0.5, restMinSec: 0.15, restMaxSec: 0.6, waitMinSec: 1, waitMaxSec: 3, startOnScreen: true });
+        const b2 = B.place(actorLayer, { size: 6, z: 4 });
+        b2.roam({ bandMinPct: 4.5, bandMaxPct: 8, hopPct: 2.0, hopSec: 0.5, restMinSec: 0.2, restMaxSec: 0.7, waitMinSec: 1, waitMaxSec: 3, startOnScreen: true });
+        BUNNIES.push(b1, b2);
+      }
+      function bunnyAt(x, y){
+        for (const b of BUNNIES){
+          const r = b.el.getBoundingClientRect();
+          if (r.width > 0 && x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8) return b;
         }
+        return null;
       }
 
       // ── clickable magic ──
@@ -980,41 +920,54 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         }
         ctx.restore();
       }
-      function drawRainbow(t, L){
-        const a = L.rainbowA; if (a < 0.01) return;
-        const { cx, cy, r } = RB, bw = r * 0.032;
-        ctx.save(); ctx.lineCap = 'butt';
-        for (let i = 0; i < 6; i++){
-          ctx.strokeStyle = withA(RAINBOW[i], a); ctx.lineWidth = bw + 0.6;
-          ctx.beginPath(); ctx.arc(cx, cy, r - bw * (i + 0.5), Math.PI, TAU); ctx.stroke();
+      // ── the rainbow — the ORIGINAL valley's look: six thin translucent bands
+      //    with gaps between them, softly blurred, breathing (opacity .78 → 1 over
+      //    6 s). Painted once per look into a half-res layer (that is the blur) and
+      //    drawn every frame behind the mountains; a faint moonbow at night. Band
+      //    radii are fractions of Rg = RB.r / 0.89 — the outer pink edge is RB.r.
+      const RB_BANDS = [[0.575, [199, 125, 255, 0.55]], [0.635, [125, 196, 255, 0.58]], [0.695, [138, 224, 138, 0.60]],
+                        [0.755, [255, 224, 102, 0.66]], [0.815, [255, 164, 92, 0.66]], [0.875, [255, 111, 145, 0.68]]];
+      function paintRainbow(L){
+        const c = rbL.cx, sc = 0.5, k = clamp(L.rainbowA / 0.5, 0, 1.15);
+        c.clearRect(0, 0, rbL.cv.width, rbL.cv.height);
+        if (k < 0.02) return;
+        const Rg = RB.r / 0.89;
+        c.save();
+        try { c.filter = 'blur(' + (Math.min(W, H) * 0.0045 * sc).toFixed(2) + 'px)'; } catch (e){}
+        c.lineCap = 'butt'; c.lineWidth = Rg * 0.03 * sc;
+        for (const [f, col] of RB_BANDS){
+          c.strokeStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + (col[3] * k).toFixed(3) + ')';
+          c.beginPath(); c.arc(RB.cx * sc, RB.cy * sc, Rg * f * sc, Math.PI, TAU); c.stroke();
         }
+        c.restore();
+      }
+      function drawRainbow(t, L){
+        if (L.rainbowA < 0.01 || !rbL) return;
+        if (rbKey !== lookKey){ rbKey = lookKey; paintRainbow(L); }
+        const breathe = 0.78 + 0.22 * (0.5 + 0.5 * Math.sin(t * TAU / 12));
+        ctx.save(); ctx.globalAlpha = breathe;
+        ctx.drawImage(rbL.cv, 0, 0, W, H);
         if (rainFx){
           const p = (t - rainFx.t0) / 2.8;
           if (p >= 1) rainFx = null;
           else {
-            const an = Math.PI + p * Math.PI, hw = 0.22;
-            ctx.strokeStyle = 'rgba(255,255,255,' + (0.7 * Math.sin(p * Math.PI)).toFixed(3) + ')'; ctx.lineWidth = bw * 6; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.arc(cx, cy, r - bw * 3, an - hw, an + hw); ctx.stroke();
-            if ((rainFx.last || 0) < t - 0.07){ rainFx.last = t; const rr = r - bw * rnd(0.5, 5.5); SPARK.push({ x: cx + Math.cos(an) * rr, y: cy + Math.sin(an) * rr, vx: rnd(-20, 20), vy: rnd(-40, -10), g: 20, t0: t, life: 0.9, r: rnd(3, 6), col: '#ffffff', kind: 'star' }); }
+            // the shine: the whole arc flares brighter while a white sweep runs along it and stars pop off the bands
+            ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.55 * Math.sin(p * Math.PI);
+            ctx.drawImage(rbL.cv, 0, 0, W, H);
+            ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+            const { cx, cy, r } = RB, Rg = r / 0.89, an = Math.PI + p * Math.PI, hw = 0.22;
+            ctx.strokeStyle = 'rgba(255,255,255,' + (0.6 * Math.sin(p * Math.PI)).toFixed(3) + ')'; ctx.lineWidth = Rg * 0.33; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.arc(cx, cy, Rg * 0.725, an - hw, an + hw); ctx.stroke();
+            if ((rainFx.last || 0) < t - 0.07){ rainFx.last = t; const rr = Rg * rnd(0.56, 0.89); SPARK.push({ x: cx + Math.cos(an) * rr, y: cy + Math.sin(an) * rr, vx: rnd(-20, 20), vy: rnd(-40, -10), g: 20, t0: t, life: 0.9, r: rnd(3, 6), col: pick(['#ffffff', '#ffd76e', '#ff9ecb', '#9ad4ff', '#b6f0c8']), kind: 'star' }); }
           }
         }
         ctx.restore();
       }
       function drawWaterfall(t, L){
-        const F = FALL, w = F.x1 - F.x0, h = F.yBot - F.yTop;
-        ctx.fillStyle = lg(ctx, F.x0, 0, F.x1, 0, [[0, withA(L.water, 0.55)], [0.5, withA(mixCol(L.water, '#ffffff', 0.35), 0.85)], [1, withA(L.water, 0.55)]]);
-        ctx.fillRect(F.x0, F.yTop, w, h);
-        ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineCap = 'round';
-        for (let i = 0; i < 9; i++){
-          const fx = F.x0 + w * (0.06 + 0.88 * psr(i + 900)), sp = 260 + psr(i + 910) * 200, len = h * (0.12 + psr(i + 920) * 0.12);
-          const y = F.yTop + ((t * sp + psr(i + 930) * h * 2) % (h + len)) - len;
-          const ya = Math.max(F.yTop, y), yb = Math.min(F.yBot, y + len);
-          if (yb <= ya) continue;
-          ctx.lineWidth = 1.2 + psr(i + 940) * 2; ctx.globalAlpha = 0.35 + 0.45 * psr(i + 950);
-          ctx.beginPath(); ctx.moveTo(fx, ya); ctx.lineTo(fx, yb); ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-        // the lip of the falls + mist at the foot
+        // the falling WATER is the original valley's particle waterfall (WaterfallFX in a
+        // DOM stage over the cliff, see mountWaterfall); the canvas paints the lip of
+        // the falls, the mist at the foot and the ripples where it lands
+        const F = FALL, w = F.x1 - F.x0;
         ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse((F.x0 + F.x1) / 2, F.yTop + 2, w * 0.55, 3.5, 0, 0, TAU); ctx.fill();
         for (let i = 0; i < 6; i++){
           const mx = F.x0 + w * (0.1 + 0.8 * psr(i + 960)) + Math.sin(t * 1.3 + i) * 6, my = F.yBot - 4 - Math.abs(Math.sin(t * 1.1 + i * 1.3)) * 10, r = (8 + psr(i + 970) * 8) * U * 0.6;
@@ -1042,25 +995,15 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       function drawCastleLive(t, L){
         const C = CASTLE, fl = castleFx ? clamp(1 - (t - castleFx.t0) / 2.6, 0, 1) : 0;
         if (castleFx && fl <= 0) castleFx = null;
-        const glow = clamp((1 - L.daylight) * 1.3, 0, 1) * 0.85 + fl * Math.sin(fl * Math.PI) * 0.9;
-        if (glow > 0.03){
-          for (const w of C.windows){
-            ctx.fillStyle = rg(ctx, w.x, w.y, 0, w.w * 2.6, [[0, 'rgba(255,225,140,' + (0.55 * glow).toFixed(3) + ')'], [1, 'rgba(255,225,140,0)']]);
-            ctx.beginPath(); ctx.arc(w.x, w.y, w.w * 2.6, 0, TAU); ctx.fill();
-            ctx.fillStyle = 'rgba(255,238,170,' + (0.95 * glow).toFixed(3) + ')';
-            ctx.beginPath(); ctx.moveTo(w.x - w.w / 2, w.y + w.h / 2); ctx.lineTo(w.x - w.w / 2, w.y - w.h / 4); ctx.arc(w.x, w.y - w.h / 4, w.w / 2, Math.PI, 0); ctx.lineTo(w.x + w.w / 2, w.y + w.h / 2); ctx.closePath(); ctx.fill();
-          }
-        }
-        if (fl > 0){
+        if (fl > 0){                                                 // the golden window-flare halo behind the castle
           ctx.fillStyle = rg(ctx, C.cx, C.by - 110 * C.k, 0, 200 * C.k, [[0, 'rgba(255,230,180,' + (0.28 * Math.sin(fl * Math.PI)).toFixed(3) + ')'], [1, 'rgba(255,230,180,0)']]);
           ctx.beginPath(); ctx.arc(C.cx, C.by - 110 * C.k, 200 * C.k, 0, TAU); ctx.fill();
         }
-        // fluttering pennants
-        for (const f of C.flags){
-          const wv = Math.sin(t * 6 + f.ph) * 0.18;
-          ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = Math.max(1, C.k); ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.x, f.y - f.h * 1.5); ctx.stroke();
-          ctx.fillStyle = f.ph % 2 > 1 ? '#ff6fb5' : '#c77dff';
-          ctx.beginPath(); ctx.moveTo(f.x, f.y - f.h * 1.5); ctx.quadraticCurveTo(f.x + f.h * 0.7, f.y - f.h * (1.3 - wv), f.x + f.h * 1.2, f.y - f.h * (1.15 + wv)); ctx.lineTo(f.x, f.y - f.h * 0.8); ctx.closePath(); ctx.fill();
+        // a soft warm glow over the castle at night — its lit windows spilling light
+        const night = clamp((1 - L.daylight) * 1.3, 0, 1);
+        if (night > 0.03){
+          ctx.fillStyle = rg(ctx, C.cx, C.by - 90 * C.k, 0, 150 * C.k, [[0, 'rgba(255,215,140,' + (0.16 * night).toFixed(3) + ')'], [1, 'rgba(255,215,140,0)']]);
+          ctx.beginPath(); ctx.arc(C.cx, C.by - 90 * C.k, 150 * C.k, 0, TAU); ctx.fill();
         }
       }
       function drawFireworks(t){
@@ -1233,33 +1176,10 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         // ambient celebrations
         if (t >= nextAmbientAt){ nextAmbientAt = t + rnd(12, 30); if (Math.random() < 0.5) rainFx = { t0: t }; else castleFx = { t0: t }; }
         if (t >= nextFishAt) fishLeap(t);
-        // spawn cadence: keep the meadow alive, never crowded
-        const adults = HERD.filter(a => a.kind === 'adult').length;
-        if (t >= nextGroupAt && adults < 2 && HERD.length < 4){ spawnGroup(t, {}); nextGroupAt = t + rnd(6, 14); }
-        if (t >= nextFlyerAt && FLYERS.length < 1){ spawnFlyer(t); nextFlyerAt = t + rnd(18, 40); }
-        for (const a of HERD) updateWalker(a, t, dt);
-        for (const f of FLYERS) updateFlyer(f, t, dt);
-        const gone = new Set();
-        HERD.forEach(a => { if (a.kind === 'adult' && a.entered){ const pad = UNI.WIDTH * a.L.s * 1.6 + 120; if (a.L.x < -pad || a.L.x > W + pad) gone.add(a); } });
-        HERD = HERD.filter(a => !gone.has(a) && !gone.has(a.parent));
-        FLYERS = FLYERS.filter(f => { if (!f.entered) return true; const pad = UNI.WIDTH * f.L.s * 1.6 + 160; return f.L.x > -pad && f.L.x < W + pad; });
-        checkHearts(t);
-        // ground shadows lean away from the sun; fainter at night
-        const walkers = HERD.slice().sort((a, b) => a.L.y - b.L.y), shDx = cel.sun ? (0.5 - clamp(cel.sp, 0, 1)) * 26 : 0;
-        for (const a of walkers){
-          const fx = a.act && a.act.type === 'jump' ? 1 - Math.sin((t - a.act.t0) / ACT_DUR.jump * Math.PI) * 0.4 : 1;
-          ctx.fillStyle = 'rgba(40,10,50,' + ((0.10 + 0.16 * L.daylight) * fx).toFixed(3) + ')';
-          ctx.beginPath(); ctx.ellipse(a.L.x + shDx * a.L.s * 0.5, a.L.y + 1.5 * a.L.s, 46 * a.L.s * fx, 6 * a.L.s, 0, 0, TAU); ctx.fill();
-        }
-        // actors on their own layer, tinted by the hour
-        const ac = actL.cx;
-        ac.clearRect(0, 0, W, H);
-        for (const f of FLYERS) drawActor(ac, f, t);
-        for (const a of walkers) drawActor(ac, a, t);
-        if (L.tint[3] > 0.004){
-          ac.save(); ac.globalCompositeOperation = 'source-atop'; ac.fillStyle = rgbaOf(L.tint); ac.fillRect(0, 0, W, H); ac.restore();
-        }
-        ctx.drawImage(actL.cv, 0, 0, W, H);
+        // the unicorns and the castle are DOM layers above this canvas — the canvas
+        // gives them ground shadows and follows the hour with their tint
+        drawActorShadows(L, cel);
+        tintActors(L);
         drawFireworks(t); drawFish(t); drawBlooms(t); drawFx(t); drawSpark(t);
         drawForeground(t, L); drawButterflies(t, dt, L); drawFireflies(t, L); drawPetals(t, dt); drawMotes(t);
         ctx.drawImage(vigL.cv, 0, 0, W, H);
@@ -1270,44 +1190,32 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         if (t0 === null) t0 = ts;
         rafId = requestAnimationFrame(frame);          // scheduled first: a bad frame never kills the loop
         try { renderFrame((ts - t0) / 1000); }
-        catch (e){ if (!renderErr){ renderErr = true; console.error('unicorns2 frame error', e); } }
+        catch (e){ if (!renderErr){ renderErr = true; console.error('unicorns3 frame error', e); } }
       }
 
       // ── layout / input ──
       function resize(){
-        const first = !W;
-        const keep = HERD.map(a => ({ a, fx: a.L.x / W, fy: a.L.y / H, su: a.L.s / U }));
-        const keepF = FLYERS.map(f => ({ f, fx: f.L.x / W, fy: f.L.y / H, su: f.L.s / U }));
         W = innerWidth; H = innerHeight;
         canvas.width = W * DPR; canvas.height = H * DPR;
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-        skyL = makeLayer(); sceneL = makeLayer(); actL = makeLayer(); vigL = makeLayer();
+        skyL = makeLayer(); sceneL = makeLayer(); vigL = makeLayer();
+        rbL = (() => { const cv = doc.createElement('canvas'); cv.width = Math.ceil(W / 2); cv.height = Math.ceil(H / 2); return { cv, cx: cv.getContext('2d') }; })(); rbKey = null;
         buildScene();
-        if (!first){
-          keep.forEach(({ a, fx, fy, su }) => { a.L.x = fx * W; a.L.y = fy * H; a.L.s = su * U; HERD.push(a); });
-          keepF.forEach(({ f, fx, fy, su }) => { f.L.x = fx * W; f.L.y = fy * H; f.L.s = su * U; FLYERS.push(f); });
-        } else {
-          // the valley is never empty: a mother + foal at the left, a single at the right
-          const a = spawnGroup(0, { x: W * 0.12, fromLeft: true, foal: true, lane: 0.55, gallop: false });
-          if (a) a.nextActAt = 2;
-          const b = spawnGroup(0, { x: W * 0.72, fromLeft: false, foal: false, lane: 0.25, gallop: false });
-          if (b) b.nextActAt = 5;
-          nextGroupAt = 14; nextFlyerAt = 6;
-        }
-        paintVignette(vigL.cx); lookKey = null; repaintIfNeeded();
+        placeCastle(); placeWaterfall();
+        paintVignette(vigL.cx); lookKey = null; lastTintKey = null; repaintIfNeeded();
       }
       const onClick = e => {
         if (stopped) return;
         if (e.target.closest && e.target.closest('.wrap,button,input,#particles,.special-uni,#games-menu,#theme-menu,#fw-ov,#sad-ov,#report-ov')) return;
         const mx = e.clientX, my = e.clientY, t = lastT;
-        let hit = null;
-        for (const a of HERD.concat(FLYERS)){
-          const hw = UNI.WIDTH * a.L.s, hh = UNI.HEIGHT * a.L.s;
-          if (mx > a.L.x - hw && mx < a.L.x + hw && my > a.L.y - hh && my < a.L.y + 8 * a.L.s) if (!hit || a.L.y > hit.L.y) hit = a;
+        const hit = unicornAt(mx, my);                         // the unicorn always wins
+        if (hit){ uniReact(hit); return; }
+        const bn = bunnyAt(mx, my);                             // a bunny → a startled spring
+        if (bn){ bn.startle(); return; }
+        if (castleInst){                                        // the castle's own box (its inner 28–72 % × 12–88 %)
+          const r = castleInst.el.getBoundingClientRect();
+          if (mx >= r.left + r.width * 0.28 && mx <= r.right - r.width * 0.28 && my >= r.top + r.height * 0.12 && my <= r.top + r.height * 0.88){ fireworks(t); return; }
         }
-        if (hit){ if (!hit.act) startAct(hit, pickAct(hit, true), t); return; }
-        const C = CASTLE;
-        if (mx > C.box[0] && mx < C.box[2] && my > C.box[1] && my < C.box[3]){ fireworks(t); return; }
         const p = POND;
         if (Math.pow((mx - p.x) / (p.rx * 1.1), 2) + Math.pow((my - p.y) / (p.ry * 1.6), 2) < 1){ fishLeap(t); return; }
         const cel = celestial(), R = Math.min(W, H) * 0.12;
@@ -1316,6 +1224,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
                    : (cel.moon && curLook.starA > 0.05 && Math.hypot(mx - cel.moon.x, my - cel.moon.y) < R) ? 'moon'
                    : onFall ? 'fall' : null;
         if (body){
+          if (body === 'fall') rainbowFall();                   // the falls run rainbow water for a while
           if (body === 'sun'){ sunBoost = { t0: t, extra: sunBoost ? sunBoost.extra + (t - sunBoost.t0) * 2.2 * clamp(1 - (t - sunBoost.t0) / 3, 0, 1) : 0 }; skyBurst(cel.sun.x, cel.sun.y, t); }
           if (!todTween){ const next = (Math.floor(tod / P) + 1) * P + P / 2; todTween = { from: tod, to: next, t0: t, dur: 2.6 }; }
           return;
@@ -1326,14 +1235,30 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         }
         // the rainbow's band
         const d = Math.hypot(mx - RB.cx, my - RB.cy);
-        if (my < RB.cy && d < RB.r + 8 && d > RB.r - RB.r * 0.032 * 6 - 8){ rainFx = { t0: t }; return; }
+        if (my < RB.cy && d < RB.r + 8 && d > RB.r * 0.6){ rainFx = { t0: t }; return; }
         if (my > H * 0.66) bloom(mx, my, t); else skyBurst(mx, my, t);
       };
+
+      // the DOM layers above the canvas: the castle (on its hill), then the unicorns
+      castleLayer = doc.createElement('div');
+      castleLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden';
+      stage.appendChild(castleLayer);
+      actorLayer = doc.createElement('div');
+      actorLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden';
+      stage.appendChild(actorLayer);
+      window.__ucFxRoot = actorLayer;                          // the unicorn item paints its click-fx here (behind the card)
 
       resize();
       addEventListener('resize', resize);
       doc.addEventListener('click', onClick);
       rafId = requestAnimationFrame(frame);
+      needItems(() => {
+        if (stopped) return;
+        if (window.Castle && !castleInst){ castleInst = window.Castle.place(castleLayer, { z: 2 }); placeCastle(); lastTintKey = null; }
+        mountWaterfall();
+        setupBunnies();
+        setupUnicorns();
+      });
 
       // ── "rumi" strolls across the meadow every few minutes
       rumiLayer = doc.createElement('div');
@@ -1352,6 +1277,12 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         stopped = true;
         if (rafId) cancelAnimationFrame(rafId);
         if (rumiPatrol) rumiPatrol.stop();
+        ROAMERS.forEach(r => r.remove()); ROAMERS = [];
+        BUNNIES.forEach(b => b.remove()); BUNNIES = [];
+        if (wfCleanup){ wfCleanup(); wfCleanup = null; }
+        if (castleInst){ castleInst.remove(); castleInst = null; }
+        if (window.__ucFxRoot === actorLayer){ try { delete window.__ucFxRoot; } catch (e){ window.__ucFxRoot = null; } }
+        if (window._uni3 === hooks){ try { delete window._uni3; } catch (e){ window._uni3 = null; } }
         removeEventListener('resize', resize);
         doc.removeEventListener('click', onClick);
         stage.innerHTML = '';

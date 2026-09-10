@@ -1,6 +1,6 @@
 /* ── Frozen aid variant — SNOWMAN number line + a JAR OF SNOWFLAKES ─────────
    Loaded dynamically by game/js/bg-loader.js when the ❄️ frozen background
-   is active (backgrounds/frozen.bg.js → aids:'frozen').
+   is active (backgrounds/aurora.bg.js → aids:'frozen').
 
    It REUSES the classic aid art (the glass jar container, the flower
    garden-upgrade, the number-line FX) and swaps ONLY the character pieces:

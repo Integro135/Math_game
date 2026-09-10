@@ -1,5 +1,5 @@
 /* ── Unicorn aid variant — unicorn number line + a crystal cupcake jar ──────
-   For the unicorn-valley background (BACKGROUNDS.unicorns.aids='unicorns'
+   For the unicorn-valley background (BACKGROUNDS.unicorns3.aids='unicorns'
    when the background is ported — see backgrounds/README.md).
    A unicorn gallops the number line (rainbow trail, rainbow fireworks),
    and the counting jar becomes a crystal candy jar that fills with

@@ -4,10 +4,10 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns.bg.js`, `dubai2.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `frozen.bg.js`, `maldives.bg.js` | Loaded by the game at runtime (`dubai.bg.js` is the legacy Dubai scene — nothing loads it) |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai2.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives.bg.js` | Loaded by the game at runtime (`dubai.bg.js` is the legacy Dubai scene — nothing loads it; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
-| **Built, NOT adopted** | `unicorns2.bg.js`, `unicorns2.html`, `_verify_unicorns2.py` | A 2026-09 from-scratch canvas rebuild of the unicorn valley (one module, full day cycle, canvas unicorn rig). Reviewed and **not** kept: the original `unicorns.bg.js` scene reads better, so `girls` still maps to `unicorns`. Nothing loads these; see its section below. |
+| **Unicorn valley** | `unicorns3.bg.js` + `unicorns/*.item.js` | `girls` → **`unicorns3`**: v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
 | **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
 | **Dubai v2** (`dubai2.bg.js` + `dubai2.html`) | `dubai2.bg.js`, `dubai2.html` | The Dubai dusk scene recreated from scratch — same design space, constants and cadences as the legacy scene, city and hallmarks redrawn (Burj Khalifa, Burj Al Arab, Cayan, Emirates Towers, Museum of the Future, Dubai Frame, Ain Dubai), mirrored in rippled water. Theme `dubai` → `dubai2`. **Full section below.** |
 | **Standalone study** (`blackhole.html`) | `blackhole.html` | The physics study the space hole came from: a GR ray-traced black hole in one WebGL2 file, not wired into the game — drag to spin the hole, wheel to zoom, quality/bloom/jets/dust toggles. **Full section below.** |
@@ -27,7 +27,7 @@ scene calls `window.BG_LOADING.done()` from its first rendered frame — with a
 visible and playable while the backdrop loads. Scenes that don't opt in show no
 veil at all.
 
-Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns`,
+Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns3`,
 `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
 (🏙️, 🦁 and 🦕 are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
@@ -155,46 +155,15 @@ never position jumps).
 
 ---
 
-## aurora.html — arctic night under the northern lights
+## aurora.html — dev harness for the ❄️ scene
 
-Standalone playground (`aurora.bg.js` + thin `aurora.html` harness). **Not yet
-game-integrated** — it already wears the module shape (`BACKGROUNDS.aurora`,
-`skin:'aurora'`, `aids:'classic'`) and the document-click + UI-filter contract,
-but no `skin`/theme/`themes.css` rule exists yet; wire those per the porting
-checklist when promoting it.
+`aurora.html` is the thin harness for **`aurora.bg.js`** — the polar-night scene
+that now serves the ❄️ theme (it replaced `frozen.bg.js`). See the full section
+further down: **`aurora.bg.js` — AURORA & ICE**.
 
-Cheapest scene in the folder — **no articulated rigs**, just gradients +
-particles + ribbon math. Static prerender (`paintScene`): deep-night sky
-gradient, crescent moon + glow, ~280 dust stars, two snow-capped mountain
-`RIDGES` (generated once in `buildScene`), a far-shore `PINES` treeline, and a
-frozen lake. Dynamic layer: the aurora `RIBBONS`, twinkling `STARS`, drifting
-`SNOW`, shooting-star `METEORS`, and a lake reflection.
-
-**Aurora curtains** (`RIBBONS`/`drawAurora`): each ribbon's top edge is a sum of
-sines (`ribTop`); the curtain is drawn as wavy vertical-gradient strips
-(`step=9`) under `globalCompositeOperation='lighter'` so overlaps glow, with a
-moving `sin(x·0.05 + t)` term making vertical rays shimmer across it. Three
-ribbons (green, teal, violet) stacked at different `baseY`.
-
-**Lake reflection** (`drawReflection`): no second render — it strip-blits the
-already-drawn frame onto itself. Each thin destination strip (`S=4·DPR`) samples
-a slightly *higher* source strip, so the copy reads as a vertical mirror; a
-per-strip horizontal wobble = ripples, and alpha fades with depth. Runs under an
-identity transform (device px), so it mirrors the mountains, moon, stars and
-aurora together.
-
-**Click + schedule** (one code path): a meteor crosses on its own every 6–14 s
-and the aurora surges every ~18–34 s; clicking a glowing curtain triggers the
-same 2.6 s brightness+amplitude **surge** (`AURORA_FX.t0` + `clickEnv`, eased
-in/out), and clicking bare sky/lake flings a flurry of shooting stars from the
-tap (`spawnMeteor`). `clickEnv(t0,t,dur)` is the fast-attack/slow-release
-envelope borrowed from `space2.bg.js`.
-
-**Game integration notes (when ported):** the lake bottom ~26% and the aurora
-band (top ~20–60%) are the busy zones; the calm strip is the horizon line
-(mountains/pines, ~mid-frame) — but the scene is symmetric, so the game column
-fits **center** comfortably. Skin direction: deep-navy glass, teal/mint accents
-(`#8ff0d0`-ish), cool white text.
+*(An earlier draft of this section documented a different, ribbon-based aurora
+scene — sum-of-sines curtains, a pine treeline, a strip-blit lake reflection.
+That implementation is not what is on disk; the live one is described below.)*
 
 ---
 
@@ -577,191 +546,96 @@ garden) — set `aids:'reef'` in the module.
 
 ---
 
-## unicorns.html — unicorn valley (the 🦄 theme, integrated)
+## unicorn valley v1 + v2 — REMOVED (everything worth keeping is in unicorns3)
 
-Static prerender (`skyLayer` via `paintScenery`: candy sky, sun halo, three
-mountain ridges with snow caps, rainbow, princess castle on a broad earthen
-**mound that connects down into the foreground hills** so it sits on the ground,
-hills, 90 meadow flowers) + dynamic layer.
+The 🦄 theme went through three scenes; only the third is still in the repo.
 
-**Dynamic systems:** 6 drifting candy `CLOUDS` (white→pink `tint`), 42 twinkling
-`SPARKLES`, 26 falling `PETALS`, 8 rising `HEARTS`, 3 `BUTTERFLIES` (hues
-`#FF6FB5`/`#C77DFF`), **2 winged flyers** (`FLYER`, sparkle ribbon trails),
-**roaming `UNICORNS`** (solo wanderers — `spawnUnicorn`), castle-burst
-butterflies (`CASTLE_BFLY`), an ambient scenery scheduler, click `BURSTS`.
-**Kept light: at most 5 unicorns on screen at once** — 2 sky flyers + 3 roaming
-(`FLYER` length 2, `UNICORNS` length 3).
+- **v1** — a DOM/CSS valley (`unicorns.bg.js` + `unicorns/meadow.scene.js`,
+  harness `unicorns.html`, workshop `unicorns/meadow.html`). Its FIGURES were
+  the best part, and were lifted out into standalone items before it went.
+- **v2** — a from-scratch canvas valley with the full day cycle
+  (`unicorns2.bg.js`, harness `unicorns2.html`, `_verify_unicorns2.py`). Its
+  WORLD was the best part; `unicorns3.bg.js` was derived from its code.
+- **v3** — `unicorns3.bg.js`, the live scene: v2's world carrying v1's
+  figures. Its own section is next.
 
-**Roaming unicorns** (like the savanna herds): each walks the meadow and slips
-out an edge, then a fresh one re-enters from a side (`Object.assign(u,
-spawnUnicorn(false))`), keeping ~5 solo on stage. Mixed colours via `u.pal` —
-the classic white+rainbow (`null`), `CYAN_PAL`, `PINK_PAL` (`UNI_PALS`).
+Both older modules were **deleted in 2026-09**, once v3 replaced them in the
+game and nothing loaded them any more. What outlived them, and where it is:
 
-**The unicorn rig** — `drawUnicorn(x, y, sc, dir, t, ph, pose, opts)`: one
-continuous silhouette + two-segment legs + feathered wings (`drawWing(spread)`);
-poses `'stand'` (idle sway), `'walk'` (diagonal-gait leg swing from `opts.wt`)
-and `'fly'` (gallop legs, full wingspread). `opts` carries the colour palette
-(`body/out/bodyFar/outFar/mane`, defaulting to white+rainbow) and the walk
-clock. Each unicorn wears a heart/star **cutie-mark** emoji on its haunch
-(per-`ph`, counter-flipped so it stays upright facing left). The big sparkly eye
-**blinks** on a per-unicorn cadence (~3.6 s, staggered by `ph`) — the eye squishes
-shut and shows a soft content lid curve, then reopens. The belly/neck shading is
-clipped to the body silhouette so it never spills past the outline.
+| what | where it lives now |
+|---|---|
+| the galloping CSS unicorns (five coats, roam/patrol/glide, click magic) | `unicorns/unicorn.item.js` — workshop `unicorn.html`, regenerated by `_build_unicorn_item.py` |
+| the enchanted CSS castle | `unicorns/castle.item.js` — art workshop `castle.html` |
+| the particle waterfall (`WaterfallFX`, aqua + rainbow water) | `unicorns/waterfall.item.js` — art workshop `waterfall.html` |
+| the hopping bunnies | `unicorns/bunny.item.js` — workshop `bunny.html` |
+| the day cycle, scenery, rainbow look and all the click magic | `unicorns3.bg.js` itself |
+| the fairy | `unicorns/fairy.item.js` — workshop `fairy.item.html`; **not** mounted by v3 |
 
-**Actions** (click + per-unicorn random schedule, same code path):
-- **jump** (0.9 s parabola), **rear up** (1.25 s, pivot on hind hooves),
-  **spin** — an eased 360° somersault around the body centre (`'fly'` legs) — or
-  a **toot** (`drawFarts`), coloured **green or pink at random** per toot
-  (`act.pink`, tagged onto each puff); stored in `u.act {type, t0}`. While acting a unicorn stops
-  walking; otherwise it uses the `'walk'` pose.
-- Flyers: **somersault** — one eased 360° (`f.act`).
-- Schedule: first act 4–16 s after load, then every 8–26 s via `nextActAt`.
-  The random pick is **jump / rear / spin / fart / horn with equal odds**, so a
-  unicorn often fires a bolt/nova from its horn on its own (not only on the 5th
-  click or the 3-min timer). Clicks additionally pop a 14-particle sparkle+heart
-  burst (`BURSTS`).
-- **The castle** → click it for a **butterfly burst**: 16–23 butterflies fly
-  out and flutter away (`spawnCastleButterflies`/`drawCastleButterflies`),
-  alongside the golden window-flare halo (`CASTLEFX`).
-- **The rainbow** → click its upper arch band to make it **shimmer** — a colour
-  pulse sweeps along the arc (`RAINFX`/`drawRainbowFx`, ~3 s).
-- **The sun** (`SUN`, ~0.76W, 0.20H) → clicking it just **spins the sun**
-  (sunspots sweep the disc + corona rays rotate, `sunBoostT`/`drawSunSpin`/
-  `clickEnv`) and pops a sparkle burst. (It no longer launches a sky unicorn.)
-- **Ambient scenery** — independent of clicks, the scene celebrates on its own:
-  every ~10–25 s (then ~15–40 s) a coin-flip fires either the rainbow shimmer
-  (`RAINFX`) or the castle window-flare halo (`CASTLEFX`) — `nextSceneryAt`.
-
-**The horn & its effects** — each unicorn carries a slim spiralled golden horn
-(tapered body with a gold gradient, 7 ridge chevrons; the tip glow + sparkle
-**twinkle only briefly once every ~26 s** on a per-unicorn cycle — `TWK_PERIOD`/
-`twk`, staggered by `ph` — calm and dim in between, not a constant pulse).
-Every **5th click** on a unicorn (`HORN_EVERY`, `hornClicks`) fires a horn
-effect via `fireHornFx(u, t, force)` — randomly a **lightning bolt** (a jagged
-forked spear up-and-forward from the tip, `drawHornBolt`) or a **supernova**
-(ported from `success-supernova.js`, scaled to the horn tip: infall collapse,
-brightening core, shock ring, ejecta, pulsar — `drawHornNova`). Effects live in
-`HORNFX` and draw last (on top, `drawHornFxAll`). Firing sets `u.recoilT0`, so
-the unicorn is **knocked backward** (a ~0.5 s impulse — `recX` shoves it
-opposite its facing, with a small upward kick + backward tilt; applied to the
-drawn body, the rotation pivot and the shadow) for a recoil/kickback look.
-The same effect also fires **periodically — once every 3 minutes**
-(`HORN_AUTO_EVERY_SEC`, `hornTimerStart`): on the tick a random on-stage idle
-unicorn fires (mirrors the scheduled-toot cadence).
-
-**Game integration:** **fully integrated** as the `girls` theme — `unicorns.bg.js`
-registers `BACKGROUNDS.unicorns` with `skin:'unicorns'`, `aids:'unicorns'`, loaded
-on demand by `bg-loader.js`; `unicorns.html` is its thin dev harness. Standing
-unicorns occupy the bottom ~20%; flyers cross the top ~35% — the game column fits
-**center**, between those bands. Skin: white-pink glass (`game/skins/unicorns.skin.css`),
-`#FF6FB5`/`#C77DFF` accents. Aids variant: `aids/unicorns.aids.js` (unicorn number
-line with a rainbow trail + crystal cupcake jar + crystal-flower garden).
+Both scenes' own code is in git history if any of it is ever wanted back.
 
 ---
 
-## unicorns2.bg.js — Unicorn Valley v2 (BUILT, **NOT ADOPTED** — nothing loads it)
+## unicorns3.bg.js — Unicorn Valley v3 (the 🦄 theme, integrated)
 
-> **Status:** written 2026-09 as a from-scratch alternative to the unicorn
-> valley, then **rejected on review** — the original `unicorns.bg.js` scene
-> (section above) reads better, so `_BG_THEMES` keeps `girls→unicorns` and no
-> theme points here. The files stay in the repo as a reference/starting point;
-> delete them if the idea is dropped for good. Everything below describes what
-> the module does when mounted (its harness still runs it standalone).
+Theme `girls` → `unicorns3` (`_BG_THEMES`). **The best of v1 and v2 in one
+module:** the canvas WORLD of `unicorns2.bg.js` — the full DAY CYCLE (dawn /
+day / sunset / night with stars, aurora, fireflies, the moon), lilac
+snow-capped ranges, the rainbow, the cliff + waterfall + pond, rolling flower
+meadows, clouds, petals, sparkles, butterflies, Rumi's stroll, and every click
+effect (fireworks, fish, blooms, glitter, rainbow shimmer, sun / moon /
+waterfall → next hour) — carrying the ORIGINAL scene's figures as DOM layers
+above the canvas:
 
-**`unicorns2.bg.js`** — the unicorn valley rebuilt from scratch as ONE
-self-contained canvas module (no DOM actors, no sub-files), structured like
-`savanna.bg.js`: prerendered sky + scenery layers repainted only while the
-palette drifts, an actor layer tinted by the hour, per-frame ambient life on
-top. Registers `BACKGROUNDS.unicorns2` with `skin:'unicorns'`,
-`aids:'unicorns'` (it reuses the existing skin and aid art unchanged).
-Harness: `unicorns2.html` (Dawn/Day/Sunset/Night jump the clock, Pause,
-Fast ×20, Herd/Flyer spawn, Magic fires every effect, Restart); verify via
-`python backgrounds/_verify_unicorns2.py` (in-game by default; set
-`STANDALONE` to the harness path for the scene alone). Test hooks:
-`window._uni2` — `tod/setTod/setSpeed/phase`, `herd/flyers/spawn/flyer/act`,
-`fx.{rainbow,castle,fish,bloom,glitter}`, `castle/pond/fall` geometry,
-`rumiLayer`.
+- **The unicorns** are v1's CSS galloping rainbow rig
+  (`unicorns/unicorn.item.js`, `window.Unicorn.place`): four gallop runners
+  (pink / sky / mint / night coats), one winged sky flyer and one calm pearl
+  walker, roaming with the item's come-and-go `roam()` (runners 3–13 % up
+  from the bottom, the walker 4–11 %, the flyer 8–28 % down from the top) under
+  a shared on-stage gate (2 at once on desktop, 1 on touch). Clicking one runs
+  the workshop's magic (lightning, coat change, hearts / rainbow / star shower,
+  every few clicks a rainbow toot); the flyer also somersaults. The click-fx
+  layer (`window.__ucFxRoot`) is the scene's actor layer, so it rides behind
+  the game card.
+- **The castle** is v1's enchanted CSS castle, extracted from
+  the (now removed) `meadow.scene.js` into `unicorns/castle.item.js` (`window.Castle.place`;
+  CSS re-namespaced `.uc-castle`, keyframes `uc-castle-*`, its windows keep
+  their warm flicker and the flags their wave). Its ground line is pinned to
+  the canvas castle hill (0.86 W / 0.63 H) and it scales with the window;
+  clicking its box fires the canvas fireworks + flare.
+- **The waterfall's water** is v1's particle falls (`WaterfallFX`, extracted
+  verbatim into `unicorns/waterfall.item.js`): a DOM stage sized to the v2
+  `FALL` rect sits under the unicorns in the actor layer (so it dims with the
+  hour), aqua by default; clicking the falls runs RAINBOW water for 7 s
+  (`rainbowFall`) *and* still fast-forwards the day. The canvas keeps only the
+  lip, the mist and the pond ripples.
+- **The bunnies** are v1's two hopping rabbits (`unicorns/bunny.item.js`,
+  sizes 8 and 6, roaming the front meadow 3–8 % up in parabolic hops); a click
+  startles them (`bunnyAt` → `startle()`).
+- **The rainbow** wears v1's look again: six thin translucent bands with gaps
+  (the meadow's exact colours/alphas at 57.5–87.5 % of `RB.r / 0.89`), blurred
+  ≈ .45 vmin and breathing (.78 → 1 over 6 s), painted once per look into a
+  half-res layer (`paintRainbow`) and drawn every frame — still behind the
+  mountains, still a faint moonbow at night. The click shine flares the whole
+  arc brighter while the white sweep and star pops run along it.
+- **Small improvements to the unicorns without replacing them:** the canvas
+  paints a soft **ground shadow** under each roaming unicorn from its live box
+  (leaning away from the sun, fading at night), and after sundown the actor
+  layer gets a faint **moonlit rim glow**; both actors and castle **dim with
+  the hour** (`tintActors`: brightness/saturation from the look's `daylight`,
+  `Castle.setNight`). The rig itself (blink, mane wave, horn glow, stardust)
+  is untouched.
 
-**The day** — `DAY_SEC` = 240 s, four `LOOKS` keyframes interpolated across a
-0.12-day window at each boundary (`phaseAt`/`lookAt`); the sky + scenery
-layers are repainted only when the blend actually changes
-(`repaintIfNeeded`). **DAWN** (peach-rose-lavender, a big soft sun low at the
-LEFT), **DAY** (candy-blue, cotton clouds, a small bright sun), **SUNSET**
-(pink-gold-violet blaze, the sun sinking at the RIGHT), **NIGHT** (indigo,
-twinkling + shooting stars, a cratered moon in the top-right sky, AURORA
-ribbons, fireflies, glowing mushrooms, lit castle windows; the actors are
-tinted blue-violet via `source-atop`). The sun arc runs left→right (`sunP`);
-the moon rides a lower arc that stays top-right (`moonP`) — both sit beside
-the centred game card at their keyframes. Starts late in the dawn (`tod`
-0.22).
-
-**The valley** (fractions of W/H; the game card covers x 23–77 %, y 0–56 %
-at 1280×800, so every hero sits outside it): two lilac `mountainRange`s with
-snow caps at the horizon (0.63 H); the RAINBOW (`RB`: centre 0.5 W / 0.66 H,
-r = min(0.36 W, 0.58 H), six pastel bands, alpha per look — a faint moonbow
-at night) drawn behind the mountains; the CASTLE on a hill at the RIGHT
-(`castleLayout`/`paintCastle`: keep wall with merlons, a golden gate + heart,
-five towers with purple conical roofs and gold bands, arched windows whose
-positions feed the live night glow, fluttering pennants); the CLIFF at the
-LEFT (`cliffPath`/`paintCliff`: lilac rock with strata, a light→shade
-gradient, bushes, a blossom tree) with the WATERFALL (`FALL`, 0.105–0.15 W ×
-0.48–0.75 H: scrolling streaks, a white lip, pulsing mist, ripples clipped to
-the pond) into the POND (`POND`, 0.13 W / 0.758 H, lily pads; catches the
-sun/moon in `drawPondLight`); four `hillBand`s of meadow with 340 flower
-dots; foreground grass tufts, 14 big swaying flowers, 4 mushrooms. Ambient:
-7 drifting cotton-candy clouds (dimmed at night), 20 falling petals, 30
-twinkling sparkle motes, 4 butterflies by day, 16 fireflies by night, a rose
-vignette.
-
-**The unicorn rig** (`drawUni(c, L, t)`, module scope, rig units × `L.s`;
-`UNI.WIDTH/HEIGHT` for the hit boxes): three parts — `bodyPath`, `neckPath`,
-`headPath` — each stroked with a fat outline first and filled after, so the
-union has one clean outline; the head group is scaled about `HEAD_PIVOT`
-(×1.12 adults, ×1.28 foals — big-headed foals). Two-segment legs
-(`legAngles`/`drawLeg`, hips `LEG_HIND`/`LEG_FRONT`, 21+21 units) with golden
-hooves and a diagonal-pair gait — knees bend on the forward swing, wider and
-faster for `gallop`; in the air (`L.fly`, `L.leap` during a jump) the front
-legs tuck and the hind legs stretch; `L.rear` lifts the front legs pawing
-while the body rotates about the hind hooves; `L.bow` rotates neck + head
-down to graze. A flowing tail (5 strands) and mane (6 strands off the crest
-cubic via `crestPt`, plus a forelock) wave with `t` and stream back when
-moving; the spiralled golden horn (`drawHorn`: gold gradient, 6 ridge
-chevrons) twinkles briefly every ~26 s and glows during horn magic; a big
-eye with lashes that blinks every ~3.6 s (staggered by `L.ph`), blush,
-nostril, smile; a star or heart cutie-mark; feathered wings (`drawWing`, 5
-feathers, flapping) on the flyers. `PALS`: classic white + rainbow mane,
-pink/lilac, lilac/mint, mint/pink, sky/gold, and a rare (8 %) midnight one.
-
-**Cast** — WALKERS (`HERD`, ≤4 incl. foals): groups spawn from an edge
-(`spawnGroup`) in depth lanes (feet at 0.80–0.96 H, scale by lane), singles
-or mother + foal (the foal trots behind its parent — `updateWalker` lerps to
-a spot behind — and copies its jumps a beat later via `mimicAt`); ~30 %
-gallop with rainbow stardust from the hooves; the valley opens with a pair
-at the left and a single at the right and never empties (cadence
-`nextGroupAt` while adults < 2). FLYERS (`FLYERS`, ≤2): winged unicorns
-cross the sky at 0.10–0.33 H trailing a rainbow sparkle ribbon and
-somersault (`flip`). Acts (`ACT_DUR`, `startAct`/`pickAct`/`actFx`, on a
-schedule AND on click): **jump** (parabola, legs stretched, dust), **rear**,
-**horn** (rainbow `RINGS` + 16 sparkles + 3 white stars from `hornTip`),
-**toot** (rainbow `PUFFS` from the rear + an embarrassed shimmy), **graze**
-(scheduled only). ❤ (`HEARTS`, drawn hearts) when two adults meet face to
-face. Ground shadows lean away from the sun and fade at night.
-
-**Clicks** (document listener + the game-UI filter, `onClick`): a unicorn →
-act · the castle box → `fireworks` (3 staggered bursts + rings + a window
-flare) · the pond → `fishLeap` (1–3 rainbow fish arcs with splashes) · the
-SUN / MOON / WATERFALL → tween the clock to the next phase centre (2.6 s; the
-falls are always visible beside the card) — the sun also spins its rays · a
-cloud → `glitter` rain · the rainbow band → `rainFx` shimmer sweep · the
-meadow (y > 0.66 H) → `bloom` (6–9 flowers grow where you click, fade after
-~10 s) · the sky → `skyBurst`. Ambient on its own every 12–30 s: the rainbow
-shimmers or the castle windows flare; fish leap every 25–50 s. "Rumi"
-(`rumi/chibi-walker.js`, loaded relative to this file, warmed by
-`preload()`) strolls the meadow every 2–4 min, first after 1–3 min.
-
-The frame loop schedules the next rAF before rendering and logs a render
-error once, so a bad frame can never freeze the valley. `cleanup()` stops the
-loop, Rumi's patrol and both listeners and empties the stage.
+Built from the (now deleted) unicorns2 by a generator (the canvas cast, `paintCastle` and the
+castle's live windows/flags were removed; the DOM layers, `setupUnicorns`, `setupBunnies`, `mountWaterfall`/`rainbowFall`, `paintRainbow`,
+`unicornAt`/`uniReact`, `placeCastle`, `drawActorShadows`, `tintActors` were
+added). Registers `BACKGROUNDS.unicorns3` with `skin:'unicorns'`,
+`aids:'unicorns'`; `preload()` warms Rumi and the four items (unicorn, castle, waterfall, bunny). Harness:
+`unicorns3.html` (Dawn/Day/Sunset/Night, Pause, Fast, Magic = scenery fx +
+every on-stage unicorn's magic, Restart); verify via `_verify_unicorns3.py`
+(in-game by default; set `STANDALONE` to the harness path for the scene alone;
+four looks to `c:/tmp/unicorns3`). Test hooks: `window._uni3` —
+`tod/setTod/setSpeed/phase`, `unicorns/onStage/magic(i)`, `bunnies`, `wf`, `castleEl`,
+`fx.{rainbow,rainbowFall,castle,fish,bloom,glitter}`, `castle/pond/fall`, `rumiLayer`.
 
 ---
 
@@ -1172,3 +1046,119 @@ on a BLANK studio backdrop; tabs, Walk/Act/Flip/Coat/BG/Size,
 Verify via `_verify_dinos.py` (idle + mid-action stills of each, plus the
 parade, to `c:\tmp\dino_rigs`). These rigs ARE the game's dinosaurs now:
 `dinosaurs3.bg.js` loads them on demand.
+
+## aurora.bg.js — AURORA & ICE (the ❄️ theme, integrated)
+
+A polar night over a frozen lake. **It replaced `frozen.bg.js`** as the ❄️
+theme's scene and REUSES that theme's skin and aids, so the wiring was a
+one-word change: `_BG_THEMES.frozen → 'aurora'` (themes.js). Registers
+`window.BACKGROUNDS.aurora = { skin: 'frozen', aids: 'frozen', init({stage}) →
+cleanup }`; `THEMES.frozen`, `body.theme-frozen`, the ❄️ menu button and the
+toggle-cycle entry are unchanged, and `game/css/themes.css` carries the
+`body.theme-frozen #bg` load-flash gradient (now the aurora night sky).
+Mostly canvas, plus ONE DOM layer for Olaf (see below).
+
+**The picture:** a deep indigo sky with a faint Milky Way and ~320 stars (the
+bright ones twinkle, the brightest with a cross flare), a full moon with an
+ICE HALO (22° ring, faintly rainbow-edged) top right. THE AURORA: three
+curtains — a bright green main arc with a sharp lower edge fading to teal and
+violet, a cooler cyan arc, a faint pink/violet veil above — drawn as ~450
+vertical rays per frame whose brightness, height and position follow layered
+value noise (`fbm`): folds, drifting rays of uneven width (domain-warped), a
+slow pulse. Rays are drawn at half resolution with additive compositing; a
+1/8-res copy upscaled on top is the bloom. Below: two snow-capped ranges
+painted as shaded HEIGHTFIELDS (4-octave rocky skyline, lighting from the
+2-octave massif shape so flanks shade in wide moonlit sweeps, a snow line
+that whitens with altitude; every 1-px column an opaque pre-mixed gradient —
+no seams), distance haze on the far range; a wide FROZEN LAKE (pale far shore
+→ deep ice, sheen bands, frost speckle, long translucent cracks with shadow
+twins, drifted snow patches) carrying a dim compressed mirror of the ranges
+and a smeared additive mirror of the aurora; faceted ICEBERGS (two apexes of
+facets, fracture lines, a cyan translucent core, aurora light through the
+base, moonlit rims, a moon shadow on the ice, frost at the foot, a faint
+mirror) plus shards along the far shore; wind-sculpted snow banks in the
+foreground; low mist drifting over the far shore; gentle snowfall with a
+gust; ice sparkles; the odd shooting star; a cold vignette.
+
+**The figures:** an ICE CASTLE on the far shore (five crystal spires with
+tiered collars, glowing windows, a shadowed left face and moonlit right edge,
+walls with a crenellated crystal top, a grand stair and a glowing great door;
+painted into the mountain layer so it MIRRORS in the ice). An OPEN CHANNEL of
+dark water cut through the ice (jagged bright rims, a depth shadow under the
+far edge, ripples, a brighter aurora mirror than the ice) where two ORCAS
+cruise and porpoise: the dorsal fin cuts the surface, the back rolls up with
+a spout, a faint body shows through the water below the surface line, and
+every ~25 s one BREACHES with a splash and a ring (`breach()`); they turn at
+the screen edges and pick a new lane. Three harbour SEALS lounge on flat
+ledges of the icebergs (raised heads that look about, blink, bark, a flipper
+flap, a slow breath, a shadow on the ice). THE PRINCESS is the low-poly
+paper-art princess from `princess/princess.html` (Flat Kingdom style; pen by
+acupajoe.io), packaged as **`princess/princess.js`** (`window.PrincessArt =
+{ svg, viewBox, bbox, feetY, centerX }`) and injected on demand with a script
+tag. Pose FRAMES are built by injecting `transform="rotate(…)"` into her
+`Left_Arm` group — three arm swings for the walk, one raised arm for the cast —
+and rasterized through `<img>` data URLs, then drawn on the canvas like
+everything else: she walks the snow bank with a bob, a lean, an arm swing and
+a breath, flips at the edges, and every 11–19 s stops, raises her arm (a cold
+glow in the hand) and conjures a swirl of snowflakes (`cast()`). To restyle
+her, edit the SVG in `princess/princess.html` and re-run the packaging step
+(the svg string in princess.js is the html's `<svg>…</svg>`, minified) — the
+packaging step is **`princess/_pack_princess.py`**, which also moves the left
+hand's polygons into the `Left_Arm` group so the palm travels with the raised
+arm. There are TWO SISTERS: the original brunette and a younger BLONDE sister,
+the same SVG recoloured at frame-build time (hair, a rose gown with icy trims,
+pink tiara gems, blue eyes); they turn at the edges and when they meet.
+
+**OLAF** strolls the foreground snow bank — the pure-CSS rig from
+**`olaf/olaf.js`**, lifted VERBATIM out of the old `frozen.bg.js` (its design
+source is still `backgrounds/olaf.html`; the SCSS was hand-compiled and scoped
+under `.fzo`/`.fz-olaf`). He is the one figure that is not canvas: he mounts as
+a DOM layer over the scene canvas, so the stage holds three layers — **scene
+canvas · Olaf (DOM) · fx canvas** — and the snowfall + conjured snowflakes draw
+on that top canvas so snow falls in FRONT of him as it does the others. His
+walk cycle (stepping feet, swinging twig arms, rocking head) is the rig's own
+CSS, switched by the `fzo-walk` class; the crossing is a transform this scene
+drives, and he pauses every 13–24 s. Click him → a happy HOP (animated on the
+inner `.fzo-a`, so the walk keeps playing underneath) + a burst of snowflakes
+(`hop()`). NOTE: the game page is RTL, where an absolutely positioned box with
+auto offsets takes its static position at the RIGHT edge — the Olaf layer sets
+`direction:ltr` and the wrapper an explicit `left:0;top:0`.
+
+**More life:** a POLAR BEAR mother and her cub amble across the ice (heavy
+four-legged gait, swaying head, a stop to sniff the ice; the cub trots to
+keep up, `sniff()`); an IGLOO of snow blocks sits on the far ice with a warm
+light in its tunnel (static, in the lake layer); the MOON is big and detailed
+(maria, craters with lit rims, limb darkening, a soft glow — no halo ring;
+painted once into a small canvas); the seals ROCK on the ice, wiggle their
+tails and WAVE a flipper on a slow rhythm or when clicked (`wave()`). CLICKS
+(document listener, UI filter): the sky → an aurora SURGE — brighter, faster
+curtains for ~5 s (`surge()`); a princess → she casts; a seal → it waves (and
+may start an act); a bear → the mother sits / the cub stands.
+
+**Everything acts:** the SEALS run a little state machine (an act every 7–15 s,
+also on click): a belly-up ROLL with wiggling flippers, a GALUMPH hop along the
+ledge, a CLAP + bark, and a DIVE — a slide down the iceberg into the channel
+with a splash, a swim out and back with the head bobbing above the water line
+(clipped, with a wake; drawn behind the icebergs), and a hop back onto the
+ledge with drips (`dive()`, `roll()`). The BEARS act too: the mother SITS up on
+her haunches to watch the sky, SHAKES snow off (fur flecks fly) and SNIFFS the
+ice; the cub belly-SLIDES across the ice with a spray, STANDS up on its hind
+legs, shakes and sniffs (`sit()`, `slide()`, `sniff()`). The IGLOO's doorway
+firelight flickers and spills on the snow, smoke curls from its chimney hole,
+and an ARCTIC FOX trots out every ~20–35 s, sits to look about (head turning,
+tail wagging), and trots back in (`fox()`). The CASTLE's windows flicker each on
+their own rhythm with the odd blink, the great door breathes light, the spire
+tips twinkle, a sheen of light sweeps across the crystal, and a pennant waves
+from the tallest spire (its lights/tips/spires are recorded while painting).
+
+Layers: skyL · auroraL (½-res, every frame) → auroraLo (⅛-res bloom) · mtnL
+(+ castle) · lakeL (+ channel) · foreL (all static, repainted on resize);
+per frame: orcas (clipped above / faint below the water line), seals, the
+princess + her snowflakes. Test hooks: `window._aurora =
+BACKGROUNDS.aurora._test = { intensity(v), snow(on), wind(v), shoot(),
+cast(), breach(), surge(), wave(), sniff(), dive(), roll(), sit(), slide(),
+fox(), hop(), princess(), orcas(), bears(), olaf() }`. Dev harness:
+`aurora.html` (Aurora bright / calm, Snow, Wind, Shooting star, Cast, Breach,
+Surge, Wave, Dive, Bears, Fox, Restart). Verify via
+`_verify_aurora.py` (default / cast+breach / bright stills to
+c:/tmp/dino_rigs + a double-restart leak check).

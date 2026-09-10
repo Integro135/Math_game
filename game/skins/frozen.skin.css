@@ -1,11 +1,11 @@
 /* ── Frozen skin — "Ice palace under the northern lights" ───────────────────
-   The game's look over the frozen background (backgrounds/frozen.bg.js:
-   dancing auroras + moon over crystalline ranges, an ice palace crowning its
-   own mountain on the RIGHT, Olaf wandering a frozen lake). Cold night glass
-   that lets the auroras and the palace glow through. The game column hugs the
-   LEFT so the mountain-top palace stays in full view (same recipe as the
-   dinosaurs skin: the card width scales with the viewport so its right edge
-   NEVER crosses into the palace).
+   The game's look over the ❄️ background (backgrounds/aurora.bg.js, which
+   replaced frozen.bg.js: aurora curtains + a big moon over snow-capped ranges,
+   an ICE CASTLE on the far shore RIGHT, a frozen lake with icebergs, seals,
+   orcas, polar bears, two princesses and Olaf). Cold night glass that lets the
+   aurora and the castle glow through. The game column hugs the LEFT so the
+   castle stays in full view (same recipe as the dinosaurs skin: the card width
+   scales with the viewport so its right edge NEVER crosses into the castle).
 
    A skin owns four families: 1. palette  2. fonts/type  3. glass transparency
    4. position. Add direction = warm igloo amber; subtract direction = ice
