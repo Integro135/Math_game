@@ -99,6 +99,40 @@ class TestNumberLineVisibility:
             f"18−x=11 number line must run 0..20, got {nums[0]}..{nums[-1]}"
         assert 18 in nums, "The minuend (18) must be a labelled tick on the line"
 
+    def test_triple_chain_line_starts_at_smallest_addend(self, page):
+        """TZ chain (a+b+c, e.g. 5+7+9=21): chain sums reach 25, so a fixed 0..20
+        line cut the answer off. The kangaroo line is now a WINDOW that starts at
+        the SMALLEST addend and runs 20 past it (5..25), with the rider parked on
+        that smallest number (user request). The smallest addend need not be the
+        first one (9+7+5 → still 5..25)."""
+        def ticks():
+            return page.evaluate("[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)")
+        page.evaluate("aidMode='kang'; problems[0]={t:TZ, a:5, b:7, c:9}; idx=0; loadProblem()")
+        page.wait_for_timeout(150)
+        page.evaluate("tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();")
+        page.wait_for_timeout(100)
+        nums = ticks()
+        assert nums and nums[0] == 5 and nums[-1] == 25, \
+            f"5+7+9: the line must run 5..25, got {nums[0] if nums else None}..{nums[-1] if nums else None}"
+        assert 21 in nums and nums[-1] > 21, "the answer 21 must sit INSIDE the window, not on its edge"
+        dot_left = page.evaluate("document.getElementById('nl-dot').style.left")
+        assert dot_left == "0%", f"the rider must start ON the smallest addend (left edge), got {dot_left}"
+        page.evaluate("aidMode='kang'; problems[0]={t:TZ, a:9, b:7, c:5}; idx=0; loadProblem()")
+        page.wait_for_timeout(120)
+        page.evaluate("tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();")
+        page.wait_for_timeout(100)
+        nums2 = ticks()
+        assert nums2 and nums2[0] == 5 and nums2[-1] == 25, \
+            f"9+7+5: the window must still start at the smallest addend (5..25), got {nums2[0] if nums2 else None}..{nums2[-1] if nums2 else None}"
+        # the other chain shapes keep the plain 0..20 line (their results stay ≤ 20)
+        page.evaluate("aidMode='kang'; problems[0]={t:TX, a:15, b:10, c:9}; idx=0; loadProblem()")
+        page.wait_for_timeout(120)
+        page.evaluate("tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();")
+        page.wait_for_timeout(100)
+        nums3 = ticks()
+        assert nums3 and nums3[0] == 0 and nums3[-1] == 20, \
+            f"TX (a−b+c) keeps the 0..20 line, got {nums3[0] if nums3 else None}..{nums3[-1] if nums3 else None}"
+
     def test_bridge20_line_extends_past_the_answer(self, page):
         """גָּשֵׁר 20: a bridging addition reaching 25 (19+6) must NOT sit on the
         number line's right EDGE — that gives the answer away. The line has to run

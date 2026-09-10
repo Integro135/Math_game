@@ -401,7 +401,15 @@ function loadProblem(){
   // in the bridge games (גֶּשֶׁר 10 / 20) keep the answer OFF the very edge — extend
   // a couple past the top value, like the framed windows the other exercises use.
   const _nlMax=(mode==='br'||mode==='b20')?_nlHi+2:_nlHi;
-  if(nlp){nlp.style.display=useKang?'':'none';if(useKang){NL.configure(_nlMax,1);NL.init(0);}}
+  // TZ (a+b+c): chain sums reach 25 (chain.ex.js), past a 0..20 line — 5+7+9=21
+  // fell off the end. The line is a WINDOW that STARTS at the SMALLEST addend
+  // and runs 20 past it (5+7+9 → 5..25), and the rider is parked ON that
+  // smallest number, so the child hops the other two addends from there. The
+  // generator keeps the other two addends at ≤ 18 together, so the sum always
+  // lands inside the window, never on its edge. (user request)
+  const _tzLo=ptype===TZ?Math.min(num1,num2,num3,num4>0?num4:Infinity):0;
+  if(nlp){nlp.style.display=useKang?'':'none';
+    if(useKang){if(ptype===TZ){NL.configure(_tzLo+20,1,_tzLo);NL.init(_tzLo);}else{NL.configure(_nlMax,1);NL.init(0);}}}
   if(useNL){
     pgmTensMode=false;chainGnMode=false;
     const _cv=isTD?((ptype===TDA||ptype===TRA)?0:num1):num1;

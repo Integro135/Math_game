@@ -22,10 +22,16 @@
    with a breath of wind; ice sparkles; the odd shooting star.
 
    Layers: skyL (static: gradient, Milky Way, dim stars) · auroraL (half-res,
-   redrawn every frame) → auroraLo (1/8-res, its upscale is the glow) · mtnL
-   (static) · lakeL (static: ice, cracks, snow patches) · foreL (static:
-   icebergs, shore, drifts). Per frame: twinkle, moon halo shimmer, aurora,
-   reflections (clipped to the lake), mist, sparkles, snow, shooting stars.
+   redrawn every OTHER frame) → auroraLo (1/8-res, its upscale is the glow) →
+   reflL (1/8-res: the lake's mirror of the aurora, rebuilt with it) · midL
+   (static: ranges + castle + ice + cracks + patches + igloo + the ranges' dim
+   mirror in the ice) · foreL (static: icebergs, shore, drifts). Per frame:
+   twinkle, moon, aurora composite (2 blits), midL, castle fx, reflL (1 blit),
+   figures, foreL, sparkles, snow — about six full-screen blits, DPR capped at
+   1.5. PERF (see _perf_aurora.py): figures' gradients are memoised (lgc/rgc),
+   glows and mist are sprites, the moon glow is baked, the princess SVG frames
+   are rasterised once into bitmaps, the noise hash is a table lookup, and
+   _aurora.prof() reports per-section ms/frame.
 
    THE FIGURES: an ICE CASTLE on the far shore (crystal spires with tiered
    collars, glowing windows, a grand stair; painted into the mountain layer so
@@ -93,9 +99,11 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
   const smooth = k => k * k * (3 - 2 * k);
   const rnd = (a, b) => a + Math.random() * (b - a);
   // 1-D value noise and a small fbm — the aurora's folds, rays and pulses
+  // a 4096-entry hash table stands in for the sin() hash — several times cheaper, same look
+  const HTAB = new Float32Array(4096); for (let i = 0; i < 4096; i++) HTAB[i] = psr(i + 0.37);
   function vnoise(x, seed){
-    const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
-    return lerp(psr(i + seed * 57.31), psr(i + 1 + seed * 57.31), u);
+    const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f), sh = (seed * 97 | 0) * 7919;
+    return lerp(HTAB[(i * 1013 + sh) & 4095], HTAB[((i + 1) * 1013 + sh) & 4095], u);
   }
   function fbm(x, seed, oct){
     let a = 0, amp = 0.5, fr = 1, n = 0;
@@ -114,21 +122,38 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%';
       stage.appendChild(canvas);
       const ctx = canvas.getContext('2d');
-      const DPR = Math.min(devicePixelRatio || 1, 2);
+      const DPR = Math.min(devicePixelRatio || 1, 1.5);         // 1.5 is plenty for a painterly scene; vs 2 it cuts every fill/blit by ~44%
       let W, H, LAKE, U;
-      let skyL, mtnL, lakeL, foreL, auroraL, auroraLo;
+      let skyL, mtnL, lakeL, midL, foreL, auroraL, auroraLo, reflL, auroraReady = false;
       let STARS, TWINKLE, FLAKES, SPARKS, MIST, SHOOTERS = [], nextShootAt = 4;
       let CHANNEL, SEALS, ORCAS, PR, MAGIC = [], SPOUTS = [], SPLASH = [], nextBreachAt = 14;
       let PFR = null, PRINCESSES = [], BEARS = [], surge = null, auroraT = 0, surgeBoost = 1;
       let CASTLE = null, IGLOO = null, FOX = null, SMOKE = [], FURFX = [];
       let OLAF = null, olafLayer = null, fxCv = null, fxCtx = null;
       let STRIKES = [], stormT0 = -99, castleBlaze = 0;
+      // per-section render timers (ms, accumulated) — read via _aurora.prof()
+      const PROF = { frames: 0 }; let profT = 0;
+      const mark = k => { const n = performance.now(); PROF[k] = (PROF[k] || 0) + (n - profT); profT = n; };
       let intensity = 1, snowOn = true, wind = 0;
       const UI_SEL = '.wrap,button,input,select,textarea,#particles,.special-uni,#games-menu,#theme-menu,#fw-ov,#sad-ov,#report-ov';
       let lastT = 0, rafId = null, t0 = null;
 
       const lg = (g, x1, y1, x2, y2, st) => { const gr = g.createLinearGradient(x1, y1, x2, y2); st.forEach(([o, c]) => gr.addColorStop(o, c)); return gr; };
       const rg = (g, x, y, r0, r1, st) => { const gr = g.createRadialGradient(x, y, r0, x, y, r1); st.forEach(([o, c]) => gr.addColorStop(o, c)); return gr; };
+      // memoised gradients for the figures (constant local-space args) — creating
+      // dozens of CanvasGradients per frame is a real cost; cleared on resize
+      let GCACHE = {};
+      const lgc = (key, g, x1, y1, x2, y2, st) => GCACHE[key] || (GCACHE[key] = lg(g, x1, y1, x2, y2, st));
+      const rgc = (key, g, x, y, r0, r1, st) => GCACHE[key] || (GCACHE[key] = rg(g, x, y, r0, r1, st));
+      // soft round sprites (a radial falloff painted once) for glows and mist
+      const SPR = {};
+      function sprite(name){
+        if (SPR[name]) return SPR[name];
+        const cv = doc.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d');
+        const col = name === 'glowCyan' ? '190,240,255' : name === 'glowWhite' ? '255,255,255' : '210,230,245';
+        g.fillStyle = rg(g, 64, 64, 0, 64, [[0, 'rgba(' + col + ',1)'], [1, 'rgba(' + col + ',0)']]); g.fillRect(0, 0, 128, 128);
+        return (SPR[name] = cv);
+      }
       function makeLayer(w, h, dpr){
         const cv = doc.createElement('canvas');
         cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.max(1, Math.round(h * dpr));
@@ -156,7 +181,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       function drawAurora(g, w, h, t){
         g.clearRect(0, 0, w, h);
         g.globalCompositeOperation = 'lighter';
-        const N = 150, colW = w / N + 1.5;
+        const N = 120, colW = w / N + 1.5;
         const breathe = 0.8 + 0.2 * Math.sin(t * 0.13) * Math.sin(t * 0.071 + 1);
         for (const b of BANDS){
           const tex = TEX[b.tex];
@@ -218,22 +243,25 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
           const u = x / W, n = fbm(u * 6.5, seed, oct), m = fbm(u * 1.6 + 3, seed + 50, 2);
           return base - amp * (0.15 + 0.85 * Math.pow(n, 0.9)) * (0.45 + 1.1 * m);
         };
-        const N = Math.ceil(W) + 3, ys = new Float32Array(N), yl = new Float32Array(N);
-        for (let i = 0; i < N; i++){ ys[i] = shape(i - 1, 4); yl[i] = shape(i - 1, 2); }
-        const slopeAt = i => (yl[Math.min(N - 1, i + 16)] - yl[Math.max(0, i - 16)]) / 32;
+        // columns are ONE DEVICE PIXEL wide and snapped to the device grid — at a
+        // fractional DPR a CSS-pixel column straddles device pixels and its
+        // anti-aliased edges read as vertical hatching
+        const px = 1 / DPR, N = Math.ceil(W * DPR) + 3, ys = new Float32Array(N), yl = new Float32Array(N), xs = i => (i - 1) * px;
+        for (let i = 0; i < N; i++){ ys[i] = shape(xs(i), 4); yl[i] = shape(xs(i), 2); }
+        const sw = Math.round(16 * DPR), slopeAt = i => (yl[Math.min(N - 1, i + sw)] - yl[Math.max(0, i - sw)]) / (2 * sw * px);
         const snowC = 'rgb(' + snow + ')';
         for (let i = 0; i < N; i++){
-          const x = i - 1, y = Math.floor(ys[i]), lit = clamp01(0.38 + slopeAt(i) * 1.9), litK = clamp01((lit - 0.4) * 1.3);
+          const x = xs(i), y = Math.floor(ys[i] * DPR) * px, lit = clamp01(0.38 + slopeAt(i) * 1.9), litK = clamp01((lit - 0.4) * 1.3);
           const rel = clamp01((base - y) / amp), snowK = clamp01((rel - 0.18) * 1.5);
           const rock = mixc(colDark, colLit, 0.15 + 0.75 * litK);
           const crest = mixc(rock, snowC, snowK * (0.6 + 0.4 * lit));
           const depth = Math.max(4, amp * (0.12 + 0.45 * snowK)), span = base - y + 3;
           g.fillStyle = lg(g, 0, y, 0, base + 3, [[0, crest], [Math.min(0.95, depth / span), mixc(rock, snowC, snowK * 0.25)], [1, mixc(colDark, rock, 0.4)]]);
-          g.fillRect(x, y, 1, span);
+          g.fillRect(x, y, px, span);
         }
         // a thin bright rim along the skyline where the moon catches the crest
         g.strokeStyle = 'rgba(' + snow + ',.35)'; g.lineWidth = 1;
-        g.beginPath(); for (let i = 0; i < N; i++){ if (i === 0) g.moveTo(i - 1, ys[i]); else g.lineTo(i - 1, ys[i]); } g.stroke();
+        g.beginPath(); for (let i = 0; i < N; i++){ if (i === 0) g.moveTo(xs(i), ys[i]); else g.lineTo(xs(i), ys[i]); } g.stroke();
       }
       function paintMountains(g){
         g.clearRect(0, 0, W, H);
@@ -483,7 +511,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         U = Math.min(W, H) / 800;
         LAKE = H * 0.64;
         STARS = Array.from({ length: 320 }, (_, i) => {
-          const bright = psr(i + 50) > 0.72;
+          const bright = psr(i + 50) > 0.82;
           return { x: psr(i * 2 + 5) * W, y: psr(i * 2 + 6) * H * 0.6, r: bright ? 0.9 + psr(i + 60) * 1.1 : 0.35 + psr(i + 60) * 0.7,
                    a: bright ? 0.9 : 0.25 + psr(i + 61) * 0.5, tw: bright, ph: psr(i + 70) * TAU, spd: 0.6 + psr(i + 80) * 1.8,
                    col: psr(i + 90) < 0.15 ? '255,225,200' : psr(i + 90) < 0.3 ? '200,215,255' : '235,240,255' };
@@ -595,7 +623,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         g.rotate(0.05 * Math.sin(t * 0.9 + ph));                                                   // rocking on the ice
         g.save(); g.scale(1, breathe);
         const body = () => { g.beginPath(); g.moveTo(-27, 1); g.bezierCurveTo(-26, -8, -14, -13, 2, -13); g.bezierCurveTo(14, -13, 22, -8, 24, -1); g.bezierCurveTo(23, 3, 14, 5, 0, 5); g.bezierCurveTo(-14, 5, -26, 4, -27, 1); g.closePath(); };
-        g.fillStyle = lg(g, 0, -13, 0, 5, [[0, '#b7c9d9'], [0.55, '#8ea3b8'], [1, '#5f748a']]);
+        g.fillStyle = lgc('sealBody', g, 0, -13, 0, 5, [[0, '#b7c9d9'], [0.55, '#8ea3b8'], [1, '#5f748a']]);
         body(); g.fill();
         g.save(); body(); g.clip();
         g.fillStyle = 'rgba(40,60,85,.32)';
@@ -615,7 +643,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         // the head: raised, looking about; the occasional lift and bark (the clap barks too)
         const lift = Math.max(Math.pow(Math.max(0, Math.sin(t * 0.23 + ph)), 8), P.clap * (0.6 + 0.4 * Math.sin(t * 8)));
         g.save(); g.translate(18, -6); g.rotate(-0.12 * Math.sin(t * 0.6 + ph) - 0.5 * lift + (P.swim ? -0.35 : 0));
-        g.fillStyle = lg(g, 0, -12, 0, 4, [[0, '#bfd0de'], [1, '#8296aa']]);
+        g.fillStyle = lgc('sealHead', g, 0, -12, 0, 4, [[0, '#bfd0de'], [1, '#8296aa']]);
         g.beginPath(); g.arc(6, -3, 8, 0, TAU); g.fill();
         g.beginPath(); g.ellipse(12.5, -1.2, 4.2, 3.2, 0.2, 0, TAU); g.fill();                     // muzzle
         g.fillStyle = '#26303c'; g.beginPath(); g.ellipse(15.8, -2.4, 1.3, 1.0, 0.3, 0, TAU); g.fill();   // nose
@@ -635,7 +663,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       //    surface, the back rolls up with a spout, and now and then one BREACHES
       function drawOrcaBody(g, C){
         const body = () => { g.beginPath(); g.moveTo(-52, 0); g.bezierCurveTo(-40, -10, -20, -15, 6, -15); g.bezierCurveTo(30, -15, 46, -9, 54, 0); g.bezierCurveTo(46, 8, 28, 14, 4, 14); g.bezierCurveTo(-20, 14, -42, 9, -52, 0); g.closePath(); };
-        g.fillStyle = lg(g, 0, -15, 0, 14, [[0, '#1a1f28'], [0.6, '#0b0e14'], [1, '#05070b']]);
+        g.fillStyle = lgc('orcaBody', g, 0, -15, 0, 14, [[0, '#1a1f28'], [0.6, '#0b0e14'], [1, '#05070b']]);
         body(); g.fill();
         g.save(); body(); g.clip();
         g.fillStyle = '#f2f5f8';
@@ -764,6 +792,20 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         for (let i = 0; i < 6; i++){ const a = i * Math.PI / 3; g.moveTo(0, 0); g.lineTo(Math.cos(a) * r, Math.sin(a) * r); g.moveTo(Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6); g.lineTo(Math.cos(a + 0.5) * r * 0.85, Math.sin(a + 0.5) * r * 0.85); g.moveTo(Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6); g.lineTo(Math.cos(a - 0.5) * r * 0.85, Math.sin(a - 0.5) * r * 0.85); }
         g.stroke(); g.restore();
       }
+      // the SVG pose frames are rasterised ONCE per size into bitmaps — drawing an
+      // SVG <img> straight to the canvas re-rasterises it every frame, which is slow
+      function princessBitmap(P, pose, img){
+        const key = pose.cast ? 'cast' : 'walk' + pose.fi;
+        if (!P.bmp || P.bmpSc !== P.sc){ P.bmp = {}; P.bmpSc = P.sc; }
+        let cv = P.bmp[key];
+        if (!cv){
+          const A = window.PrincessArt, w = Math.ceil(A.viewBox[2] * P.sc * DPR), h = Math.ceil(A.viewBox[3] * P.sc * DPR);
+          cv = doc.createElement('canvas'); cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(img, 0, 0, w, h);
+          P.bmp[key] = cv;
+        }
+        return cv;
+      }
       function drawPrincess(g, P, t){
         const A = window.PrincessArt;
         if (!PFR || !A) return;
@@ -775,7 +817,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         g.translate(0, bob);
         g.rotate(P.walking ? Math.sin(P.wt) * 0.025 * P.dir : 0);
         g.scale(P.dir, breathe);
-        g.drawImage(img, -A.centerX * P.sc, -A.feetY * P.sc, A.viewBox[2] * P.sc, A.viewBox[3] * P.sc);
+        g.drawImage(princessBitmap(P, pose, img), -A.centerX * P.sc, -A.feetY * P.sc, A.viewBox[2] * P.sc, A.viewBox[3] * P.sc);
         g.restore();
         if (pose.cast){                                               // a cold glow in the raised hand
           const castK = t - P.castT0, k = Math.sin(Math.min(1, castK / 0.6) * Math.PI / 2) * (castK > 2.2 ? Math.max(0, 1 - (castK - 2.2) / 0.6) : 1);
@@ -835,10 +877,10 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         g.translate(-28, -16); g.rotate(-(0.62 * sit + 1.05 * stand)); g.translate(28, 16);          // sitting / rearing: the body pivots on the hind hips
         bearLeg(g, 30, -32, 14, 14, A(0) - splay - 0.8 * stand, -0.05 - Bk(0) * 0.6 + splay * 0.4, 12, 11, furD, furS);   // far front leg
         const body = () => { g.beginPath(); g.moveTo(-46, -26); g.bezierCurveTo(-50, -42, -38, -56, -14, -58); g.bezierCurveTo(6, -62, 30, -60, 44, -50); g.bezierCurveTo(52, -42, 50, -26, 40, -18); g.bezierCurveTo(24, -12, -20, -12, -36, -16); g.bezierCurveTo(-44, -18, -47, -22, -46, -26); g.closePath(); };
-        g.fillStyle = lg(g, 0, -62, 0, -12, [[0, '#fbfdff'], [0.55, fur], [1, furD]]);
+        g.fillStyle = lgc('bearBody', g, 0, -62, 0, -12, [[0, '#fbfdff'], [0.55, fur], [1, furD]]);
         body(); g.fill();
         g.save(); body(); g.clip();
-        g.fillStyle = lg(g, 0, -30, 0, -12, [[0, 'rgba(169,191,210,0)'], [1, 'rgba(169,191,210,.7)']]); g.fillRect(-60, -34, 120, 24);   // the shadowed underside
+        g.fillStyle = lgc('bearUnder', g, 0, -30, 0, -12, [[0, 'rgba(169,191,210,0)'], [1, 'rgba(169,191,210,.7)']]); g.fillRect(-60, -34, 120, 24);   // the shadowed underside
         g.fillStyle = 'rgba(120,255,190,.10)'; g.beginPath(); g.ellipse(-4, -56, 40, 6, 0, 0, TAU); g.fill();                              // aurora light on the back
         g.restore();
         g.fillStyle = furD; g.beginPath(); g.arc(-47, -28, 4, 0, TAU); g.fill();                                                         // tail nub
@@ -848,7 +890,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         g.strokeStyle = fur; g.lineCap = 'round'; g.lineWidth = 16; g.beginPath(); g.moveTo(-6, 0); g.lineTo(10, -2); g.stroke();
         const hs = B.cub ? 1.15 : 1;
         g.save(); g.scale(hs, hs);
-        g.fillStyle = lg(g, 0, -14, 0, 10, [[0, '#fbfdff'], [1, furD]]);
+        g.fillStyle = lgc('bearHead', g, 0, -14, 0, 10, [[0, '#fbfdff'], [1, furD]]);
         g.beginPath(); g.arc(12, -2, 11, 0, TAU); g.fill();
         g.beginPath(); g.ellipse(22, 2, 7, 5.2, 0.15, 0, TAU); g.fill();                                                                 // snout
         for (const [ex, ey] of [[6, -11], [15, -12]]){ g.fillStyle = fur; g.beginPath(); g.arc(ex, ey, 3.6, 0, TAU); g.fill(); g.fillStyle = furS; g.beginPath(); g.arc(ex, ey, 2, 0, TAU); g.fill(); }   // ears
@@ -908,20 +950,19 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         for (const L of CASTLE.lights){
           const f = 0.55 + 0.45 * Math.sin(t * (1.1 + psr(L.seed) * 1.6) + psr(L.seed + 1) * TAU), blink = Math.pow(Math.max(0, Math.sin(t * 0.37 + psr(L.seed + 2) * TAU)), 40);
           const a = (0.25 + 0.45 * f) * (1 - 0.8 * blink) + 0.6 * castleBlaze;
-          ctx.fillStyle = rg(ctx, L.x, L.y, 0, L.r * 1.4, [[0, 'rgba(190,240,255,' + a + ')'], [1, 'rgba(190,240,255,0)']]);
-          ctx.beginPath(); ctx.arc(L.x, L.y, L.r * 1.4, 0, TAU); ctx.fill();
+          ctx.globalAlpha = Math.min(1, a); ctx.drawImage(sprite('glowCyan'), L.x - L.r * 1.4, L.y - L.r * 1.4, L.r * 2.8, L.r * 2.8);
         }
         if (CASTLE.door){
           const D = CASTLE.door, f = 0.6 + 0.4 * Math.sin(t * 2.3) * Math.sin(t * 1.1 + 1);
-          ctx.fillStyle = rg(ctx, D.x, D.y, 0, D.r * 1.3, [[0, 'rgba(200,250,255,' + (0.35 * f) + ')'], [1, 'rgba(200,250,255,0)']]);
-          ctx.beginPath(); ctx.arc(D.x, D.y, D.r * 1.3, 0, TAU); ctx.fill();
+          ctx.globalAlpha = 0.35 * f; ctx.drawImage(sprite('glowCyan'), D.x - D.r * 1.3, D.y - D.r * 1.3, D.r * 2.6, D.r * 2.6);
         }
+        ctx.globalAlpha = 1;
         for (const T of CASTLE.tips){
           const k = Math.pow(Math.max(0, Math.sin(t * (0.7 + psr(T.seed) * 0.9) + psr(T.seed + 3) * TAU)), 24), r = S * 0.05 * k;
           if (k < 0.03) continue;
           ctx.strokeStyle = 'rgba(255,255,255,' + (0.9 * k) + ')'; ctx.lineWidth = 1; ctx.lineCap = 'round';
           ctx.beginPath(); ctx.moveTo(T.x - r, T.y); ctx.lineTo(T.x + r, T.y); ctx.moveTo(T.x, T.y - r); ctx.lineTo(T.x, T.y + r); ctx.stroke();
-          ctx.fillStyle = rg(ctx, T.x, T.y, 0, r, [[0, 'rgba(255,255,255,' + (0.6 * k) + ')'], [1, 'rgba(255,255,255,0)']]); ctx.beginPath(); ctx.arc(T.x, T.y, r, 0, TAU); ctx.fill();
+          ctx.globalAlpha = 0.6 * k; ctx.drawImage(sprite('glowWhite'), T.x - r, T.y - r, r * 2, r * 2); ctx.globalAlpha = 1;
         }
         const sk = (t * 0.12) % 1, bx = CASTLE.cx - S * 1.1 + sk * S * 2.2;                       // the sweeping sheen
         ctx.save();
@@ -949,10 +990,12 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       function drawIglooFx(t, dt){
         if (!IGLOO) return;
         const I = IGLOO, f = 0.72 + 0.22 * Math.sin(t * 7.3) * Math.sin(t * 3.1 + 1) + 0.06 * Math.sin(t * 13.7);
-        ctx.fillStyle = rg(ctx, I.ex, I.y - I.eh * 0.35, 0, I.ew * 0.9, [[0, 'rgba(255,205,130,' + (0.95 * f) + ')'], [0.6, 'rgba(255,160,80,' + (0.7 * f) + ')'], [1, 'rgba(255,140,60,0)']]);
+        ctx.globalAlpha = f;
+        ctx.fillStyle = rgc('iglooDoor', ctx, I.ex, I.y - I.eh * 0.35, 0, I.ew * 0.9, [[0, 'rgba(255,205,130,0.95)'], [0.6, 'rgba(255,160,80,0.7)'], [1, 'rgba(255,140,60,0)']]);
         ctx.beginPath(); ctx.moveTo(I.ex - I.ew * 0.6, I.y); ctx.lineTo(I.ex - I.ew * 0.6, I.y - I.eh * 0.5); ctx.arc(I.ex, I.y - I.eh * 0.5, I.ew * 0.6, Math.PI, 0); ctx.lineTo(I.ex + I.ew * 0.6, I.y); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = rg(ctx, I.ex + I.ew * 0.4, I.y + 1, 0, I.w * 0.45, [[0, 'rgba(255,190,110,' + (0.38 * f) + ')'], [1, 'rgba(255,190,110,0)']]);
+        ctx.fillStyle = rgc('iglooSpill', ctx, I.ex + I.ew * 0.4, I.y + 1, 0, I.w * 0.45, [[0, 'rgba(255,190,110,0.38)'], [1, 'rgba(255,190,110,0)']]);
         ctx.save(); ctx.translate(I.ex + I.ew * 0.4, I.y + 1); ctx.scale(1, 0.22); ctx.beginPath(); ctx.arc(0, 0, I.w * 0.45, 0, TAU); ctx.fill(); ctx.restore();
+        ctx.globalAlpha = 1;
         if (Math.random() < dt * 1.4) SMOKE.push({ x: I.x - I.w * 0.08, y: I.y - I.h * 1.05, t0: t, r: I.w * 0.03, drift: rnd(-0.3, 0.3) });
         SMOKE = SMOKE.filter(q => t - q.t0 < 4.5);
         for (const q of SMOKE){
@@ -982,7 +1025,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         const wag = sit ? Math.sin(t * 5) * 0.35 : Math.sin(F.wt * 0.5) * 0.15;                                      // the bushy tail
         g.save(); g.translate(-16, sit ? -8 : -14); g.rotate(-0.6 + wag); g.fillStyle = fur; g.beginPath(); g.ellipse(-12, 0, 14, 5.5, 0, 0, TAU); g.fill(); g.fillStyle = furD; g.beginPath(); g.ellipse(-22, 0, 5, 4, 0, 0, TAU); g.fill(); g.restore();
         g.save(); if (sit) g.rotate(-0.55);
-        g.fillStyle = lg(g, 0, -22, 0, -8, [[0, fur], [1, furD]]); g.beginPath(); g.ellipse(0, -15, 17, 8, 0, 0, TAU); g.fill();
+        g.fillStyle = lgc('foxBody', g, 0, -22, 0, -8, [[0, fur], [1, furD]]); g.beginPath(); g.ellipse(0, -15, 17, 8, 0, 0, TAU); g.fill();
         g.restore();
         const look = sit ? Math.sin(t * 0.9) * 0.25 : 0;                                                              // the head turns to look about
         g.save(); g.translate(sit ? 8 : 15, sit ? -30 : -20); g.rotate(look);
@@ -1146,7 +1189,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
           const tw = 0.55 + 0.45 * Math.sin(t * s.spd + s.ph);
           ctx.fillStyle = 'rgba(' + s.col + ',' + (s.a * tw) + ')';
           ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill();
-          if (s.r > 1.6){                                             // a faint cross on the brightest
+          if (s.r > 1.75){                                            // a faint cross on the very brightest
             ctx.strokeStyle = 'rgba(' + s.col + ',' + (0.25 * tw) + ')'; ctx.lineWidth = 0.6;
             ctx.beginPath(); ctx.moveTo(s.x - s.r * 3, s.y); ctx.lineTo(s.x + s.r * 3, s.y); ctx.moveTo(s.x, s.y - s.r * 3); ctx.lineTo(s.x, s.y + s.r * 3); ctx.stroke();
           }
@@ -1170,9 +1213,13 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       }
       // ── THE MOON: big, full, with maria, craters, limb darkening and a soft
       //    glow (no halo ring). Details are painted once into a small canvas.
-      let moonCv = null, moonR = 0;
+      let moonCv = null, moonGlow = null, moonR = 0;
       function paintMoon(R){
-        moonR = R; moonCv = doc.createElement('canvas'); const D = Math.ceil(R * 2 * DPR) + 4; moonCv.width = moonCv.height = D;
+        moonR = R;
+        moonGlow = doc.createElement('canvas');                        // the soft glow, painted once (alpha 0.25 at the disc)
+        { const D = Math.ceil(R * 9 * DPR); moonGlow.width = moonGlow.height = D; const gg = moonGlow.getContext('2d'); gg.setTransform(DPR, 0, 0, DPR, 0, 0);
+          gg.fillStyle = rg(gg, R * 4.5, R * 4.5, R * 0.9, R * 4.5, [[0, 'rgba(210,222,255,0.25)'], [0.4, 'rgba(200,215,255,0.0875)'], [1, 'rgba(200,215,255,0)']]); gg.fillRect(0, 0, R * 9, R * 9); }
+        moonCv = doc.createElement('canvas'); const D = Math.ceil(R * 2 * DPR) + 4; moonCv.width = moonCv.height = D;
         const g = moonCv.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, 0, 0); const c = D / (2 * DPR);
         g.save(); g.beginPath(); g.arc(c, c, R, 0, TAU); g.clip();
         g.fillStyle = rg(g, c - R * 0.25, c - R * 0.3, R * 0.1, R * 1.05, [[0, '#fffdf3'], [0.55, '#efeadb'], [0.85, '#d6d1c3'], [1, '#aaa69a']]);
@@ -1195,37 +1242,38 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         const mx = W * 0.82, my = H * 0.15, R = Math.min(W, H) * 0.068;
         if (!moonCv || Math.abs(moonR - R) > 0.5) paintMoon(R);
         const gl = 0.22 + 0.03 * Math.sin(t * 0.3);
-        ctx.fillStyle = rg(ctx, mx, my, R * 0.9, R * 4.5, [[0, 'rgba(210,222,255,' + gl + ')'], [0.4, 'rgba(200,215,255,' + (gl * 0.35) + ')'], [1, 'rgba(200,215,255,0)']]);
-        ctx.fillRect(mx - R * 5, my - R * 5, R * 10, R * 10);
+        ctx.globalAlpha = gl / 0.25; ctx.drawImage(moonGlow, mx - R * 4.5, my - R * 4.5, R * 9, R * 9); ctx.globalAlpha = 1;
         ctx.drawImage(moonCv, mx - moonCv.width / (2 * DPR), my - moonCv.height / (2 * DPR), moonCv.width / DPR, moonCv.height / DPR);
       }
+      // the lake's mirror of the aurora: built at 1/8 res whenever the aurora is
+      // re-rendered (a handful of tiny blits), then blitted ONCE per frame — it
+      // used to be seven full-screen flipped blits every frame
+      function buildRefl(){
+        const g = reflL.cx;
+        g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, reflL.cv.width, reflL.cv.height); g.restore();
+        g.save(); g.beginPath(); g.rect(0, LAKE, W, H - LAKE); g.clip();
+        g.translate(0, LAKE); g.scale(1, -0.75); g.translate(0, -LAKE);
+        g.globalCompositeOperation = 'lighter';
+        for (const [dy, a] of [[0, 0.20], [-H * 0.014, 0.11], [H * 0.014, 0.11], [H * 0.03, 0.06]]){ g.globalAlpha = a; g.drawImage(auroraLo.cv, 0, dy, W, H); }   // smeared vertically
+        g.restore();
+        g.save(); channelPath(g); g.clip();                             // the open water mirrors it far more brightly
+        g.translate(0, LAKE); g.scale(1, -0.75); g.translate(0, -LAKE);
+        g.globalCompositeOperation = 'lighter';
+        for (const [dy, a] of [[0, 0.30], [-H * 0.01, 0.16], [H * 0.01, 0.16]]){ g.globalAlpha = a; g.drawImage(auroraLo.cv, 0, dy, W, H); }
+        g.restore();
+      }
       function drawReflections(){
-        ctx.save();
-        ctx.beginPath(); ctx.rect(0, LAKE, W, H - LAKE); ctx.clip();
-        ctx.translate(0, LAKE); ctx.scale(1, -0.75); ctx.translate(0, -LAKE);
-        ctx.globalAlpha = 0.20; ctx.drawImage(mtnL.cv, 0, 0, W, H);       // the ranges, dim in the ice
-        ctx.globalCompositeOperation = 'lighter';
-        for (const [dy, a] of [[0, 0.20], [-H * 0.014, 0.11], [H * 0.014, 0.11], [H * 0.03, 0.06]]){   // the aurora, smeared vertically
-          ctx.globalAlpha = a; ctx.drawImage(auroraLo.cv, 0, dy, W, H);
-        }
-        ctx.restore();
-        // the open water mirrors the aurora far more brightly than the ice
-        ctx.save(); channelPath(ctx); ctx.clip();
-        ctx.translate(0, LAKE); ctx.scale(1, -0.75); ctx.translate(0, -LAKE);
-        ctx.globalCompositeOperation = 'lighter';
-        for (const [dy, a] of [[0, 0.30], [-H * 0.01, 0.16], [H * 0.01, 0.16]]){ ctx.globalAlpha = a; ctx.drawImage(auroraLo.cv, 0, dy, W, H); }
-        ctx.restore();
-        // the aurora's light on the far ice and the snow line
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = lg(ctx, 0, H * 0.5, 0, H * 0.72, [[0, 'rgba(60,200,140,0)'], [0.55, 'rgba(60,200,140,' + (0.07 * intensity) + ')'], [1, 'rgba(60,200,140,0)']]);
+        ctx.drawImage(reflL.cv, 0, 0, W, H);
+        ctx.globalAlpha = Math.min(1, intensity);                        // the aurora's light on the far ice and the snow line
+        ctx.fillStyle = lgc('horizonGlow', ctx, 0, H * 0.5, 0, H * 0.72, [[0, 'rgba(60,200,140,0)'], [0.55, 'rgba(60,200,140,0.07)'], [1, 'rgba(60,200,140,0)']]);
         ctx.fillRect(0, H * 0.5, W, H * 0.22);
         ctx.restore();
       }
       function drawMist(t, dt){
         for (const m of MIST){
           m.x += m.spd * dt * (1 + wind * 0.3); if (m.x - m.w > W) m.x = -m.w;
-          ctx.fillStyle = rg(ctx, m.x, m.y, 0, m.w, [[0, 'rgba(210,230,245,' + m.a + ')'], [1, 'rgba(210,230,245,0)']]);
-          ctx.save(); ctx.translate(m.x, m.y); ctx.scale(1, m.h / m.w); ctx.beginPath(); ctx.arc(0, 0, m.w, 0, TAU); ctx.fill(); ctx.restore();
+          ctx.globalAlpha = m.a; ctx.drawImage(sprite('mist'), m.x - m.w, m.y - m.h, m.w * 2, m.h * 2); ctx.globalAlpha = 1;
         }
       }
       function drawSparks(t){
@@ -1250,6 +1298,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
 
       function renderFrame(t){
         const dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
+        profT = performance.now(); PROF.frames++;
         // an aurora SURGE (click the sky): brighter, faster curtains for ~5 s
         const sk = surge ? Math.sin(clamp01((t - surge.t0) / 5) * Math.PI) : 0;
         if (surge && t - surge.t0 > 5) surge = null;
@@ -1257,36 +1306,52 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         ctx.drawImage(skyL.cv, 0, 0, W, H);
         drawTwinkle(t);
         drawMoon(t);
-        // the aurora: rays at half-res, a soft bloom from the 1/8-res copy, added to the sky
-        drawAurora(auroraL.cx, auroraL.w, auroraL.h, auroraT);
-        auroraLo.cx.clearRect(0, 0, auroraLo.w, auroraLo.h);
-        auroraLo.cx.drawImage(auroraL.cv, 0, 0, auroraLo.w, auroraLo.h);
+        mark('sky');
+        // the aurora: rays at half-res, a soft bloom from the 1/8-res copy, added to
+        // the sky. The curtains move slowly, so they (and the lake's mirror of them)
+        // are re-rendered every OTHER frame — halving the heaviest pass.
+        if ((PROF.frames & 1) === 0 || !auroraReady){
+          drawAurora(auroraL.cx, auroraL.w, auroraL.h, auroraT);
+          auroraLo.cx.clearRect(0, 0, auroraLo.w, auroraLo.h);
+          auroraLo.cx.drawImage(auroraL.cv, 0, 0, auroraLo.w, auroraLo.h);
+          buildRefl();
+          auroraReady = true;
+        }
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
         ctx.globalAlpha = 0.9; ctx.drawImage(auroraLo.cv, 0, 0, W, H);
         ctx.globalAlpha = 0.8; ctx.drawImage(auroraL.cv, 0, 0, W, H);
         ctx.restore();
-        ctx.drawImage(mtnL.cv, 0, 0, W, H);
+        mark('aurora');
+        ctx.drawImage(midL.cv, 0, 0, W, H);                          // ranges + castle + ice + the ranges' mirror, one blit
         drawCastleFx(t);
-        ctx.drawImage(lakeL.cv, 0, 0, W, H);
+        mark('layers');
         drawReflections();
+        mark('reflect');
         drawIglooFx(t, dt);
+        mark('igloo');
         updateOrcas(t, dt); drawOrcas(t);
+        mark('orcas');
         updateSeals(t, dt);
         const sealPoses = SEALS.map(S => [S, sealPose(S, t)]);
         for (const [S, P] of sealPoses) if (P.swim) drawSeal(ctx, S, t, P);          // swimming seals: behind the icebergs
         drawMist(t, dt);
         ctx.drawImage(foreL.cv, 0, 0, W, H);
         for (const [S, P] of sealPoses) if (!P.swim) drawSeal(ctx, S, t, P);
+        mark('seals+fore');
         updateBears(t, dt); for (const B of BEARS) drawBear(ctx, B, t); drawFurFx(ctx, t);
+        mark('bears');
         drawSparks(t);
         for (const P of PRINCESSES) updatePrincess(P, t, dt);
         updateMagic(t, dt);
         for (const P of PRINCESSES.slice().sort((a, b) => a.y - b.y)) drawPrincess(ctx, P, t);
+        mark('princess');
         updateOlaf(t, dt);
+        mark('olaf');
         fxCtx.clearRect(0, 0, W, H);                                   // the layer ABOVE Olaf
         drawMagic(fxCtx, t);
         drawSnow(fxCtx, t, dt);
         drawLightning(fxCtx, t);
+        mark('fx');
       }
       function frame(ts){
         if (stopped) return;
@@ -1303,11 +1368,19 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         fxCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
         buildScene();
         fitOlaf();
-        skyL = makeLayer(W, H, DPR); mtnL = makeLayer(W, H, DPR); lakeL = makeLayer(W, H, DPR); foreL = makeLayer(W, H, DPR);
+        skyL = makeLayer(W, H, DPR); mtnL = makeLayer(W, H, DPR); lakeL = makeLayer(W, H, DPR); midL = makeLayer(W, H, DPR); foreL = makeLayer(W, H, DPR);
+        reflL = makeLayer(W, H, 0.125);                                // the aurora's lake mirror, 1/8 res
+        GCACHE = {}; auroraReady = false;
         auroraL = makeLayer(Math.round(W / 2), Math.round(H / 2), 1);
         auroraLo = makeLayer(Math.round(W / 8), Math.round(H / 8), 1);
         auroraLo.cx.imageSmoothingEnabled = true;
         paintSky(skyL.cx); paintMountains(mtnL.cx); paintLake(lakeL.cx); paintFore(foreL.cx);
+        // ONE static mid layer: the ranges + castle, the ice, and the ranges' dim mirror in it
+        { const g = midL.cx; g.clearRect(0, 0, W, H);
+          g.drawImage(mtnL.cv, 0, 0, W, H); g.drawImage(lakeL.cv, 0, 0, W, H);
+          g.save(); g.beginPath(); g.rect(0, LAKE, W, H - LAKE); g.clip();
+          g.translate(0, LAKE); g.scale(1, -0.75); g.translate(0, -LAKE);
+          g.globalAlpha = 0.20; g.drawImage(mtnL.cv, 0, 0, W, H); g.restore(); }
       }
 
       const onClick = e => {
@@ -1358,6 +1431,8 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         hop: () => olafHop(lastT),
         lightning: () => castleStorm(lastT),
         busy: () => ({ strikes: STRIKES.length, surge: !!surge, castleBox: CASTLE && CASTLE.box }),
+        prof: () => { const o = {}; for (const k in PROF) o[k] = k === 'frames' ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
+        profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },
         olaf: () => OLAF,
         princess: () => PRINCESSES, orcas: () => ORCAS, bears: () => BEARS,
       };

@@ -98,6 +98,8 @@ _DESC = {
         "TDA: NL hidden while fresh; appears at 0 after the first mistake",
     "test_nl_hidden_then_revealed_for_tds":
         "TDS: NL hidden while fresh; appears at 0 after the first mistake",
+    "test_triple_chain_line_starts_at_smallest_addend":
+        "TZ 5+7+9: kangaroo line is a window from the smallest addend (5..25), rider starts on 5; TX keeps 0..20",
     "test_nl_hidden_then_revealed_for_chain":
         "Chain: all aids hidden while fresh; kangaroo NL appears after the first mistake",
     "test_tt_appears_5_times_in_melech":

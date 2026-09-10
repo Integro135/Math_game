@@ -1190,10 +1190,30 @@ hit (`castleBlaze`). Drawn on the fx canvas, above everything (`lightning()`).
 **Shooting stars** are frequent: one every 1.8–5 s, and about a third of the
 time they arrive as a staggered burst of two or three.
 
-Layers: skyL · auroraL (½-res, every frame) → auroraLo (⅛-res bloom) · mtnL
-(+ castle) · lakeL (+ channel) · foreL (all static, repainted on resize);
-per frame: orcas (clipped above / faint below the water line), seals, the
-princess + her snowflakes. Test hooks: `window._aurora =
+Layers: skyL · auroraL (½-res, redrawn every OTHER frame) → auroraLo (⅛-res
+bloom) → reflL (⅛-res, the lake's mirror of the aurora, rebuilt with it) ·
+midL (static: ranges + castle + ice + channel + igloo + the ranges' dim mirror)
+· foreL (static: icebergs, shore, drifts); per frame: orcas (clipped above /
+faint below the water line), seals, bears, the princesses + Olaf, snow.
+
+**Performance** (`_perf_aurora.py` — CDP main-thread metrics + the scene's own
+`_aurora.prof()` per-section timers; headless frame gaps are meaningless here):
+the first cut cost 16% main-thread busy / 4.1 ms of script per frame and
+composited ~14 full-screen blits at DPR 2. Now: 9.4% / 1.8 ms and ~6 blits at
+DPR 1.5. What changed — the aurora curtains re-render every other frame (120
+columns, a 4096-entry hash table instead of `sin()` in the noise); the two
+static mid layers and the ranges' flipped mirror became ONE prebaked layer;
+the aurora's seven flipped full-screen mirror blits became one ⅛-res layer
+rebuilt with the aurora and blitted once; the figures' gradients are memoised
+(`lgc`/`rgc`, cleared on resize); castle window/tip glows and the mist are
+sprites; the moon glow is baked; the igloo firelight flickers via
+`globalAlpha` on cached gradients; the princess SVG frames are rasterised once
+per size into bitmaps (drawing an SVG `<img>` to canvas re-rasterises every
+frame); fewer stars twinkle. Gotcha from the DPR cap: the mountains' 1-px
+columns must be ONE DEVICE PIXEL wide and snapped to the device grid — at a
+fractional DPR a CSS-pixel column straddles device pixels and its
+anti-aliased edges read as vertical hatching. `_aurora.prof()` /
+`profReset()` remain for the next pass. Test hooks: `window._aurora =
 BACKGROUNDS.aurora._test = { intensity(v), snow(on), wind(v), shoot(),
 cast(), breach(), surge(), wave(), sniff(), dive(), roll(), sit(), slide(),
 fox(), hop(), lightning(), busy(), princess(), orcas(), bears(), olaf() }`

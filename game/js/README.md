@@ -226,7 +226,10 @@ This is the largest file and owns nearly all gameplay state and logic.
   column-sub both use the skinned **0–20** line (sub is COUNT-BACK — main.js
   steps −1), `TCM` gets **no number-line aid** (its coin tray is the
   manipulative), and **big-step uses a *windowed* line**
-  (`NL.configure(base+20,1,base)` centered on `num1`, e.g. 75 → 65..85). It
+  (`NL.configure(base+20,1,base)` centered on `num1`, e.g. 75 → 65..85). The
+  **`TZ` chain (a+b+c)** — whose sums reach 25 — also gets a window: it STARTS
+  at the SMALLEST addend and runs 20 past it, with the rider parked on that
+  addend (5+7+9 → 5..25, rider on 5); `TX`/`TW` keep the plain 0–20 line. It
   focuses the first input and finally calls `_lockAids()`.
 - **`renderEq()`** builds the equation HTML for every ptype (single input,
   missing-operand, the multi-input chain layout for `TX/TZ/TW`, the two-box
