@@ -44,9 +44,10 @@
    trims, pink gems, blue eyes); a POLAR BEAR mother and cub ambling across the
    ice (heavy gait, head sway, a stop to sniff; the cub trots to keep up); an
    IGLOO on the far ice with a warm light in its tunnel; a big detailed MOON
-   (maria, craters, limb darkening, soft glow). CLICKS: the sky → an aurora
-   SURGE (brighter, faster curtains for ~5 s); a princess → she casts; a seal →
-   it waves a flipper.
+   (maria, craters, limb darkening, soft glow). CLICKS: the AURORA BAND (the
+   top ~36% of the sky) → a SURGE, brighter and faster curtains for ~5 s; the
+   ICE CASTLE → a LIGHTNING STORM over its spires, which does NOT surge the
+   aurora (the two are separate); a princess → she casts; a seal → it waves.
 
    ANIMATION: the seals act on a schedule (and on click) — a belly-up ROLL, a
    GALUMPH along the ledge, a CLAP + bark, and a DIVE (slide off the iceberg
@@ -66,8 +67,8 @@
 
    Test hooks: window.BACKGROUNDS.aurora._test = window._aurora =
    { intensity(v), snow(on), wind(v), shoot(), cast(), breach(), surge(), wave(),
-     sniff(), dive(), roll(), sit(), slide(), fox(), hop(), princess(), orcas(),
-     bears(), olaf() }.
+     sniff(), dive(), roll(), sit(), slide(), fox(), hop(), lightning(),
+     princess(), orcas(), bears(), olaf() }.
    Wiring: _BG_THEMES.frozen → aurora (themes.js), THEMES.frozen,
    body.theme-frozen, the ❄️ menu button + toggle-cycle entry, frozen.skin.css,
    frozen.aids.js, and the body.theme-frozen #bg load-flash fallback
@@ -121,6 +122,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
       let PFR = null, PRINCESSES = [], BEARS = [], surge = null, auroraT = 0, surgeBoost = 1;
       let CASTLE = null, IGLOO = null, FOX = null, SMOKE = [], FURFX = [];
       let OLAF = null, olafLayer = null, fxCv = null, fxCtx = null;
+      let STRIKES = [], stormT0 = -99, castleBlaze = 0;
       let intensity = 1, snowOn = true, wind = 0;
       const UI_SEL = '.wrap,button,input,select,textarea,#particles,.special-uni,#games-menu,#theme-menu,#fw-ov,#sad-ov,#report-ov';
       let lastT = 0, rafId = null, t0 = null;
@@ -247,7 +249,8 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         // the ❄️ skin hugs the game card to the LEFT, so the castle stands on the
         // RIGHT of the far shore (its lower-left tucks behind the big iceberg)
         const cx = W * 0.865, base = LAKE + 1, S = H * 0.26;
-        CASTLE = { lights: [], tips: [], spires: [], door: null, cx, base, S };
+        CASTLE = { lights: [], tips: [], spires: [], door: null, cx, base, S,
+                   box: { x0: cx - S * 0.68, x1: cx + S * 0.68, y0: base - S * 1.12, y1: base + 2 } };
         g.fillStyle = rg(g, cx, base - S * 0.45, 0, S * 1.1, [[0, 'rgba(120,200,255,.28)'], [0.5, 'rgba(120,200,255,.10)'], [1, 'rgba(120,200,255,0)']]);
         g.fillRect(cx - S * 1.2, base - S * 1.6, S * 2.4, S * 1.7);
         const spire = (dx, h, w, seed) => {
@@ -904,7 +907,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
         for (const L of CASTLE.lights){
           const f = 0.55 + 0.45 * Math.sin(t * (1.1 + psr(L.seed) * 1.6) + psr(L.seed + 1) * TAU), blink = Math.pow(Math.max(0, Math.sin(t * 0.37 + psr(L.seed + 2) * TAU)), 40);
-          const a = (0.25 + 0.45 * f) * (1 - 0.8 * blink);
+          const a = (0.25 + 0.45 * f) * (1 - 0.8 * blink) + 0.6 * castleBlaze;
           ctx.fillStyle = rg(ctx, L.x, L.y, 0, L.r * 1.4, [[0, 'rgba(190,240,255,' + a + ')'], [1, 'rgba(190,240,255,0)']]);
           ctx.beginPath(); ctx.arc(L.x, L.y, L.r * 1.4, 0, TAU); ctx.fill();
         }
@@ -1054,6 +1057,89 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         }
       }
 
+      // ── CASTLE LIGHTNING — click the ice castle and a storm breaks over it.
+      //    Ported from success_screens/success-lightning-storm.js: each bolt is
+      //    built by MIDPOINT DISPLACEMENT (genBolt), drawn as a wide soft glow
+      //    plus a bright core (drawSegs), with a secondary branch, a soft flash
+      //    at the impact point and a spray of sparks. Here the strikes are aimed
+      //    at the castle's own spire tips, and its windows blaze white with each
+      //    hit. It does NOT touch the aurora — only clicking the aurora does.
+      function genBolt(x1, y1, x2, y2, disp, out){
+        if (disp < 8){ out.push(x1, y1, x2, y2); return; }
+        const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * disp;
+        const my = (y1 + y2) / 2 + (Math.random() - 0.5) * disp * 0.5;
+        genBolt(x1, y1, mx, my, disp * 0.55, out);
+        genBolt(mx, my, x2, y2, disp * 0.55, out);
+      }
+      function drawSegs(g, segs, alpha){
+        g.lineCap = 'round';
+        g.strokeStyle = 'rgba(125,196,255,' + (0.40 * alpha) + ')';           // the wide halo
+        g.lineWidth = 10 * U;
+        g.beginPath();
+        for (let k = 0; k < segs.length; k += 4){ g.moveTo(segs[k], segs[k + 1]); g.lineTo(segs[k + 2], segs[k + 3]); }
+        g.stroke();
+        g.strokeStyle = 'rgba(245,250,255,' + (0.98 * alpha) + ')';           // the bright core
+        g.lineWidth = 2.8 * U;
+        g.beginPath();
+        for (let k = 0; k < segs.length; k += 4){ g.moveTo(segs[k], segs[k + 1]); g.lineTo(segs[k + 2], segs[k + 3]); }
+        g.stroke();
+      }
+      function castleStorm(t){
+        if (!CASTLE || t - stormT0 < 1.2) return;
+        stormT0 = t;
+        STRIKES = [];
+        const tips = CASTLE.tips.slice().sort((a, b) => a.y - b.y);           // the tallest spires first
+        const times = [0.05, 0.42, 0.68, 0.95, 1.25];
+        for (let i = 0; i < times.length; i++){
+          const tip = tips[Math.min(tips.length - 1, i === 0 ? 0 : Math.floor(Math.random() * tips.length))];
+          const tx = tip.x + rnd(-8, 8) * U, ty = tip.y + rnd(-4, 10) * U;
+          const segs = []; genBolt(tx + rnd(-0.18, 0.18) * W, -30, tx, ty, H * 0.16, segs);
+          const mi = (Math.floor(segs.length / 8) * 4) || 0;                   // a branch off the middle
+          const bsegs = [];
+          genBolt(segs[mi], segs[mi + 1], segs[mi] + (Math.random() < 0.5 ? -1 : 1) * rnd(50, 110) * U,
+                  segs[mi + 1] + rnd(70, 130) * U, H * 0.06, bsegs);
+          const sparks = [];
+          for (let k = 0; k < 14; k++){
+            const ang = -Math.PI / 2 + (Math.random() - 0.5) * 2.4;
+            sparks.push({ ca: Math.cos(ang), sa: Math.sin(ang), speed: rnd(0.08, 0.28) * U, life: rnd(0.30, 0.58), r: rnd(0.8, 2.4) * U });
+          }
+          STRIKES.push({ at: times[i], segs, bsegs, tx, ty, sparks });
+        }
+      }
+      function drawLightning(g, t){
+        if (!STRIKES.length) return;
+        const et = t - stormT0;
+        if (et > 2.6){ STRIKES = []; castleBlaze = 0; return; }
+        let blaze = 0, flash = 0;
+        for (const st of STRIKES){
+          const te = et - st.at;
+          if (te < 0) continue;
+          blaze = Math.max(blaze, Math.exp(-te / 0.18));
+          if (te <= 0.38){
+            const a = Math.pow(1 - te / 0.38, 1.5) * (0.75 + 0.25 * Math.sin(te * 90));    // a fine flicker
+            drawSegs(g, st.segs, a);
+            drawSegs(g, st.bsegs, a * 0.6);
+          }
+          const fa = 0.24 * Math.exp(-te / 0.14);
+          if (fa > 0.008){
+            flash = Math.max(flash, fa);
+            g.fillStyle = rg(g, st.tx, st.ty, 0, H * 0.55, [[0, 'rgba(125,196,255,' + fa + ')'], [1, 'rgba(125,196,255,0)']]);
+            g.fillRect(0, 0, W, H);
+          }
+          for (let i = 0; i < st.sparks.length; i++){
+            const sp = st.sparks[i], q = te / sp.life;
+            if (q >= 1 || q < 0) continue;
+            const dec = 1 - 0.5 * q;
+            g.fillStyle = (i % 3) ? 'rgba(255,255,255,' + ((1 - q) * 0.9) + ')' : 'rgba(255,210,125,' + ((1 - q) * 0.9) + ')';
+            g.beginPath();
+            g.arc(st.tx + sp.ca * sp.speed * te * 1000 * dec, st.ty + sp.sa * sp.speed * te * 1000 * dec + 900 * te * te * U, sp.r * (1 - q * 0.5), 0, TAU);
+            g.fill();
+          }
+        }
+        castleBlaze = blaze;
+        if (flash > 0.02){ g.fillStyle = 'rgba(220,240,255,' + (flash * 0.5) + ')'; g.fillRect(0, 0, W, H); }
+      }
+
       // ── per-frame drawing ──
       function drawTwinkle(t){
         for (const s of TWINKLE){
@@ -1065,9 +1151,16 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
             ctx.beginPath(); ctx.moveTo(s.x - s.r * 3, s.y); ctx.lineTo(s.x + s.r * 3, s.y); ctx.moveTo(s.x, s.y - s.r * 3); ctx.lineTo(s.x, s.y + s.r * 3); ctx.stroke();
           }
         }
-        if (t > nextShootAt){ nextShootAt = t + rnd(7, 16); SHOOTERS.push({ x: rnd(W * 0.1, W * 0.9), y: rnd(H * 0.03, H * 0.3), t0: t, ang: rnd(2.6, 3.0), len: rnd(70, 140) * U }); }
+        if (t > nextShootAt){                                        // they come often, and often in twos and threes
+          nextShootAt = t + rnd(1.8, 5);
+          const n = Math.random() < 0.35 ? (Math.random() < 0.4 ? 3 : 2) : 1;
+          for (let i = 0; i < n; i++)
+            SHOOTERS.push({ x: rnd(W * 0.05, W * 0.95), y: rnd(H * 0.02, H * 0.34), t0: t + i * rnd(0.05, 0.25),
+                            ang: rnd(2.55, 3.05), len: rnd(60, 170) * U });
+        }
         SHOOTERS = SHOOTERS.filter(s => t - s.t0 < 1.0);
         for (const s of SHOOTERS){
+          if (t < s.t0) continue;                                    // a staggered member of a burst
           const k = (t - s.t0), x = s.x + Math.cos(s.ang) * k * s.len * 2.4, y = s.y + Math.sin(s.ang) * k * s.len * 2.4;
           const tx = x - Math.cos(s.ang) * s.len, ty = y - Math.sin(s.ang) * s.len, a = 1 - k;
           ctx.strokeStyle = lg(ctx, x, y, tx, ty, [[0, 'rgba(255,255,255,' + 0.9 * a + ')'], [0.4, 'rgba(180,220,255,' + 0.45 * a + ')'], [1, 'rgba(150,200,255,0)']]);
@@ -1193,6 +1286,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         fxCtx.clearRect(0, 0, W, H);                                   // the layer ABOVE Olaf
         drawMagic(fxCtx, t);
         drawSnow(fxCtx, t, dt);
+        drawLightning(fxCtx, t);
       }
       function frame(ts){
         if (stopped) return;
@@ -1224,7 +1318,8 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         for (const S of SEALS) if (Math.abs(mx - S.x) < 34 * S.s && Math.abs(my - S.y + 6 * S.s) < 24 * S.s){ S.waveT0 = lastT; if (!S.act && Math.random() < 0.5) startSealAct(S, null, lastT); return; }
         for (const B of BEARS) if (Math.abs(mx - B.x) < 50 * B.s && my < B.y + 4 * B.s && my > B.y - 70 * B.s){ startBearAct(B, B.cub ? 'stand' : 'sit', lastT); return; }
         if (OLAF && OLAF.el && Math.abs(mx - OLAF.x) < OLAF.w * 0.7 && my < OLAF.y + 8 && my > OLAF.y - OLAF.h){ olafHop(lastT); return; }
-        if (my < H * 0.58) surge = { t0: lastT };
+        if (CASTLE && CASTLE.box && mx > CASTLE.box.x0 && mx < CASTLE.box.x1 && my > CASTLE.box.y0 && my < CASTLE.box.y1){ castleStorm(lastT); return; }
+        if (my < H * 0.36) surge = { t0: lastT };                       // the aurora band only
       };
       doc.addEventListener('click', onClick);
       // OLAF is a pure-CSS DOM rig, so he rides his own layer OVER the scene
@@ -1261,6 +1356,8 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
         slide: () => startBearAct(BEARS[1], 'slide', lastT),
         fox: () => { if (FOX && FOX.state === 'in') FOX.nextOutAt = lastT - 1; },
         hop: () => olafHop(lastT),
+        lightning: () => castleStorm(lastT),
+        busy: () => ({ strikes: STRIKES.length, surge: !!surge, castleBox: CASTLE && CASTLE.box }),
         olaf: () => OLAF,
         princess: () => PRINCESSES, orcas: () => ORCAS, bears: () => BEARS,
       };

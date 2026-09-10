@@ -155,18 +155,6 @@ never position jumps).
 
 ---
 
-## aurora.html — dev harness for the ❄️ scene
-
-`aurora.html` is the thin harness for **`aurora.bg.js`** — the polar-night scene
-that now serves the ❄️ theme (it replaced `frozen.bg.js`). See the full section
-further down: **`aurora.bg.js` — AURORA & ICE**.
-
-*(An earlier draft of this section documented a different, ribbon-based aurora
-scene — sum-of-sines curtains, a pine treeline, a strip-blit lake reflection.
-That implementation is not what is on disk; the live one is described below.)*
-
----
-
 ## dubai2.bg.js — Dubai at dusk, redrawn (the 🏙️ theme, integrated)
 
 Theme `dubai` → `dubai2` (`_BG_THEMES`). Harness `dubai2.html`; skin
@@ -1131,9 +1119,12 @@ light in its tunnel (static, in the lake layer); the MOON is big and detailed
 (maria, craters with lit rims, limb darkening, a soft glow — no halo ring;
 painted once into a small canvas); the seals ROCK on the ice, wiggle their
 tails and WAVE a flipper on a slow rhythm or when clicked (`wave()`). CLICKS
-(document listener, UI filter): the sky → an aurora SURGE — brighter, faster
-curtains for ~5 s (`surge()`); a princess → she casts; a seal → it waves (and
-may start an act); a bear → the mother sits / the cub stands.
+(document listener, UI filter): the AURORA BAND — the top ~36% of the sky —
+→ a SURGE, brighter and faster curtains for ~5 s (`surge()`); the ICE CASTLE →
+a **LIGHTNING STORM** (see below), which does NOT surge the aurora, the two
+being deliberately separate; a princess → she casts; a seal → it waves (and may
+start an act); a bear → the mother sits / the cub stands. Clicks are tested in
+that order and each one returns, so a hit never falls through to the sky.
 
 **Everything acts:** the SEALS run a little state machine (an act every 7–15 s,
 also on click): a belly-up ROLL with wiggling flippers, a GALUMPH hop along the
@@ -1150,6 +1141,16 @@ tail wagging), and trots back in (`fox()`). The CASTLE's windows flicker each on
 their own rhythm with the odd blink, the great door breathes light, the spire
 tips twinkle, a sheen of light sweeps across the crystal, and a pennant waves
 from the tallest spire (its lights/tips/spires are recorded while painting).
+**Click the castle → a LIGHTNING STORM**, ported from
+`success_screens/success-lightning-storm.js`: five strikes over ~1.3 s, each
+bolt built by MIDPOINT DISPLACEMENT (`genBolt`) and drawn as a wide soft halo
+plus a bright core (`drawSegs`), with a secondary branch, a soft radial flash
+at the impact point, a spray of sparks and a brief white screen flash. Here the
+bolts are aimed at the castle's own SPIRE TIPS and its windows blaze with each
+hit (`castleBlaze`). Drawn on the fx canvas, above everything (`lightning()`).
+
+**Shooting stars** are frequent: one every 1.8–5 s, and about a third of the
+time they arrive as a staggered burst of two or three.
 
 Layers: skyL · auroraL (½-res, every frame) → auroraLo (⅛-res bloom) · mtnL
 (+ castle) · lakeL (+ channel) · foreL (all static, repainted on resize);
@@ -1157,8 +1158,10 @@ per frame: orcas (clipped above / faint below the water line), seals, the
 princess + her snowflakes. Test hooks: `window._aurora =
 BACKGROUNDS.aurora._test = { intensity(v), snow(on), wind(v), shoot(),
 cast(), breach(), surge(), wave(), sniff(), dive(), roll(), sit(), slide(),
-fox(), hop(), princess(), orcas(), bears(), olaf() }`. Dev harness:
-`aurora.html` (Aurora bright / calm, Snow, Wind, Shooting star, Cast, Breach,
-Surge, Wave, Dive, Bears, Fox, Restart). Verify via
+fox(), hop(), lightning(), busy(), princess(), orcas(), bears(), olaf() }`
+(`busy()` reports `{strikes, surge, castleBox}` — handy for checking that a
+click routed where it should). Dev harness: `aurora.html` (Aurora bright /
+calm, Snow, Wind, Shooting star, Cast, Breach, Surge, Wave, Dive, Bears, Fox,
+Lightning, Restart). Verify via
 `_verify_aurora.py` (default / cast+breach / bright stills to
 c:/tmp/dino_rigs + a double-restart leak check).

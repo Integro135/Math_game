@@ -12,7 +12,8 @@
      Shooting star · Cast (the sisters conjure snowflakes) · Breach (an orca
      leaps) · Surge (the aurora flares, as a click on the sky does) · Wave (the
      seals wave a flipper) · Dive (a seal slides into the water) · Bears (the
-     mother sits up, the cub stands) · Fox (the fox comes out of the igloo).
+     mother sits up, the cub stands) · Fox (the fox comes out of the igloo) ·
+     Lightning (a storm over the castle, as clicking the castle does).
      ─────────────────────────────────────────────────────────────────────── -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -47,6 +48,7 @@
   <button id="dive"    class="hbtn">Dive</button>
   <button id="sit"     class="hbtn">Bears</button>
   <button id="fox"     class="hbtn">Fox</button>
+  <button id="bolt"    class="hbtn">Lightning</button>
   <button id="restart" class="hbtn">Restart</button>
 </div>
 <script src="aurora.bg.js"></script>
@@ -70,6 +72,7 @@ document.getElementById('wave').addEventListener('click', () => T() && T().wave(
 document.getElementById('dive').addEventListener('click', () => T() && T().dive());
 document.getElementById('sit').addEventListener('click', () => T() && T().sit());
 document.getElementById('fox').addEventListener('click', () => T() && T().fox());
+document.getElementById('bolt').addEventListener('click', () => T() && T().lightning());
 start();
 </script>
 </body>
