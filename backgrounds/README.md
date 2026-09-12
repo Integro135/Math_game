@@ -4,8 +4,8 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai2.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives.bg.js` | Loaded by the game at runtime (`dubai.bg.js` is the legacy Dubai scene — nothing loads it; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives.bg.js` | Loaded by the game at runtime (`dubai.bg.js` is the legacy Dubai scene — nothing loads it; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
 | **Unicorn valley** | `unicorns3.bg.js` + `unicorns/*.item.js` | `girls` → **`unicorns3`**: v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
 | **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
@@ -28,7 +28,7 @@ visible and playable while the backdrop loads. Scenes that don't opt in show no
 veil at all.
 
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns3`,
-`galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
+`dubai→dubai3` (golden hour, built from zero in 2026-09; `dubai2`/`dubai` are legacy), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
 (🏙️, 🦁 and 🦕 are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
 #stars-layer {display:block}` rule in themes.css, or the stage stays hidden.
@@ -155,9 +155,114 @@ never position jumps).
 
 ---
 
-## dubai2.bg.js — Dubai at dusk, redrawn (the 🏙️ theme, integrated)
+## dubai3.bg.js — Dubai at golden hour, built from zero (the 🏙️ theme, integrated)
 
-Theme `dubai` → `dubai2` (`_BG_THEMES`). Harness `dubai2.html`; skin
+Theme `dubai` → `dubai3` (`_BG_THEMES`). Harness `dubai3.html` (Golden / Blue
+hour / Night, LED show, Fountain, Fireworks, Spin wheel, Heli, Plane, Dolphin,
+Sail wash, Museum, Horn, Shooting star, Restart); verify with
+`_verify_dubai3.py` (four stills + restart + perf); skin
+`game/skins/dubai.skin.css`; aids `dubai`. Built in 2026-09 with nothing shared
+with `dubai2` / `dubai` (both stay in the folder, unloaded — see below).
+
+**Stage.** Design space 1600×900, waterline `HZ = 790`, cover-fitted and
+bottom-anchored (`S`, `OX`, `OY`; `toDesign()` for hit-tests). The sun sets low
+LEFT of centre (`SUNX/SUNY = 520/782`), so every west face is warm and every
+east face is cool blue — the one rule that makes the glass read as glass. The
+game card sits centre (skin `max-width:700`), so the heroes stand at the sides
+and the middle skyline is kept low.
+
+**The hour** (`look(t)`, `DAY_PERIOD 260`): three keys — golden hour, blue
+hour, night — blended with holds (`KEYS`; sky bands, glow, haze, warm/cool
+light, glass tint, `lights`, `stars`, `sun`, water, `sunPath`); `L.night` is
+the 0..1 darkness. The still city repaints per look-key (24 per cycle, ~11 s).
+
+**The city, left → right.** `paintAlArab` — the BURJ AL ARAB on its island: a
+leaning mast, the taut white sail (warm on the sun side), the glowing atrium
+wall (its wash is drawn LIVE so a click can recolour it), the exoskeleton ribs,
+the helipad on its brace, Al Muntaha's box; `paintJBH` — the breaking-wave
+Jumeirah Beach Hotel beside it; the Marina cluster (`tower()` entries) with
+AIN DUBAI (`paintAinStatic` legs + podium + Bluewaters, the wheel itself is
+live) in front on the water; downtown middle low: the Emirates Towers (`crown:
+'twin'`), the MUSEUM OF THE FUTURE (`paintMuseum` — a real hole cut with an
+even-odd fill, calligraphy ribbons clipped to the ring); the BURJ KHALIFA; at
+its feet the Address towers, the Sky View pair + bridge, the Dubai Mall front,
+the FOUNTAIN LAKE (`LAKE`, a dark mirror with rim lamps); the golden DUBAI
+FRAME far right (`paintFrame`); the promenade, SZR road and palms
+(`paintShore`, `paintPalm`, none on the sail's water or over the lake); two
+hazy far layers (`paintFar`); horizon haze over everything far.
+
+**The Burj Khalifa** (`BURJ`, `buildBurj`, `burjBody`, `burjSpire`,
+`paintBurj`). Built as ONE stepped silhouette, not a bundle of shafts: 13
+setbacks per wing as `[half-width, top fraction]` (`west`, `east` — the east
+steps sit lower so the tiers spiral), joined into a single closed path around a
+core (`coreHW 8`) rising to `bodyTop`; the spire is five telescoping sections +
+the needle. One horizontal gradient fills the whole mass (sun-warm west →
+the core's bright west lobe → silver → blue shade east); clipped to the
+silhouette come the sky tint at the top and haze at the foot, a terrace shadow
+under every setback with a bright lip on it and a seam down each lobe, 5-px
+spandrels, 4-px fins, the sunset climbing the west edge of every lobe (additive
+strips), sparse lit cells at night. Three red beacons (`BURJ.beacons`).
+`burjPath()` is the same silhouette for the live layer's clip.
+
+**Generic towers** (`paintTower`): two faces (lit west, shaded east return),
+glass sheen, floor spandrels (`floor` per tower), mullions, a window grid whose
+density follows `L.lights` (`winCool` biases a tower blue), a podium with
+shopfronts, crowns `flat | spire | crown | slant | twin`, eight glass palettes
+(`pal`). Each records its roof beacon (`_beacon`).
+
+**Water** (`paintWater` + `buildRefl`): the deep gradient in the city layer;
+the mirror is a ½-res layer rebuilt with each repaint — the finished city
+sliced 3 px at a time and re-drawn below the waterline with a per-slice
+horizontal wobble and depth fade (`0.72·(1−k·0.75)`), then the sun's path,
+clipped to a fan with soft sides and a depth fade.
+
+**Living** (`drawLiving`, design coords): scheduled BURJ LED SHOW (`startShow`
+— bands racing up the tower in the show's palette, shimmer cells, a white
+finale pulse with rings leaving the spire, its light on the lake; every 150 s
+for 16 s), the FOUNTAIN (`startFountain` — 17 lit jets in three choreographies:
+a wave from the centre, a chase, a breathing crown; every 180 s for 24 s),
+FIREWORKS (`fireworks()` — rocket rise, 64-spark bursts under gravity with
+twinkle-out, their light on the water; five every 120 s), AIN DUBAI turning
+with a colour-cycling rim and 48 lit capsules (`spinWheel` → 5-s spin-up with
+a rainbow rim), the fleet (`BOATS` — dhow with a lateen sail, yacht, abra,
+speedboat; wakes, nav lights, their smear on the water; `blinkUntil` horn),
+the A380 (`PLANE`, contrail, port/starboard/strobe), the helicopter to the Al
+Arab helipad (`HELI`: in, hover, land, wait, away), dusk birds (two flocks,
+fade with night), night shooting stars, 44 SZR cars (white toward, red away),
+sun glints on the water at golden hour, 40 twinkling stars, roof and spire
+beacons, Burj windows switching, the sail's live wash, museum rings
+(`museumRing`), dolphins (`dolphin(t, x)` — arc + splash), tower boosts.
+
+**Clicks** (`onClick`, design coords, UI filter `UI_SEL`): the Burj → LED show
+(70%) or fireworks; a boat → horn-blink; the wheel → spin-up; the Burj Al
+Arab → a new sail colour; the Museum → a colour ring; the lake → the fountain;
+any tower → its windows flare for 5 s; open water → a dolphin; the upper sky
+→ a firework at the click.
+
+**Performance** (house rules): backing store `pickDPR` (1.5× and ~2.4 MP);
+the still city is ONE full-screen layer (`cityL`) repainted per look-key; the
+mirror a ½-res layer (`reflL`); glows are sprites (`sprite()` / `glow()`);
+per-frame gradients memoised (`lgc`/`rgc`, cleared on repaint); the rAF loop
+paces itself (every 2nd display frame while frames run long, back after 6
+quiet seconds; touch starts there). `_dubai3.perf()` → `{dpr, halfRate,
+gapEma, costEma, frames, drawn, S}`; `prof()` → per-section ms (`city`,
+`water`, `living`, `repaints`). Measured ~1.3 ms of script per frame with the
+show, fountain and fireworks all running.
+
+**Test hooks** `window._dubai3 = BACKGROUNDS.dubai3._test = { seek(ph),
+look(), show(), fountain(), fireworks(), spin(), horn(), heli(), dolphin(),
+wash(), museum(), plane(), shoot(), boats(), burj(), tiers(), busy(), perf(),
+prof(), profReset() }` — `seek` moves the clock AND pushes the schedules so a
+seek doesn't fire every show at once.
+
+---
+
+## dubai2.bg.js — Dubai at dusk, redrawn (LEGACY — superseded by `dubai3`)
+
+> Kept in the folder, unloaded; `_verify.js` still runs its regression checks
+> against this file. The `dubai` theme loads `dubai3.bg.js` (section above).
+
+Theme `dubai` → `dubai2` (`_BG_THEMES`) — **no longer**; see `dubai3` above. Harness `dubai2.html`; skin
 `game/skins/dubai.skin.css`; aids `dubai`. The city was rebuilt from scratch in
 2026-09; `dubai.bg.js` + `dubai_skyline.html` are the **legacy** scene and stay
 in the folder unloaded. `_verify.js` now checks `dubai2.bg.js`.

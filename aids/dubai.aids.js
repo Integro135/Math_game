@@ -1,6 +1,6 @@
 /* ── Dubai aid variant — helicopter number line + a crystal vault ───────────
-   For the Dubai-skyline background (BACKGROUNDS.dubai_skyline.aids='dubai'
-   when the background is ported — see backgrounds/README.md).
+   For the Dubai background (backgrounds/dubai3.bg.js, the 🏙️ theme, sets
+   aids:'dubai' — see backgrounds/README.md).
    A helicopter flies the number line (golden shimmer trail, warm amber
    fireworks like the Burj shows), and the counting jar is a frosted glass
    jar (styled like the space capsule, amber-tinted) that fills with

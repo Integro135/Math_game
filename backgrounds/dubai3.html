@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dubai v3 — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the DUBAI v3 background module.
+     The actual scene lives in dubai3.bg.js — the SAME file the game loads
+     dynamically (single source of truth). Open this file directly to
+     iterate on the background in isolation; the buttons poke the
+     window._dubai3 test hooks.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #060a18; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  #bar { position: fixed; bottom: 18px; right: 18px; z-index: 10; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 60vw; }
+  #bar button {
+    padding: 7px 14px;
+    background: rgba(14, 20, 48, 0.45); color: rgba(255, 214, 160, 0.92);
+    border: 1px solid rgba(255, 181, 77, 0.35); border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; box-shadow: 0 4px 18px rgba(4, 6, 20, 0.45); transition: background .2s;
+  }
+  #bar button:hover { background: rgba(46, 58, 110, 0.6); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="bar">
+  <button data-h="seek:0.05">Golden</button>
+  <button data-h="seek:0.40">Blue hour</button>
+  <button data-h="seek:0.58">Night</button>
+  <button data-h="show">LED show</button>
+  <button data-h="fountain">Fountain</button>
+  <button data-h="fireworks">Fireworks</button>
+  <button data-h="spin">Spin wheel</button>
+  <button data-h="heli">Heli</button>
+  <button data-h="plane">Plane</button>
+  <button data-h="dolphin">Dolphin</button>
+  <button data-h="wash">Sail wash</button>
+  <button data-h="museum">Museum</button>
+  <button data-h="horn">Horn</button>
+  <button data-h="shoot">Shooting star</button>
+  <button id="restart">Restart</button>
+</div>
+<script src="dubai3.bg.js"></script>
+<script>
+let cleanup = null;
+function start(){ if (cleanup) cleanup(); cleanup = window.BACKGROUNDS.dubai3.init({ stage: document.getElementById('stage') }); }
+document.getElementById('restart').addEventListener('click', start);
+document.querySelectorAll('#bar button[data-h]').forEach(b => b.addEventListener('click', e => {
+  e.stopPropagation();
+  const [name, arg] = b.dataset.h.split(':'); const h = window._dubai3; if (!h) return;
+  arg === undefined ? h[name]() : h[name](+arg);
+}));
+start();
+</script>
+</body>
+</html>
