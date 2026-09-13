@@ -39,7 +39,8 @@
    lake — scheduled and on click), FIREWORKS over downtown (click the upper
    sky), AIN DUBAI turning (click → spin-up + rainbow rim), a boat fleet with
    wakes and lit reflections (click → horn-blink), an A380 crossing with its
-   beacons, a helicopter to the Al Arab helipad, the INTERCEPTION show (a
+   beacons, a UFO that abducts a boat (or the helicopter) with a TRACTOR
+   BEAM, a helicopter to the Al Arab helipad, the INTERCEPTION show (a
    salvo from the right, the alert on the Al Arab's mast, an interceptor that
    banks onto its target, a fireball with shockwaves, debris, drifting smoke
    and a shake of the picture), dusk birds, night shooting
@@ -498,13 +499,283 @@
         g.fillStyle = rgb(mixc(L.glow, [255, 255, 255], 0.4), 0.18 + 0.1 * (1 - night)); g.beginPath(); g.ellipse(lcx + 40, HZ - 12, lrx * 0.5, 4, 0, 0, TAU); g.fill();   // the sky on it
         g.fillStyle = rgb([255, 215, 150], 0.45 + 0.5 * night); for (let i = 0; i < 18; i++){ const a = Math.PI + i / 17 * Math.PI; g.fillRect(lcx + Math.cos(a) * (lrx + 4) - 1, HZ - 8 + Math.sin(a) * 15 - 1, 2, 2); }   // rim lamps
       }
-      function paintPalm(g, L, x, y, s, lean){
-        const night = L.night, trunk = rgb(mixc([60, 44, 34], L.warm, 0.25 * (1 - night)));
-        g.strokeStyle = trunk; g.lineWidth = 3 * s; g.lineCap = 'round';
-        g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + lean * 6 * s, y - 22 * s, x + lean * 10 * s, y - 40 * s); g.stroke();
-        const tx = x + lean * 10 * s, ty = y - 40 * s;
-        g.strokeStyle = rgb(mixc([40, 90, 60], L.warm, 0.2 * (1 - night))); g.lineWidth = 2 * s;
-        for (let i = 0; i < 7; i++){ const a = -Math.PI * 0.95 + i * (Math.PI * 0.9 / 6), len = (16 + psr(i + x) * 8) * s; g.beginPath(); g.moveTo(tx, ty); g.quadraticCurveTo(tx + Math.cos(a) * len * 0.6, ty + Math.sin(a) * len * 0.6 - 4 * s, tx + Math.cos(a) * len, ty + Math.sin(a) * len + 10 * s); g.stroke(); }
+
+      // ═══════════════ EVERY ELEMENT MOVES ═══════════════
+      // What is painted into the still city cannot move, so anything that should
+      // breathe is drawn here instead, over it, once per frame. The wind that
+      // bends the palms also drives the sea and the beam's dust.
+      const wind = t => 0.55 + 0.45 * Math.sin(t * 0.21) * Math.sin(t * 0.073 + 1.3);
+
+      // palms: the trunk bends with the gust, each frond trails it on its own lag
+      function drawPalms(g, L, t){
+        const night = L.night, wv = wind(t);
+        const trunk = rgb(mixc([60, 44, 34], L.warm, 0.25 * (1 - night)));
+        const frond = rgb(mixc([40, 90, 60], L.warm, 0.2 * (1 - night)));
+        g.lineCap = 'round';
+        for (const P of PALMS){
+          const s = P.s, y = HZ - 6, sway = Math.sin(t * 1.15 + P.ph) * (2.2 + 3.4 * wv) * s;
+          const tx = P.x + P.lean * 10 * s + sway, ty = y - 40 * s;
+          g.strokeStyle = trunk; g.lineWidth = 3 * s;
+          g.beginPath(); g.moveTo(P.x, y); g.quadraticCurveTo(P.x + P.lean * 6 * s + sway * 0.35, y - 22 * s, tx, ty); g.stroke();
+          g.strokeStyle = frond; g.lineWidth = 2 * s;
+          for (let i = 0; i < 7; i++){
+            const lag = Math.sin(t * 1.9 + P.ph + i * 0.8) * (0.06 + 0.10 * wv);
+            const a = -Math.PI * 0.95 + i * (Math.PI * 0.9 / 6) + lag, len = (16 + psr(i + P.x) * 8) * s;
+            g.beginPath(); g.moveTo(tx, ty);
+            g.quadraticCurveTo(tx + Math.cos(a) * len * 0.6, ty + Math.sin(a) * len * 0.6 - 4 * s, tx + Math.cos(a) * len + sway * 0.6, ty + Math.sin(a) * len + 10 * s);
+            g.stroke();
+          }
+        }
+      }
+
+      // tower windows switching on and off through the evening
+      const WINLIFE = [];
+      function buildWinLife(){
+        WINLIFE.length = 0;
+        for (const T of TOWERS){
+          const d = T.d || T.w * 0.42, n = Math.round(T.h / 26);
+          for (let i = 0; i < n; i++){
+            const k = psr(i * 7 + T.seed * 31);
+            WINLIFE.push({ x: T.x + 3 + psr(i * 3 + T.seed) * (T.w + d - 8), y: HZ - 16 - k * (T.h - 30),
+                           w: 3.6, h: (T.floor || 9) * 0.42, ph: psr(i + T.seed * 5) * TAU, sp: 0.18 + psr(i + T.seed * 9) * 0.5,
+                           cool: psr(i + T.seed * 13) < 0.25 });
+          }
+        }
+      }
+      function drawWinLife(g, L, t){
+        if (L.lights < 0.25) return;
+        const a0 = (L.lights - 0.25) / 0.75;
+        for (const c of WINLIFE){
+          const k = Math.sin(t * c.sp + c.ph);
+          if (k < 0.55) continue;
+          g.fillStyle = rgb(c.cool ? [200, 225, 255] : [255, 208, 140], (k - 0.55) / 0.45 * 0.8 * a0);
+          g.fillRect(c.x, c.y, c.w, c.h);
+        }
+      }
+
+      // the far skyline: red aircraft-warning beacons, slow and out of step
+      const FARBEACON = Array.from({ length: 16 }, (_, i) => ({ x: 40 + psr(i + 610) * (DW - 80), y: HZ - 80 - psr(i + 611) * 150, ph: psr(i + 612) }));
+      function drawFarLife(g, L, t){
+        for (const b of FARBEACON){ if (((t * 0.55 + b.ph) % 1) < 0.42) glow(g, 'rose', b.x, b.y, 3.4, 0.30 + 0.35 * L.night); }
+      }
+
+      // cirrus drifting on the high wind
+      const DRIFT = Array.from({ length: 4 }, (_, i) => ({ x: psr(i + 620) * DW, y: 90 + psr(i + 621) * 330, w: 200 + psr(i + 622) * 300, h: 7 + psr(i + 623) * 12, sp: 2.4 + psr(i + 624) * 4 }));
+      function drawDrift(g, L, t){
+        for (const c of DRIFT){
+          const x = ((c.x + t * c.sp) % (DW + 700)) - 350, low = c.y > 330;
+          const col = low ? mixc(L.glow, [255, 255, 255], 0.35) : mixc(L.sky[1], [255, 255, 255], 0.5);
+          g.save(); g.translate(x, c.y);
+          g.fillStyle = rgc('drift' + c.w, g, 0, 0, 0, 1, [[0, rgb(col, 0.16 * (1 - 0.6 * L.night))], [0.55, rgb(col, 0.08 * (1 - 0.6 * L.night))], [1, rgb(col, 0)]]);
+          g.scale(c.w, c.h); g.beginPath(); g.arc(0, 0, 1, 0, TAU); g.fill(); g.restore();
+        }
+      }
+
+      // the Dubai Frame: a light runs up one leg, across the bridge and down
+      function drawFrameLive(g, L, t){
+        const { x, w, h } = FRAME, base = HZ - 4, per = 7, k = (t % per) / per;
+        const P = 2 * h + w, d = k * P;
+        let px, py;
+        if (d < h){ px = x + 4.5; py = base - d; }
+        else if (d < h + w){ px = x + 4.5 + (d - h); py = base - h + 4; }
+        else { px = x + w - 4.5; py = base - h + (d - h - w); }
+        g.save(); g.globalCompositeOperation = 'lighter';
+        glow(g, 'gold', px, py, 13, 0.85);
+        g.fillStyle = rgb([255, 225, 160], 0.35 + 0.3 * Math.sin(t * 1.6));                 // the glass bridge breathing
+        g.fillRect(x + 9, base - h + 8, w - 18, 7);
+        g.restore();
+      }
+
+      // the Museum: light flowing along the calligraphy, the void breathing
+      function drawMuseumLive(g, L, t){
+        const { x, y, rx, ry } = MUSEUM;
+        g.save(); g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU); g.ellipse(x + 2, y + 2, rx * 0.42, ry * 0.5, 0, 0, TAU); g.clip('evenodd');
+        g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+        for (let i = 0; i < 7; i++){
+          const yy = y - ry + 12 + i * 15, ph = psr(i + 800) * 6, head = ((t * 0.33 + i * 0.14) % 1);
+          g.strokeStyle = rgb([255, 225, 170], (0.25 + 0.5 * L.night));
+          g.lineWidth = 1.5; g.beginPath();
+          for (let k = 0; k <= 12; k++){
+            const u = k / 12, xx = x - rx + k * (rx / 6), sway = Math.sin(k * 0.9 + ph + t * 0.5) * 3.5;
+            const lit = Math.max(0, 1 - Math.abs(u - head) * 5);
+            if (lit > 0.02){ g.globalAlpha = lit; k ? g.lineTo(xx, yy + sway) : g.moveTo(xx, yy + sway); }
+            else { g.stroke(); g.beginPath(); g.moveTo(xx, yy + sway); }
+          }
+          g.stroke(); g.globalAlpha = 1;
+        }
+        g.restore();
+        const br = 0.5 + 0.5 * Math.sin(t * 0.8);
+        g.save(); g.globalCompositeOperation = 'lighter';
+        g.strokeStyle = rgb([190, 235, 255], (0.10 + 0.25 * L.night) * br); g.lineWidth = 2;
+        g.beginPath(); g.ellipse(x + 2, y + 2, rx * 0.42, ry * 0.5, 0, 0, TAU); g.stroke(); g.restore();
+      }
+
+      // the fountain lake: rings crossing it, and the shore lamps flickering
+      function drawShoreLife(g, L, t){
+        const lcx = (LAKE.x0 + LAKE.x1) / 2, lrx = (LAKE.x1 - LAKE.x0) / 2;
+        g.save(); g.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 3; i++){
+          const k = ((t * 0.28 + i * 0.33) % 1);
+          g.strokeStyle = rgb(mixc(L.glow, [180, 225, 255], 0.5), 0.20 * (1 - k));
+          g.lineWidth = 1.2; g.beginPath(); g.ellipse(lcx, HZ - 8, lrx * k, 13 * k, 0, 0, TAU); g.stroke();
+        }
+        g.restore();
+        const a = 0.35 + 0.5 * L.night;
+        for (let x = -380, i = 0; x < DW + 400; x += 26, i++){
+          const fl = 0.75 + 0.25 * Math.sin(t * (1.6 + psr(i + 660)) + psr(i + 661) * TAU);
+          g.fillStyle = rgb([255, 215, 150], a * fl); g.fillRect(x, HZ - 8, 2, 3);
+          if (psr(i + 662) < 0.12) glow(g, 'warm', x + 1, HZ - 7, 5, 0.25 * a * fl);
+        }
+      }
+
+      // the Al Arab's exoskeleton lights up rung by rung after dark
+      function drawSailLife(g, L, t){
+        if (L.night < 0.15) return;
+        const { x, base, h } = ALARAB, top = base - h;
+        g.save(); g.globalCompositeOperation = 'lighter'; g.lineWidth = 1.4;
+        for (let sg = 0; sg < 9; sg++){
+          const u0 = sg / 9, u1 = (sg + 1) / 9, lit = Math.max(0, 1 - Math.abs(((t * 0.3) % 1.3) - u0) * 4.5);
+          if (lit < 0.03) continue;
+          const ex0 = x + 5 + 69 * u0 * u0 * 0.9 + 6 * u0, ey0 = top + 8 + (base - top - 8) * u0;
+          const ex1 = x + 5 + 69 * u1 * u1 * 0.9 + 6 * u1, ey1 = top + 8 + (base - top - 8) * u1;
+          g.strokeStyle = rgb([210, 240, 255], 0.7 * lit * L.night);
+          g.beginPath(); g.moveTo(ex0, ey0); g.lineTo(ex1 - 9, ey1); g.moveTo(ex0 - 9, ey0); g.lineTo(ex1, ey1); g.stroke();
+        }
+        g.restore();
+        // the JBH's windows twinkling next door
+        for (let i = 0; i < 22; i++){
+          const k = 0.5 + 0.5 * Math.sin(t * (0.5 + psr(i + 670)) + psr(i + 671) * TAU);
+          if (k < 0.6) continue;
+          g.fillStyle = rgb([255, 220, 170], (k - 0.6) * 2.5 * (0.3 + 0.6 * L.night));
+          g.fillRect(x + 96 + psr(i + 672) * 150, base - 18 - psr(i + 673) * 88, 2.6, 3);
+        }
+      }
+
+      // ── THE UFO ─────────────────────────────────────────────────────────────
+      // It slides in over the water, picks a boat (or the helicopter, if one is
+      // flying), hangs above it wobbling, opens a TRACTOR BEAM — a cone of light
+      // with bands travelling down it and dust rising up — lifts its catch
+      // spinning into the hull, flashes, and shoots off. Click it and it drops
+      // everything and bolts.
+      const UFO = { st: 'off', t0: 0, x: 0, y: 0, x0: 0, y0: 0, target: null, kind: '', hue: 150, nextAt: 55, dust: [] };
+      const UFO_R = 34;
+      function startUfo(t){
+        if (UFO.st !== 'off') return;
+        const heliUp = HELI.flying && !HELI.taken && !HELI.gone;
+        const pick = UFO.force ? UFO.force : (heliUp && Math.random() < 0.45 ? 'heli' : 'boat');
+        UFO.force = null;
+        if (pick === 'heli' && !heliUp) return;
+        let target = null;
+        if (pick === 'boat'){
+          // the open middle water: the beam should fall clear of BOTH heroes —
+          // the sail on the left and the Burj Khalifa on the right
+          let cands = BOATS.filter(b => !b.taken && !b.gone && b.x > 500 && b.x < 1080);
+          if (!cands.length) cands = BOATS.filter(b => !b.taken && !b.gone && b.x > 340 && b.x < 1160);
+          if (!cands.length){ cands = BOATS.filter(b => !b.taken && !b.gone); if (!cands.length) return;
+            cands[0].x = rnd(560, 1020); }                                            // none in view: bring one in
+          target = cands[(Math.random() * cands.length) | 0];
+        }
+        UFO.kind = pick; UFO.target = target;
+        UFO.st = 'arrive'; UFO.t0 = t; UFO.nextAt = null; UFO.hue = [150, 190, 280, 60][(Math.random() * 4) | 0];
+        UFO.x0 = Math.random() < 0.5 ? -140 : DW + 140; UFO.y0 = 120 + rnd(0, 90);
+        UFO.x = UFO.x0; UFO.y = UFO.y0; UFO.dust.length = 0;
+      }
+      function ufoTargetPos(){
+        if (UFO.kind === 'heli') return HELI.pos || [DW * 0.5, 300];
+        return UFO.target ? [UFO.target.x, UFO.target.y] : [DW * 0.5, HZ + 40];
+      }
+      function ufoRelease(t){                                            // clicked: drop it and run
+        if (UFO.target){ UFO.target.taken = false; UFO.target.lift = 0; UFO.target.spin = 0; }
+        if (UFO.kind === 'heli'){ HELI.taken = false; HELI.lift = 0; }
+        UFO.st = 'flee'; UFO.t0 = t;
+      }
+      function updateUfo(t, dt){
+        if (UFO.st === 'off'){ if (UFO.nextAt == null) UFO.nextAt = t + 70 + rnd(0, 60); if (t > UFO.nextAt) startUfo(t); return; }
+        const e = t - UFO.t0, [txp, typ] = ufoTargetPos();
+        const hoverY = Math.max(110, Math.min(typ - 250, HZ - 370));   // clear of the skyline, so the beam falls the whole way
+        if (UFO.st === 'arrive'){
+          const k = smooth(clamp01(e / 3.4));
+          UFO.x = lerp(UFO.x0, txp, k); UFO.y = lerp(UFO.y0, hoverY, k);
+          if (k >= 1){ UFO.st = 'open'; UFO.t0 = t; }
+        } else if (UFO.st === 'open'){
+          UFO.x += (txp - UFO.x) * Math.min(1, dt * 3); UFO.y += (hoverY - UFO.y) * Math.min(1, dt * 3);
+          if (e > 1.1){ UFO.st = 'lift'; UFO.t0 = t;
+            if (UFO.kind === 'heli') HELI.taken = true; else if (UFO.target) UFO.target.taken = true; }
+        } else if (UFO.st === 'lift'){
+          UFO.x += (txp - UFO.x) * Math.min(1, dt * 2);
+          const k = clamp01(e / 3.2), rise = (typ - (UFO.y + 12)) * smooth(k);
+          if (UFO.kind === 'heli'){ HELI.lift = -rise; HELI.spin = k * 7; }
+          else if (UFO.target){ UFO.target.lift = -rise; UFO.target.spin = k * 7; }
+          if (k >= 1){ UFO.st = 'gulp'; UFO.t0 = t;
+            if (UFO.kind === 'heli'){ HELI.gone = true; HELI.lift = 0; } else if (UFO.target){ UFO.target.gone = true; UFO.target.lift = 0; } }
+        } else if (UFO.st === 'gulp'){
+          if (e > 0.7){ UFO.st = 'leave'; UFO.t0 = t; }
+        } else if (UFO.st === 'leave' || UFO.st === 'flee'){
+          const k = clamp01(e / (UFO.st === 'flee' ? 1.4 : 2.6));
+          UFO.x += (UFO.x0 < 0 ? -1 : 1) * (UFO.st === 'flee' ? 620 : 300) * dt * (0.3 + k);
+          UFO.y -= (UFO.st === 'flee' ? 200 : 90) * dt * (0.3 + k);
+          if (k >= 1){
+            UFO.st = 'off'; UFO.nextAt = t + 90 + rnd(0, 70);
+            if (UFO.target && UFO.target.gone){ const b = UFO.target; setTimeout(() => {}, 0); b.gone = false; b.taken = false; b.spin = 0; b.x = b.dir > 0 ? -120 : DW + 120; b.y = HZ + 16 + rnd(0, 60); }
+            if (UFO.kind === 'heli' && HELI.gone){ HELI.gone = false; HELI.taken = false; HELI.spin = 0; HELI.t0 = t + 20; }
+            UFO.target = null;
+          }
+        }
+        // dust drawn up the beam
+        if (UFO.st === 'lift' || UFO.st === 'open'){
+          if (Math.random() < dt * 30) UFO.dust.push({ x: txp + rnd(-30, 30), y: typ + rnd(-6, 12), t0: t, life: rnd(1.1, 2.0), r: rnd(0.8, 2.4) });
+        }
+        for (let i = UFO.dust.length - 1; i >= 0; i--) if (t - UFO.dust[i].t0 > UFO.dust[i].life) UFO.dust.splice(i, 1);
+      }
+      function drawUfo(g, L, t){
+        if (UFO.st === 'off') return;
+        const e = t - UFO.t0, wob = Math.sin(t * 2.3) * 3, x = UFO.x, y = UFO.y + wob;
+        const beamOn = UFO.st === 'open' || UFO.st === 'lift' || UFO.st === 'gulp';
+        const [txp, typ] = ufoTargetPos();
+        // the beam: a cone of light, bands travelling down it, dust rising
+        if (beamOn){
+          const open = UFO.st === 'open' ? smooth(clamp01(e / 1.1)) : (UFO.st === 'gulp' ? 1 - smooth(clamp01(e / 0.7)) : 1);
+          const btm = typ + 14, wTop = 10 * open, wBtm = 46 * open;
+          g.save(); g.globalCompositeOperation = 'lighter';
+          g.beginPath(); g.moveTo(x - wTop, y + 8); g.lineTo(x + wTop, y + 8); g.lineTo(x + wBtm, btm); g.lineTo(x - wBtm, btm); g.closePath();
+          g.fillStyle = lg(g, 0, y + 8, 0, btm, [[0, 'hsla(' + UFO.hue + ',95%,80%,' + (0.55 * open) + ')'], [0.6, 'hsla(' + UFO.hue + ',95%,70%,' + (0.22 * open) + ')'], [1, 'hsla(' + UFO.hue + ',95%,65%,0.02)']]);
+          g.fill();
+          g.save(); g.clip();                                            // bands travelling down the cone
+          for (let i = 0; i < 5; i++){
+            const k = ((t * 0.7 + i * 0.2) % 1), yy = lerp(y + 8, btm, k);
+            g.fillStyle = 'hsla(' + UFO.hue + ',100%,88%,' + (0.30 * open * (1 - k)) + ')';
+            g.fillRect(x - wBtm, yy - 3, wBtm * 2, 6);
+          }
+          g.restore();
+          for (const d of UFO.dust){                                      // dust drawn up the beam
+            const k = (t - d.t0) / d.life;
+            g.fillStyle = 'hsla(' + UFO.hue + ',100%,92%,' + (0.9 * (1 - k)) + ')';
+            g.beginPath(); g.arc(d.x + Math.sin(k * 6 + d.r) * 5, lerp(d.y, y + 14, smooth(k)), d.r * (1 - k * 0.5), 0, TAU); g.fill();
+          }
+          g.fillStyle = 'hsla(' + UFO.hue + ',95%,75%,' + (0.16 * open) + ')';   // the pool of light where it lands
+          g.beginPath(); g.ellipse(txp, btm, wBtm, wBtm * 0.22, 0, 0, TAU); g.fill();
+          g.restore();
+        }
+        if (UFO.st === 'gulp' && e < 0.3) glow(g, 'white', x, y + 6, 40 * (1 - e / 0.3) + 10, 1 - e / 0.3);
+        // the saucer: a dark hull, a lit rim, a glass dome, chasing lights
+        g.save(); g.translate(x, y); g.rotate(Math.sin(t * 1.1) * 0.05);
+        glow(g, 'white', 0, 6, UFO_R * 1.5, 0.10 + 0.10 * Math.sin(t * 3));
+        g.fillStyle = 'hsla(' + UFO.hue + ',60%,72%,0.9)';                        // the dome
+        g.beginPath(); g.ellipse(0, -5, UFO_R * 0.42, UFO_R * 0.36, 0, Math.PI, TAU); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.45)'; g.beginPath(); g.ellipse(-UFO_R * 0.14, -9, UFO_R * 0.16, UFO_R * 0.1, -0.5, 0, TAU); g.fill();
+        g.fillStyle = lg(g, 0, -6, 0, 10, [[0, '#dfe6f2'], [0.45, '#98a6c0'], [1, '#3b4560']]);   // the hull
+        g.beginPath(); g.ellipse(0, 0, UFO_R, UFO_R * 0.30, 0, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(10,14,28,0.55)'; g.beginPath(); g.ellipse(0, 3.4, UFO_R * 0.92, UFO_R * 0.2, 0, 0, Math.PI); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,0.45)'; g.lineWidth = 1; g.beginPath(); g.ellipse(0, -1, UFO_R * 0.78, UFO_R * 0.18, 0, Math.PI, TAU); g.stroke();
+        for (let i = 0; i < 9; i++){                                             // the chasing rim lights
+          const a = i / 9 * TAU, px = Math.cos(a) * UFO_R * 0.84, py = 3 + Math.sin(a) * UFO_R * 0.24;
+          const on = Math.pow(Math.max(0, Math.sin(t * 4 - i * 0.7)), 6);
+          g.fillStyle = 'hsla(' + ((UFO.hue + i * 12) % 360) + ',100%,' + (55 + 35 * on) + '%,' + (0.5 + 0.5 * on) + ')';
+          g.beginPath(); g.arc(px, py, 2.2 + on * 1.2, 0, TAU); g.fill();
+          if (on > 0.5) glow(g, 'white', px, py, 7, on * 0.5);
+        }
+        g.restore();
+        UFO.hit = [x, y, UFO_R + 8];
       }
 
       // ── the composition ──
@@ -531,7 +802,7 @@
         tower({ x: 1425, w: 34, h: 300, crown: 'flat', pal: 1, seed: 16, floor: 9 });                    // Sky View pair (bridge painted after)
         tower({ x: 1482, w: 26, h: 220, crown: 'spire', pal: 7, seed: 17, floor: 7 });
         tower({ x: 1194, w: 26, h: 150, crown: 'flat', pal: 3, seed: 18, podium: 20, floor: 10 });      // the Dubai Mall front, clear of the Burj's western feet
-        for (let i = 0; i < 26; i++){ const x = -60 + i * 68 + psr(i + 900) * 30; if (x < 300 || (x > LAKE.x0 - 20 && x < LAKE.x1 + 20)) continue; PALMS.push({ x, s: 0.8 + psr(i + 901) * 0.5, lean: psr(i + 902) < 0.5 ? -1 : 1 }); }
+        for (let i = 0; i < 26; i++){ const x = -60 + i * 68 + psr(i + 900) * 30; if (x < 300 || (x > LAKE.x0 - 20 && x < LAKE.x1 + 20)) continue; PALMS.push({ x, s: 0.8 + psr(i + 901) * 0.5, lean: psr(i + 902) < 0.5 ? -1 : 1, ph: psr(i + 903) * TAU }); }
       }
       function paintCity(g, L){
         paintSky(g, L);
@@ -553,7 +824,6 @@
         for (const T of byX) if (T.x === 1194) paintTower(g, L, T);
         paintFrame(g, L);
         paintShore(g, L);
-        for (const P of PALMS) paintPalm(g, L, P.x, HZ - 6, P.s, P.lean);
         // haze at the horizon over everything far
         g.fillStyle = lg(g, 0, HZ - 260, 0, HZ, [[0, rgb(L.haze, 0)], [1, rgb(L.haze, L.hazeA * 0.55)]]);
         g.fillRect(-400, HZ - 260, DW + 800, 260);
@@ -635,7 +905,7 @@
       }));
       const BIRDS = [0, 1].map(f => ({ x: -200 - f * 900, y: 250 + f * 120, spd: 26 + f * 8, n: 6 + f, ph: f * 2 }));
       const PLANE = { t0: 18, period: 46, len: 24 };
-      const HELI = { t0: 24, period: 80 };
+      const HELI = { t0: 24, period: 80, flying: false, taken: false, gone: false, lift: 0, spin: 0, pos: null };
       const CARS = Array.from({ length: 44 }, (_, i) => ({ x: psr(i + 60) * DW, v: (psr(i + 61) < 0.5 ? -1 : 1) * (40 + psr(i + 62) * 70), lane: psr(i + 63) < 0.5 ? 0 : 1 }));
       const TWINKLE = Array.from({ length: 40 }, (_, i) => ({ x: psr(i + 70) * DW, y: psr(i + 71) * 420, ph: psr(i + 72) * TAU, sp: 1 + psr(i + 73) * 2 }));
       const GLINTS = Array.from({ length: 30 }, (_, i) => ({ x: SUNX + (psr(i + 80) - 0.5) * 380 * (0.4 + psr(i + 81)), y: HZ + 6 + psr(i + 82) * 90, ph: psr(i + 83) * TAU }));
@@ -661,6 +931,7 @@
         if (stopped) return;
         if (e.target.closest && e.target.closest(UI_SEL)) return;
         const [mx, my] = toDesign(e.clientX, e.clientY), t = lastT;
+        if (UFO.hit && UFO.st !== 'off' && Math.hypot(mx - UFO.hit[0], my - UFO.hit[1]) < UFO.hit[2]){ ufoRelease(t); return; }
         for (const m of MIS.inc) if (Math.abs(mx - m.x) < 28 && Math.abs(my - m.y) < 28){ MIS.inc.splice(MIS.inc.indexOf(m), 1); popMissile(t, m.x, m.y); return; }
         if (Math.abs(mx - BX) < 70 && my > BURJ.top - 20 && my < HZ){ Math.random() < 0.7 ? startShow(t, 14) : fireworks(t, 4); return; }
         for (const b of BOATS) if (Math.abs(mx - b.x) < 44 * b.s && Math.abs(my - b.y) < 30){ b.blinkUntil = t + 2.2; return; }
@@ -684,16 +955,24 @@
         if (FOUNTAIN && t - FOUNTAIN.t0 > FOUNTAIN.len) FOUNTAIN = null;
 
         drawTwinkle(g, L, t);
+        drawDrift(g, L, t);
         drawShooters(g, L, t);
         drawBirds(g, L, t, dt);
         drawPlane(g, L, t);
+        drawFarLife(g, L, t);
+        drawWinLife(g, L, t);
         drawAin(g, L, t, dt);
         drawAlArabLive(g, L, t);
+        drawSailLife(g, L, t);
+        drawFrameLive(g, L, t);
+        drawMuseumLive(g, L, t);
         drawMuseumFx(g, t);
         drawBeacons(g, L, t);
         drawTowerBoost(g, L, t);
         drawBurjLive(g, L, t);
         drawTraffic(g, L, t, dt);
+        drawShoreLife(g, L, t);
+        drawPalms(g, L, t);
         drawGlints(g, L, t);
         drawBoats(g, L, t, dt);
         drawDolphins(g, L, t);
@@ -701,6 +980,7 @@
         drawFireworks(g, L, t);
         drawMissiles(g, L, t, dt);
         drawHeli(g, L, t);
+        updateUfo(t, dt); drawUfo(g, L, t);
       }
 
       function drawTwinkle(g, L, t){
@@ -999,13 +1279,16 @@
       function drawBoats(g, L, t, dt){
         const night = L.night;
         for (const b of BOATS){
-          b.x += b.dir * b.spd * dt * b.s; if (b.dir > 0 && b.x > DW + 120){ b.x = -120; b.y = HZ + 16 + rnd(0, 60); } if (b.dir < 0 && b.x < -120){ b.x = DW + 120; b.y = HZ + 16 + rnd(0, 60); }
-          const bob = Math.sin(t * 1.4 + b.ph) * 1.2, x = b.x, y = b.y + bob, s = b.s * (0.7 + 0.3 * (b.y - HZ) / 76);
+          if (b.gone) continue;
+          if (!b.taken) b.x += b.dir * b.spd * dt * b.s; if (b.dir > 0 && b.x > DW + 120){ b.x = -120; b.y = HZ + 16 + rnd(0, 60); } if (b.dir < 0 && b.x < -120){ b.x = DW + 120; b.y = HZ + 16 + rnd(0, 60); }
+          const bob = Math.sin(t * 1.4 + b.ph) * 1.2, x = b.x, y = b.y + bob + (b.lift || 0), s = b.s * (0.7 + 0.3 * (b.y - HZ) / 76);
           const blink = b.blinkUntil > t, lit = blink ? ((t * 10 % 1) < 0.5 ? 1 : 0.1) : 0.5 + 0.5 * night;
           // wake
           g.strokeStyle = 'rgba(255,255,255,' + (0.10 + 0.08 * night) + ')'; g.lineWidth = 1;
           g.beginPath(); g.moveTo(x - b.dir * 16 * s, y + 3); g.lineTo(x - b.dir * (60 + b.spd) * s, y + 8 * s); g.moveTo(x - b.dir * 16 * s, y + 3); g.lineTo(x - b.dir * (60 + b.spd) * s, y - 1); g.stroke();
-          g.save(); g.translate(x, y); g.scale(b.dir * s, s);
+          g.save(); g.translate(x, y);
+          if (b.lift) g.rotate(Math.sin((b.spin || 0) * 1.7) * 0.35 * Math.min(1, -b.lift / 40));   // it turns as the beam takes it
+          g.scale(b.dir * s, s);
           const hull = mixc([30, 32, 50], L.warm, 0.12), deck = mixc([230, 232, 240], L.warm, 0.35 * (1 - night));
           if (b.kind === 'dhow'){
             g.fillStyle = rgb(hull); g.beginPath(); g.moveTo(-26, 0); g.quadraticCurveTo(0, 8, 26, -2); g.lineTo(20, -6); g.lineTo(-22, -5); g.closePath(); g.fill();
@@ -1031,6 +1314,7 @@
           }
           g.restore();
           // the lights' smear on the water
+          if (b.lift) continue;
           g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.16 + 0.25 * lit * night;
           g.fillStyle = lgc('boatsmear', g, 0, 0, 0, 30, [[0, 'rgba(255,220,170,0.6)'], [1, 'rgba(255,220,170,0)']]);
           g.save(); g.translate(x, y + 2); g.scale(s, s); g.fillRect(-14, 0, 28, 30); g.restore(); g.restore();
@@ -1089,17 +1373,24 @@
         }
       }
       function drawHeli(g, L, t){
-        const e = (t - HELI.t0) % HELI.period; if (e < 0 || e > 30) return;
+        if (HELI.gone){ HELI.flying = false; return; }
+        const e = (t - HELI.t0) % HELI.period;
+        HELI.flying = e >= 0 && e <= 30;
+        if (!HELI.flying) return;
         // in from the right high, down to the helipad, wait, up and away
         const pad = ALARAB.helipad || [160, HZ - 236];
-        let x, y;
-        if (e < 10){ const k = smooth(e / 10); x = lerp(DW + 60, pad[0], k); y = lerp(150, pad[1] - 60, k); }
+        let x, y; const x0h = DW + 60;
+        if (HELI.taken){ x = HELI.pos ? HELI.pos[0] : x0h; y = HELI.pos ? HELI.pos[1] : 150; }
+        else if (e < 10){ const k = smooth(e / 10); x = lerp(DW + 60, pad[0], k); y = lerp(150, pad[1] - 60, k); }
         else if (e < 13){ const k = smooth((e - 10) / 3); x = pad[0]; y = lerp(pad[1] - 60, pad[1] - 9, k); }
         else if (e < 19){ x = pad[0]; y = pad[1] - 9; }
         else if (e < 22){ const k = smooth((e - 19) / 3); x = pad[0] - k * 20; y = lerp(pad[1] - 9, pad[1] - 80, k); }
         else { const k = smooth((e - 22) / 8); x = lerp(pad[0] - 20, -80, k); y = lerp(pad[1] - 80, 120, k); }
         const bodyC = mixc([40, 44, 66], L.cool, 0.25);
+        HELI.pos = [x, y];
+        if (HELI.taken){ y += HELI.lift; }
         g.save(); g.translate(x, y);
+        if (HELI.taken) g.rotate(Math.sin(HELI.spin * 1.7) * 0.4);
         g.fillStyle = rgb(bodyC); g.beginPath(); g.ellipse(0, 0, 11, 4.5, 0, 0, TAU); g.fill(); g.fillRect(8, -1.5, 14, 2); g.fillRect(20, -6, 1.5, 6);
         g.fillStyle = 'rgba(200,220,255,0.55)'; g.beginPath(); g.ellipse(-4, -1, 5, 2.6, 0, 0, TAU); g.fill();
         g.strokeStyle = 'rgba(230,235,245,0.55)'; g.lineWidth = 1; const ra = t * 40; g.beginPath(); g.moveTo(Math.cos(ra) * -16, -6 + Math.sin(ra) * 1.5); g.lineTo(Math.cos(ra) * 16, -6 - Math.sin(ra) * 1.5); g.stroke();
@@ -1147,6 +1438,7 @@
       }
 
       buildCity();
+      buildWinLife();
       resize();
       addEventListener('resize', resize);
       doc.addEventListener('click', onClick);
@@ -1156,9 +1448,9 @@
         seek: ph => { t0 = (t0 === null ? 0 : t0); const nt = lastT + (ph * DAY_PERIOD - (lastT % DAY_PERIOD)); t0 -= (nt - lastT) * 1000; lastT = nt; lookKey = -1; nextShow = nt + 8; nextFn = nt + 30; nextFw = nt + 60; },
         look: () => LOOK, show: () => startShow(lastT, 16), fountain: () => startFountain(lastT, 24), fireworks: () => fireworks(lastT, 4),
         spin: () => spinWheel(lastT), horn: () => BOATS.forEach(b => b.blinkUntil = lastT + 2), heli: () => (HELI.t0 = lastT - 0.01),
-        dolphin: () => dolphin(lastT, 760), wash: () => washAlArab(lastT), missile: () => startMissiles(lastT), museum: () => museumRing(lastT), plane: () => (PLANE.t0 = lastT),
+        dolphin: () => dolphin(lastT, 760), wash: () => washAlArab(lastT), missile: () => startMissiles(lastT), ufo: kind => { UFO.st = 'off'; UFO.nextAt = null; UFO.force = kind || null; if (kind === 'heli'){ HELI.t0 = lastT - 12; HELI.flying = true; } startUfo(lastT); return UFO.kind; }, museum: () => museumRing(lastT), plane: () => (PLANE.t0 = lastT),
         shoot: () => SHOOTERS.push({ x: rnd(200, 1400), y: rnd(40, 300), t0: lastT, ang: rnd(2.6, 3.0), len: rnd(90, 180) }),
-        boats: () => BOATS, burj: () => BURJ, lobes: () => BURJ.lobes.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL, inc: MIS.inc.length, def: MIS.def.length, booms: MIS.booms.length }),
+        boats: () => BOATS, burj: () => BURJ, lobes: () => BURJ.lobes.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL, inc: MIS.inc.length, def: MIS.def.length, booms: MIS.booms.length, ufo: UFO.st, ufoKind: UFO.kind }),
         perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },

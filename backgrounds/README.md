@@ -250,11 +250,39 @@ beacons, Burj windows switching, the sail's live wash, museum rings
 (`museumRing`), dolphins (`dolphin(t, x)` — arc + splash), tower boosts.
 
 **Clicks** (`onClick`, design coords, UI filter `UI_SEL`): the Burj → LED show
-(70%) or fireworks; a boat → horn-blink; the wheel → spin-up; an incoming rocket →
-it is destroyed early; the Burj Al Arab → a new sail colour AND it scrambles
+(70%) or fireworks; a boat → horn-blink; the wheel → spin-up; the UFO → it drops its catch and
+bolts; an incoming rocket → it is destroyed early; the Burj Al Arab → a new sail colour AND it scrambles
 the interception show; the Museum → a colour ring; the lake → the fountain;
 any tower → its windows flare for 5 s; open water → a dolphin; the upper sky
 → a firework at the click.
+
+**The UFO** (`UFO`, `startUfo`, `updateUfo`, `drawUfo`, `ufoRelease`). A
+saucer — dark hull, lit rim, a glass dome, nine rim lights chasing round it,
+a soft underglow and a slow wobble — slides in from one side, picks a BOAT in
+the open middle water (deliberately clear of both heroes: the sail on the left
+and the Burj Khalifa on the right) or the HELICOPTER if one is flying, hangs
+above it, and opens a TRACTOR BEAM: a cone of coloured light with bands
+travelling down it, dust motes drawn UP it, and a pool of light where it lands
+on the water. Its catch rises spinning and tilting into the hull, there is a
+white flash as it is swallowed, and the saucer shoots off; the boat sails back
+in from the edge a while later, the helicopter returns on its next run. States
+`arrive → open → lift → gulp → leave`, every ~2–2.5 min. CLICK IT and it drops
+everything and bolts (`flee`). Test hook `ufo()`, or `ufo('heli')` / `ufo('boat')`
+to force the target.
+
+**Everything else moves too.** What is baked into the still city cannot move,
+so each remaining element is animated as an overlay drawn over it: `drawPalms`
+(the palms left the static layer — trunks bend to a shared `wind(t)` gust and
+every frond trails on its own lag), `drawWinLife` (a cell per ~26 px of every
+tower switching on and off on its own slow phase, warm or cool), `drawFarLife`
+(16 red aircraft beacons blinking out of step on the far skyline), `drawDrift`
+(four cirrus drifting on the high wind), `drawFrameLive` (a light running up
+one leg of the Dubai Frame, across the bridge and down the other, the glass
+bridge breathing), `drawMuseumLive` (light flowing along the Museum's
+calligraphy ribbons, the void's rim breathing), `drawShoreLife` (rings
+crossing the fountain lake, every promenade lamp flickering on its own),
+`drawSailLife` (the Burj Al Arab's exoskeleton lighting up rung by rung after
+dark, the JBH's windows twinkling). Together they cost about 0.5 ms a frame.
 
 **The interception show** (`MIS`, `startMissiles`, `launchInterceptor`,
 `popMissile`, `drawRocket`, `drawMissiles`, `shakeAmp`). A SALVO of one to
@@ -289,8 +317,8 @@ show, fountain and fireworks all running.
 
 **Test hooks** `window._dubai3 = BACKGROUNDS.dubai3._test = { seek(ph),
 look(), show(), fountain(), fireworks(), spin(), horn(), heli(), dolphin(),
-wash(), missile(), museum(), plane(), shoot(), boats(), burj(), lobes(),
-busy(), perf(),
+wash(), missile(), ufo(kind?), museum(), plane(), shoot(), boats(), burj(),
+lobes(), busy(), perf(),
 prof(), profReset() }` — `seek` moves the clock AND pushes the schedules so a
 seek doesn't fire every show at once.
 

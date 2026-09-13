@@ -30,6 +30,7 @@ SHOTS = [
     ["dubai3_night",  0.58, ["show", "fountain", "fireworks", "spin", "shoot", "horn"], 2600],
     ["dubai3_show",   0.62, ["show"],                             9000],
     ["dubai3_intercept", 0.10, ["missile"],                       4200],
+    ["dubai3_ufo",    0.50, ["ufo"],                             6000],
 ]
 # ────────────────────────────────────────────────────────────────────────────
 
