@@ -39,7 +39,10 @@
    lake — scheduled and on click), FIREWORKS over downtown (click the upper
    sky), AIN DUBAI turning (click → spin-up + rainbow rim), a boat fleet with
    wakes and lit reflections (click → horn-blink), an A380 crossing with its
-   beacons, a helicopter to the Al Arab helipad, dusk birds, night shooting
+   beacons, a helicopter to the Al Arab helipad, the INTERCEPTION show (a
+   salvo from the right, the alert on the Al Arab's mast, an interceptor that
+   banks onto its target, a fireball with shockwaves, debris, drifting smoke
+   and a shake of the picture), dusk birds, night shooting
    stars, SZR traffic streams, palm fronds in the breeze, the Al Arab façade
    wash (click → new colour), the Museum's pulse rings (click), dolphins in
    the open water (click), the Frame's golden shimmer, twinkling stars.
@@ -359,44 +362,81 @@
       }
 
       // ── the BURJ AL ARAB: the sail on its island ──
-      const ALARAB = { x: 175, base: HZ + 2, h: 250 };
+      // Seen from the beach with the sea on the LEFT: the tapering silver MAST up
+      // the seaward edge and past the top, the white fabric WINGS, the blue GLASS
+      // CURTAIN WALL down the middle mirroring the dusk, the warm ATRIUM FABRIC
+      // WALL glowing through it (its colour is live — clicks recolour it), the
+      // white X-BRACED exoskeleton along the billowing trailing edge, the HELIPAD
+      // on its cantilevered arm to the sea, AL MUNTAHA landward, all on an island
+      // with a lit sea wall and a causeway to the shore.
+      const ALARAB = { x: 175, base: HZ + 2, h: 272 };
+      function sailPath(g){ const { x, base, h } = ALARAB, top = base - h;
+        g.beginPath(); g.moveTo(x - 2, base); g.quadraticCurveTo(x - 7, base - h * 0.55, x + 3, top + 6); g.quadraticCurveTo(x + 62, top + 42, x + 74, base); g.closePath(); }
+      function atriumPath(g){ const { x, base, h } = ALARAB, top = base - h;
+        g.beginPath(); g.moveTo(x + 30, top + 44); g.quadraticCurveTo(x + 60, top + 78, x + 64, base - 8); g.lineTo(x + 46, base - 8); g.quadraticCurveTo(x + 44, top + 82, x + 30, top + 44); g.closePath(); }
       function paintAlArab(g, L){
         const { x, base, h } = ALARAB, night = L.night, top = base - h;
-        // the island: a round pad with a lit rim, and the causeway to the shore
-        g.fillStyle = rgb(mixc([40, 44, 70], L.warm, 0.15)); g.beginPath(); g.ellipse(x, base + 2, 92, 9, 0, 0, TAU); g.fill();
-        g.fillStyle = rgb(mixc([60, 66, 96], L.warm, 0.2)); g.fillRect(x + 60, base - 6, 260, 5);
-        // the mast (the sail's leading edge), a tall pole leaning into the sky
-        g.strokeStyle = rgb(mixc([240, 242, 248], L.warm, 0.35 * (1 - night))); g.lineWidth = 3.2;
-        g.beginPath(); g.moveTo(x - 46, base); g.lineTo(x - 14, top - 26); g.stroke();
-        // the sail: a taut curved plane, white, lit warm on the sun side
-        const sail = () => { g.beginPath(); g.moveTo(x - 44, base); g.quadraticCurveTo(x - 30, base - h * 0.55, x - 14, top - 22); g.quadraticCurveTo(x + 24, top + 40, x + 44, base - 70); g.quadraticCurveTo(x + 48, base - 30, x + 42, base); g.closePath(); };
-        sail();
-        g.fillStyle = lg(g, x - 44, 0, x + 44, 0, [[0, rgb(mixc([246, 246, 250], L.warm, 0.4 * (1 - night)))], [0.55, rgb(mixc([232, 236, 244], L.cool, 0.15))], [1, rgb(mixc([200, 208, 226], L.cool, 0.35))]]);
+        g.fillStyle = rg(g, x + 34, base - h * 0.45, 0, h * 0.9, [[0, 'rgba(220,235,255,0.12)'], [1, 'rgba(220,235,255,0)']]);
+        g.fillRect(x - 120, top - 70, 300, h + 80);                                              // the halo the white building throws
+        // the island, its sea wall, the causeway to the shore
+        g.fillStyle = rgb(mixc([20, 29, 51], L.warm, 0.06));
+        g.beginPath(); g.moveTo(x - 40, base + 5); g.lineTo(x - 32, base - 6); g.lineTo(x + 94, base - 6); g.lineTo(x + 102, base + 5); g.closePath(); g.fill();
+        g.fillStyle = 'rgba(70,86,116,0.8)'; g.fillRect(x - 32, base - 7, 126, 1.4);
+        g.strokeStyle = 'rgba(66,82,112,0.95)'; g.lineWidth = 2.6;
+        g.beginPath(); g.moveTo(x + 98, base - 1); g.quadraticCurveTo(x + 160, base + 0.5, x + 220, base + 3); g.stroke();
+        g.strokeStyle = 'rgba(50,62,90,0.9)'; g.lineWidth = 1.2;
+        for (let k = 0; k < 6; k++){ g.beginPath(); g.moveTo(x + 110 + k * 20, base - 0.5 + k * 0.5); g.lineTo(x + 110 + k * 20, base + 6); g.stroke(); }
+        for (let k = 0; k < 8; k++){ g.fillStyle = rgb([255, 205, 130], 0.5 + 0.4 * psr(k + 40)); g.fillRect(x - 28 + k * 16, base - 9, 1.6, 1.8); if (k < 6) g.fillRect(x + 104 + k * 18, base - 4 + k * 0.6, 1.4, 1.4); }
+        // the mast: a tapering silver spine up the seaward edge, past the top
+        g.fillStyle = rgb(mixc([211, 221, 233], L.warm, 0.3 * (1 - night)));
+        g.beginPath(); g.moveTo(x - 1, base); g.quadraticCurveTo(x - 6, base - h * 0.55, x + 3, top + 10);
+        g.lineTo(x + 5, top - 36); g.lineTo(x + 6.6, top - 36); g.lineTo(x + 8, top + 10);
+        g.quadraticCurveTo(x + 1, base - h * 0.55, x + 6, base); g.closePath(); g.fill();
+        // the sail: white fabric, warm on the sun side, cooling into its own shade
+        sailPath(g);
+        g.fillStyle = lg(g, x, 0, x + 74, 0, [[0, rgb(mixc([246, 249, 252], L.warm, 0.32 * (1 - night)))], [0.45, rgb(mixc([230, 238, 246], L.warm, 0.12 * (1 - night)))], [0.8, rgb(mixc([207, 219, 232], L.cool, 0.12))], [1, rgb(mixc([196, 186, 168], L.cool, 0.25))]]);
         g.fill();
-        // the glowing atrium wall (the Teflon fabric face), lit from inside
-        g.save(); sail(); g.clip();
-        const wash = ALARAB.wash || [255, 200, 120];
-        g.fillStyle = lg(g, x - 22, top, x + 22, base, [[0, rgb(wash, 0.10 + 0.5 * night)], [0.5, rgb(mixc(wash, [255, 255, 255], 0.4), 0.12 + 0.45 * night)], [1, rgb(wash, 0.05 + 0.3 * night)]]);
-        g.beginPath(); g.moveTo(x - 22, base); g.quadraticCurveTo(x - 16, base - h * 0.5, x - 4, top - 4); g.lineTo(x + 22, top + 60); g.quadraticCurveTo(x + 26, base - 60, x + 24, base); g.closePath(); g.fill();
-        // the exoskeleton: diagonal ribs, and floor lines
-        g.strokeStyle = 'rgba(40,50,80,0.28)'; g.lineWidth = 1;
-        for (let i = 0; i < 10; i++){ const yy = base - 20 - i * 22; g.beginPath(); g.moveTo(x - 44, yy); g.lineTo(x + 46, yy - 10); g.stroke(); }
-        g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = 1.4;
-        for (let i = 0; i < 4; i++){ g.beginPath(); g.moveTo(x - 40 + i * 6, base); g.quadraticCurveTo(x - 28 + i * 8, base - h * 0.5, x + 10 + i * 8, top + 30 - i * 6); g.stroke(); }
-        g.restore();
-        // the helipad disc out to the left, on its arm; Al Muntaha's box to the right
-        g.fillStyle = rgb(mixc([215, 220, 232], L.warm, 0.3)); g.fillRect(x - 40, top + 36, 24, 4);
-        g.beginPath(); g.ellipse(x - 40, top + 34, 17, 4.5, 0, 0, TAU); g.fill();
-        g.fillStyle = rgb([255, 240, 200], 0.7); g.beginPath(); g.ellipse(x - 40, top + 34, 10, 2.6, 0, 0, TAU); g.fill();
-        g.strokeStyle = rgb(mixc([215, 220, 232], L.warm, 0.3)); g.lineWidth = 1.5; g.beginPath(); g.moveTo(x - 40, top + 38); g.lineTo(x - 28, top + 60); g.stroke();   // its brace
-        g.fillStyle = rgb(mixc([225, 228, 238], L.cool, 0.2)); g.fillRect(x + 20, top + 62, 34, 12);
-        g.fillStyle = rgb([255, 215, 150], 0.55 + 0.4 * night); for (let i = 0; i < 6; i++) g.fillRect(x + 23 + i * 5.2, top + 65, 3, 5);
-        ALARAB.top = top; ALARAB.helipad = [x - 40, top + 32];
+        // the blue glass curtain wall down the middle, mirroring the dusk
+        g.beginPath(); g.moveTo(x + 9, top + 30); g.quadraticCurveTo(x + 46, top + 60, x + 52, base - 8); g.lineTo(x + 14, base - 8); g.quadraticCurveTo(x + 7, base - h * 0.55, x + 9, top + 30); g.closePath();
+        g.fillStyle = lg(g, 0, top + 30, 0, base, [[0, rgb(mixc([141, 189, 230], L.sky[1], 0.35))], [0.4, rgb(mixc([79, 131, 189], L.sky[2], 0.3))], [0.75, rgb(mixc([47, 92, 144], L.cool, 0.3))], [1, rgb(mixc([61, 91, 124], L.glow, 0.25 * (1 - night)))]]);
+        g.fill();
+        g.fillStyle = 'rgba(240,250,255,0.22)';                                                   // the sky sheen on the glass
+        g.beginPath(); g.moveTo(x + 10, top + 34); g.quadraticCurveTo(x + 30, top + 58, x + 34, base - 30); g.lineTo(x + 24, base - 30); g.quadraticCurveTo(x + 12, base - h * 0.55, x + 10, top + 34); g.closePath(); g.fill();
+        // floor lines across the wing, stronger toward the foot
+        for (let yy = top + 26; yy < base - 8; yy += 6.5){
+          const tt = (yy - top) / h, wAt = (4 + tt * 62) * 0.92;
+          g.strokeStyle = 'rgba(240,248,255,' + (0.12 + tt * 0.16) + ')'; g.lineWidth = 1;
+          g.beginPath(); g.moveTo(x + 4, yy); g.quadraticCurveTo(x + 4 + wAt * 0.5, yy + 1.6, x + 4 + wAt, yy - 1); g.stroke();
+        }
+        // the white exoskeleton: X-braces along the billowing trailing edge
+        g.strokeStyle = 'rgba(255,255,255,0.78)'; g.lineWidth = 1.3;
+        for (let sg = 0; sg < 9; sg++){
+          const u0 = sg / 9, u1 = (sg + 1) / 9;
+          const ex0 = x + 5 + 69 * u0 * u0 * 0.9 + 6 * u0, ey0 = top + 8 + (base - top - 8) * u0;
+          const ex1 = x + 5 + 69 * u1 * u1 * 0.9 + 6 * u1, ey1 = top + 8 + (base - top - 8) * u1;
+          g.beginPath(); g.moveTo(ex0, ey0); g.lineTo(ex1 - 9, ey1); g.moveTo(ex0 - 9, ey0); g.lineTo(ex1, ey1); g.stroke();
+        }
+        g.strokeStyle = rgb(mixc([255, 240, 215], L.warm, 0.3), 0.65); g.lineWidth = 1.3;         // trailing-edge rim light
+        g.beginPath(); g.moveTo(x + 5, top + 8); g.quadraticCurveTo(x + 64, top + 44, x + 74, base); g.stroke();
+        g.strokeStyle = 'rgba(120,145,175,0.55)'; g.lineWidth = 1;                                // leading-edge seam
+        g.beginPath(); g.moveTo(x, base); g.quadraticCurveTo(x - 3, base - h * 0.55, x + 5, top + 8); g.stroke();
+        // the helipad on its cantilevered arm to the sea
+        g.strokeStyle = rgb(mixc([150, 170, 192], L.warm, 0.2)); g.lineWidth = 1.8;
+        g.beginPath(); g.moveTo(x + 4, top + 52); g.lineTo(x - 14, top + 40); g.stroke();
+        g.fillStyle = '#2f3c55'; g.beginPath(); g.ellipse(x - 14, top + 39, 16, 3.8, 0, 0, TAU); g.fill();
+        g.fillStyle = rgb(mixc([201, 214, 228], L.warm, 0.3 * (1 - night))); g.beginPath(); g.ellipse(x - 14, top + 38, 16, 3.6, 0, 0, TAU); g.fill();
+        g.strokeStyle = 'rgba(90,220,140,0.8)'; g.lineWidth = 0.8; g.beginPath(); g.ellipse(x - 14, top + 38, 9.5, 2.1, 0, 0, TAU); g.stroke();
+        g.fillStyle = 'rgba(90,220,140,0.95)'; g.fillRect(x - 14.8, top + 36.4, 1.6, 1.6);
+        // Al Muntaha, cantilevered off the landward side
+        g.fillStyle = rgb(mixc([185, 200, 216], L.cool, 0.15)); g.beginPath(); g.ellipse(x + 47, top + 56, 12, 3.4, 0, 0, TAU); g.fill();
+        g.fillStyle = rgb([255, 212, 150], 0.5 + 0.45 * night); g.fillRect(x + 38, top + 57, 18, 1.3);
+        g.fillStyle = '#7f92a8'; g.fillRect(x + 40, top + 59, 14, 1.4);
+        ALARAB.top = top; ALARAB.helipad = [x - 14, top + 36]; ALARAB.mastTop = [x + 5.8, top - 36];
       }
       function paintJBH(g, L){
         const { x, base } = ALARAB, night = L.night;
         // the breaking-wave hotel on the shore beside the sail
-        g.fillStyle = rgb(mixc([170, 190, 218], L.cool, 0.45));
+        g.fillStyle = lg(g, x + 74, 0, x + 262, 0, [[0, rgb(mixc([93, 117, 149], L.cool, 0.3))], [0.5, rgb(mixc([142, 166, 196], L.warm, 0.18 * (1 - night)))], [1, rgb(mixc([66, 88, 122], L.cool, 0.3))]]);
         g.beginPath(); g.moveTo(x + 74, base - 4); g.quadraticCurveTo(x + 92, base - 122, x + 160, base - 120); g.quadraticCurveTo(x + 230, base - 118, x + 262, base - 40); g.lineTo(x + 262, base - 4); g.closePath(); g.fill();
         g.fillStyle = 'rgba(255,255,255,0.45)'; for (let i = 0; i < 12; i++){ const yy = base - 12 - i * 9; g.fillRect(x + 90 + i * 3, yy, 160 - i * 9, 1.3); }
         g.fillStyle = rgb([255, 220, 170], 0.3 + 0.55 * night); for (let i = 0; i < 40; i++){ const s = psr(i + 500); g.fillRect(x + 96 + s * 150, base - 16 - psr(i + 501) * 90, 2.6, 3); }
@@ -621,10 +661,11 @@
         if (stopped) return;
         if (e.target.closest && e.target.closest(UI_SEL)) return;
         const [mx, my] = toDesign(e.clientX, e.clientY), t = lastT;
+        for (const m of MIS.inc) if (Math.abs(mx - m.x) < 28 && Math.abs(my - m.y) < 28){ MIS.inc.splice(MIS.inc.indexOf(m), 1); popMissile(t, m.x, m.y); return; }
         if (Math.abs(mx - BX) < 70 && my > BURJ.top - 20 && my < HZ){ Math.random() < 0.7 ? startShow(t, 14) : fireworks(t, 4); return; }
         for (const b of BOATS) if (Math.abs(mx - b.x) < 44 * b.s && Math.abs(my - b.y) < 30){ b.blinkUntil = t + 2.2; return; }
         if (Math.hypot(mx - AIN.x, my - AIN.y) < AIN.r + 16){ spinWheel(t); return; }
-        if (Math.abs(mx - ALARAB.x) < 64 && my > (ALARAB.top || HZ - 250) - 40 && my < HZ){ washAlArab(t); return; }
+        if (mx > ALARAB.x - 40 && mx < ALARAB.x + 80 && my > (ALARAB.top || HZ - 272) - 44 && my < HZ){ washAlArab(t); startMissiles(t); return; }
         if (((mx - MUSEUM.x) / (MUSEUM.rx + 10)) ** 2 + ((my - MUSEUM.y) / (MUSEUM.ry + 10)) ** 2 < 1){ museumRing(t); return; }
         if (mx > LAKE.x0 && mx < LAKE.x1 && Math.abs(my - HZ) < 34){ startFountain(t, 20); return; }
         for (const T of TOWERS){ const d = T.w + (T.d || T.w * 0.42); if (mx > T.x && mx < T.x + d && my > HZ - T.h - 30 && my < HZ){ T.boostUntil = t + 5; return; } }
@@ -658,6 +699,7 @@
         drawDolphins(g, L, t);
         drawFountain(g, L, t);
         drawFireworks(g, L, t);
+        drawMissiles(g, L, t, dt);
         drawHeli(g, L, t);
       }
 
@@ -730,16 +772,176 @@
         glow(g, 'warm', x, y, 16, 0.25 + 0.4 * nightK);
       }
       function drawAlArabLive(g, L, t){
-        // the sail's colour wash, live (so a click can change it without a repaint)
-        const k = clamp01((t - washT0) / 1.2), col = mixc(washFrom, washTo, smooth(k));
+        // the atrium's fabric wall glows from inside — warm by default, any colour
+        // on a click, RED while the alert is up — and the sail flares as it changes
+        const k = clamp01((t - washT0) / 1.2), flare = Math.sin(k * Math.PI);
+        const alertK = clamp01((MIS.alertT0 + ALERT_LEN - t) / ALERT_LEN);
+        let col = mixc(washFrom, washTo, smooth(k));
+        if (alertK > 0) col = mixc(col, [255, 60, 50], alertK * (0.55 + 0.45 * Math.sin(t * 12)));
         ALARAB.wash = col;
-        const a = 0.06 + 0.34 * L.night + 0.25 * Math.sin(k * Math.PI);
-        const { x, base, h } = ALARAB, top = base - h;
-        g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = a;
-        g.fillStyle = lgc('wash' + (col.map(v => v | 0).join(',')), g, x - 22, 0, x + 26, 0, [[0, rgb(col, 0)], [0.45, rgb(col, 0.6)], [1, rgb(col, 0)]]);
-        g.beginPath(); g.moveTo(x - 22, base); g.quadraticCurveTo(x - 16, base - h * 0.5, x - 4, top - 4); g.lineTo(x + 22, top + 60); g.quadraticCurveTo(x + 26, base - 60, x + 24, base); g.closePath(); g.fill();
+        const { x, base } = ALARAB;
+        g.save(); g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = 0.14 + 0.5 * L.night + 0.3 * flare + 0.25 * alertK;
+        g.fillStyle = lgc('wash' + (col.map(v => v | 0).join(',')), g, x + 30, 0, x + 64, 0, [[0, rgb(col, 0)], [0.5, rgb(col, 0.7)], [1, rgb(col, 0)]]);
+        atriumPath(g); g.fill();
+        if (flare > 0.02){ g.globalAlpha = 0.35 * flare; g.fillStyle = rgb(col); sailPath(g); g.fill(); }
         g.restore();
-        glow(g, 'warm', x, base + 6, 60, 0.12 + 0.2 * L.night);   // its light on the water
+        if ((t * 1.2 % 1) < 0.12) glow(g, 'rose', ALARAB.mastTop[0], ALARAB.mastTop[1], 6, 1);    // the mast beacon
+        glow(g, 'warm', x + 30, base + 6, 70, 0.10 + 0.2 * L.night);                              // its light on the water
+      }
+
+      // ── THE INTERCEPTION SHOW ───────────────────────────────────────────────
+      // A salvo of one to three rockets dives in from the right on grey smoke. As
+      // the first crosses into range the Burj Al Arab's mast raises the ALERT
+      // (radar rings, the atrium pulsing red). When a rocket closes past mid-city
+      // an INTERCEPTOR leaves the mast in a flash and a bloom of smoke, builds
+      // speed and CURVES onto it — a turn-rate limit makes it bank, so it flies a
+      // real pursuit curve instead of a straight line. The KILL is a white flash
+      // over the whole picture, a fireball, a double shockwave, burning debris on
+      // smoke trails, a cloud that drifts and thins, the burst's light on the
+      // water, and a short shake. Every 3-4.5 min, on an Al Arab click, and a
+      // click on a rocket pops it early.
+      const ALERT_LEN = 3.2;
+      const MIS = { nextAt: 38, inc: [], def: [], booms: [], debris: [], smoke: [], flash: null, alertT0: -99, id: 0 };
+      const MTRAIL = [];
+      let shakeT0 = -99;
+      const shakeAmp = t => { const k = (t - shakeT0) / 0.6; return k < 0 || k > 1 ? 0 : 5 * (1 - k) * (1 - k) * Math.sin(k * 42); };
+      function startMissiles(t){
+        if (MIS.inc.length || MIS.booms.length) return;
+        const n = 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < 0.3 ? 1 : 0);
+        for (let i = 0; i < n; i++)
+          MIS.inc.push({ id: ++MIS.id, x: DW + 70 + i * 210 + rnd(0, 90), y: 120 + rnd(0, 120), vx: -(150 + rnd(0, 50)), vy: 16 + rnd(0, 16), hasDef: false });
+        MIS.nextAt = null; MIS.alertT0 = -99;
+      }
+      function launchInterceptor(t, target){
+        const [mx, my] = ALARAB.mastTop;
+        MIS.def.push({ x: mx, y: my, ang: -1.25, t0: t, target: target.id });
+        target.hasDef = true;
+        for (let k = 0; k < 12; k++) MIS.smoke.push({ x: mx + rnd(-6, 6), y: my + rnd(-2, 10), vx: rnd(-16, 16), vy: rnd(-8, 12), r: rnd(3, 8), t0: t, life: 1.5, c: '235,228,214', a: 0.5 });
+        MIS.flash = { x: mx, y: my, t0: t };
+      }
+      function popMissile(t, x, y){
+        MIS.booms.push({ x, y, t0: t }); shakeT0 = t;
+        const sparks = [];
+        for (let k = 0; k < 110; k++){ const a = rnd(0, TAU), v = rnd(0.2, 1); sparks.push({ ca: Math.cos(a) * v, sa: Math.sin(a) * v, r: rnd(0.8, 2.4), life: rnd(0.7, 1.7) }); }
+        FW.push({ x, y, t0: t, hue: 28 + rnd(-12, 14), sparks, rise: 0.001 });
+        for (let k = 0; k < 14; k++){ const a = rnd(0, TAU), v = rnd(70, 230); MIS.debris.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 70, t0: t, life: rnd(1.2, 2.4), r: rnd(1, 2.4) }); }
+        for (let k = 0; k < 10; k++) MIS.smoke.push({ x: x + rnd(-14, 14), y: y + rnd(-12, 12), vx: rnd(-20, 6), vy: rnd(-24, -6), r: rnd(10, 24), t0: t, life: 3.4, c: '96,92,102', a: 0.45 });
+      }
+      // a drawn rocket: body, nose cone, fins, and a hot exhaust plume
+      function drawRocket(g, x, y, ang, len, body, flame){
+        const h = len * 0.2;
+        g.save(); g.translate(x, y); g.rotate(ang);
+        g.fillStyle = body;
+        g.beginPath(); g.moveTo(-len * 0.5, -h / 2); g.lineTo(len * 0.26, -h / 2); g.lineTo(len * 0.5, 0); g.lineTo(len * 0.26, h / 2); g.lineTo(-len * 0.5, h / 2); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(-len * 0.5, -h / 2); g.lineTo(-len * 0.36, -h * 1.5); g.lineTo(-len * 0.2, -h / 2); g.closePath();
+        g.moveTo(-len * 0.5, h / 2); g.lineTo(-len * 0.36, h * 1.5); g.lineTo(-len * 0.2, h / 2); g.closePath(); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.3)'; g.fillRect(-len * 0.42, -h * 0.5, len * 0.6, h * 0.28);
+        g.globalCompositeOperation = 'lighter';
+        g.fillStyle = flame;
+        g.beginPath(); g.moveTo(-len * 0.5, -h * 0.45); g.lineTo(-len * (0.95 + 0.3 * Math.random()), 0); g.lineTo(-len * 0.5, h * 0.45); g.closePath(); g.fill();
+        g.restore();
+        glow(g, 'gold', x - Math.cos(ang) * len * 0.6, y - Math.sin(ang) * len * 0.6, len * 0.45, 0.85);
+      }
+      function drawMissiles(g, L, t, dt){
+        if (!MIS.inc.length && !MIS.booms.length && !MIS.def.length){
+          if (MIS.nextAt == null) MIS.nextAt = t + 180 + rnd(0, 90);
+          if (t >= MIS.nextAt) startMissiles(t);
+        }
+        // smoke: the trails behind everything, then the clouds
+        for (let i = MTRAIL.length - 1; i >= 0; i--){
+          const q = MTRAIL[i], age = t - q.t0;
+          if (age > q.life){ MTRAIL.splice(i, 1); continue; }
+          const k = age / q.life;
+          g.fillStyle = 'rgba(' + q.c + ',' + (q.a * (1 - k)) + ')';
+          g.beginPath(); g.arc(q.x + q.vx * age, q.y - age * 5, q.r + age * q.grow, 0, TAU); g.fill();
+        }
+        for (let i = MIS.smoke.length - 1; i >= 0; i--){
+          const q = MIS.smoke[i], age = t - q.t0;
+          if (age > q.life){ MIS.smoke.splice(i, 1); continue; }
+          const k = age / q.life;
+          g.fillStyle = 'rgba(' + q.c + ',' + (q.a * (1 - k) * Math.min(1, age * 6)) + ')';
+          g.beginPath(); g.arc(q.x + q.vx * age, q.y + q.vy * age, q.r * (1 + k * 1.8), 0, TAU); g.fill();
+        }
+        // the alert: radar rings leaving the mast
+        const al = t - MIS.alertT0;
+        if (al >= 0 && al < ALERT_LEN){
+          const [mx, my] = ALARAB.mastTop;
+          g.save(); g.globalCompositeOperation = 'lighter';
+          for (let i = 0; i < 3; i++){
+            const k = (al * 0.75 + i * 0.33) % 1;
+            g.strokeStyle = 'rgba(120,230,255,' + (0.55 * (1 - k) * (1 - al / ALERT_LEN)) + ')'; g.lineWidth = 1.6;
+            g.beginPath(); g.arc(mx, my, 6 + k * 200, 0, TAU); g.stroke();
+          }
+          glow(g, 'cyan', mx, my, 13, (0.4 + 0.5 * Math.abs(Math.sin(al * 9))) * (1 - al / ALERT_LEN));
+          g.restore();
+        }
+        // the incoming salvo
+        for (let i = MIS.inc.length - 1; i >= 0; i--){
+          const m = MIS.inc[i];
+          m.x += m.vx * dt; m.y += m.vy * dt;
+          const ang = Math.atan2(m.vy, m.vx);
+          if (Math.random() < dt * 55) MTRAIL.push({ x: m.x + 16, y: m.y, vx: 6, t0: t, life: 1.9, r: 2.2, grow: 9, a: 0.42, c: '112,112,124' });
+          drawRocket(g, m.x, m.y, ang, 34, 'rgb(46,48,60)', 'rgba(255,190,90,0.95)');
+          glow(g, 'rose', m.x + Math.cos(ang) * 17, m.y + Math.sin(ang) * 17, 5, 0.75);           // the hot nose
+          if (m.x < 1340 && t - MIS.alertT0 > 20) MIS.alertT0 = t;
+          if (!m.hasDef && m.x < 1020) launchInterceptor(t, m);
+          if (m.x < -80){ MIS.inc.splice(i, 1); }
+          else if (m.y > HZ - 34){ MIS.inc.splice(i, 1); popMissile(t, m.x, HZ - 40); }
+        }
+        // the launch flash at the mast
+        if (MIS.flash){ const k = (t - MIS.flash.t0) / 0.35; if (k > 1) MIS.flash = null; else glow(g, 'white', MIS.flash.x, MIS.flash.y, 28 * (1 - k) + 6, 1 - k); }
+        // the interceptors: build speed, bank onto the target, strike
+        for (let i = MIS.def.length - 1; i >= 0; i--){
+          const d = MIS.def[i], tg = MIS.inc.find(m => m.id === d.target);
+          if (!tg){                                                                                // its target is already gone
+            MIS.def.splice(i, 1);
+            for (let k = 0; k < 4; k++) MIS.smoke.push({ x: d.x, y: d.y, vx: rnd(-10, 10), vy: rnd(-10, 10), r: 3, t0: t, life: 0.9, c: '230,222,206', a: 0.4 });
+            continue;
+          }
+          const age = t - d.t0, spd = Math.min(460, 90 + 620 * age);
+          let da = Math.atan2(tg.y - d.y, tg.x - d.x) - d.ang;
+          while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+          const turn = 3.4 * dt;                                                                   // the turn-rate limit: it banks, it does not snap
+          d.ang += Math.max(-turn, Math.min(turn, da));
+          d.x += Math.cos(d.ang) * spd * dt; d.y += Math.sin(d.ang) * spd * dt;
+          if (Math.random() < dt * 90) MTRAIL.push({ x: d.x, y: d.y, vx: 0, t0: t, life: 1.1, r: 1.6, grow: 6, a: 0.5, c: '255,236,208' });
+          drawRocket(g, d.x, d.y, d.ang, 20, 'rgb(225,230,240)', 'rgba(180,230,255,0.95)');
+          if (Math.hypot(tg.x - d.x, tg.y - d.y) < 22){
+            popMissile(t, tg.x, tg.y);
+            MIS.inc.splice(MIS.inc.indexOf(tg), 1); MIS.def.splice(i, 1);
+          }
+        }
+        // burning debris on its own smoke
+        for (let i = MIS.debris.length - 1; i >= 0; i--){
+          const q = MIS.debris[i], age = t - q.t0;
+          if (age > q.life){ MIS.debris.splice(i, 1); continue; }
+          const k = age / q.life, px = q.x + q.vx * age, py = q.y + q.vy * age + 130 * age * age;
+          if (Math.random() < dt * 18) MTRAIL.push({ x: px, y: py, vx: 0, t0: t, life: 0.8, r: 1.2, grow: 5, a: 0.3, c: '120,116,124' });
+          g.fillStyle = 'rgba(255,' + (140 + 90 * (1 - k)) + ',80,' + (1 - k) + ')';
+          g.beginPath(); g.arc(px, py, q.r * (1 - k * 0.4), 0, TAU); g.fill();
+        }
+        // the kills
+        for (let i = MIS.booms.length - 1; i >= 0; i--){
+          const b = MIS.booms[i], e = t - b.t0;
+          if (e > 1.6){ MIS.booms.splice(i, 1); continue; }
+          g.save(); g.globalCompositeOperation = 'lighter';
+          if (e < 0.5){                                                                            // the fireball
+            const k = e / 0.5;
+            glow(g, 'white', b.x, b.y, 14 + k * 34, 1 - k);
+            g.fillStyle = 'rgba(255,' + (200 - 90 * k) + ',' + (120 - 90 * k) + ',' + (0.85 * (1 - k)) + ')';
+            g.beginPath(); g.arc(b.x, b.y, 6 + k * 30, 0, TAU); g.fill();
+          }
+          for (const [sp, wd, col] of [[150, 3.2, '255,220,160'], [90, 1.8, '160,220,255']]){      // a double shockwave
+            const r = e * sp, k = clamp01(e / (sp > 120 ? 1.2 : 1.5));
+            if (k < 1){ g.strokeStyle = 'rgba(' + col + ',' + (0.55 * (1 - k)) + ')'; g.lineWidth = wd * (1 - k) + 0.6; g.beginPath(); g.arc(b.x, b.y, 10 + r, 0, TAU); g.stroke(); }
+          }
+          g.fillStyle = 'rgba(255,190,120,' + (0.13 * Math.max(0, 1 - e / 1.2)) + ')';             // its light on the water
+          g.fillRect(b.x - 220, HZ, 440, 120);
+          g.restore();
+        }
+        // the white flash over the whole picture, at the moment of the kill
+        for (const b of MIS.booms){ const e = t - b.t0; if (e < 0.22){ g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(230,240,255,' + (0.30 * (1 - e / 0.22)) + ')'; g.fillRect(-400, -200, DW + 800, DH + 400); g.restore(); } }
       }
       function drawMuseumFx(g, t){
         for (let i = MFX.length - 1; i >= 0; i--){ const m = MFX[i], k = (t - m.t0) / 1.5; if (k > 1){ MFX.splice(i, 1); continue; }
@@ -889,7 +1091,7 @@
       function drawHeli(g, L, t){
         const e = (t - HELI.t0) % HELI.period; if (e < 0 || e > 30) return;
         // in from the right high, down to the helipad, wait, up and away
-        const pad = ALARAB.helipad || [120, HZ - 220];
+        const pad = ALARAB.helipad || [160, HZ - 236];
         let x, y;
         if (e < 10){ const k = smooth(e / 10); x = lerp(DW + 60, pad[0], k); y = lerp(150, pad[1] - 60, k); }
         else if (e < 13){ const k = smooth((e - 10) / 3); x = pad[0]; y = lerp(pad[1] - 60, pad[1] - 9, k); }
@@ -912,11 +1114,12 @@
         profT = performance.now(); PROF.frames++;
         repaintIfNeeded(t);
         const L = LOOK;
-        ctx.drawImage(cityL.cv, 0, 0, W, H);
+        const sh = shakeAmp(t), shx = sh * S, shy = sh * 0.4 * S;    // a kill shakes the picture
+        ctx.drawImage(cityL.cv, shx, shy, W, H);
         mark('city');
-        ctx.drawImage(reflL.cv, 0, 0, W, H);
+        ctx.drawImage(reflL.cv, shx, shy, W, H);
         mark('water');
-        ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * OX, DPR * OY);
+        ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * (OX + shx), DPR * (OY + shy));
         drawLiving(ctx, L, t, dt);
         ctx.restore();
         mark('living');
@@ -953,9 +1156,9 @@
         seek: ph => { t0 = (t0 === null ? 0 : t0); const nt = lastT + (ph * DAY_PERIOD - (lastT % DAY_PERIOD)); t0 -= (nt - lastT) * 1000; lastT = nt; lookKey = -1; nextShow = nt + 8; nextFn = nt + 30; nextFw = nt + 60; },
         look: () => LOOK, show: () => startShow(lastT, 16), fountain: () => startFountain(lastT, 24), fireworks: () => fireworks(lastT, 4),
         spin: () => spinWheel(lastT), horn: () => BOATS.forEach(b => b.blinkUntil = lastT + 2), heli: () => (HELI.t0 = lastT - 0.01),
-        dolphin: () => dolphin(lastT, 760), wash: () => washAlArab(lastT), museum: () => museumRing(lastT), plane: () => (PLANE.t0 = lastT),
+        dolphin: () => dolphin(lastT, 760), wash: () => washAlArab(lastT), missile: () => startMissiles(lastT), museum: () => museumRing(lastT), plane: () => (PLANE.t0 = lastT),
         shoot: () => SHOOTERS.push({ x: rnd(200, 1400), y: rnd(40, 300), t0: lastT, ang: rnd(2.6, 3.0), len: rnd(90, 180) }),
-        boats: () => BOATS, burj: () => BURJ, lobes: () => BURJ.lobes.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL }),
+        boats: () => BOATS, burj: () => BURJ, lobes: () => BURJ.lobes.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL, inc: MIS.inc.length, def: MIS.def.length, booms: MIS.booms.length }),
         perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },

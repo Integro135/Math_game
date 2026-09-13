@@ -176,10 +176,19 @@ hour, night — blended with holds (`KEYS`; sky bands, glow, haze, warm/cool
 light, glass tint, `lights`, `stars`, `sun`, water, `sunPath`); `L.night` is
 the 0..1 darkness. The still city repaints per look-key (24 per cycle, ~11 s).
 
-**The city, left → right.** `paintAlArab` — the BURJ AL ARAB on its island: a
-leaning mast, the taut white sail (warm on the sun side), the glowing atrium
-wall (its wash is drawn LIVE so a click can recolour it), the exoskeleton ribs,
-the helipad on its brace, Al Muntaha's box; `paintJBH` — the breaking-wave
+**The city, left → right.** `paintAlArab` — the BURJ AL ARAB on its island,
+seen from the beach with the sea on the LEFT: the tapering silver MAST up the
+seaward edge and past the top (red beacon, and the radar rings of the
+interception alert leave from here), the white fabric WINGS warm on the sun
+side, the blue GLASS CURTAIN WALL down the middle mirroring the dusk with a
+sky sheen, floor lines that strengthen toward the foot, the ATRIUM FABRIC WALL
+glowing through it (`atriumPath`, drawn LIVE in `drawAlArabLive` so a click
+recolours it and the whole sail flares — and it pulses RED while the alert is
+up), the white X-BRACED exoskeleton along the billowing trailing edge with its
+rim light and the leading-edge seam, the HELIPAD on its cantilevered arm to
+the sea (green edge light, and the helicopter lands on it), AL MUNTAHA
+cantilevered landward, the island with its lit sea wall and the causeway on
+piers to the shore; `paintJBH` — the breaking-wave
 Jumeirah Beach Hotel beside it; the Marina cluster (`tower()` entries) with
 AIN DUBAI (`paintAinStatic` legs + podium + Bluewaters, the wheel itself is
 live) in front on the water; downtown middle low: the Emirates Towers (`crown:
@@ -233,17 +242,40 @@ with a colour-cycling rim and 48 lit capsules (`spinWheel` → 5-s spin-up with
 a rainbow rim), the fleet (`BOATS` — dhow with a lateen sail, yacht, abra,
 speedboat; wakes, nav lights, their smear on the water; `blinkUntil` horn),
 the A380 (`PLANE`, contrail, port/starboard/strobe), the helicopter to the Al
-Arab helipad (`HELI`: in, hover, land, wait, away), dusk birds (two flocks,
+Arab helipad (`HELI`: in, hover, land, wait, away), THE INTERCEPTION SHOW
+(below), dusk birds (two flocks,
 fade with night), night shooting stars, 44 SZR cars (white toward, red away),
 sun glints on the water at golden hour, 40 twinkling stars, roof and spire
 beacons, Burj windows switching, the sail's live wash, museum rings
 (`museumRing`), dolphins (`dolphin(t, x)` — arc + splash), tower boosts.
 
 **Clicks** (`onClick`, design coords, UI filter `UI_SEL`): the Burj → LED show
-(70%) or fireworks; a boat → horn-blink; the wheel → spin-up; the Burj Al
-Arab → a new sail colour; the Museum → a colour ring; the lake → the fountain;
+(70%) or fireworks; a boat → horn-blink; the wheel → spin-up; an incoming rocket →
+it is destroyed early; the Burj Al Arab → a new sail colour AND it scrambles
+the interception show; the Museum → a colour ring; the lake → the fountain;
 any tower → its windows flare for 5 s; open water → a dolphin; the upper sky
 → a firework at the click.
+
+**The interception show** (`MIS`, `startMissiles`, `launchInterceptor`,
+`popMissile`, `drawRocket`, `drawMissiles`, `shakeAmp`). A SALVO of one to
+three rockets dives in from the right on grey smoke (drawn rockets — body,
+nose cone, fins, a hot exhaust plume and a glowing nose — not emoji). As the
+first crosses x≈1340 the Burj Al Arab's mast raises the ALERT: radar rings
+expand from it for `ALERT_LEN` and the atrium wall pulses red. When a rocket
+closes past x≈1020 an INTERCEPTOR leaves the mast in a white flash and a bloom
+of smoke; it builds speed (90 → 460) and CURVES onto its target under a
+turn-rate limit (3.4 rad/s), so it banks through a real pursuit curve instead
+of tracking in a straight line — with a second rocket in the salvo the two
+interceptors cross. Within 22 px it kills: a white flash over the whole
+picture (0.22 s), a fireball, a DOUBLE shockwave (a fast warm ring and a
+slower blue one), a 110-spark burst through `FW`, 14 pieces of burning debris
+falling under gravity on their own smoke, ten smoke puffs that drift and thin
+over 3.4 s, the burst's light on the water, and a SHAKE of the whole frame
+(`shakeAmp`, a damped 0.6 s wobble applied to the city blit, the mirror blit
+and the living transform together). A rocket that gets through and reaches the
+waterline explodes there anyway. Runs every 3–4.5 min, on an Al Arab click,
+and a click on a rocket destroys it early. The scene costs nothing while it is
+idle (empty arrays).
 
 **Performance** (house rules): backing store `pickDPR` (1.5× and ~2.4 MP);
 the still city is ONE full-screen layer (`cityL`) repainted per look-key; the
@@ -257,7 +289,8 @@ show, fountain and fireworks all running.
 
 **Test hooks** `window._dubai3 = BACKGROUNDS.dubai3._test = { seek(ph),
 look(), show(), fountain(), fireworks(), spin(), horn(), heli(), dolphin(),
-wash(), museum(), plane(), shoot(), boats(), burj(), tiers(), busy(), perf(),
+wash(), missile(), museum(), plane(), shoot(), boats(), burj(), lobes(),
+busy(), perf(),
 prof(), profReset() }` — `seek` moves the clock AND pushes the schedules so a
 seek doesn't fire every show at once.
 
