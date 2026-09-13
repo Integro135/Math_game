@@ -282,86 +282,80 @@
       // side shows a stack of TIERS: shafts of decreasing width whose tops rise
       // toward the core, capped by rounded shoulders. Silver-blue banded glass;
       // the sun climbs the west edge, the east faces sit in cool shadow.
-      const BURJ = { x: BX, base: HZ - 2, top: 58, coreHW: 8 };
+      const BURJ = { x: BX, base: HZ - 2, top: 58, lobes: [], wins: [] };
       (function buildBurj(){
-        const bodyH = 512;                                            // the glass body; the spire adds the rest
-        // setbacks as [half-width from the axis, top as a fraction of the body],
-        // outermost first. The east wing's steps sit a little lower than the
-        // west's, so the tiers read as a spiral, not a symmetric ziggurat.
-        const W = [[64, .27], [57, .36], [50, .44], [44, .51], [38, .58], [33, .64], [28, .70], [24, .76], [20, .81], [16, .86], [13, .90], [11, .94], [9, .97]];
-        const E = [[60, .24], [53, .33], [47, .41], [41, .48], [36, .55], [31, .61], [26, .67], [22, .73], [18, .79], [15, .84], [12, .89], [10, .93], [8, .965]];
-        BURJ.west = W.map(([hw, k]) => ({ hw, top: BURJ.base - bodyH * k }));
-        BURJ.east = E.map(([hw, k]) => ({ hw, top: BURJ.base - bodyH * k }));
-        BURJ.bodyTop = BURJ.base - bodyH; BURJ.spireTop = BURJ.top;
+        // The tower is a Y of three wings; from the lake you see the wings' ROUND
+        // tips as a bundle of slender cylinders stepping up toward the core, the
+        // setbacks spiralling (the east steps sit lower than the west). Each lobe:
+        // [left edge from the axis, width, height above the base]. Outer first.
+        const west = [[-57, 24, 38], [-49, 16, 92], [-41, 16, 150], [-33, 16, 208], [-26, 15, 268], [-19, 14, 328], [-13, 12, 384], [-8, 10, 436], [-4, 8, 482]];
+        const east = [[33, 24, 50], [31, 16, 118], [24, 16, 178], [16, 16, 238], [10, 15, 298], [4, 14, 354], [0, 12, 410], [-3, 10, 460], [-5, 8, 506]];
+        const L = [];
+        for (const [x, w, h] of west) L.push({ x: BX + x, w, h, side: -1 });
+        for (const [x, w, h] of east) L.push({ x: BX + x, w, h, side: 1 });
+        L.push({ x: BX - 7, w: 14, h: 545, side: 0 });                        // the core
+        L.sort((a, b) => a.h - b.h);                                          // painter's order: the tall inner lobes stand in front
+        BURJ.lobes = L; BURJ.bodyTop = BURJ.base - 545; BURJ.spireTop = BURJ.top;
+        // the core steps into the mast: [width, height] cylinders, then the needle
+        BURJ.spire = [[10, 40], [7, 44], [4.6, 44], [2.6, 30], [1.6, 22], [0.9, 15]];
+        // lit windows for the night, fixed to lobes
+        for (let i = 0; i < 46; i++){ const lb = L[Math.floor(psr(i + 300) * (L.length - 1))]; BURJ.wins.push({ x: lb.x + 1.5 + psr(i + 301) * (lb.w - 4), y: BURJ.base - psr(i + 302) * (lb.h - 12) - 6, ph: psr(i + 303) * TAU, sp: 0.3 + psr(i + 304) * 0.9 }); }
       })();
-      // the silhouette: a stepped outline, one closed path
-      function burjBody(g){
-        const { west: Wn, east: En, base, bodyTop, coreHW } = BURJ;
-        g.moveTo(BX - Wn[0].hw, base);
-        for (let i = 0; i < Wn.length; i++){ g.lineTo(BX - Wn[i].hw, Wn[i].top); g.lineTo(BX - (i + 1 < Wn.length ? Wn[i + 1].hw : coreHW), Wn[i].top); }
-        g.lineTo(BX - coreHW, bodyTop); g.lineTo(BX + coreHW, bodyTop);
-        for (let i = En.length - 1; i >= 0; i--){ g.lineTo(BX + (i + 1 < En.length ? En[i + 1].hw : coreHW), En[i].top); g.lineTo(BX + En[i].hw, En[i].top); }
-        g.lineTo(BX + En[0].hw, base); g.closePath();
-      }
+      function burjBody(g){ for (const lb of BURJ.lobes) g.rect(lb.x, BURJ.base - lb.h, lb.w, lb.h); }
       function burjSpire(g){
-        const bt = BURJ.bodyTop, st = BURJ.spireTop;
-        const secs = [[11, 0, .3], [7.5, .3, .55], [4.8, .55, .76], [2.6, .76, .92], [1.2, .92, 1]];
-        for (const [w, k0, k1] of secs) g.rect(BX - w / 2, bt - (bt - st) * k1, w, (bt - st) * (k1 - k0) + 1);
-        g.rect(BX - 0.6, st - 26, 1.2, 28);
+        let y = BURJ.bodyTop;
+        for (const [w, h] of BURJ.spire){ g.rect(BX - w / 2, y - h, w, h + 0.5); y -= h; }
+        BURJ.spireTop = y;
       }
       function burjPath(g){ g.beginPath(); burjBody(g); burjSpire(g); }
+      // one round-nosed lobe: a cylinder lit from the west, a flat lit terrace cap
+      function paintLobe(g, L, lb){
+        const night = L.night, top = BURJ.base - lb.h, silver = mixc([176, 188, 206], L.glass, 0.2);
+        const warmK = lb.side <= 0 ? 0.55 : 0.22, tone = lb.side === 0 ? 0.08 : 0;
+        const lit = mixc(mixc(silver, [255, 255, 255], 0.28 + tone), L.warm, warmK * (1 - 0.85 * night));
+        const mid = mixc(silver, L.cool, lb.side > 0 ? 0.38 : 0.18), dark = mixc(mixc(silver, L.cool, 0.5), [6, 10, 26], 0.55 + 0.25 * night);
+        const rim = mixc(dark, L.sky[1], 0.5);
+        g.fillStyle = lg(g, lb.x, 0, lb.x + lb.w, 0, [[0, rgb(mixc(mid, dark, 0.35))], [0.22, rgb(lit)], [0.5, rgb(mid)], [0.82, rgb(dark)], [0.95, rgb(mixc(dark, [0, 0, 0], 0.3))], [1, rgb(rim)]]);
+        g.fillRect(lb.x, top, lb.w, lb.h);
+        // the terrace cap: a flat lit disc seen edge-on, a warm line under its lip
+        g.fillStyle = rgb(mixc(silver, [255, 255, 255], 0.55)); g.beginPath(); g.ellipse(lb.x + lb.w / 2, top, lb.w / 2, 1.6, 0, 0, TAU); g.fill();
+        g.fillStyle = rgb(L.warm, 0.55 * (1 - 0.5 * night)); g.fillRect(lb.x + 1, top + 1.2, lb.w - 2, 1);
+        g.fillStyle = 'rgba(0,4,20,0.35)'; g.fillRect(lb.x, top + 2.2, lb.w, 2);
+      }
       function paintBurj(g, L){
-        const { base, bodyTop, spireTop, west: Wn, east: En } = BURJ, night = L.night;
-        const silver = mixc([178, 190, 208], L.glass, 0.22);
-        const warm = mixc(silver, L.warm, 0.42 * (1 - 0.8 * night)), bright = mixc(silver, [255, 255, 255], 0.14);
-        const cool = mixc(silver, L.cool, 0.42), shade = mixc(cool, [8, 12, 30], 0.42 + 0.28 * night);
-        const x0 = BX - Wn[0].hw, x1 = BX + En[0].hw;
-        // ONE fill for the whole mass: the sun on the west facets, the core's
-        // west-facing lobe catching the brightest light, the east in blue shade
-        g.beginPath(); burjBody(g);
-        g.fillStyle = lg(g, x0, 0, x1, 0, [[0, rgb(warm)], [0.36, rgb(mixc(warm, bright, 0.5))], [0.47, rgb(bright)], [0.53, rgb(silver)], [0.62, rgb(cool)], [1, rgb(shade)]]);
-        g.fill();
+        const { base, bodyTop, lobes } = BURJ, night = L.night;
+        const x0 = lobes.reduce((m, lb) => Math.min(m, lb.x), 1e9), x1 = lobes.reduce((m, lb) => Math.max(m, lb.x + lb.w), -1e9);
+        // the podium at its feet (the mall / hotel base), lit shopfronts
+        g.fillStyle = lg(g, 0, base - 22, 0, base, [[0, rgb(mixc([40, 48, 78], L.warm, 0.12))], [1, rgb(mixc([22, 28, 48], L.warm, 0.05))]]);
+        g.fillRect(BX - 104, base - 22, 208, 22);
+        g.fillStyle = rgb([255, 205, 130], 0.4 + 0.5 * night); for (let k = 0; k < 24; k++) g.fillRect(BX - 98 + k * 8.4, base - 15, 3.8, 6);
+        // the lobes, outer/low first
+        for (const lb of lobes) paintLobe(g, L, lb);
         g.save(); g.beginPath(); burjBody(g); g.clip();
-        // sky at the top, haze at the foot
-        g.fillStyle = lg(g, 0, spireTop, 0, base, [[0, rgb(L.sky[0], 0.22)], [0.45, rgb(L.sky[1], 0.0)], [1, rgb(mixc(L.haze, [10, 12, 30], 0.5), 0.5)]]);
-        g.fillRect(x0, spireTop, x1 - x0, base - spireTop);
-        // the setbacks: a shadow under every step, a bright lip on it, a seam down each lobe
-        for (const side of [Wn, En]){
-          const sgn = side === Wn ? -1 : 1;
-          for (let i = 0; i < side.length; i++){
-            const st = side[i], inner = i + 1 < side.length ? side[i + 1].hw : BURJ.coreHW;
-            const xa = Math.min(BX + sgn * st.hw, BX + sgn * inner), xb = Math.max(BX + sgn * st.hw, BX + sgn * inner);
-            g.fillStyle = 'rgba(0,4,20,0.35)'; g.fillRect(xa, st.top, xb - xa, 4);                   // the terrace shadow
-            g.fillStyle = 'rgba(255,255,255,' + (side === Wn ? 0.55 : 0.30) + ')'; g.fillRect(xa - 0.5, st.top - 1.2, xb - xa + 1, 1.4);   // the lip
-            const sx = BX + sgn * inner;                                                              // the seam where the lobe meets the next
-            g.fillStyle = side === Wn ? 'rgba(255,255,255,0.20)' : 'rgba(0,4,20,0.30)'; g.fillRect(sx - (side === Wn ? 1.2 : 0), st.top, 1.2, base - st.top);
-            g.fillStyle = side === Wn ? 'rgba(0,4,20,0.22)' : 'rgba(255,255,255,0.10)'; g.fillRect(sx + (side === Wn ? 0 : -1.2), st.top, 1.2, base - st.top);
-          }
-        }
-        // spandrels and fins
-        g.fillStyle = 'rgba(8,12,30,0.42)'; for (let y = bodyTop + 5; y < base; y += 5) g.fillRect(x0, y, x1 - x0, 1);
-        g.fillStyle = 'rgba(255,255,255,' + (0.09 + 0.05 * (1 - night)) + ')'; for (let fx = x0 + 2; fx < x1; fx += 4) g.fillRect(fx, bodyTop, 0.6, base - bodyTop);
-        // the sunset climbing the west edge of every lobe
-        if (night < 0.95){ g.save(); g.globalCompositeOperation = 'lighter';
-          for (const st of Wn){ g.fillStyle = lgc('burjrim' + st.hw, g, BX - st.hw, 0, BX - st.hw + 7, 0, [[0, rgb(L.warm, 0.55 * (1 - night))], [1, rgb(L.warm, 0)]]); g.fillRect(BX - st.hw, st.top, 7, base - st.top); }
-          g.restore(); }
-        // lit cells at night, sparse between the bands
-        if (L.lights > 0.4){
-          const a = (L.lights - 0.4) / 0.6;
-          for (let y = bodyTop + 6; y < base - 22; y += 5) for (let wx = x0 + 1; wx < x1 - 2; wx += 4){
-            const sd = psr((wx * 13 + y * 7 + 3) | 0);
-            if (sd < 0.20){ g.fillStyle = rgb(sd < 0.06 ? [200, 225, 255] : [255, 222, 175], 0.75 * a * (0.5 + 0.5 * psr(wx * y))); g.fillRect(wx + 0.6, y + 1, 2.4, 2.2); }
-          }
-        }
+        // the glass mirrors the sky: blue high up, the sunset toward the horizon
+        g.fillStyle = lg(g, 0, bodyTop, 0, base, [[0, rgb(mixc(L.sky[0], L.sky[1], 0.5), 0.26)], [0.45, rgb(L.sky[2], 0.08)], [0.8, rgb(L.glow, 0.16 * (1 - night))], [1, rgb(L.glow, 0.30 * (1 - night))]]);
+        g.fillRect(x0, bodyTop, x1 - x0, base - bodyTop);
+        // floor bands: every 3.4 px, a heavier one each mechanical floor
+        for (let f = 3.4, k = 0; f < base - bodyTop; f += 3.4, k++){ const heavy = k % 5 === 4; g.fillStyle = heavy ? 'rgba(4,8,22,0.55)' : 'rgba(6,10,26,0.30)'; g.fillRect(x0, base - f, x1 - x0, heavy ? 1.4 : 0.7); }
+        // the vertical fin along each nose (a hair of light on the highlight line)
+        g.fillStyle = 'rgba(255,255,255,' + (0.18 + 0.1 * (1 - night)) + ')'; for (const lb of lobes) g.fillRect(lb.x + lb.w * 0.24, base - lb.h + 3, 0.7, lb.h - 3);
+        // haze at the foot
+        g.fillStyle = lg(g, 0, base - 140, 0, base, [[0, rgb(L.haze, 0)], [1, rgb(L.haze, 0.28)]]); g.fillRect(x0, base - 140, x1 - x0, 140);
+        // lit windows, more of them as it darkens
+        if (L.lights > 0.4){ const a = (L.lights - 0.4) / 0.6; for (const w of BURJ.wins){ if (psr(w.x * 3 + w.y) > a * 1.2) continue; g.fillStyle = rgb(psr(w.x + w.y) < 0.2 ? [200, 225, 255] : [255, 222, 175], 0.8 * a); g.fillRect(w.x, w.y, 2.2, 2.4); } }
         g.restore();
-        // the spire: telescoping, silver, a warm west edge, banded
-        g.save(); g.beginPath(); burjSpire(g); g.clip();
-        g.fillStyle = lg(g, BX - 6, 0, BX + 6, 0, [[0, rgb(mixc(silver, L.warm, 0.45 * (1 - night)))], [0.45, rgb(mixc(silver, [255, 255, 255], 0.35))], [1, rgb(shade)]]);
-        g.fillRect(BX - 8, spireTop - 30, 16, bodyTop - spireTop + 32);
-        g.fillStyle = 'rgba(8,12,30,0.35)'; for (let y = spireTop; y < bodyTop; y += 6) g.fillRect(BX - 8, y, 16, 0.8);
-        g.restore();
-        g.fillStyle = rgb(mixc(silver, [255, 255, 255], 0.4)); g.fillRect(BX - BURJ.coreHW - 2, bodyTop - 2.5, BURJ.coreHW * 2 + 4, 3);   // the sky-terrace ring
-        BURJ.beacons = [[BX, spireTop - 26], [BX, bodyTop - (bodyTop - spireTop) * 0.55], [BX, bodyTop - (bodyTop - spireTop) * 0.3 + 4]];
+        // the spire: the core stepping into the mast, each section a small cylinder
+        let y = bodyTop;
+        for (const [w, h] of BURJ.spire){
+          const silver = mixc([190, 200, 216], L.glass, 0.15);
+          g.fillStyle = lg(g, BX - w / 2, 0, BX + w / 2, 0, [[0, rgb(mixc(silver, L.cool, 0.3))], [0.25, rgb(mixc(silver, [255, 255, 255], 0.45))], [0.55, rgb(silver)], [1, rgb(mixc(silver, [10, 14, 30], 0.6))]]);
+          g.fillRect(BX - w / 2, y - h, w, h + 0.5);
+          if (w >= 2.6){ g.fillStyle = rgb(mixc(silver, [255, 255, 255], 0.6)); g.beginPath(); g.ellipse(BX, y - h, w / 2, Math.max(0.8, w * 0.16), 0, 0, TAU); g.fill();
+            g.fillStyle = 'rgba(4,8,22,0.45)'; for (let yy = y - h + 4; yy < y; yy += 4) g.fillRect(BX - w / 2, yy, w, 0.7); }
+          y -= h;
+        }
+        BURJ.spireTop = y;
+        BURJ.beacons = [[BX, y + 2], [BX, bodyTop - 84], [BX, bodyTop - 128]];
       }
 
       // ── the BURJ AL ARAB: the sail on its island ──
@@ -496,7 +490,7 @@
         tower({ x: 1380, w: 34, h: 300, crown: 'flat', pal: 1, seed: 15, floor: 9 });
         tower({ x: 1425, w: 34, h: 300, crown: 'flat', pal: 1, seed: 16, floor: 9 });                    // Sky View pair (bridge painted after)
         tower({ x: 1482, w: 26, h: 220, crown: 'spire', pal: 7, seed: 17, floor: 7 });
-        tower({ x: 1235, w: 28, h: 150, crown: 'flat', pal: 3, seed: 18, podium: 20, floor: 10 });      // the Dubai Mall front
+        tower({ x: 1194, w: 26, h: 150, crown: 'flat', pal: 3, seed: 18, podium: 20, floor: 10 });      // the Dubai Mall front, clear of the Burj's western feet
         for (let i = 0; i < 26; i++){ const x = -60 + i * 68 + psr(i + 900) * 30; if (x < 300 || (x > LAKE.x0 - 20 && x < LAKE.x1 + 20)) continue; PALMS.push({ x, s: 0.8 + psr(i + 901) * 0.5, lean: psr(i + 902) < 0.5 ? -1 : 1 }); }
       }
       function paintCity(g, L){
@@ -512,11 +506,11 @@
         paintAinStatic(g, L);
         for (const T of byX) if (T.x >= 720 && T.x < 1100) paintTower(g, L, T);
         paintMuseum(g, L);
-        for (const T of byX) if (T.x >= 1100 && T.x !== 1235) paintTower(g, L, T);
+        for (const T of byX) if (T.x >= 1100 && T.x !== 1194) paintTower(g, L, T);
         // the Sky View bridge between its two towers
         g.fillStyle = rgb(mixc([200, 215, 235], L.cool, 0.3)); g.fillRect(1414, HZ - 300 + 6, 14, 22);
         paintBurj(g, L);
-        for (const T of byX) if (T.x === 1235) paintTower(g, L, T);
+        for (const T of byX) if (T.x === 1194) paintTower(g, L, T);
         paintFrame(g, L);
         paintShore(g, L);
         for (const P of PALMS) paintPalm(g, L, P.x, HZ - 6, P.s, P.lean);
@@ -605,7 +599,6 @@
       const CARS = Array.from({ length: 44 }, (_, i) => ({ x: psr(i + 60) * DW, v: (psr(i + 61) < 0.5 ? -1 : 1) * (40 + psr(i + 62) * 70), lane: psr(i + 63) < 0.5 ? 0 : 1 }));
       const TWINKLE = Array.from({ length: 40 }, (_, i) => ({ x: psr(i + 70) * DW, y: psr(i + 71) * 420, ph: psr(i + 72) * TAU, sp: 1 + psr(i + 73) * 2 }));
       const GLINTS = Array.from({ length: 30 }, (_, i) => ({ x: SUNX + (psr(i + 80) - 0.5) * 380 * (0.4 + psr(i + 81)), y: HZ + 6 + psr(i + 82) * 90, ph: psr(i + 83) * TAU }));
-      const BURJ_WIN = Array.from({ length: 34 }, (_, i) => ({ y: HZ - 30 - psr(i + 90) * 470, k: psr(i + 91), ph: psr(i + 92) * TAU, sp: 0.4 + psr(i + 93) }));
 
       // ── triggers ──
       function startShow(t, len){ SHOW = { t0: t, len: len || 16, pal: [[255, 190, 70], [90, 220, 255], [255, 110, 190], [255, 255, 255], [120, 255, 170]][Math.floor(Math.random() * 5)] }; }
@@ -766,10 +759,7 @@
       function drawBurjLive(g, L, t){
         const night = L.night;
         // a few windows switching over time
-        for (const w of BURJ_WIN){ const on = 0.5 + 0.5 * Math.sin(t * w.sp + w.ph); if (on > 0.6 && night > 0.1){
-          const side = w.k < 0.5 ? BURJ.west : BURJ.east, i = Math.floor((w.k * 2 % 1) * side.length), st = side[i];
-          if (w.y > st.top + 4){ const inner = i + 1 < side.length ? side[i + 1].hw : BURJ.coreHW, x = BX + (w.k < 0.5 ? -st.hw + (w.k * 97 % 1) * (st.hw - inner) : inner + (w.k * 97 % 1) * (st.hw - inner));
-            g.fillStyle = rgb([255, 225, 180], (on - 0.6) * 2 * night); g.fillRect(x, w.y, 2.6, 2.2); } } }
+        for (const w of BURJ.wins){ const on = 0.5 + 0.5 * Math.sin(t * w.sp * 1.7 + w.ph); if (on > 0.75 && night > 0.1){ g.fillStyle = rgb([255, 235, 200], (on - 0.75) * 4 * night); g.fillRect(w.x - 0.3, w.y - 0.3, 2.8, 3); } }
         if (!SHOW) return;
         const e = t - SHOW.t0, len = SHOW.len, fin = e > len - 3.2 ? (e - (len - 3.2)) / 3.2 : 0, env = Math.min(1, e / 0.8) * (fin ? 1 - fin * 0.5 : 1);
         const pal = SHOW.pal, body = BURJ.base - BURJ.spireTop;
@@ -783,7 +773,7 @@
         }
         // shimmer pixels
         g.globalAlpha = env * 0.9;
-        for (let i = 0; i < 90; i++){ const side = i % 2 ? BURJ.west : BURJ.east, st = side[(i >> 1) % side.length], k = psr(i * 3 + Math.floor(t * 12)), y = st.top + 4 + k * (BURJ.base - st.top - 8); g.fillStyle = rgb(i % 3 ? pal : [255, 255, 255], 0.35 + 0.5 * psr(i + Math.floor(t * 12) * 2)); g.fillRect(BX + (i % 2 ? -1 : 1) * psr(i + 5 + Math.floor(t * 9)) * st.hw - 1.3, y, 2.6, 2); }
+        for (let i = 0; i < 90; i++){ const lb = BURJ.lobes[i % BURJ.lobes.length], k = psr(i * 3 + Math.floor(t * 12)), y = BURJ.base - lb.h + 4 + k * (lb.h - 8); g.fillStyle = rgb(i % 3 ? pal : [255, 255, 255], 0.35 + 0.5 * psr(i + Math.floor(t * 12) * 2)); g.fillRect(lb.x + psr(i + 5 + Math.floor(t * 9)) * (lb.w - 2.6), y, 2.6, 2); }
         g.globalAlpha = 1;
         // the finale: a white pulse and rings leaving the spire
         if (fin){ g.fillStyle = rgb([255, 255, 255], 0.5 * Math.sin(fin * Math.PI) * (0.6 + 0.4 * Math.sin(t * 30))); g.fillRect(BX - 120, BURJ.spireTop - 40, 240, body + 60); }
@@ -965,7 +955,7 @@
         spin: () => spinWheel(lastT), horn: () => BOATS.forEach(b => b.blinkUntil = lastT + 2), heli: () => (HELI.t0 = lastT - 0.01),
         dolphin: () => dolphin(lastT, 760), wash: () => washAlArab(lastT), museum: () => museumRing(lastT), plane: () => (PLANE.t0 = lastT),
         shoot: () => SHOOTERS.push({ x: rnd(200, 1400), y: rnd(40, 300), t0: lastT, ang: rnd(2.6, 3.0), len: rnd(90, 180) }),
-        boats: () => BOATS, burj: () => BURJ, tiers: () => BURJ.west.length + BURJ.east.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL }),
+        boats: () => BOATS, burj: () => BURJ, lobes: () => BURJ.lobes.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL }),
         perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },

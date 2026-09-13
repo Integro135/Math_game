@@ -191,18 +191,24 @@ FRAME far right (`paintFrame`); the promenade, SZR road and palms
 (`paintShore`, `paintPalm`, none on the sail's water or over the lake); two
 hazy far layers (`paintFar`); horizon haze over everything far.
 
-**The Burj Khalifa** (`BURJ`, `buildBurj`, `burjBody`, `burjSpire`,
-`paintBurj`). Built as ONE stepped silhouette, not a bundle of shafts: 13
-setbacks per wing as `[half-width, top fraction]` (`west`, `east` — the east
-steps sit lower so the tiers spiral), joined into a single closed path around a
-core (`coreHW 8`) rising to `bodyTop`; the spire is five telescoping sections +
-the needle. One horizontal gradient fills the whole mass (sun-warm west →
-the core's bright west lobe → silver → blue shade east); clipped to the
-silhouette come the sky tint at the top and haze at the foot, a terrace shadow
-under every setback with a bright lip on it and a seam down each lobe, 5-px
-spandrels, 4-px fins, the sunset climbing the west edge of every lobe (additive
-strips), sparse lit cells at night. Three red beacons (`BURJ.beacons`).
-`burjPath()` is the same silhouette for the live layer's clip.
+**The Burj Khalifa** (`BURJ`, `buildBurj`, `paintLobe`, `paintBurj`,
+`burjBody`/`burjSpire`/`burjPath`). Drawn the way the real one is built: the
+Y-plan's three wings end in ROUND noses, so from the lake the tower is a bundle
+of slender cylinders stepping up toward the core in a spiral. `BURJ.lobes` —
+nine west lobes and nine east lobes as `[left edge, width, height]` (the east
+steps lower, so the setbacks spiral) plus the 14-px core to 545 — painted in
+height order so each taller inner lobe stands in front of the one outside it.
+`paintLobe` shades each as a cylinder lit from the west (highlight at 22%,
+dark far edge, a sky-coloured rim) with a flat lit terrace cap, a warm line
+under its lip and a shadow beneath. Clipped to the union: the glass MIRRORS THE
+SKY (blue up high, the sunset glow toward the horizon), floor bands every
+3.4 px with a heavier one each mechanical floor, a hair of light down each nose
+(the vertical fins), haze at the foot, and lit windows (`BURJ.wins`, fixed to
+lobes) as it darkens. The core steps into the mast: six cylinders `BURJ.spire`
+of falling width with their own caps and bands, then the needle; three red
+beacons. A lit podium (the mall/hotel base) sits at its feet. The first cut was
+a single stepped silhouette with one gradient — it read as a flat pine tree;
+the round-nosed bundle is what makes it the Burj.
 
 **Generic towers** (`paintTower`): two faces (lit west, shaded east return),
 glass sheen, floor spandrels (`floor` per tower), mullions, a window grid whose
