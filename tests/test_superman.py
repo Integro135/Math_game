@@ -10,7 +10,7 @@ from helpers import *
 class TestCoinMul:
     def _enter_cm(self, page, target=20):
         # coin_mul rides the Superman pool, so build it then force a TCM problem
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(f"problems[0] = {{t: TCM, a: {target}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
@@ -21,7 +21,7 @@ class TestCoinMul:
         (₪2/₪5/₪10), each carrying b = the coin value and a valid target for that
         coin: ₪2→{4..20}, ₪5→{10,15,20,25,30,35}, ₪10→{20..90}, with a/b ∈
         {2..10}. Every Superman session weaves coin-multiplication in."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
         res = page.evaluate("""(() => {
@@ -52,7 +52,7 @@ class TestCoinMul:
     def test_coin_mul_two_coin_variant(self, page):
         """A ₪2 problem (6 → 3 coins of ₪2): the answer is a/b = 3 (not a/5), the
         title shows the ₪2 coin, and entering 3 solves it."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 6, b: 2}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
@@ -68,7 +68,7 @@ class TestCoinMul:
         """A ₪10 problem (90 → 9 coins): the answer is a/b = 9, the title shows the
         ₪10 coin, ＋ stays enabled at 9 (cap need+3, so the answer is never given
         away), and entering 9 solves it."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 90, b: 10}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
@@ -87,7 +87,7 @@ class TestCoinMul:
 
     def test_coin_mul_loads_and_mounts(self, page):
         """Forcing a TCM problem mounts the coin tray + ＋ control; starts empty."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
@@ -243,7 +243,7 @@ class TestCoinMul:
 class TestBagelCost:
     def _enter_bagel(self, page, bagels=4):
         # bagel_cost rides the Superman pool, so build it then force a TBC problem
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(f"problems[0] = {{t: TBC, a: {bagels}, b: 5}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
@@ -253,7 +253,7 @@ class TestBagelCost:
         """bagel_cost.make('sup') yields 3 TBC problems with DISTINCT bagel counts
         from {2,3,4,6,7,8} — up to 8, SKIPPING 5 (5 bagels × ₪5 confuses count=price)
         — each carrying b=5 (price per bagel); Superman includes them. Max total 40."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.bagel_cost === 'object'", timeout=TIMEOUT)
         res = page.evaluate("""(() => {

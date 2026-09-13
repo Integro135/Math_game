@@ -69,16 +69,16 @@ class TestBridgingMode:
     ]
 
     def _switch_br(self, page):
-        page.evaluate("setMode('br')")
+        enter_mode(page, 'br')
         page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
         page.wait_for_timeout(150)
 
     def _reenter_br(self, page):
         """Leave br (to mx) and pick it again — a genuine new menu selection,
         which advances to the next set in the alternation."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_timeout(120)
-        page.evaluate("setMode('br')")
+        enter_mode(page, 'br')
         page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
         page.wait_for_timeout(150)
 
@@ -415,7 +415,7 @@ class TestBridgingMode:
         the next set (the no-op guard is lifted for br only)."""
         self._switch_br(page)                        # set 1 (25 problems)
         assert page.evaluate("problems.length") == 25
-        page.evaluate("setMode('br')")               # re-click while active
+        enter_mode(page, 'br')               # re-click while active
         page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
         page.wait_for_timeout(150)
         assert page.evaluate("problems.length") == 18, \
@@ -475,7 +475,7 @@ class TestBridge20:
     ]
 
     def _switch(self, page):
-        page.evaluate("setMode('b20')")
+        enter_mode(page, 'b20')
         page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
         page.wait_for_timeout(120)
 

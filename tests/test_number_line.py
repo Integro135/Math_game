@@ -61,7 +61,7 @@ class TestNumberLineVisibility:
     def test_nl_hidden_then_revealed_for_chain(self, page):
         """Chain problems: everything hidden while fresh; after the first
         mistake the kangaroo NL appears (default aid) and the jar stays hidden."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_timeout(200)
         consts = page.evaluate("({TX, TZ, TW})")
         chain_types = {consts["TX"], consts["TZ"], consts["TW"]}
@@ -206,7 +206,7 @@ class TestNumberLineInteraction:
     def _activate(self, page, mode_arg, problem_js):
         """Load the given problem and reveal the number line (enable the ±
         buttons + lift the spacebar's try-first guard, as a first mistake does)."""
-        page.evaluate(f"setMode({mode_arg})")
+        enter_mode(page, mode_arg)
         page.wait_for_function("problems.length > 0", timeout=TIMEOUT)
         page.wait_for_timeout(120)
         page.evaluate(f"{problem_js}; idx = 0; loadProblem();")

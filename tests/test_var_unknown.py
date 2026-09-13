@@ -34,7 +34,7 @@ class TestVarOneUnknown:
 
     def test_queen_mixes_in_unknown(self, page):
         """Queen (mx) mixes the unknown type into its curated pool."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
         page.wait_for_timeout(120)
         n = page.evaluate("[...problems].filter(p=>p.t===TVA||p.t===TVS).length")
@@ -76,11 +76,11 @@ class TestVarOneUnknown:
         self._force(page, "{t:TVS,a:14,b:6,sym:'circle',symA:'square'}")
         page.fill("#ans", "8"); page.click("#chk-btn"); page.wait_for_timeout(200)
         assert "fb-ok" in page.locator("#fb").get_attribute("class"), "14 − 6 = 8 is correct"
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
         mx = page.evaluate("(()=>{for(var k=0;k<20;k++){if(makeMxPool().some(p=>p.symA))return true;}return false;})()")
         assert mx, "Queen must include the TWO-unknown variant (a problem with symA)"
-        page.evaluate("setMode('br')")
+        enter_mode(page, 'br')
         page.wait_for_function("problems.length>0", timeout=TIMEOUT)
         br = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridgePool().some(p=>p.symA))return true;}return false;})()")
         assert br, "the bridges must weave in the TWO-unknown variant (symA)"
@@ -88,11 +88,11 @@ class TestVarOneUnknown:
     def test_bridges_weave_in_three_unknown(self, page):
         """The three-unknown sum (TRA, __+__+__ = R) is woven into bridge-10 AND
         bridge-20 as well (≈ once per set)."""
-        page.evaluate("setMode('br')")
+        enter_mode(page, 'br')
         page.wait_for_function("problems.length>0", timeout=TIMEOUT)
         br = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridgePool().some(p=>p.t===TRA))return true;}return false;})()")
         assert br, "bridge-10 must weave in the three-unknown (TRA)"
-        page.evaluate("setMode('b20')")
+        enter_mode(page, 'b20')
         page.wait_for_function("problems.length>0", timeout=TIMEOUT)
         b20 = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridge20Pool().some(p=>p.t===TRA))return true;}return false;})()")
         assert b20, "bridge-20 must weave in the three-unknown (TRA)"
@@ -101,7 +101,7 @@ class TestVarOneUnknown:
         """Two unknowns with DIFFERENT values must be DIFFERENT shapes (a shape
         can't stand for two values); equal values may share one. Sampled across
         var_one Queen pools AND the sprinkled bridges."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function("window.EXERCISES && EXERCISES.types.var_one", timeout=TIMEOUT)
         res = page.evaluate("""(()=>{let bad=[],checked=0;
           const scan=p=>{if((p.t===TVA||p.t===TVS)&&p.symA){checked++;

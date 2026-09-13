@@ -47,7 +47,7 @@ class TestTensProblems:
 
     def test_tt_appears_in_malka(self, page):
         """Mode mx (מלכה): every session must have ≥2 TT (round-tens) problems."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_selector("#ans, #ans1, #tx-sub1", timeout=TIMEOUT)
         page.wait_for_timeout(300)
         consts = page.evaluate("({TT})")
@@ -61,7 +61,7 @@ class TestTensProblems:
         appears with the kangaroo at num1 (0-100 scale)."""
         # TT is wired only into 'mx' (data.js EXERCISE_INDEX), where tens.ex.js
         # make('mx') always emits exactly 2 TT problems -> _find_tt always hits.
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
@@ -85,7 +85,7 @@ class TestTensProblems:
     def test_tt_correct_answer_accepted(self, page):
         """TT problem: submitting the correct tens answer marks the problem done."""
         # TT lives only in 'mx'; tens.ex.js make('mx') always emits 2 TT problems.
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"

@@ -3,9 +3,29 @@
 
    A shallow tropical reef seen from just above the sand, at mid-morning,
    the sun high on the LEFT. Nothing here is shared with the older reef.bg.js
-   (kept in the folder, unloaded). This first pass is the REEF ITSELF — the
-   water, the rock, the corals, the anemones, the sand — with NO fish; the
-   life gets layered on afterwards.
+   (kept in the folder, unloaded). Built in two passes: the REEF ITSELF —
+   the water, the rock, the corals, the anemones, the sand — and then THE
+   FISH (below).
+
+   THE FISH — one vector renderer (`drawFish`), species as data (`SPECIES`):
+   body spline + fins + eye + mouth, the rear of the body flexing with the
+   tail beat (`mkWarp`), a turn that thins the fish through zero (`face`),
+   pitch following the heading, a flapping pectoral, an occasional gulp.
+   · CLOWNFISH — two per big anemone, one in the small one; they hover over
+     the crown, duck INTO the tentacles now and then (drawn between the back
+     and front tentacles), and dart out in loops when their anemone is tapped
+   · DORY — the regal blue tang with the black palette and yellow tail,
+     cruising the open water; tap → dash or a barrel roll
+   · the BUTTERFLYFISH pair (threadfin: white, yellow rear, black eye bar);
+     the second follows the first; tap → hearts
+   · two YELLOW TANGS over the reef tops, two ROYAL GRAMMAS low by the rocks
+   · a SCHOOL of 14 blue-green CHROMIS: a leader wanders, the rest hold
+     loose slots; tap → scatter and regroup
+   · the passing GIANTS: a BLUE WHALE glides through the upper water every
+     few minutes, an ORCA cruises by now and then (never both at once)
+   · every action blows a bubble puff; a scheduler makes a random fish act
+     every 4–12 s; and THE POOP GAG — every fish goes once per ~3 minutes,
+     a strand trails, lets go, sinks and fades (never on click).
 
    DESIGN SPACE 1600×900, sand line ~790, cover-fitted and bottom-anchored
    (a wide window crops the sides, a tall one shows more water). `S` maps
@@ -32,8 +52,9 @@
    · drifting motes and seep bubbles, a soft vignette
 
    PERF (house rules, see aurora.bg.js / dubai3.bg.js): backing store
-   capped at 1.5× AND ~2.4 MP; the still reef in ONE prebaked layer (backL)
-   plus a foreground band layer (foreL) blitted only over its band; the
+   capped at 1.5× AND ~2.4 MP; the still picture in prebaked layers — the
+   water (waterL), the reef band (reefL, blitted from its top edge down, so
+   the giants pass BEHIND the rocks) and a foreground band (foreL); the
    caustic tile is baked once and scrolled as a pattern; glows are sprites;
    the rAF loop drops to every 2nd display frame while frames run long.
    Hooks: window._reef2 = BACKGROUNDS.reef2._test.  */
@@ -711,7 +732,7 @@
         for (let i = 0; i < n; i++){
           const th0 = rnd() * TAU, rho = Math.sqrt(rnd());            // where on the oral disc it grows (angle, radius 0..1)
           const len = A.r * (0.7 + rnd() * 0.6), th = A.r * (0.035 + rnd() * 0.03);
-          tents.push({ th0, rho, len, th, ph: rnd() * TAU, wob: 0.5 + rnd() * 0.9, curl: 0.4 + rnd() * 0.7, v: (Math.sin(th0) + 1) / 2 });
+          tents.push({ th0, rho, len, th, tipR: th * (1.0 + rnd() * 0.7), ph: rnd() * TAU, wob: 0.5 + rnd() * 0.9, curl: 0.4 + rnd() * 0.7, v: (Math.sin(th0) + 1) / 2 });
         }
         tents.sort((a, b) => a.v - b.v);                                // back of the disc first (v small = back)
         A.tents = tents; return A;
@@ -765,12 +786,13 @@
           g.beginPath(); g.moveTo(bx, by); g.quadraticCurveTo(cx1, cy1, ex, ey); g.stroke();
           g.strokeStyle = T.cHi; g.lineWidth = T.th * 0.6;
           g.beginPath(); g.moveTo(bx - T.th * 0.6, by); g.quadraticCurveTo(cx1 - T.th * 0.6, cy1, ex - T.th * 0.5, ey); g.stroke();
-          g.fillStyle = T.cTip; g.beginPath(); g.arc(ex, ey, T.th * 1.35, 0, TAU); g.fill();
-          g.fillStyle = T.cTipHi; g.beginPath(); g.arc(ex - T.th * 0.4, ey - T.th * 0.45, T.th * 0.5, 0, TAU); g.fill();
+          g.fillStyle = T.cTip; g.beginPath(); g.arc(ex, ey, T.tipR, 0, TAU); g.fill();
+          g.fillStyle = T.cTipHi; g.beginPath(); g.arc(ex - T.tipR * 0.3, ey - T.tipR * 0.35, T.tipR * 0.38, 0, TAU); g.fill();
         };
         const n = A.tents.length, back = n >> 1;
         for (let i = 0; i < back; i++) drawTent(A.tents[i]);
         g.fillStyle = rgb(lit(colLo, -0.3), 0.9); g.beginPath(); g.ellipse(x, top, cw * 0.2, dr * 0.3, 0, 0, TAU); g.fill();
+        if (A.midDraw){ g.save(); g.lineCap = 'butt'; A.midDraw(g); g.restore(); g.lineCap = 'round'; }
         for (let i = back; i < n; i++) drawTent(A.tents[i]);
       }
 
@@ -810,7 +832,7 @@
         p = onRock(L1, 0.72); { const q = p; still(q[1] + 4, g => paintStaghorn(g, { x: q[0], y: q[1], h: 120, sd: 103, z: 0.11, pal: 1 })); }
         p = onRock(L1, -0.95); { const q = p; still(q[1] + 4, g => paintTubes(g, { x: q[0] + 20, y: q[1] + 10, h: 90, sd: 104, z: 0.12, pal: 0 })); }
         p = onRock(L2, -0.5); { const q = p; still(q[1] + 4, g => paintBoulder(g, { x: q[0], y: q[1] - 4, r: 48, sd: 105, z: 0.10, pal: 0, worms: 3 })); }
-        p = onRock(L2, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemone(g, ANEMS[0], t, c)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 66, sd: 106, z: 0.09, pal: 0, n: 130 })); }
+        p = onRock(L2, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[0], t, c, DT)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 66, sd: 106, z: 0.09, pal: 0, n: 130 })); }
         p = onRock(L2, -0.05); { const q = p; still(q[1] + 3, g => paintMushroom(g, { x: q[0] + 8, y: q[1] + 8, r: 26, sd: 107, z: 0.10, pal: 0 })); }
         p = onRock(L2, 0.95); { const q = p; live(q[1] + 3, (g, t, c) => drawFan(g, FANS[0], t, c)); FANS.push(buildFan({ x: q[0], y: q[1] + 6, h: 95, sd: 108, z: 0.1, pal: 0 })); }
         p = onRock(L3, -0.4); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 110, sd: 109, z: 0.06, pal: 0 })); }
@@ -831,13 +853,13 @@
         p = onRock(R2, -0.2); { const q = p; still(q[1] + 3, g => paintBrain(g, { x: q[0], y: q[1] - 6, r: 70, sd: 125, z: 0.12, pal: 2 })); }
         p = onRock(R2, 0.6); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 130, sd: 126, z: 0.12, pal: 1 })); }
         p = onRock(R2, -0.75); { const q = p; live(q[1] + 3, (g, t, c) => drawSoft(g, SOFTS[1], t, c)); SOFTS.push(buildSoft({ x: q[0], y: q[1], h: 90, sd: 127, z: 0.12, pal: 1 })); }
-        p = onRock(R3, -0.55); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemone(g, ANEMS[1], t, c)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 74, sd: 128, z: 0.09, pal: 1, n: 140 })); }
+        p = onRock(R3, -0.55); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[1], t, c, DT)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 74, sd: 128, z: 0.09, pal: 1, n: 140 })); }
         p = onRock(R3, 0.5); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 4, r: 56, sd: 129, z: 0.10, pal: 2, worms: 3 })); }
         p = onRock(R3, 0.98); { const q = p; still(q[1] + 3, g => paintMushroom(g, { x: q[0], y: q[1] + 6, r: 24, sd: 130, z: 0.10, pal: 2 })); }
         p = onRock(R4, -0.5); { const q = p; still(q[1] + 3, g => paintFingers(g, { x: q[0], y: q[1] + 2, w: 58, sd: 131, z: 0.06, pal: 2 })); }
         p = onRock(R4, 0.5); { const q = p; still(q[1] + 3, g => paintBarrel(g, { x: q[0], y: q[1] + 2, h: 74, sd: 132, z: 0.06 })); }
         p = onRock(R5, -0.5); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 2, r: 64, sd: 133, z: 0.02, pal: 1, flat: true, worms: 2 }), true); }
-        p = onRock(R5, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemone(g, ANEMS[2], t, c), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 4, r: 58, sd: 134, z: 0.02, pal: 2, n: 110 })); }
+        p = onRock(R5, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[2], t, c, DT), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 4, r: 58, sd: 134, z: 0.02, pal: 2, n: 110 })); }
         p = onRock(R6, -0.2); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 110, sd: 135, z: 0.0, pal: 0 }), true); }
         p = onRock(R6, -0.85); { const q = p; live(q[1] + 3, (g, t, c) => drawWhips(g, { x: q[0], y: q[1] + 4, h: 130, n: 7, sd: 136, z: 0.0, pal: 1 }, t, c), true); }
         p = onRock(R6, 0.4); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 120, sd: 137, z: 0.0, pal: 2 }), true); }
@@ -850,7 +872,7 @@
         p = onRock(C2, 0.2); { const q = p; still(q[1] + 3, g => paintFingers(g, { x: q[0], y: q[1] + 2, w: 40, sd: 143, z: 0.04, pal: 1 })); }
         p = onRock(C3, 0.0); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 70, sd: 144, z: 0.12, pal: 3, spread: 1.2 })); }
         { const q = [640, 850]; live(q[1] + 3, (g, t, c) => drawSoft(g, SOFTS[2], t, c), true); SOFTS.push(buildSoft({ x: q[0], y: q[1], h: 60, sd: 145, z: 0.0, pal: 2 })); }
-        { const q = [980, 860]; live(q[1] + 2, (g, t, c) => drawAnemone(g, ANEMS[3], t, c), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1], r: 46, sd: 146, z: 0.0, pal: 0, n: 90 })); }
+        { const q = [980, 860]; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[3], t, c, DT), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1], r: 46, sd: 146, z: 0.0, pal: 0, n: 90 })); }
         // sea stars, urchins, shells, grass on the sand
         still(842, g => paintStar(g, { x: 590, y: 838, r: 22, sd: 151, z: 0.04, pal: 0 }));
         still(884, g => paintStar(g, { x: 1090, y: 880, r: 26, sd: 152, z: 0.0, pal: 1 }), true);
@@ -872,6 +894,7 @@
         LIVE.sort((a, b) => a.y - b.y);
       }
       const ANEMS = [], FANS = [], SOFTS = [];
+      let DT = 0;                                                // this frame's dt, for live elements that animate residents
 
       // ═══════════════════════════ LIVE WATER ═══════════════════════════
       // caustic tile: a seamless web of soft bright curves, scrolled as a pattern
@@ -952,12 +975,430 @@
         }
       }
 
-      // ── layers ──
-      let backL = null, foreL = null, vigL = null, FORE_TOP = 0;
-      function paintBack(g){
-        paintWater(g); paintFarReef(g); paintSand(g);
-        for (const e of STILL) if (!e.fore) e.draw(g);
+
+      // ═══════════════════════════ THE FISH ═══════════════════════════
+      // One vector fish renderer, many species. A fish is drawn in LOCAL
+      // coords: body length 1, nose at +0.5, tail base at −0.5, y down.
+      // `wp` warps every point so the rear of the body flexes with the tail
+      // beat; the caudal fin adds its own swing on top. The fish is placed
+      // with translate / rotate(pitch) / scale(face·s, s): `face` runs
+      // −1..1, so a turn thins the fish through zero instead of snapping.
+      const FISH = [], HEARTS = [];
+      function smoothPath(g, pts, wp, closed){
+        // closed Catmull-Rom through (warped) points → cubic beziers
+        const P = pts.map(p => wp(p[0], p[1])), n = P.length;
+        g.moveTo(P[0][0], P[0][1]);
+        for (let i = 0; i < (closed ? n : n - 1); i++){
+          const p0 = P[(i - 1 + n) % n], p1 = P[i], p2 = P[(i + 1) % n], p3 = P[(i + 2) % n];
+          g.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6, p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
+        }
+        if (closed) g.closePath();
       }
+      const poly = (g, pts, wp) => { pts.forEach((p, i) => { const q = wp(p[0], p[1]); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.closePath(); };
+      const mkWarp = bend => (x, y) => x < 0 ? [x, y + bend * x * x * 1.6] : [x, y];
+
+      // ── species ──
+      // body: outline anchors · tail: {kind, len} · dorsal/anal: fin polygons ·
+      // pect: pectoral fin root · eye · col: top/bottom body, fin, finEdge · pattern(g, P)
+      const SPECIES = {
+        clown: {
+          body: [[0.5, 0.0], [0.42, -0.14], [0.2, -0.27], [-0.1, -0.27], [-0.35, -0.17], [-0.5, -0.07], [-0.5, 0.07], [-0.35, 0.17], [-0.1, 0.26], [0.2, 0.25], [0.42, 0.13]],
+          tail: { kind: 'round', len: 0.26, h: 0.2 }, dorsal: [[0.22, -0.24], [0.05, -0.36], [-0.15, -0.36], [-0.32, -0.19]], anal: [[-0.1, 0.25], [-0.18, 0.36], [-0.33, 0.17]],
+          pelvic: [[0.1, 0.25], [0.03, 0.36], [-0.06, 0.26]], pect: [0.18, 0.06, 0.16], eye: [0.36, -0.05, 0.045, [230, 170, 60]],
+          col: { top: [236, 110, 30], bot: [250, 160, 60], fin: [240, 120, 40], edge: [30, 20, 20] },
+          pattern(g, P){
+            // three white bands edged in black: head, the bulging middle, the tail base
+            const band = (pts) => { g.fillStyle = P.black; g.beginPath(); smoothPath(g, pts, P.wp, true); g.fill(); };
+            const bands = [
+              [[0.32, -0.3], [0.22, -0.3], [0.2, 0], [0.24, 0.3], [0.34, 0.3], [0.3, 0]],
+              [[-0.02, -0.32], [-0.14, -0.32], [-0.1, 0], [-0.14, 0.32], [-0.02, 0.32], [0.12, 0.05], [0.1, -0.15]],
+              [[-0.4, -0.25], [-0.5, -0.25], [-0.5, 0.25], [-0.4, 0.25], [-0.44, 0]],
+            ];
+            for (const b of bands){ band(b); g.fillStyle = P.white; g.beginPath(); smoothPath(g, b.map(p => [p[0] + (p[0] > 0.1 ? 0 : 0), p[1] * 0.93]), (x, y) => P.wp(x * 0.92 + (b[0][0] + b[1][0]) / 2 * 0.08, y), true); g.fill(); }
+          },
+        },
+        dory: {
+          body: [[0.5, 0.02], [0.4, -0.14], [0.15, -0.28], [-0.15, -0.28], [-0.4, -0.15], [-0.5, -0.06], [-0.5, 0.06], [-0.4, 0.15], [-0.15, 0.27], [0.15, 0.26], [0.4, 0.14]],
+          tail: { kind: 'trunc', len: 0.24, h: 0.22 }, dorsal: [[0.25, -0.24], [0.1, -0.36], [-0.25, -0.38], [-0.45, -0.2]], anal: [[0.05, 0.25], [-0.15, 0.36], [-0.45, 0.2]],
+          pelvic: [[0.2, 0.22], [0.14, 0.32], [0.06, 0.24]], pect: [0.2, 0.04, 0.17], eye: [0.36, -0.06, 0.04, [40, 40, 60]],
+          col: { top: [30, 70, 210], bot: [60, 120, 240], fin: [40, 90, 230], edge: [10, 10, 30], tail: [250, 210, 40] },
+          pattern(g, P){
+            // the black "palette": from behind the eye along the back, down the tail base and
+            // forward along the lower flank — enclosing a blue oval on the rear half
+            g.fillStyle = P.black; g.beginPath();
+            smoothPath(g, [[0.3, -0.07], [0.12, -0.18], [-0.15, -0.24], [-0.38, -0.21], [-0.5, -0.1], [-0.5, 0.1], [-0.36, 0.15], [-0.12, 0.13], [0.02, 0.06], [0.12, -0.02], [0.24, 0.0]], P.wp, true); g.fill();
+            g.fillStyle = P.top; g.beginPath(); smoothPath(g, [[-0.06, -0.1], [-0.2, -0.16], [-0.36, -0.13], [-0.42, -0.02], [-0.34, 0.07], [-0.16, 0.06], [-0.04, 0.0]], P.wp, true); g.fill();
+            // the yellow wedge where the tail meets the body
+            g.fillStyle = P.yellow; g.beginPath(); poly(g, [[-0.5, -0.07], [-0.4, 0], [-0.5, 0.07]], P.wp); g.fill();
+          },
+        },
+        bfly: {   // threadfin butterflyfish
+          body: [[0.5, 0.04], [0.38, -0.12], [0.15, -0.34], [-0.15, -0.34], [-0.4, -0.16], [-0.5, -0.06], [-0.5, 0.06], [-0.4, 0.18], [-0.15, 0.32], [0.15, 0.3], [0.38, 0.14]],
+          tail: { kind: 'round', len: 0.2, h: 0.24 }, dorsal: [[0.15, -0.32], [-0.02, -0.46], [-0.3, -0.44], [-0.42, -0.2]], anal: [[-0.02, 0.31], [-0.15, 0.44], [-0.35, 0.36], [-0.44, 0.18]],
+          pelvic: [[0.18, 0.26], [0.1, 0.4], [0.0, 0.3]], pect: [0.2, 0.02, 0.15], eye: [0.36, -0.08, 0.04, [40, 30, 20]],
+          col: { top: [240, 236, 220], bot: [250, 248, 238], fin: [250, 200, 40], edge: [40, 30, 20] },
+          pattern(g, P){
+            // yellow rear, chevrons of fine grey lines, a black eye bar
+            g.fillStyle = P.yellow; g.beginPath(); smoothPath(g, [[-0.05, -0.36], [-0.3, -0.3], [-0.5, -0.1], [-0.5, 0.1], [-0.3, 0.32], [-0.05, 0.36], [-0.15, 0.0]], P.wp, true); g.fill();
+            g.strokeStyle = P.grey; g.lineWidth = 0.014;
+            for (let i = 0; i < 5; i++){ const o = i * 0.07; g.beginPath(); let q = P.wp(0.3 - o, -0.3 + o * 0.3); g.moveTo(q[0], q[1]); q = P.wp(-0.05 - o * 0.4, 0.02 + o * 0.2); g.lineTo(q[0], q[1]); g.stroke(); }
+            for (let i = 0; i < 5; i++){ const o = i * 0.07; g.beginPath(); let q = P.wp(0.28 - o, 0.3 - o * 0.3); g.moveTo(q[0], q[1]); q = P.wp(-0.02 - o * 0.4, 0.0 - o * 0.2); g.lineTo(q[0], q[1]); g.stroke(); }
+            g.fillStyle = P.black; g.beginPath(); smoothPath(g, [[0.42, -0.26], [0.32, -0.26], [0.3, 0.02], [0.4, 0.02]], P.wp, true); g.fill();
+            g.fillStyle = P.black; g.beginPath(); g.arc(-0.22, -0.34, 0.035, 0, TAU); g.fill();   // the dorsal spot
+          },
+        },
+        tang: {   // yellow tang
+          body: [[0.5, 0.03], [0.4, -0.1], [0.2, -0.3], [-0.1, -0.34], [-0.38, -0.18], [-0.5, -0.06], [-0.5, 0.06], [-0.38, 0.18], [-0.1, 0.3], [0.2, 0.26], [0.4, 0.12]],
+          tail: { kind: 'trunc', len: 0.2, h: 0.22 }, dorsal: [[0.2, -0.29], [0.02, -0.5], [-0.3, -0.46], [-0.42, -0.2]], anal: [[0.05, 0.27], [-0.1, 0.44], [-0.35, 0.36], [-0.42, 0.2]],
+          pelvic: [[0.2, 0.24], [0.12, 0.36], [0.02, 0.27]], pect: [0.2, 0.02, 0.15], eye: [0.36, -0.08, 0.04, [40, 30, 20]],
+          col: { top: [250, 200, 30], bot: [255, 220, 60], fin: [255, 215, 70], edge: [160, 105, 10] },
+          pattern(g, P){ g.fillStyle = P.white; g.beginPath(); poly(g, [[-0.44, -0.02], [-0.36, -0.03], [-0.36, 0.03]], P.wp); g.fill(); },   // the white tail spine
+        },
+        gramma: { // royal gramma
+          body: [[0.5, 0.0], [0.4, -0.1], [0.15, -0.18], [-0.15, -0.18], [-0.4, -0.1], [-0.5, -0.05], [-0.5, 0.05], [-0.4, 0.1], [-0.15, 0.17], [0.15, 0.17], [0.4, 0.09]],
+          tail: { kind: 'round', len: 0.22, h: 0.16 }, dorsal: [[0.25, -0.16], [0.1, -0.26], [-0.3, -0.26], [-0.45, -0.12]], anal: [[-0.05, 0.16], [-0.2, 0.26], [-0.45, 0.12]],
+          pelvic: [[0.2, 0.15], [0.12, 0.26], [0.04, 0.17]], pect: [0.2, 0.03, 0.14], eye: [0.36, -0.03, 0.04, [60, 30, 80]],
+          col: { top: [150, 40, 200], bot: [190, 90, 230], fin: [170, 60, 220], edge: [80, 20, 120] },
+          pattern(g, P){
+            g.fillStyle = P.yellow; g.beginPath(); smoothPath(g, [[-0.05, -0.2], [-0.3, -0.2], [-0.5, -0.08], [-0.5, 0.08], [-0.3, 0.2], [-0.02, 0.2], [-0.12, 0.0]], P.wp, true); g.fill();
+            g.fillStyle = P.black; g.beginPath(); g.arc(-0.15, -0.16, 0.03, 0, TAU); g.fill();
+          },
+        },
+        chromis: {
+          body: [[0.5, 0.0], [0.35, -0.12], [0.05, -0.2], [-0.3, -0.16], [-0.5, -0.05], [-0.5, 0.05], [-0.3, 0.16], [0.05, 0.2], [0.35, 0.12]],
+          tail: { kind: 'fork', len: 0.3, h: 0.22 }, dorsal: [[0.2, -0.16], [0.0, -0.27], [-0.3, -0.24], [-0.4, -0.12]], anal: [[-0.05, 0.18], [-0.2, 0.27], [-0.4, 0.12]],
+          pelvic: null, pect: [0.18, 0.02, 0.12], eye: [0.34, -0.03, 0.045, [40, 60, 60]],
+          col: { top: [70, 200, 190], bot: [140, 240, 210], fin: [120, 230, 210], edge: [40, 120, 110] },
+          pattern(g, P){ g.fillStyle = P.white; g.globalAlpha = 0.35; g.beginPath(); g.ellipse(0.05, 0.02, 0.3, 0.06, 0, 0, TAU); g.fill(); g.globalAlpha = 1; },
+        },
+      };
+
+      // pre-hazed palette per fish (colours don't change while it swims)
+      function fishPalette(F){
+        const sp = SPECIES[F.kind], y = F.y, z = F.z, C = sp.col;
+        const H = c => rgb(haze(c, y, z));
+        F.P = {
+          top: H(C.top), bot: H(C.bot), fin: H(C.fin), edge: H(C.edge),
+          black: H([20, 16, 20]), white: H([250, 250, 245]), yellow: H([250, 210, 40]), grey: rgb(haze([120, 110, 100], y, z), 0.7),
+          finA: rgb(haze(C.fin, y, z), 0.85), tail: rgb(haze(C.tail || C.fin, y, z), 0.92), eyeIris: H(sp.eye[3]), wp: null,
+        };
+      }
+
+      function drawFish(g, F, t){
+        const sp = SPECIES[F.kind], P = F.P, s = F.s * (1 - F.z * 0.55);
+        const wag = Math.sin(F.ph) * F.wagAmp;
+        const wp = mkWarp(wag * 0.9); P.wp = wp;
+        g.save(); g.translate(F.x, F.y); g.rotate(F.pitch);
+        const roll = F.rollT !== undefined && t < F.rollT ? Math.cos((F.rollT - t) / F.rollLen * TAU) : 1;
+        g.scale(F.face * s, s * roll);
+        if (F.alpha !== undefined) g.globalAlpha = F.alpha;
+        // caudal fin (behind the body)
+        const T = sp.tail, tb = wp(-0.5, 0), swing = wag * 1.8;
+        g.save(); g.translate(tb[0], tb[1]); g.rotate(swing);
+        g.fillStyle = P.tail; g.beginPath();
+        if (T.kind === 'fork'){ g.moveTo(0.02, -0.04); g.lineTo(-T.len, -T.h); g.lineTo(-T.len * 0.5, 0); g.lineTo(-T.len, T.h); g.lineTo(0.02, 0.04); }
+        else if (T.kind === 'trunc'){ g.moveTo(0.02, -0.06); g.lineTo(-T.len, -T.h); g.lineTo(-T.len * 0.9, 0); g.lineTo(-T.len, T.h); g.lineTo(0.02, 0.06); }
+        else { g.moveTo(0.02, -0.06); g.quadraticCurveTo(-T.len * 1.1, -T.h * 1.3, -T.len, 0); g.quadraticCurveTo(-T.len * 1.1, T.h * 1.3, 0.02, 0.06); }
+        g.closePath(); g.fill();
+        g.strokeStyle = P.edge; g.lineWidth = 0.012; g.stroke();
+        // fin rays
+        g.strokeStyle = P.edge; g.globalAlpha *= 0.35; g.lineWidth = 0.008;
+        for (let k = -2; k <= 2; k++){ g.beginPath(); g.moveTo(0, 0); g.lineTo(-T.len * 0.95, k * T.h * 0.45); g.stroke(); }
+        g.globalAlpha /= 0.35;
+        g.restore();
+        // dorsal + anal + pelvic fins
+        g.fillStyle = P.finA; g.strokeStyle = P.edge; g.lineWidth = 0.012;
+        for (const fin of [sp.dorsal, sp.anal, sp.pelvic]) if (fin){ g.beginPath(); smoothPath(g, fin, wp, true); g.fill(); g.stroke(); }
+        // the body: gradient back → belly, then the pattern, then shading, clipped to the outline
+        g.beginPath(); smoothPath(g, sp.body, wp, true);
+        g.fillStyle = lg(g, 0, -0.3, 0, 0.3, [[0, P.top], [0.55, P.top], [1, P.bot]]); g.fill();
+        g.save(); g.clip();
+        sp.pattern(g, P);
+        // belly light, back sheen, gill line
+        g.fillStyle = lg(g, 0, -0.3, 0, 0.3, [[0, 'rgba(255,255,255,0.22)'], [0.35, 'rgba(255,255,255,0)'], [0.75, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.18)']]); g.fillRect(-0.6, -0.5, 1.2, 1);
+        g.strokeStyle = 'rgba(0,0,0,0.18)'; g.lineWidth = 0.012; g.beginPath(); g.arc(0.14, 0.0, 0.16, -1.1, 1.1); g.stroke();
+        g.restore();
+        g.strokeStyle = P.edge; g.lineWidth = 0.012; g.globalAlpha *= 0.6; g.beginPath(); smoothPath(g, sp.body, wp, true); g.stroke(); g.globalAlpha /= 0.6;
+        // pectoral fin (flaps)
+        const [px, py, pl] = sp.pect, flap = Math.sin(F.ph * 1.3 + 1) * 0.35 - 0.2;
+        g.save(); g.translate(px, py); g.rotate(0.5 + flap);
+        g.fillStyle = P.finA; g.globalAlpha *= 0.8; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-pl * 0.5, pl * 0.25, -pl, pl * 0.1); g.quadraticCurveTo(-pl * 0.6, pl * 0.5, -pl * 0.1, pl * 0.35); g.closePath(); g.fill();
+        g.strokeStyle = P.edge; g.lineWidth = 0.01; g.stroke(); g.restore();
+        // eye: ring, pupil, catchlight
+        const [ex, ey, er] = sp.eye;
+        g.fillStyle = P.eyeIris; g.beginPath(); g.arc(ex, ey, er, 0, TAU); g.fill();
+        g.fillStyle = '#0a0a12'; g.beginPath(); g.arc(ex + er * 0.05, ey, er * 0.62, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(ex + er * 0.3, ey - er * 0.35, er * 0.25, 0, TAU); g.fill();
+        // mouth (opens now and then)
+        const mo = F.mouth || 0;
+        g.strokeStyle = P.edge; g.lineWidth = 0.014; g.beginPath(); g.moveTo(0.5, sp.body[0][1]); g.lineTo(0.44, sp.body[0][1] + 0.02 + mo * 0.05); g.stroke();
+        if (mo > 0.2){ g.fillStyle = 'rgba(20,10,10,0.7)'; g.beginPath(); g.moveTo(0.5, sp.body[0][1] - 0.01); g.lineTo(0.45, sp.body[0][1] + 0.005); g.lineTo(0.5, sp.body[0][1] + 0.02 + mo * 0.05); g.closePath(); g.fill(); }
+        g.restore();
+      }
+
+      // ── behaviour ──
+      function makeFish(o){
+        const F = Object.assign({ x: 0, y: 0, z: 0.15, s: 50, face: 1, pitch: 0, ph: Math.random() * TAU, wagAmp: 0.12, vx: 20, vy: 0, spd: 40, turn: 1.6, target: null, wait: 0, mouth: 0, mouthAt: 3 + Math.random() * 6, poopAt: 0 }, o);
+        fishPalette(F); FISH.push(F); return F;
+      }
+      function steer(F, tx, ty, speed, dt, turn){
+        const dx = tx - F.x, dy = ty - F.y, d = Math.hypot(dx, dy) || 1;
+        const wx = dx / d * speed, wy = dy / d * speed, k = Math.min(1, dt * (turn || F.turn));
+        F.vx += (wx - F.vx) * k; F.vy += (wy - F.vy) * k;
+        return d;
+      }
+      function integrate(F, dt, t){
+        F.x += F.vx * dt; F.y += F.vy * dt;
+        const spd = Math.hypot(F.vx, F.vy);
+        // face the way we swim; the flip eases through zero
+        const want = Math.abs(F.vx) > 3 ? (F.vx > 0 ? 1 : -1) : (F.face >= 0 ? 1 : -1);
+        F.face += (want - F.face) * Math.min(1, dt * 5);
+        if (Math.abs(F.face) < 0.05) F.face = want * 0.05;
+        const pitchWant = Math.max(-0.45, Math.min(0.45, Math.atan2(F.vy, Math.abs(F.vx) + 1))) * (F.face > 0 ? 1 : -1);
+        F.pitch += (pitchWant - F.pitch) * Math.min(1, dt * 4);
+        F.ph += dt * (2.5 + spd * 0.09) * (F.wagRate || 1);
+        F.wagAmp += ((0.06 + Math.min(0.14, spd * 0.0016)) * (F.wagBase || 1) - F.wagAmp) * Math.min(1, dt * 3);
+        // an occasional gulp
+        if (t > F.mouthAt){ F.mouth = Math.max(0, Math.sin((t - F.mouthAt) * 6)); if (t > F.mouthAt + 0.5){ F.mouth = 0; F.mouthAt = t + 3 + Math.random() * 8; } }
+      }
+      // a free swimmer wandering its home box
+      function wander(F, t, dt){
+        const dash = F.dashUntil && t < F.dashUntil, hover = F.wait > 0;
+        if (!F.target){ F.target = [lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())]; }
+        const speed = F.spd * (dash ? 3.4 : 1) * (hover ? 0.18 : 1);
+        const d = steer(F, F.target[0], F.target[1], speed, dt, dash ? 5 : undefined);
+        if (d < 30 && !hover){ F.wait = 0.5 + Math.random() * 2.5; F.target = null; }
+        if (hover){ F.wait -= dt; }
+        integrate(F, dt, t);
+      }
+      function fleeFrom(F, x, y, t){ const dx = F.x - x, dy = F.y - y, d = Math.hypot(dx, dy) || 1; F.target = [F.x + dx / d * 260, Math.max(100, Math.min(720, F.y + dy / d * 120))]; F.dashUntil = t + 1.1; F.wait = 0; }
+
+      // ── the poop gag: every fish goes once per ~3 minutes, staggered; the
+      //    strand trails from the vent, lets go, sinks and fades (never on click) ──
+      function updatePoop(g, F, t, dt, vx, vy, w){
+        if (!F.poopAt) F.poopAt = t + Math.random() * 180;
+        let p = F.poop;
+        const maxLen = Math.max(14, F.s * 0.55);                  // the strand never grows longer than about half the fish
+        if (!p){ if (t > F.poopAt) F.poop = { pts: [[vx, vy]], detachT: t + 1.6 + Math.random() * 1.4, fade: 1, len: 0 }; return; }
+        if (p.detachT !== null){
+          const last = p.pts[p.pts.length - 1], jump = Math.hypot(vx - last[0], vy - last[1]);
+          if (jump > 80) p.detachT = null;
+          else if (jump > 2.5){ p.pts.push([vx + (Math.random() - 0.5) * 1.2, vy + (Math.random() - 0.5) * 1.2]); p.len += jump; while (p.len > maxLen && p.pts.length > 2){ p.len -= Math.hypot(p.pts[1][0] - p.pts[0][0], p.pts[1][1] - p.pts[0][1]); p.pts.shift(); } }
+          if (p.detachT !== null && t > p.detachT) p.detachT = null;
+        }
+        if (p.detachT === null){
+          p.fade -= dt * 0.3;
+          for (const q of p.pts){ q[1] += 18 * dt; q[0] += Math.sin(t * 1.5 + q[1] * 0.05) * 5 * dt; }
+          if (p.fade <= 0 || p.pts.length < 2){ F.poop = null; F.poopAt = t + 180; return; }
+        }
+        g.strokeStyle = 'rgba(96,70,36,' + (0.8 * p.fade) + ')'; g.lineWidth = w; g.lineCap = 'round'; g.lineJoin = 'round';
+        g.beginPath(); g.moveTo(p.pts[0][0], p.pts[0][1]); for (let i = 1; i < p.pts.length; i++) g.lineTo(p.pts[i][0], p.pts[i][1]); g.stroke();
+      }
+      const ventOf = F => { const s = F.s * (1 - F.z * 0.55); return [F.x - F.face * s * 0.4, F.y + s * 0.12]; };
+      const drawFishFull = (g, F, t, dt) => { drawFish(g, F, t); const v = ventOf(F); updatePoop(g, F, t, dt, v[0], v[1], Math.max(1, F.s * 0.03)); };
+
+      // ── bubble puff + hearts ──
+      function puff(x, y, n){ for (let i = 0; i < (n || 6); i++) BUBBLES.push({ x: x + (Math.random() - 0.5) * 16, y: y + (Math.random() - 0.5) * 10, r: 1.2 + Math.random() * 2.5, v: 30 + Math.random() * 40, ph: Math.random() * TAU, t0: lastT + Math.random() * 0.3 }); }
+      function drawHearts(g, t){
+        for (let i = HEARTS.length - 1; i >= 0; i--){
+          const h = HEARTS[i], e = t - h.t0; if (e > 2.6){ HEARTS.splice(i, 1); continue; }
+          const y = h.y - e * 28, x = h.x + Math.sin(e * 3 + h.ph) * 6, s = h.s * (0.6 + Math.min(1, e * 2) * 0.4), a = e < 2 ? 0.9 : 0.9 * (2.6 - e) / 0.6;
+          g.save(); g.translate(x, y); g.scale(s, s); g.globalAlpha = a;
+          g.fillStyle = '#ff5d8f'; g.beginPath(); g.moveTo(0, 0.35); g.bezierCurveTo(-0.9, -0.3, -0.45, -0.95, 0, -0.45); g.bezierCurveTo(0.45, -0.95, 0.9, -0.3, 0, 0.35); g.fill();
+          g.fillStyle = 'rgba(255,255,255,0.5)'; g.beginPath(); g.arc(-0.28, -0.5, 0.14, 0, TAU); g.fill();
+          g.restore();
+        }
+      }
+
+      // ── the clownfish: each anemone's residents hover over the crown, duck
+      //    into the tentacles now and then, and dart out when tapped ──
+      function updateClown(F, t, dt){
+        const A = F.home_a, cx = A.x, cy = A.y - A.r * 0.78, r = A.r;
+        if (F.dartUntil && t < F.dartUntil){
+          if (!F.target || Math.hypot(F.target[0] - F.x, F.target[1] - F.y) < 24) F.target = [cx + (Math.random() - 0.5) * r * 4, cy - r * (0.6 + Math.random() * 1.6)];
+          steer(F, F.target[0], F.target[1], F.spd * 3.2, dt, 6);
+          F.inside += (0 - F.inside) * Math.min(1, dt * 6);
+        } else {
+          if (t > F.hideAt){ F.hiding = !F.hiding; F.hideAt = t + (F.hiding ? 3 + Math.random() * 4 : 6 + Math.random() * 14); F.target = null; }
+          const near = Math.hypot(F.x - cx, F.y - (cy + r * 0.15)) < r * 0.6;
+          const want = F.hiding && near ? 1 : 0; F.inside += (want - F.inside) * Math.min(1, dt * 4);
+          if (!F.target || Math.hypot(F.target[0] - F.x, F.target[1] - F.y) < 8){
+            F.target = F.hiding ? [cx + (Math.random() - 0.5) * r * 0.8, cy + r * (0.05 + Math.random() * 0.25)] : [cx + (Math.random() - 0.5) * r * 1.7, cy - r * (0.05 + Math.random() * 0.55)];
+          }
+          steer(F, F.target[0], F.target[1], F.spd * (F.hiding && !near ? 1.3 : F.hiding ? 0.5 : 1) * (0.6 + 0.4 * Math.sin(t * 0.7 + F.ph0)), dt, 2.6);
+        }
+        integrate(F, dt, t);
+        F.pitch += Math.sin(t * 9 + F.ph0) * 0.05;   // the clownfish waddle
+        F.alpha = 1 - F.inside * 0.25;
+      }
+      function drawAnemoneAndFish(g, A, t, c, dt){
+        // residents hiding in the crown are drawn between the back and front tentacles
+        A.midDraw = g2 => { for (const F of A.fish) if (F.inside > 0.5) drawFishFull(g2, F, t, dt); };
+        drawAnemone(g, A, t, c);
+        for (const F of A.fish) if (F.inside <= 0.5) drawFishFull(g, F, t, dt);
+      }
+
+      // ── the chromis school: a leader wanders, the rest hold loose slots ──
+      let SCHOOL = null;
+      function updateSchool(t, dt){
+        const L = SCHOOL.leader; wander(L, t, dt);
+        const spread = SCHOOL.scatterUntil && t < SCHOOL.scatterUntil ? 3.2 : 1;
+        SCHOOL.spread += (spread - SCHOOL.spread) * Math.min(1, dt * 2.5);
+        for (const F of SCHOOL.members){
+          const tx = L.x + F.slot[0] * SCHOOL.spread + Math.sin(t * 0.9 + F.ph0) * 8, ty = L.y + F.slot[1] * SCHOOL.spread + Math.cos(t * 1.1 + F.ph0) * 5;
+          steer(F, tx, ty, Math.max(L.spd * 0.8, Math.hypot(tx - F.x, ty - F.y) * 1.6), dt, 3.5);
+          integrate(F, dt, t);
+        }
+      }
+
+      // ── the passing giants ──
+      const WHALE = { kind: 'whale', active: false, nextAt: null, first: [60, 110], gap: [220, 340], len: 2050, yr: [280, 340], spd: 95, z: 0.34, ph: Math.random() * TAU };
+      const ORCA = { kind: 'orca', active: false, nextAt: null, first: [18, 45], gap: [90, 160], len: 950, yr: [380, 450], spd: 160, z: 0.24, ph: Math.random() * TAU };
+      function updateGiant(G, t, dt, other){
+        if (!G.active){
+          if (G.nextAt === null) G.nextAt = t + G.first[0] + Math.random() * (G.first[1] - G.first[0]);
+          if (t < G.nextAt) return false;
+          if (other.active){ G.nextAt = t + 25 + Math.random() * 25; return false; }
+          G.active = true; G.dir = Math.random() < 0.5 ? 1 : -1;
+          G.x = G.dir > 0 ? -G.len * 0.9 : DW + G.len * 0.9; G.y = lerp(G.yr[0], G.yr[1], Math.random()); G.t0 = t;
+        }
+        G.x += G.dir * G.spd * dt;
+        if ((G.dir > 0 && G.x > DW + G.len) || (G.dir < 0 && G.x < -G.len)){ G.active = false; G.nextAt = t + G.gap[0] + Math.random() * (G.gap[1] - G.gap[0]); return false; }
+        return true;
+      }
+      function drawWhale(g, G, t){
+        const s = G.len, y = G.y + Math.sin(t * 0.45 + G.ph) * 10, beat = Math.sin(t * 1.0 + G.ph) * 0.08, wp = mkWarp(beat * 0.7);
+        const top = rgb(haze([68, 92, 128], y, G.z)), mid = rgb(haze([96, 122, 158], y, G.z)), bot = rgb(haze([170, 186, 204], y, G.z)), dark = rgb(haze([38, 52, 80], y, G.z));
+        g.save(); g.translate(G.x, y); g.scale(G.dir * s, s); g.globalAlpha = 0.96;
+        // flukes (behind), the tail stock swinging
+        const tb = wp(-0.5, 0); g.save(); g.translate(tb[0], tb[1]); g.rotate(beat * 1.6);
+        g.fillStyle = mid; g.beginPath(); g.moveTo(0.02, -0.02); g.quadraticCurveTo(-0.12, -0.11, -0.2, -0.045); g.quadraticCurveTo(-0.1, -0.01, -0.06, 0); g.quadraticCurveTo(-0.1, 0.02, -0.2, 0.06); g.quadraticCurveTo(-0.12, 0.11, 0.02, 0.02); g.closePath(); g.fill();
+        g.restore();
+        // the small hooked dorsal fin (its base hidden under the body)
+        g.fillStyle = mid; const d0 = wp(-0.26, -0.03), d1 = wp(-0.33, -0.135), d2 = wp(-0.37, -0.03);
+        g.beginPath(); g.moveTo(d0[0], d0[1]); g.quadraticCurveTo(d1[0] + 0.03, d1[1] + 0.02, d1[0], d1[1]); g.quadraticCurveTo(d1[0] - 0.01, d1[1] + 0.05, d2[0], d2[1]); g.closePath(); g.fill();
+        // the body
+        const body = [[0.5, 0.02], [0.45, -0.055], [0.28, -0.1], [0.02, -0.12], [-0.22, -0.095], [-0.4, -0.05], [-0.5, -0.02], [-0.5, 0.02], [-0.4, 0.05], [-0.22, 0.1], [0.02, 0.135], [0.28, 0.135], [0.45, 0.085]];
+        g.beginPath(); smoothPath(g, body, wp, true);
+        g.fillStyle = lg(g, 0, -0.12, 0, 0.14, [[0, top], [0.5, mid], [0.72, mid], [1, bot]]); g.fill();
+        g.save(); g.clip();
+        // mottling on the back, throat pleats, the long mouth line, the eye
+        g.fillStyle = 'rgba(200,215,235,0.13)';
+        for (let i = 0; i < 260; i++){ const q = wp(-0.44 + psr(i + 300) * 0.9, -0.115 + psr(i + 301) * 0.17); g.beginPath(); g.ellipse(q[0], q[1], 0.0025 + psr(i + 302) * 0.006, 0.0018 + psr(i + 303) * 0.003, 0, 0, TAU); g.fill(); }
+        g.strokeStyle = 'rgba(40,50,80,0.22)'; g.lineWidth = 0.004;
+        for (let i = 0; i < 7; i++){ const yy = 0.06 + i * 0.011; g.beginPath(); g.moveTo(0.44, yy); g.quadraticCurveTo(0.3, yy + 0.05, 0.05, yy + 0.06); g.stroke(); }
+        g.strokeStyle = dark; g.lineWidth = 0.006; g.beginPath(); g.moveTo(0.49, 0.03); g.quadraticCurveTo(0.35, 0.07, 0.2, 0.055); g.stroke();
+        g.restore();
+        g.fillStyle = dark; g.beginPath(); g.arc(0.39, 0.03, 0.009, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.7)'; g.beginPath(); g.arc(0.392, 0.027, 0.003, 0, TAU); g.fill();
+        // the long flipper
+        g.fillStyle = top; g.beginPath(); g.moveTo(0.22, 0.1); g.quadraticCurveTo(0.08, 0.2, -0.02, 0.25); g.quadraticCurveTo(0.04, 0.17, 0.1, 0.125); g.closePath(); g.fill();
+        g.restore();
+      }
+      function drawOrca(g, G, t){
+        const s = G.len, y = G.y + Math.sin(t * 0.8 + G.ph) * 8, beat = Math.sin(t * 1.9 + G.ph) * 0.1, wp = mkWarp(beat * 0.8);
+        const blk = rgb(haze([14, 16, 24], y, G.z)), wht = rgb(haze([235, 240, 245], y, G.z)), sad = rgb(haze([150, 160, 175], y, G.z));
+        g.save(); g.translate(G.x, y); g.scale(G.dir * s, s); g.globalAlpha = 0.97;
+        // flukes
+        const tb = wp(-0.5, 0); g.save(); g.translate(tb[0], tb[1]); g.rotate(beat * 1.5);
+        g.fillStyle = blk; g.beginPath(); g.moveTo(0.02, -0.02); g.quadraticCurveTo(-0.1, -0.13, -0.2, -0.05); g.quadraticCurveTo(-0.1, -0.01, -0.06, 0); g.quadraticCurveTo(-0.1, 0.02, -0.2, 0.06); g.quadraticCurveTo(-0.1, 0.13, 0.02, 0.02); g.closePath(); g.fill();
+        g.restore();
+        // far pectoral (behind the body), then the body
+        g.fillStyle = blk; g.beginPath(); g.ellipse(0.16, 0.1, 0.09, 0.045, 0.9, 0, TAU); g.fill();
+        const body = [[0.5, 0.03], [0.43, -0.065], [0.22, -0.12], [-0.03, -0.13], [-0.28, -0.095], [-0.44, -0.04], [-0.5, -0.02], [-0.5, 0.02], [-0.44, 0.05], [-0.28, 0.11], [-0.03, 0.16], [0.22, 0.15], [0.43, 0.1]];
+        g.beginPath(); smoothPath(g, body, wp, true); g.fillStyle = blk; g.fill();
+        g.save(); g.clip();
+        // white chin and belly, the flank lobe, the eye patch, the grey saddle
+        g.fillStyle = wht; g.beginPath(); smoothPath(g, [[0.5, 0.035], [0.44, 0.07], [0.25, 0.12], [0.0, 0.14], [-0.2, 0.12], [-0.3, 0.04], [-0.22, 0.0], [-0.12, 0.06], [0.1, 0.09], [0.3, 0.08], [0.46, 0.05]], wp, true); g.fill();
+        g.beginPath(); g.ellipse(0.3, -0.055, 0.065, 0.024, -0.25, 0, TAU); g.fill();
+        g.fillStyle = sad; g.beginPath(); smoothPath(g, [[-0.05, -0.12], [-0.12, -0.13], [-0.25, -0.1], [-0.22, -0.05], [-0.12, -0.04], [-0.06, -0.08]], wp, true); g.fill();
+        g.restore();
+        // eye, mouth line
+        g.fillStyle = blk; g.beginPath(); g.arc(0.37, -0.01, 0.008, 0, TAU); g.fill();
+        g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 0.006; g.beginPath(); g.moveTo(0.49, 0.04); g.quadraticCurveTo(0.4, 0.06, 0.3, 0.05); g.stroke();
+        // the tall dorsal fin and the near pectoral paddle
+        const f0 = wp(0.08, -0.115), f1 = wp(-0.05, -0.42), f2 = wp(-0.16, -0.11);
+        g.fillStyle = blk; g.beginPath(); g.moveTo(f0[0], f0[1]); g.quadraticCurveTo(f0[0] - 0.02, f1[1] + 0.1, f1[0], f1[1]); g.quadraticCurveTo(f1[0] - 0.03, f1[1] + 0.15, f2[0], f2[1]); g.closePath(); g.fill();
+        g.beginPath(); g.ellipse(0.2, 0.15, 0.1, 0.05, 0.8 + beat * 0.6, 0, TAU); g.fill();
+        g.restore();
+      }
+
+      // ── build the cast ──
+      function buildFish(){
+        // clownfish: two for each big anemone, one for the small one
+        ANEMS.forEach((A, i) => {
+          A.fish = [];
+          const n = A.r > 50 ? 2 : 1;
+          for (let k = 0; k < n; k++){
+            const F = makeFish({ kind: 'clown', x: A.x + (k - 0.5) * 40, y: A.y - A.r * 0.9, z: A.z, s: (A.r > 50 ? 34 : 28) * (0.85 + k * 0.25), spd: 42, turn: 2.5, wagBase: 1.4, wagRate: 1.5, home_a: A, inside: 0, hiding: false, hideAt: 8 + Math.random() * 12, ph0: Math.random() * TAU });
+            F.isClown = true; A.fish.push(F);
+          }
+        });
+        // Dory — the regal blue tang, cruising the open water
+        makeFish({ kind: 'dory', x: 800, y: 380, z: 0.12, s: 78, spd: 46, home: [120, 1480, 160, 620], dash: 'roll' });
+        // the butterflyfish pair
+        const B1 = makeFish({ kind: 'bfly', x: 500, y: 300, z: 0.18, s: 58, spd: 36, home: [200, 1400, 180, 600], bfly: true });
+        const B2 = makeFish({ kind: 'bfly', x: 460, y: 320, z: 0.2, s: 54, spd: 40, follow: B1, bfly: true });
+        // two yellow tangs grazing the reef tops
+        makeFish({ kind: 'tang', x: 300, y: 480, z: 0.14, s: 62, spd: 34, home: [60, 560, 340, 540] });
+        makeFish({ kind: 'tang', x: 1350, y: 460, z: 0.2, s: 56, spd: 34, home: [1000, 1580, 300, 520] });
+        // royal grammas low by the rocks
+        makeFish({ kind: 'gramma', x: 1200, y: 700, z: 0.08, s: 30, spd: 30, home: [1060, 1560, 560, 740] });
+        makeFish({ kind: 'gramma', x: 450, y: 720, z: 0.06, s: 28, spd: 30, home: [200, 620, 600, 750] });
+        // the chromis school
+        const leader = makeFish({ kind: 'chromis', x: 900, y: 260, z: 0.3, s: 20, spd: 44, home: [300, 1300, 120, 440] });
+        SCHOOL = { leader, members: [], spread: 1 };
+        for (let i = 0; i < 13; i++){
+          const a = Math.random() * TAU, d = 20 + Math.random() * 70;
+          SCHOOL.members.push(makeFish({ kind: 'chromis', x: leader.x + Math.cos(a) * d, y: leader.y + Math.sin(a) * d * 0.5, z: 0.26 + Math.random() * 0.12, s: 16 + Math.random() * 6, spd: 44, slot: [Math.cos(a) * d, Math.sin(a) * d * 0.5], ph0: Math.random() * TAU, schooling: true }));
+        }
+        FISH.sort((a, b) => b.z - a.z);
+      }
+      function giantNear(F){
+        for (const G of [WHALE, ORCA]) if (G.active && Math.abs(G.x - F.x) < G.len * 0.4 && Math.abs(G.y - F.y) < G.len * 0.2) return G;
+        return null;
+      }
+      function updateFish(t, dt){
+        for (const F of FISH){
+          if (!F.isClown && !F.schooling && !(F.dashUntil && t < F.dashUntil)){ const G = giantNear(F); if (G) fleeFrom(F, G.x, G.y - 40, t); }
+          if (F.isClown) updateClown(F, t, dt);
+          else if (F.schooling || F === (SCHOOL && SCHOOL.leader)) continue;
+          else if (F.follow){ const L = F.follow; steer(F, L.x - L.face * 46 + Math.sin(t * 0.8) * 10, L.y + 14, F.spd * (F.dashUntil && t < F.dashUntil ? 3 : 1) + Math.hypot(L.x - F.x, L.y - F.y) * 0.6, dt, 2.4); integrate(F, dt, t); }
+          else wander(F, t, dt);
+        }
+        if (SCHOOL) updateSchool(t, dt);
+      }
+      // actions (clicks + the scheduler share these)
+      function actOn(F, t){
+        const m = F.face > 0 ? F.x + F.s * 0.4 : F.x - F.s * 0.4; puff(m, F.y, 5);
+        if (F.bfly){ for (let i = 0; i < 3; i++) HEARTS.push({ x: F.x + (Math.random() - 0.5) * 20, y: F.y - F.s * 0.3, t0: t + i * 0.25, ph: Math.random() * TAU, s: 8 + Math.random() * 6 }); F.dashUntil = t + 0.6; }
+        else if (F.dash === 'roll' && Math.random() < 0.5){ F.rollT = t + 1.1; F.rollLen = 1.1; }
+        else if (F.isClown){ F.dartUntil = t + 3; F.target = null; }
+        else if (F.schooling || (SCHOOL && F === SCHOOL.leader)){ SCHOOL.scatterUntil = t + 1.6; }
+        else { F.dashUntil = t + 1.2; F.target = [lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())]; F.wait = 0; }
+      }
+      let nextAct = 6;
+      function scheduler(t){
+        if (t < nextAct) return; nextAct = t + 4 + Math.random() * 8;
+        const F = FISH[Math.floor(Math.random() * FISH.length)];
+        actOn(F, t);
+        if (Math.random() < 0.25 && !F.poop) F.poopAt = t;
+      }
+      function fishAt(dx, dy){
+        let best = null, bd = 1e9;
+        for (const F of FISH){ const s = F.s * (1 - F.z * 0.55), d = Math.hypot((dx - F.x) / (s * 0.65), (dy - F.y) / (s * 0.45)); if (d < 1 && d < bd){ bd = d; best = F; } }
+        return best;
+      }
+      function drawGiants(g, t, dt){
+        if (updateGiant(WHALE, t, dt, ORCA)) drawWhale(g, WHALE, t);
+        if (updateGiant(ORCA, t, dt, WHALE)) drawOrca(g, ORCA, t);
+      }
+      const drawFishBand = (g, t, dt, far) => { for (const F of FISH) if (!F.isClown && (far ? F.z > 0.22 : F.z <= 0.22)) drawFishFull(g, F, t, dt); };
+
+      // ── layers ──
+      let waterL = null, reefL = null, foreL = null, vigL = null, FORE_TOP = 0, REEF_TOP = 0;
+      function paintWaterL(g){ paintWater(g); paintFarReef(g); }
+      function paintReefL(g){ paintSand(g); for (const e of STILL) if (!e.fore) e.draw(g); }
       function paintFore(g){ for (const e of STILL) if (e.fore) e.draw(g); }
       function buildVignette(){
         vigL = makeLayer(W, H, 0.25); const g = vigL.cx;
@@ -968,9 +1409,11 @@
         W = innerWidth; H = innerHeight; DPR = pickDPR();
         canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
         S = Math.max(W / DW, H / DH); OX = (W - DW * S) / 2; OY = H - DH * S;
-        backL = makeLayer(W, H, DPR); foreL = makeLayer(W, H, DPR);
-        let g = backL.cx; g.save(); g.setTransform(backL.dpr * S, 0, 0, backL.dpr * S, backL.dpr * OX, backL.dpr * OY); paintBack(g); g.restore();
+        waterL = makeLayer(W, H, DPR); reefL = makeLayer(W, H, DPR); foreL = makeLayer(W, H, DPR);
+        let g = waterL.cx; g.save(); g.setTransform(waterL.dpr * S, 0, 0, waterL.dpr * S, waterL.dpr * OX, waterL.dpr * OY); paintWaterL(g); g.restore();
+        g = reefL.cx; g.save(); g.setTransform(reefL.dpr * S, 0, 0, reefL.dpr * S, reefL.dpr * OX, reefL.dpr * OY); paintReefL(g); g.restore();
         g = foreL.cx; g.save(); g.setTransform(foreL.dpr * S, 0, 0, foreL.dpr * S, foreL.dpr * OX, foreL.dpr * OY); paintFore(g); g.restore();
+        REEF_TOP = Math.max(0, Math.floor(OY + 300 * S));       // the reef band starts here (design y 300: above the tallest coral)
         FORE_TOP = Math.max(0, Math.floor(OY + 560 * S));       // the foreground band starts here (design y 560)
         buildVignette();
         PROF.repaints = (PROF.repaints || 0) + 1;
@@ -980,20 +1423,30 @@
       function renderFrame(t){
         const dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
         profT = performance.now(); PROF.frames++;
-        const c = cur(t);
-        ctx.drawImage(backL.cv, 0, 0, W, H);
-        mark('back');
+        const c = cur(t); DT = dt;
+        updateFish(t, dt); scheduler(t);
+        mark('think');
+        ctx.drawImage(waterL.cv, 0, 0, W, H);
+        mark('water');
+        ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * OX, DPR * OY);
+        drawGiants(ctx, t, dt); mark('giants');
+        drawFishBand(ctx, t, dt, true); mark('farfish');
+        ctx.restore();
+        if (REEF_TOP < H){ const sy = REEF_TOP * reefL.dpr; ctx.drawImage(reefL.cv, 0, sy, reefL.cv.width, reefL.cv.height - sy, 0, REEF_TOP, W, H - REEF_TOP); }
+        mark('reef');
         ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * OX, DPR * OY);
         drawRays(ctx, t); mark('rays');
         drawCaustics(ctx, t); mark('caustics');
         for (const e of LIVE) if (!e.fore) e.draw(ctx, t, c);
         mark('live');
+        drawFishBand(ctx, t, dt, false); mark('fish');
         ctx.restore();
         if (FORE_TOP < H){ const sy = FORE_TOP * foreL.dpr; ctx.drawImage(foreL.cv, 0, sy, foreL.cv.width, foreL.cv.height - sy, 0, FORE_TOP, W, H - FORE_TOP); }
         mark('fore');
         ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * OX, DPR * OY);
         for (const e of LIVE) if (e.fore) e.draw(ctx, t, c);
         drawParticles(ctx, t, dt, c);
+        drawHearts(ctx, t);
         ctx.restore();
         mark('front');
         ctx.drawImage(vigL.cv, 0, 0, W, H);
@@ -1021,11 +1474,21 @@
         }
       }
 
-      // ── clicks: nothing yet (the life comes next); the filter is in place ──
-      function onClick(e){ if (e.target.closest(UI_SEL)) return; }
+      // ── clicks (design coords): the nearest hit fish acts; a tapped anemone
+      //    sends its clownfish darting out; pooping is never click-driven ──
+      function onClick(e){
+        if (e.target.closest(UI_SEL)) return;
+        const dx = (e.clientX - OX) / S, dy = (e.clientY - OY) / S, t = lastT;
+        const F = fishAt(dx, dy);
+        if (F){ actOn(F, t); return; }
+        for (const A of ANEMS){
+          if (Math.hypot((dx - A.x) / (A.r * 1.1), (dy - (A.y - A.r * 0.6)) / (A.r * 0.9)) < 1){ puff(A.x, A.y - A.r * 0.8, 8); for (const f of A.fish){ f.dartUntil = t + 3 + Math.random(); f.target = null; } return; }
+        }
+      }
 
       buildCaustics();
       buildReef();
+      buildFish();
       resize();
       addEventListener('resize', resize);
       doc.addEventListener('click', onClick);
@@ -1034,7 +1497,14 @@
       window._reef2 = BACKGROUNDS.reef2._test = {
         seek: s => { t0 = (t0 === null ? 0 : t0); t0 -= (s - lastT) * 1000; lastT = s; },
         current: () => cur(lastT),
-        counts: () => ({ still: STILL.length, live: LIVE.length, rocks: ROCKS.length, anemones: ANEMS.length, fans: FANS.length, softs: SOFTS.length, bubbles: BUBBLES.length }),
+        counts: () => ({ still: STILL.length, live: LIVE.length, rocks: ROCKS.length, anemones: ANEMS.length, fans: FANS.length, softs: SOFTS.length, bubbles: BUBBLES.length, fish: FISH.length, hearts: HEARTS.length, whale: WHALE.active, orca: ORCA.active }),
+        fish: () => FISH.map(F => ({ kind: F.kind, x: Math.round(F.x), y: Math.round(F.y), face: +F.face.toFixed(2), inside: F.inside })),
+        whale: x => { WHALE.active = true; WHALE.dir = 1; WHALE.x = x === undefined ? 800 : x; WHALE.y = (WHALE.yr[0] + WHALE.yr[1]) / 2; WHALE.t0 = lastT; },
+        orca: x => { ORCA.active = true; ORCA.dir = -1; ORCA.x = x === undefined ? 800 : x; ORCA.y = (ORCA.yr[0] + ORCA.yr[1]) / 2; ORCA.t0 = lastT; },
+        act: kind => { const F = FISH.find(f => f.kind === kind); if (F) actOn(F, lastT); return !!F; },
+        dart: () => ANEMS.forEach(A => A.fish.forEach(f => { f.dartUntil = lastT + 3; f.target = null; })),
+        hide: () => ANEMS.forEach(A => A.fish.forEach(f => { f.hiding = true; f.hideAt = lastT + 6; f.target = null; })),
+        poop: () => FISH.forEach(F => { if (!F.poop) F.poopAt = lastT; }),
         perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },

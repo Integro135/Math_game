@@ -228,7 +228,7 @@ class TestDoubleUnknown:
             return {done:done, score:score, pair:(report[0]||{}).userPair||null};})()""")
         assert right["done"] is True and right["score"] > 0, f"5+5+5=15 must be accepted: {right}"
         assert right["pair"] == [5, 5, 5], f"report must store the three addends: {right}"
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
         inq = page.evaluate("(()=>{for(var k=0;k<10;k++){if(makeMxPool().some(p=>p.t===TRA))return true;}return false;})()")
         assert inq, "the three-unknown (TRA) must appear in the Queen pool"

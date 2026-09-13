@@ -61,7 +61,7 @@ class TestCoinProblems:
         consts = page.evaluate("({TC})")
         for mode in (10, "mx"):
             mode_arg = repr(mode)
-            page.evaluate(f"setMode({mode_arg})")
+            enter_mode(page, mode_arg)
             page.wait_for_timeout(100)
             ptypes = page.evaluate("[...problems].map(p => p.t)")
             count = sum(1 for t in ptypes if t == consts["TC"])
@@ -197,7 +197,7 @@ class TestChainAndCoinAids:
         NO position-based answer cap (the first 5 slots are not constrained to a
         ≤10 answer). Verify the size contract and the absence of the old cap
         across several fresh shuffles."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         any_early_above_10 = False
         for _ in range(8):
             page.evaluate("restart()")
@@ -265,7 +265,7 @@ class TestChainAndCoinAids:
         Verify the constraint is gone: across several fresh shuffles, at least
         one of the last 4 problems has a first operand ≤ 10 (impossible under
         the old position-based rule)."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         seen_small_first = False
         for _ in range(8):
             page.evaluate("restart()")

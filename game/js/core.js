@@ -109,10 +109,16 @@ function setMode(m){
   score=0;idx=0;report=[];document.getElementById('score-val').textContent='0';
   // the mode's exercise-type files load dynamically (one file per type);
   // synchronous when already cached, so repeat visits never flicker
+  // POOL_PENDING is true from here until the pool is built and rendered — the
+  // load is ASYNC, so anything that wants to act on the finished pool (the test
+  // harness forcing a problem) must wait for it to clear, or its work is undone
+  // when this callback lands.
+  window.POOL_PENDING=true;
   loadExercisesFor(m,()=>{
-    if(mode!==m)return;        // user switched again while loading
+    if(mode!==m)return;        // user switched again while loading (that load owns the flag)
     problems=makePool(m);
     rebuildCard();loadProblem();updateGiftIndicator();
+    window.POOL_PENDING=false;
   });
 }
 
@@ -1098,9 +1104,11 @@ function rebuildCard(){
 function restart(){
   score=0;idx=0;report=[];pgmCV=0;pgmCk=[];pgmArcs=[];document.getElementById('score-val').textContent='0';
   const m=mode;
+  window.POOL_PENDING=true;
   loadExercisesFor(m,()=>{
     if(mode!==m)return;   // a different mode was picked while loading
     problems=makePool(m);rebuildCard();loadProblem();
+    window.POOL_PENDING=false;
   });
 }
 

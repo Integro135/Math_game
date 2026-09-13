@@ -23,11 +23,20 @@ STANDALONE = "reef2.html"   # "" → in-game mode
 THEME      = "reef"
 WAIT_MS    = 1500
 OUT        = r"c:\tmp\reef2"
-# [name, scene time to seek to (or None), ms to wait before the still]
+# [name, scene time to seek to (or None), hooks to fire, ms to wait before the still]
 SHOTS = [
-    ["reef2_a", 2.0,  900],
-    ["reef2_b", 9.0,  900],
+    ["reef2_a",      2.0,  [],                                        900],
+    ["reef2_whale",  9.0,  ["whale(700)", "act('bfly')", "poop()"],   2200],
+    ["reef2_orca",  70.0,  ["orca(900)", "dart()", "act('dory')"],    1400],
+    ["reef2_hide",  90.0,  ["hide()"],                                3500],
 ]
+# crops of the LAST shot, upscaled ×2, for judging the fish at real size:
+# name → (x0, y0, x1, y1) as fractions of the frame
+CROPS = {
+    "left_anemone":  (0.10, 0.58, 0.34, 0.78),
+    "right_anemone": (0.66, 0.58, 0.90, 0.80),
+    "midwater":      (0.28, 0.40, 0.62, 0.66),
+}
 # ────────────────────────────────────────────────────────────────────────────
 
 BG_DIR     = Path(r"c:\Code\subtraction_game\backgrounds")
@@ -50,15 +59,19 @@ with sync_playwright() as pw:
     page.wait_for_function("window._reef2", timeout=20000)
     page.wait_for_timeout(WAIT_MS)
     shots = []
-    for name, tt, wait in SHOTS:
+    for name, tt, hooks, wait in SHOTS:
         if tt is not None:
             page.evaluate(f"window._reef2.seek({tt})")
+            page.wait_for_timeout(200)
+        for h in hooks:
+            page.evaluate(f"window._reef2.{h}")
         page.wait_for_timeout(wait)
         path = str(Path(OUT) / f"{name}.png")
         page.screenshot(path=path); shots.append(path)
     perf = page.evaluate("window._reef2.perf()")
     prof = page.evaluate("window._reef2.prof()")
     counts = page.evaluate("window._reef2.counts()")
+    fish = page.evaluate("window._reef2.fish()")
     if STANDALONE:
         page.evaluate("document.getElementById('restart').click()")
         page.wait_for_timeout(800)
@@ -69,5 +82,18 @@ with sync_playwright() as pw:
     print("perf:", perf)
     print("prof:", {k: (round(v, 2) if isinstance(v, float) else v) for k, v in prof.items()})
     print("counts:", counts)
+    print("clownfish:", [f for f in fish if f["kind"] == "clown"])
     print("shots:", shots)
     browser.close()
+
+if CROPS and shots:
+    try:
+        from PIL import Image
+        im = Image.open(shots[-1]); W, H = im.size
+        for name, (x0, y0, x1, y1) in CROPS.items():
+            c = im.crop((int(x0 * W), int(y0 * H), int(x1 * W), int(y1 * H)))
+            c = c.resize((c.width * 2, c.height * 2), Image.LANCZOS)
+            c.save(str(Path(OUT) / f"crop_{name}.png"))
+        print("crops:", list(CROPS))
+    except Exception as e:
+        print("crops skipped:", e)

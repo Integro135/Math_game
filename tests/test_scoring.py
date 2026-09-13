@@ -24,7 +24,7 @@ class TestScoreAndMode:
         (TVA/TVS) and the three-box triple (TRA). Regression for a test-helper gap
         (`correct_answer`/`submit_answer` didn't cover these) that flaked the mx
         scoring tests (~20%) whenever the shuffle landed one of them at slot 0."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
         for prob in ("{t:TH,a:500,b:40}",                       # 500+40 = 540 (addition!)
                      "{t:TVA,a:30,b:20,sym:'circle'}",          # 30 + ⃝ = 50
@@ -72,7 +72,7 @@ class TestScoreAndMode:
 
     def test_mode_button_becomes_active_after_switch(self, page):
         """The clicked level button gets .active; the previous one loses it."""
-        page.evaluate("setMode('br')")
+        enter_mode(page, 'br')
         page.wait_for_timeout(100)
 
         assert page.locator("#lbbr.active").count() == 1

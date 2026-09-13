@@ -5,11 +5,10 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 | Kind | Files | Status |
 |---|---|---|
 | **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives.bg.js` | Loaded by the game at runtime (`dubai.bg.js` is the legacy Dubai scene — nothing loads it; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
 | **Unicorn valley** | `unicorns3.bg.js` + `unicorns/*.item.js` | `girls` → **`unicorns3`**: v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
 | **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
-| **Dubai v2** (`dubai2.bg.js` + `dubai2.html`) | `dubai2.bg.js`, `dubai2.html` | The Dubai dusk scene recreated from scratch — same design space, constants and cadences as the legacy scene, city and hallmarks redrawn (Burj Khalifa, Burj Al Arab, Cayan, Emirates Towers, Museum of the Future, Dubai Frame, Ain Dubai), mirrored in rippled water. Theme `dubai` → `dubai2`. **Full section below.** |
 | **Standalone study** (`blackhole.html`) | `blackhole.html` | The physics study the space hole came from: a GR ray-traced black hole in one WebGL2 file, not wired into the game — drag to spin the hole, wheel to zoom, quality/bloom/jets/dust toggles. **Full section below.** |
 
 **Loading veil for slow scenes** (`game/js/bg-loader.js`): most backgrounds
@@ -28,7 +27,7 @@ visible and playable while the backdrop loads. Scenes that don't opt in show no
 veil at all.
 
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns3`,
-`dubai→dubai3` (golden hour, built from zero in 2026-09; `dubai2`/`dubai` are legacy), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
+`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
 (🏙️, 🦁 and 🦕 are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
 #stars-layer {display:block}` rule in themes.css, or the stage stays hidden.
@@ -160,9 +159,9 @@ never position jumps).
 Theme `dubai` → `dubai3` (`_BG_THEMES`). Harness `dubai3.html` (Golden / Blue
 hour / Night, LED show, Fountain, Fireworks, Spin wheel, Heli, Plane, Dolphin,
 Sail wash, Museum, Horn, Shooting star, Restart); verify with
-`_verify_dubai3.py` (four stills + restart + perf); skin
+`_verify_dubai3.py` (eight stills + restart + perf); skin
 `game/skins/dubai.skin.css`; aids `dubai`. Built in 2026-09 with nothing shared
-with `dubai2` / `dubai` (both stay in the folder, unloaded — see below).
+with the two older Dubai scenes, which were deleted once this one shipped.
 
 **Stage.** Design space 1600×900, waterline `HZ = 790`, cover-fitted and
 bottom-anchored (`S`, `OX`, `OY`; `toDesign()` for hit-tests). The sun sets low
@@ -250,8 +249,8 @@ beacons, Burj windows switching, the sail's live wash, museum rings
 (`museumRing`), dolphins (`dolphin(t, x)` — arc + splash), tower boosts.
 
 **Clicks** (`onClick`, design coords, UI filter `UI_SEL`): the Burj → LED show
-(70%) or fireworks; a boat → horn-blink; the wheel → spin-up; the UFO → it drops its catch and
-bolts; an incoming rocket → it is destroyed early; the Burj Al Arab → a new sail colour AND it scrambles
+(70%) or fireworks; a boat → horn-blink; the wheel → spin-up; the left sky → the drone show;
+the UFO → it drops its catch and bolts; an incoming rocket → it is destroyed early; the Burj Al Arab → a new sail colour AND it scrambles
 the interception show; the Museum → a colour ring; the lake → the fountain;
 any tower → its windows flare for 5 s; open water → a dolphin; the upper sky
 → a firework at the click.
@@ -283,6 +282,32 @@ calligraphy ribbons, the void's rim breathing), `drawShoreLife` (rings
 crossing the fountain lake, every promenade lamp flickering on its own),
 `drawSailLife` (the Burj Al Arab's exoskeleton lighting up rung by rung after
 dark, the JBH's windows twinkling). Together they cost about 0.5 ms a frame.
+
+**The sun and the moon ride the hour** (`sunAt(ph)`, `moonAt(ph)`). Both are
+placed on an arc from the day phase instead of being pinned: the sun starts
+high right of centre, sinks left through the golden hour, drops below the
+waterline for the night and climbs back; the moon runs the opposite way, rising
+as the sun sets. Everything keyed on the sun follows it — its glow, the disc
+(which flattens and reddens as it meets the haze), the path on the water and
+the glints.
+
+**New-year fireworks on the Burj** (`NY`, `startNY`, `nyFire`, `drawNY`). The
+real show does not launch from the ground: gold fires straight OUT OF THE
+TOWER'S FLANKS at a dozen heights at once. Fifteen heights × both sides, each
+emitter placed on the tower's own silhouette (`burjHalfWidthAt` walks
+`BURJ.lobes` for the half-width at any height) and firing on its own ~1.2–2.3 s
+beat for the whole 22 s, plus six shells over the spire. Each spark is drawn as
+a STREAK along its own motion with a hot head — a field of dots reads as dust —
+and every jet flashes at the mouth. A curtain pours down the facade. Watch the
+range: an early cut threw sparks ~1000 design px sideways and they scattered
+across the whole picture as a haze; they are short and fast-falling now.
+
+**The drone show** (`DR`, `SHAPES`, `shapePoint`, `startDrones`, `drawDrones`).
+64 drones climb out of the left horizon, form a STAR → HEART → PALM → RING and
+morph between them, each easing to its own point with a drift so the figure
+breathes, then fly away over the sea. Parked in the LEFT pocket of sky on
+purpose: the game card sits in the middle, so a formation there would be hidden
+behind it. Click that patch of sky to call it.
 
 **The interception show** (`MIS`, `startMissiles`, `launchInterceptor`,
 `popMissile`, `drawRocket`, `drawMissiles`, `shakeAmp`). A SALVO of one to
@@ -317,212 +342,10 @@ show, fountain and fireworks all running.
 
 **Test hooks** `window._dubai3 = BACKGROUNDS.dubai3._test = { seek(ph),
 look(), show(), fountain(), fireworks(), spin(), horn(), heli(), dolphin(),
-wash(), missile(), ufo(kind?), museum(), plane(), shoot(), boats(), burj(),
+wash(), missile(), ny(), drones(), ufo(kind?), museum(), plane(), shoot(), boats(), burj(),
 lobes(), busy(), perf(),
 prof(), profReset() }` — `seek` moves the clock AND pushes the schedules so a
 seek doesn't fire every show at once.
-
----
-
-## dubai2.bg.js — Dubai at dusk, redrawn (LEGACY — superseded by `dubai3`)
-
-> Kept in the folder, unloaded; `_verify.js` still runs its regression checks
-> against this file. The `dubai` theme loads `dubai3.bg.js` (section above).
-
-Theme `dubai` → `dubai2` (`_BG_THEMES`) — **no longer**; see `dubai3` above. Harness `dubai2.html`; skin
-`game/skins/dubai.skin.css`; aids `dubai`. The city was rebuilt from scratch in
-2026-09; `dubai.bg.js` + `dubai_skyline.html` are the **legacy** scene and stay
-in the folder unloaded. `_verify.js` now checks `dubai2.bg.js`.
-
-**Same stage, same clock.** Identical fixed design space — 1600×900
-(`DW×DH`), waterline `HZ = 780`, sunset glow at `SUNX/SUNY = 560/772`, Burj
-Khalifa at `BX = 1330` scale `BS = 1.44`, moon at `300,140`, Ain Dubai at
-`410,618` r 120 — cover-fitted and bottom-anchored, with hit-tests mapping
-screen→design. Static scene (sky, far skyline, towers, water, vignette)
-prerenders into `off` once per resize; the per-frame layer draws only lights,
-effects and moving things. **Every element, constant and cadence of the legacy
-scene is kept** — the Burj LED show (`SHOW_PERIOD 180`/`SHOW_LEN 22`),
-fireworks (`120/5`), the five-movement fountain (`210/30`), the drone light show
-(`150/14`) + crossing drones, the oil gusher (`150/8`), the dusk→night cycle
-(`DAY_PERIOD 200`), the thunderstorm (`STORM_LEN 12`), the missile-defense show,
-helicopters (including the Burj Al Arab helipad shuttle), aircraft, birds,
-dolphins, the boat fleet, crane + gondola, and every click zone. **The
-"Scheduled shows", "Click interactions" and "Game integration notes" tables in
-the legacy section below still describe this scene** — only the drawing changed.
-
-**What the redraw actually changed:**
-
-- **The sky** (`drawSky`): banded dusk gradient, a low sun glow, 360 stars with
-  84 twinkles, eleven cirrus streaks (the low six catch the sunset from below),
-  and a crescent moon with earthshine.
-- **Two hazy far layers** (`drawFar`, `FAR`/`FAR2`) behind the city for depth.
-- **The generic tower** (`drawBuilding`/`drawBoxBody`/`drawCrown`): two-face 3-D
-  massing (a lit face and a shaded return), glass sheen, floor banding,
-  mullions, a podium with lit shopfronts, and a detailed crown per `crown` kind
-  (`flat`, `spire`, `dome`, `emir1`, `emir2`, `slantL`). Glass palettes come from
-  `STYLE` (`blue`, `navy`, `teal`, `bronze`, `silver`, `sand`, each `base`/`tint`/
-  `warm`); the `BUILDINGS` array keeps the original composition left→right (later
-  = in front), each entry carrying its own animated light scheme (`anim.type`:
-  `crown`, `edges`, `scan`, `pulse`, `sail`, `twist`, `museum`, `frame`).
-  Windows (`drawWindows`) are clipped to the body silhouette and start a clear
-  gap below the roof, so lit windows never poke past the crown.
-- **The hallmarks, each its own renderer**: `drawBurj` (rounded setback lobes
-  climbing to the needle spire, banded glass, over the Dubai Mall lake),
-  `drawBurjAlArab` (the white exoskeleton sail on its island, glowing atrium
-  wall, helipad and Al Muntaha), `drawJBH` (the breaking-wave low-rise next
-  door), `drawCayan` (the 90° twist read as helical facets, with its own window
-  clip), `drawTwin` (the Emirates Towers), `drawMuseum` (the upright torus with
-  calligraphy on a green mound), `drawFrame` (the golden Dubai Frame's two clad
-  towers + glass sky bridge), `drawFerris` (Ain Dubai over the water).
-- **The water** (`drawWater`): deep gradient plus a *sliced, rippled mirror* of
-  the finished city — the reflection is drawn in horizontal slices with a
-  per-slice horizontal offset, so it wobbles instead of being a flat flip —
-  then the sun's path and glints.
-
----
-
-## dubai_skyline.html / dubai.bg.js — Dubai at dusk (LEGACY — superseded by `dubai2`)
-
-> Kept for reference and because the schedules, click zones and game-integration
-> notes below are shared verbatim with `dubai2.bg.js` (the section above), which
-> is what the `dubai` theme actually loads now.
-
-Canvas painting in a fixed **1600×900 design space** (`DW×DH`, waterline
-`HZ=780`), cover-fitted and bottom-anchored to the window (`scale/ox/oy`); all
-hit-tests map screen→design through those. Static scene (sky, skyline, Burj,
-water + flipped-image reflection, vignette) prerenders into `off` once per
-resize; the per-frame layer draws only lights and effects. Per-building windows
-(`genBoxWindows`) start a clear gap below the roof — `pad = CROWN_PAD[crown] +
-max(18, h·0.09)` (the crown clearance plus a height-proportional gap) — and are
-additionally **clipped to the body silhouette** in the prerender, so lit windows
-sit well under the crown and never poke past the roofline.
-
-**Scheduled shows** (constants at the top of the script):
-
-| Show | Constants | Cadence |
-|---|---|---|
-| Burj LED facade show | `SHOW_PERIOD=180, SHOW_LEN=22` | 22 s every 3 min |
-| Fireworks off the Burj's sides | `FW_PERIOD=120, FW_LEN=5` | 5 s every 2 min |
-| Fountain choreography (5 movements) | `FN_PERIOD=210, FN_LEN=30` | 30 s every 3:30 |
-| Black oil gusher at sea | `OIL_PERIOD=150, OIL_LEN=8` | 8 s every 2.5 min |
-| Drone light show (squadron flies in → 2 shapes → out) | `DRONE_PERIOD=150, DRONE_LEN=14` | 14 s every 2.5 min |
-
-`*_OFFSET` constants make every show's first run land seconds after load.
-
-**Ambient drones** (`CROSS` + `drawCrossers`): a small pool (`CROSS_MAX = 5`) of
-drones that simply fly across the sky and out, then respawn after a gap — at most
-5 on screen at once. No drones loiter; new ones arrive only for the show.
-
-**Drone light show** (`SHOW` squadron + `drawShowDrones`): 18 drones, parked
-off-screen and undrawn, that fly IN from the top, form **two** different simple
-shapes, then fly OUT. They are the same pretty drone instances (`drawDroneAt`)
-and add a bright **additive** (`'lighter'`) shape-tracing glow — a halo
-(`radius 19`) plus a hot bright core. The two shapes are a **random distinct
-pair** drawn from a 6-shape set (`DSHAPES`: ring / heart / star / square /
-Burj-like thin spire / diamond). A smoothstep `fp`
-flies the squadron in (3 s) from its off-screen park points (`parkShow`) and back
-out (3 s); between the two hold slots the shape morphs (eased by `mp`); targets
-recompute only on a shape change. Scheduled every 2.5 min and launched by
-**clicking open upper sky** (`mDroneStart/End`, merged via `Math.max`). Centered
-at `DCX,DCY ≈ 295,350` — left side, just below the moon, so the centered
-math-game card never covers it.
-
-**Always-on systems:** per-building accent lighting — each tower has its own
-`anim` scheme (`edges/crown/scan/pulse/sail/twist/museum/frame/bridge`) with its
-own hue & speed; slowly switching windows (`b.dyn`); ~84 **twinkling stars**
-(`TWK`, drawn space-style as a crisp core + tight halo + a 4-point sparkle on the
-brightest — not the Burj's soft blink) over ~320 prerendered dust stars;
-occasional **shooting stars** (`SHOOT`/`drawShooting`, a streak every 6–16 s);
-aviation beacons (`BEACONS`); 3 helicopters (`HELIS`, one with a sweeping
-searchlight); ≤5 drones crossing the sky (`CROSS`); **birds** gliding across with
-flapping wings (`BIRDS`/`drawBirds`, drawn live — not baked into the prerender);
-leaping dolphin pods (`DOLPHINS`); water glints
-(`SPARKS`); a crossing aircraft; the **Ain Dubai observation wheel**
-(`drawFerris`, center `AW_X,AW_Y ≈ 410,618`, left of the Burj over the water) — a
-metallic build (dark body + light edge + highlight): splayed tubular legs with a
-cross-brace, a thick double-rim truss (outer+inner rings + lattice ticks),
-steel-cable spokes, a shaded hub and capsule gondolas, plus an LED rim that
-twinkles warm (rainbow chase on a click) and a water-pool reflection; its angle
-is integrated each frame (`awAngle`) so a click spin-up never jumps. A small
-**fleet** (`BOATS`, ≤3 at once; `drawBoats`) sails the bay — each slot spawns a
-random `type` (`dhow` with a breathing lateen sail + fluttering pennant /
-modern **yacht** with lit windows + radar mast / **abra** water-taxi with canopy
-& passengers / **speedboat** with a big spray wake). All **bob and rock** on the
-swell, cast a **soft shadow on the water** (a dark gradient ellipse that stays at
-the waterline as the hull bobs), trail a shared capped foam **wake** (`BOATW`,
-≤160), carry green-bow / red-stern (and, where fitted, white-masthead) nav lights
-of constant radius, then cross, wait offscreen, and a fresh random type
-re-enters. "Dubai under construction":
-a **tower crane** (`CRANE`/`drawCrane`) on a mid tower — lattice mast, a jib
-whose apparent reach slowly slews via `sin` (side-on view), a running
-trolley/hook, counterweight and blinking red apex/jib-tip warning lights; and a
-**window-cleaning gondola** (`GOND`/`drawGondola`) riding the Address tower's
-facade up and down on roof-davit cables.
-
-**Dusk→night cycle** (`DAY_PERIOD=200`, `nightFactor`/`LIGHT_GAIN`): a slow
-`(1-cos)/2` oscillation (0 = the prerendered dusk, 1 = deep night) — so it
-**darkens and then brightens back**, full cycle ~3:20 (deepest night at the ~1:40
-midpoint, back to dusk at 3:20, repeating). Each frame a single translucent navy
-gradient is drawn *over* the prerendered scene but *under* the live lights (so no
-re-prerender), and `LIGHT_GAIN = 1 + 1.3·nf` scales the live dynamic windows,
-twinkles and Burj yellow lights — so as the sky darkens the city's lights
-gradually "switch on" and fade back as it returns to dusk. Starts at dusk (no
-overlay).
-
-**Rare desert thunderstorm** (`STORM`, `STORM_LEN=12`): ~12 s once every **4–6
-min** (randomised start-to-start via `STORM.nextAt = t + rnd(240,360)`; first
-storm ~38 s after load). `drawStormClouds` rolls a dark cloud band across the top; while
-active, `makeBolt` strikes every 1–3 s — a jagged main path + 1–2 branches drawn
-as a blue glow + white core (`drawBoltPath`), with a `2·HZ−y` mirrored, rippled
-copy on the water. Each strike triggers a fast full-frame `drawStormFlash`
-(white-blue, ~0.5 s, with a waterline sheen). Bolts are short-lived so at most
-~1–2 exist at once (no buildup).
-
-**Click interactions** (`cv` click → design coords):
-- **Burj Khalifa** (`BX±60`) → 50/50 random: manual LED show (12 s,
-  `mShowStart/End`) or fireworks burst (5 s, `mFwStart/End`) — merged with the
-  scheduled envelopes via `Math.max`, so overlaps stay smooth.
-- **The fountain** → a manual 20 s show (`mFnStart/End`).
-- **Burj Al Arab** → scrambles the missile-defense show (+6 s light-up).
-- **Any other building** → `b.boostStart/boostUntil` (6 s `clickBoost`): all its
-  windows switch on and its accent lighting flares ×2.4.
-- **The crescent moon** (`MOON_X/Y/R` ≈ 300,140) → a simple ~2.6 s animation
-  (`moonBoostT`/`drawMoonFx`): a soft glow pulse, a gentle crescent-phase wobble,
-  and a ring of orbiting twinkles, then it eases back.
-- **The round Museum of the Future** (oval at `MUSEUM` ≈ 600,732) → each tap emits
-  an expanding light **ring in a fresh colour** (`MFX`/`drawMuseumFx`, hue advances
-  +67° per click; rings expand ~1.5 s then fade, list capped at 8).
-- **A drone** (crosser or show drone, hit-tested first via its tracked `_x,_y`)
-  → it **explodes** (`popDrone`: a flash/shockwave ring `POPS` + a 22-spark `FW`
-  burst); a crosser respawns in 3–6 s, a show drone returns after ~4 s.
-- **A helicopter** (`HELIS`, tracked `_x,_y`) → same explosion; it stays down
-  4–7 s (`deadUntil`), then its `off` is recomputed so it **re-enters from the
-  edge** (prog≈0) instead of popping back mid-air.
-- **The incoming missile** (`MIS.inc`, during the missile-defense show) → blows
-  up early with the same `popDrone` burst and clears the show.
-- **A boat** (`BOATS`, tracked `_x,_y,_half`) → its lights blink fast for ~2 s
-  (`blinkUntil`).
-- **Open upper sky** (no building/landmark/drone hit, `my < HZ-140`) → launches a
-  drone light show (`mDroneStart/End`).
-- **Ain Dubai wheel** (within `AW_R+16` of its center) → a ~4 s spin-up
-  (`awBoostStart`) with the rim LEDs chasing rainbow colour, then it eases back.
-
-**Missile-defense show** (`MIS`/`drawMissiles`, once every 6 min + on Burj Al
-Arab click): an emoji 🚀 streaks in from the right with a gray smoke trail;
-when it closes past x≈1050 the Burj Al Arab fires a smaller homing
-interceptor (warm trail, 2.5× faster) from its mast; on contact — flash,
-expanding shockwave ring, and a 60-spark firework burst (reuses `FW`).
-
-**Game integration notes:** the scene now has hero objects on **both** sides —
-the Burj + fountain/lake on the right (design x≈1280–1430) and the Ain Dubai
-wheel + drone light show on the left (x≈290–530) — so the calm band is the
-**center** (x≈620–1100 upper sky); put the game column there. The drone show is
-deliberately parked left, just below the moon, to stay out from under a centered
-card. The click handler already lives on `document` with the UI filter (so the
-form above the stage doesn't swallow scene clicks). Skin direction: deep navy
-glass, warm amber accents (`#FFB54D`-ish), white text. **Aids variant ready:**
-`aids/dubai.aids.js` (helicopter number line + gold-coin vault + palm garden) —
-set `aids:'dubai'` in the module.
 
 ---
 
@@ -1424,3 +1247,63 @@ calm, Snow, Wind, Shooting star, Cast, Breach, Surge, Wave, Dive, Bears, Fox,
 Lightning, Restart). Verify via
 `_verify_aurora.py` (default / cast+breach / bright stills to
 c:/tmp/dino_rigs + a double-restart leak check).
+
+## reef2.bg.js — the coral reef, rebuilt from zero (2026-09)
+
+`window.BACKGROUNDS.reef2 = { skin:'reef', aids:'reef', init({stage}) → cleanup }`.
+Nothing is shared with `reef.bg.js` (still the module `_BG_THEMES` maps the 🐠
+theme to — reef2 is NOT wired in yet; when it is, point `reef:'reef2'` and the
+existing reef skin + aids carry over unchanged). Dev harness `reef2.html`;
+verify via `_verify_reef2.py` (stills + fish close-up crops to `c:/tmp/reef2`,
+restart leak check, per-section ms via `_reef2.prof()`).
+
+**Design space 1600×900, sand line ~790**, cover-fitted and bottom-anchored
+like dubai3 (`S`, `OX`, `OY` map design → screen). The game card sits centre,
+so both reef HEROES stand on the sides and the centre is a low sand channel.
+
+**Layers.** `backL` (full-res, painted once per resize): the water gradient +
+sun bloom + surface shimmer, the far reef (two hazy planes), the sand with
+ripples, then every static element sorted by base-y — rocks, brain / boulder /
+staghorn / table / lettuce / mushroom / finger corals, tube & barrel sponges,
+giant clams, sea stars, urchins, shells. `foreL` (the bottom band only,
+blitted from design y 560 down) holds the elements flagged `fore`. Live, per
+frame between them: god-rays (6 soft nested wedges, additive), caustics (a
+seamless baked tile scrolled as a pattern, clipped to the sand polygon plus a
+faint band above it), the giants, the far fish, the swaying things (sea fans,
+soft corals, sea whips, seagrass, the ANEMONES with their clownfish), the
+near fish; then the fore band, fore swayers, motes, bubbles, hearts, a ¼-res
+vignette. Everything sways to ONE current `cur(t)`.
+
+**Rocks** (`paintRock`): a main blob + 2–4 lumps (`rockBlobs`, nonzero fill),
+lit upper-left, grain, pits, turf-algae and coralline crusts, crevices, a dark
+underside, and a rim light made per blob as the even-odd sliver between the
+blob and a copy shifted down-right (a stroke of the compound path leaked loops
+inside). `onRock(R,u)` gives a point on a rock's top for placing corals.
+
+**Anemones** (`buildAnemone`/`drawAnemone`): 90–140 tentacles growing from
+random spots on the oral disc, splaying outward, front ones draping over the
+column; per-tentacle wobble + the current; colour strings pre-computed once
+(`A.pre`). `A.midDraw` is called between the back and front halves so hiding
+clownfish are drawn INSIDE the crown.
+
+**Fish** — one renderer `drawFish`, species as data in `SPECIES` (body spline
+anchors, tail kind, fin polygons, pectoral root, eye, palette, `pattern(g,P)`).
+Local coords: length 1, nose +0.5; `mkWarp(bend)` flexes the rear of the body
+with the tail beat; `face` runs −1..1 so turns thin the fish through zero;
+pitch follows the heading; pectoral flap; an occasional gulp (`mouth`).
+Cast: clownfish (2 per big anemone, 1 in the small: hover, hide in the
+tentacles, dart out when the anemone is tapped), Dory (regal tang, palette
+marking + yellow tail; tap → dash / barrel roll), the threadfin butterflyfish
+pair (the second follows; tap → hearts), two yellow tangs (home boxes kept
+ABOVE the anemone crowns), two royal grammas by the rocks, a school of 14
+chromis (leader wanders, members hold slots; tap → scatter). Giants: the blue
+whale (first 60–110 s, then every 220–340 s) and the orca (18–45 s, then
+90–160 s), never both, fish flee when one passes close. Scheduler: a random
+fish acts every 4–12 s and ~25% of the time also poops. **Poop gag**: every
+fish once per ~3 min (staggered), a short wavy strand trails from the vent,
+lets go, sinks and fades — never click-driven. Every action blows a bubble
+puff (`puff`).
+
+Test hooks `window._reef2`: `seek(s)`, `current()`, `counts()`, `fish()`,
+`whale(x)`, `orca(x)`, `act(kind)`, `dart()`, `hide()`, `poop()`, `perf()`,
+`prof()`, `profReset()`.

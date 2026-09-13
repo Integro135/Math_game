@@ -3,7 +3,7 @@
 
    A painterly Dubai seen from the water at the end of the day, and the tower
    that owns the picture: the BURJ KHALIFA. Nothing here is shared with the
-   older dubai / dubai2 scenes (both kept in the folder, unloaded).
+   two older Dubai scenes, which were deleted once this one shipped.
 
    DESIGN SPACE 1600×900, waterline HZ=790, cover-fitted and bottom-anchored
    (a wide window crops the sides, a tall one shows more sky); `S` maps design
@@ -40,7 +40,9 @@
    sky), AIN DUBAI turning (click → spin-up + rainbow rim), a boat fleet with
    wakes and lit reflections (click → horn-blink), an A380 crossing with its
    beacons, a UFO that abducts a boat (or the helicopter) with a TRACTOR
-   BEAM, a helicopter to the Al Arab helipad, the INTERCEPTION show (a
+   BEAM, a helicopter to the Al Arab helipad, the NEW-YEAR FIREWORKS fired
+   from the Burj's own flanks, a DRONE SHOW that forms shapes in the left sky,
+   the INTERCEPTION show (a
    salvo from the right, the alert on the Al Arab's mast, an interceptor that
    banks onto its target, a fireball with shockwaves, debris, drifting smoke
    and a shake of the picture), dusk birds, night shooting
@@ -90,7 +92,23 @@
 
       // ── the stage ──
       const DW = 1600, DH = 900, HZ = 790;                       // design space; waterline
-      const SUNX = 520, SUNY = 782;                              // the sun sets low, left of centre
+      // The sun and the moon RIDE THE HOUR. `look().ph` runs 0..1 over the day
+      // cycle, and both bodies are placed on an arc from it: the sun starts high
+      // right of centre, sinks left through the golden hour, drops below the
+      // waterline for the night and climbs back; the moon runs the opposite way,
+      // rising as the sun sets. Everything keyed on the sun (its glow, the band
+      // on the horizon, the path on the water, the glints) follows them.
+      const SUN_SET = 520;                                       // where it touches down
+      function sunAt(ph){
+        // 0 → high right, .30 → touching the horizon left of centre, .5 → deep
+        // below, 1 → back up. A cosine arc keeps the motion even, not linear.
+        const u = (ph + 0.18) % 1, ang = u * TAU;
+        return { x: 1180 - 900 * u * 1.0, y: 470 - 330 * Math.cos(ang) };
+      }
+      function moonAt(ph){
+        const u = (ph + 0.68) % 1, ang = u * TAU;
+        return { x: 1280 - 1060 * u, y: 430 - 330 * Math.cos(ang) };
+      }
       const BX = 1290;                                           // Burj Khalifa axis
       const DAY_PERIOD = 260;                                    // golden → blue hour → night → golden
       const pickDPR = () => Math.max(0.75, Math.min(devicePixelRatio || 1, 1.5, Math.sqrt(2.4e6 / Math.max(1, innerWidth * innerHeight))));
@@ -165,14 +183,19 @@
         g.fillRect(-400, -400, DW + 800, HZ + 400);
         // the sun's glow, low left, and its band along the whole horizon
         g.save(); g.globalCompositeOperation = 'lighter';
-        g.fillStyle = rg(g, SUNX, SUNY, 0, 620, [[0, rgb(L.glow, 0.85 * L.glowA)], [0.25, rgb(L.glow, 0.32 * L.glowA)], [0.6, rgb(L.glow, 0.08 * L.glowA)], [1, rgb(L.glow, 0)]]);
+        const SUN = sunAt(L.ph);
+        g.fillStyle = rg(g, SUN.x, Math.min(SUN.y, HZ - 4), 0, 620, [[0, rgb(L.glow, 0.85 * L.glowA)], [0.25, rgb(L.glow, 0.32 * L.glowA)], [0.6, rgb(L.glow, 0.08 * L.glowA)], [1, rgb(L.glow, 0)]]);
         g.fillRect(-400, 0, DW + 800, HZ);
         g.fillStyle = lg(g, 0, HZ - 220, 0, HZ, [[0, rgb(L.haze, 0)], [1, rgb(L.haze, L.hazeA)]]);
         g.fillRect(-400, HZ - 220, DW + 800, 220);
         // the sun itself, a flattened disc sinking into the haze
-        if (L.sun > 0.02){
-          g.fillStyle = rg(g, SUNX, SUNY + 6, 0, 60, [[0, rgb([255, 245, 220], 0.95 * L.sun)], [0.35, rgb([255, 215, 150], 0.7 * L.sun)], [1, rgb([255, 190, 120], 0)]]);
-          g.beginPath(); g.ellipse(SUNX, SUNY + 6, 60, 26, 0, 0, TAU); g.fill();
+        if (L.sun > 0.02 && SUN.y < HZ + 40){
+          // it flattens and reddens as it meets the haze at the waterline
+          const low = clamp01((SUN.y - (HZ - 150)) / 150), ry = 30 - 8 * low, rx = 30 + 30 * low;
+          g.fillStyle = rg(g, SUN.x, SUN.y, 0, 90, [[0, rgb(mixc([255, 245, 220], [255, 170, 90], low), 0.95 * L.sun)], [0.3, rgb(mixc([255, 215, 150], [255, 140, 70], low), 0.65 * L.sun)], [1, rgb([255, 190, 120], 0)]]);
+          g.beginPath(); g.ellipse(SUN.x, SUN.y, rx * 2, ry * 1.4, 0, 0, TAU); g.fill();
+          g.fillStyle = rgb(mixc([255, 250, 235], [255, 165, 80], low), 0.9 * L.sun);
+          g.beginPath(); g.ellipse(SUN.x, SUN.y, rx, ry, 0, 0, TAU); g.fill();
         }
         g.restore();
         // cirrus: long streaks lit from below near the horizon, cooler higher up
@@ -196,7 +219,8 @@
           }
         }
         // the moon: high right of centre, a waxing crescent with earthshine
-        { const mx = 250, my = 130, R = 24;                       // top-left over the sail: clear of the card, balancing the Burj
+        { const MOON = moonAt(L.ph), mx = MOON.x, my = MOON.y, R = 24;
+          if (my < HZ - 30) {
           g.save(); g.globalCompositeOperation = 'lighter';
           g.fillStyle = rg(g, mx, my, R * 0.6, R * 5, [[0, 'rgba(255,240,210,0.16)'], [1, 'rgba(255,240,210,0)']]); g.fillRect(mx - R * 5, my - R * 5, R * 10, R * 10);
           g.restore();
@@ -207,7 +231,7 @@
           q.fillStyle = lg(q, c - R, c, c + R, c, [[0, '#fff6dc'], [1, '#e8d8a8']]); q.beginPath(); q.arc(c, c, R, 0, TAU); q.fill();
           q.globalCompositeOperation = 'destination-out'; q.beginPath(); q.arc(c - R * 0.55, c - R * 0.08, R * 0.9, 0, TAU); q.fill();
           q.globalCompositeOperation = 'source-over'; q.fillStyle = 'rgba(190,200,240,0.10)'; q.beginPath(); q.arc(c, c, R, 0, TAU); q.fill();   // earthshine
-          g.drawImage(mc, mx - c, my - c, c * 2, c * 2); }
+          g.drawImage(mc, mx - c, my - c, c * 2, c * 2); } }
       }
 
       // ── far haze skyline (two depth layers, silhouettes only) ──
@@ -490,7 +514,9 @@
         g.fillStyle = rgb(mixc([54, 56, 84], L.warm, 0.14)); g.fillRect(-400, HZ - 5, DW + 800, 7);
         g.fillStyle = rgb([255, 215, 150], 0.35 + 0.5 * night); for (let x = -380; x < DW + 400; x += 26) g.fillRect(x, HZ - 8, 2, 3);   // promenade lamps
         // the road behind the promenade (traffic runs on it per frame)
-        g.fillStyle = rgb(mixc([30, 32, 52], L.warm, 0.08)); g.fillRect(-400, HZ - 16, DW + 800, 8);
+        g.fillStyle = rgb(mixc([30, 32, 52], L.warm, 0.08));
+        g.fillRect(-400, HZ - 16, LAKE.x0 - 14 + 400, 8);                       // the road stops at the lake…
+        g.fillRect(LAKE.x1 + 14, HZ - 16, DW + 400 - LAKE.x1 - 14, 8);          // …and picks up past it
         // the fountain lake in front of the Burj: a pool of the sky
         const lcx = (LAKE.x0 + LAKE.x1) / 2, lrx = (LAKE.x1 - LAKE.x0) / 2;
         g.fillStyle = rgb(mixc([60, 62, 90], L.warm, 0.18)); g.beginPath(); g.ellipse(lcx, HZ - 8, lrx + 8, 17, 0, 0, TAU); g.fill();          // the stone rim
@@ -711,10 +737,14 @@
         } else if (UFO.st === 'gulp'){
           if (e > 0.7){ UFO.st = 'leave'; UFO.t0 = t; }
         } else if (UFO.st === 'leave' || UFO.st === 'flee'){
+          // accelerate away and keep going until it is REALLY off the stage —
+          // ending the state on a timer alone left it winking out in mid-air
           const k = clamp01(e / (UFO.st === 'flee' ? 1.4 : 2.6));
-          UFO.x += (UFO.x0 < 0 ? -1 : 1) * (UFO.st === 'flee' ? 620 : 300) * dt * (0.3 + k);
-          UFO.y -= (UFO.st === 'flee' ? 200 : 90) * dt * (0.3 + k);
-          if (k >= 1){
+          const dir = UFO.x0 < 0 ? -1 : 1;
+          UFO.x += dir * (UFO.st === 'flee' ? 700 : 380) * dt * (0.35 + k * 1.6);
+          UFO.y -= (UFO.st === 'flee' ? 230 : 120) * dt * (0.35 + k);
+          const gone = dir < 0 ? UFO.x < -(UFO_R + 80) : UFO.x > DW + UFO_R + 80;
+          if (gone || UFO.y < -(UFO_R + 80)){
             UFO.st = 'off'; UFO.nextAt = t + 90 + rnd(0, 70);
             if (UFO.target && UFO.target.gone){ const b = UFO.target; setTimeout(() => {}, 0); b.gone = false; b.taken = false; b.spin = 0; b.x = b.dir > 0 ? -120 : DW + 120; b.y = HZ + 16 + rnd(0, 60); }
             if (UFO.kind === 'heli' && HELI.gone){ HELI.gone = false; HELI.taken = false; HELI.spin = 0; HELI.t0 = t + 20; }
@@ -849,7 +879,7 @@
         g.globalAlpha = 1;
         // the sun's path on the water
         g.save(); g.globalCompositeOperation = 'lighter';
-        const sx = OX + SUNX * S;
+        const sx = OX + sunAt(L.ph).x * S;
         g.beginPath(); g.moveTo(sx - 50 * S, hzS); g.lineTo(sx + 50 * S, hzS); g.lineTo(sx + 300 * S, H); g.lineTo(sx - 300 * S, H); g.closePath(); g.clip();
         g.fillStyle = lg(g, sx - 300 * S, 0, sx + 300 * S, 0, [[0, rgb(L.glow, 0)], [0.5, rgb(L.glow, 0.55 * L.sunPath)], [1, rgb(L.glow, 0)]]);
         g.fillRect(sx - 300 * S, hzS, 600 * S, H - hzS);
@@ -893,6 +923,9 @@
       const SHOW_PERIOD = 150, SHOW_FIRST = 9;                    // the Burj LED show
       const FN_PERIOD = 180, FN_FIRST = 34;                       // the fountain
       const FW_PERIOD = 120, FW_FIRST = 70;                       // fireworks
+      const NY_PERIOD = 300, NY_FIRST = 120;                      // the new-year show on the tower
+      const DRONE_PERIOD = 210, DRONE_FIRST = 55;                 // the drone show
+      let nextNY = NY_FIRST, nextDrones = DRONE_FIRST;
       let SHOW = null, FOUNTAIN = null, nextShow = SHOW_FIRST, nextFn = FN_FIRST, nextFw = FW_FIRST;
       const FW = [], MFX = [], SHOOTERS = [], DOLPHINS = [], RINGS = [];
       let nextShootAt = 6, wheelBoost = null, ainAng = 0, ainHue = 40, washT0 = -99, washFrom = [255, 200, 120], washTo = [255, 200, 120];
@@ -908,7 +941,7 @@
       const HELI = { t0: 24, period: 80, flying: false, taken: false, gone: false, lift: 0, spin: 0, pos: null };
       const CARS = Array.from({ length: 44 }, (_, i) => ({ x: psr(i + 60) * DW, v: (psr(i + 61) < 0.5 ? -1 : 1) * (40 + psr(i + 62) * 70), lane: psr(i + 63) < 0.5 ? 0 : 1 }));
       const TWINKLE = Array.from({ length: 40 }, (_, i) => ({ x: psr(i + 70) * DW, y: psr(i + 71) * 420, ph: psr(i + 72) * TAU, sp: 1 + psr(i + 73) * 2 }));
-      const GLINTS = Array.from({ length: 30 }, (_, i) => ({ x: SUNX + (psr(i + 80) - 0.5) * 380 * (0.4 + psr(i + 81)), y: HZ + 6 + psr(i + 82) * 90, ph: psr(i + 83) * TAU }));
+      const GLINTS = Array.from({ length: 30 }, (_, i) => ({ dx: (psr(i + 80) - 0.5) * 380 * (0.4 + psr(i + 81)), y: HZ + 6 + psr(i + 82) * 90, ph: psr(i + 83) * TAU }));
 
       // ── triggers ──
       function startShow(t, len){ SHOW = { t0: t, len: len || 16, pal: [[255, 190, 70], [90, 220, 255], [255, 110, 190], [255, 255, 255], [120, 255, 170]][Math.floor(Math.random() * 5)] }; }
@@ -926,6 +959,165 @@
       const museumRing = t => { MFX.push({ t0: t, hue: (MFX.length * 67 + 200) % 360 }); if (MFX.length > 6) MFX.shift(); };
       const dolphin = (t, x) => { DOLPHINS.push({ x, t0: t, dir: Math.random() < 0.5 ? -1 : 1 }); };
 
+      // ── NEW-YEAR FIREWORKS ON THE BURJ ──────────────────────────────────────
+      //    The real thing does not launch from the ground: gold fires straight
+      //    OUT OF THE TOWER'S FLANKS at a dozen heights at once, a curtain pours
+      //    down the facade, and shells open in the sky above. Emitters are placed
+      //    on the tower's own silhouette (BURJ.lobes gives its half-width at any
+      //    height), so the jets always leave the building's real edge.
+      const NY = { t0: -99, len: 22, jets: [], sparks: [], fall: [], flash: [] };
+      function burjHalfWidthAt(y){
+        // the widest lobe still standing at this height, as a half-width
+        let hw = 8;                                                  // the core's half-width; the lobes widen it lower down
+        for (const lb of BURJ.lobes){ if (BURJ.base - lb.h <= y) hw = Math.max(hw, Math.abs(lb.x + lb.w / 2 - BX) + lb.w / 2); }
+        return hw;
+      }
+      function startNY(t){
+        if (t - NY.t0 < NY.len) return;
+        NY.t0 = t; NY.jets.length = 0; NY.sparks.length = 0; NY.fall.length = 0; NY.flash.length = 0;
+        const top = BURJ.bodyTop, base = BURJ.base - 30;
+        for (let i = 0; i < 15; i++){                                  // fifteen heights, both sides
+          const k = i / 14, y = lerp(base, top + 30, k), hw = burjHalfWidthAt(y);
+          for (const side of [-1, 1])
+            NY.jets.push({ x: BX + side * hw, y, side, at: 0.35 + k * 0.9 + (side < 0 ? 0 : 0.12),
+                           every: 1.2 + psr(i * 3 + (side > 0 ? 1 : 0)) * 1.1, last: -99 });
+        }
+        for (let i = 0; i < 6; i++) NY.jets.push({ x: BX, y: BURJ.spireTop + 40, side: 0, at: 2.4 + i * 3.2, every: 3.4, last: -99, shell: true });
+      }
+      function nyFire(t, j){
+        const n = j.shell ? 0 : 30;
+        for (let k = 0; k < n; k++){
+          const spread = rnd(-0.34, 0.34), sp = rnd(55, 165);           // SHORT and flat — a jet at the tower, not a shower over the city
+          NY.sparks.push({ x: j.x, y: j.y, vx: j.side * Math.cos(spread) * sp, vy: Math.sin(spread) * sp - rnd(20, 95),
+                           t0: t, life: rnd(0.6, 1.25), r: rnd(1.8, 3.6), hue: 38 + rnd(-14, 14) });
+        }
+        if (!j.shell) NY.flash.push({ x: j.x, y: j.y, side: j.side, t0: t });
+        if (j.shell){                                                   // a shell opening over the spire
+          const sparks = [];
+          for (let k = 0; k < 90; k++){ const a = rnd(0, TAU), v = rnd(0.25, 1); sparks.push({ ca: Math.cos(a) * v, sa: Math.sin(a) * v, r: rnd(0.9, 2.3), life: rnd(1, 1.9) }); }
+          FW.push({ x: BX + rnd(-160, 160), y: BURJ.spireTop - rnd(20, 150), t0: t, hue: [45, 200, 320, 140][(Math.random() * 4) | 0], sparks, rise: 0.001 });
+        } else {                                                        // and a curtain pouring down the facade
+          for (let k = 0; k < 8; k++) NY.fall.push({ x: j.x + rnd(-4, 4), y: j.y, t0: t + rnd(0, 0.4), life: rnd(1.4, 2.6), r: rnd(0.7, 1.7) });
+        }
+      }
+      function drawNY(g, L, t){
+        const e = t - NY.t0;
+        if (e < 0 || e > NY.len + 3) return;
+        // every jet keeps firing on its own beat for the whole show, so the
+        // tower stays alight instead of flashing once at the start
+        if (e < NY.len) for (const j of NY.jets)
+          if (e >= j.at && t - j.last >= j.every){ j.last = t; nyFire(t, j); }
+        g.save(); g.globalCompositeOperation = 'lighter';
+        // the mouth flash where a jet leaves the facade
+        for (let i = NY.flash.length - 1; i >= 0; i--){
+          const f = NY.flash[i], k = (t - f.t0) / 0.28;
+          if (k > 1){ NY.flash.splice(i, 1); continue; }
+          glow(g, 'gold', f.x + f.side * 8, f.y, 26 * (1 - k) + 8, 0.9 * (1 - k));
+        }
+        // each spark is a STREAK along its own motion with a hot head — a field
+        // of dots reads as dust, a field of streaks reads as fireworks
+        g.lineCap = 'round';
+        for (let i = NY.sparks.length - 1; i >= 0; i--){
+          const q = NY.sparks[i], age = t - q.t0;
+          if (age > q.life){ NY.sparks.splice(i, 1); continue; }
+          const k = age / q.life;
+          const x = q.x + q.vx * age, y = q.y + q.vy * age + 300 * age * age;
+          const pa = Math.max(0, age - 0.055);
+          const px = q.x + q.vx * pa, py = q.y + q.vy * pa + 300 * pa * pa;
+          g.strokeStyle = 'hsla(' + q.hue + ',100%,' + (78 - 22 * k) + '%,' + (0.9 * (1 - k)) + ')';
+          g.lineWidth = q.r * 1.5 * (1 - k * 0.35);
+          g.beginPath(); g.moveTo(px, py); g.lineTo(x, y); g.stroke();
+          g.fillStyle = 'hsla(' + q.hue + ',100%,92%,' + (1 - k) + ')';
+          g.beginPath(); g.arc(x, y, q.r * 0.85 * (1 - k * 0.3), 0, TAU); g.fill();
+        }
+        for (let i = NY.fall.length - 1; i >= 0; i--){
+          const q = NY.fall[i], age = t - q.t0;
+          if (age < 0) continue;
+          if (age > q.life){ NY.fall.splice(i, 1); continue; }
+          const k = age / q.life, y = q.y + 120 * age * age;
+          if (y > BURJ.base) continue;
+          g.fillStyle = 'rgba(255,' + (210 - 50 * k) + ',130,' + (0.85 * (1 - k)) + ')';
+          g.fillRect(q.x - q.r / 2, y, q.r, q.r * 3.2);
+        }
+        glow(g, 'gold', BX, BURJ.base - 240, 300, 0.05 * Math.min(1, e / 2) * Math.max(0, 1 - (e - NY.len) / 3));
+        g.fillStyle = rgb([255, 190, 110], 0.07 * Math.max(0, 1 - e / NY.len));   // the tower's light on the water
+        g.fillRect(BX - 260, HZ, 520, 130);
+        g.restore();
+      }
+
+      // ── THE DRONE SHOW ──────────────────────────────────────────────────────
+      //    A swarm climbs out of the left horizon, then FORMS SHAPES in the sky
+      //    and morphs between them — a star, a heart, a palm, a ring — each drone
+      //    easing to its own point with a little drift so the figure breathes.
+      //    Parked in the LEFT pocket of sky on purpose: the game card sits in the
+      //    middle, so a formation there would be hidden behind it.
+      const DR = { n: 64, cx: 300, cy: 250, r: 128, t0: -99, len: 34, list: [], shape: 0 };
+      const SHAPES = ['star', 'heart', 'palm', 'ring'];
+      function shapePoint(kind, i, n){
+        const u = i / n;
+        if (kind === 'star'){
+          const a = u * TAU * 2.5 % TAU, spike = (Math.floor(u * 10) % 2) ? 0.45 : 1;
+          const rr = spike, ang = -Math.PI / 2 + u * TAU;
+          return { x: Math.cos(ang) * rr, y: Math.sin(ang) * rr };
+        }
+        if (kind === 'heart'){
+          const th = u * TAU;
+          return { x: 16 * Math.pow(Math.sin(th), 3) / 17, y: -(13 * Math.cos(th) - 5 * Math.cos(2 * th) - 2 * Math.cos(3 * th) - Math.cos(4 * th)) / 17 };
+        }
+        if (kind === 'palm'){
+          if (u < 0.34){ const k = u / 0.34; return { x: -0.06 + 0.12 * k * k, y: 1 - k * 1.15 }; }   // the trunk
+          const f = (u - 0.34) / 0.66, blade = Math.floor(f * 6), tt = (f * 6) % 1;
+          const a = -Math.PI * 0.92 + blade * (Math.PI * 0.84 / 5);
+          return { x: 0.06 + Math.cos(a) * tt * 0.95, y: -0.15 + Math.sin(a) * tt * 0.8 + tt * tt * 0.35 };
+        }
+        const ang = u * TAU; return { x: Math.cos(ang), y: Math.sin(ang) * 0.72 };
+      }
+      function startDrones(t){
+        if (t - DR.t0 < DR.len) return;
+        DR.t0 = t; DR.shape = 0; DR.list.length = 0;
+        for (let i = 0; i < DR.n; i++)
+          DR.list.push({ i, x: -140 + psr(i + 20) * 120, y: HZ - 40 + psr(i + 21) * 30,
+                         px: 0, py: 0, ph: psr(i + 22) * TAU, hue: (i / DR.n) * 360 });
+      }
+      function drawDrones(g, L, t, dt){
+        const e = t - DR.t0;
+        if (e < 0 || e > DR.len + 2 || !DR.list.length) return;
+        const IN = 3.2, OUT = DR.len - 3.5;
+        const per = (OUT - IN) / SHAPES.length;
+        const si = Math.max(0, Math.min(SHAPES.length - 1, Math.floor((e - IN) / per)));
+        const sk = clamp01(((e - IN) % per) / per);
+        const kind = SHAPES[si], nextKind = SHAPES[Math.min(SHAPES.length - 1, si + 1)];
+        const morph = sk > 0.82 ? smooth((sk - 0.82) / 0.18) : 0;       // slide into the next figure
+        const fade = e < 1.2 ? e / 1.2 : (e > OUT ? Math.max(0, 1 - (e - OUT) / 3.5) : 1);
+        const spin = Math.sin(e * 0.16) * 0.25;
+        g.save(); g.globalCompositeOperation = 'lighter';
+        for (const d of DR.list){
+          let tx, ty;
+          if (e < IN){                                                   // climbing out of the horizon
+            const k = smooth(clamp01(e / IN)), a = shapePoint(kind, d.i, DR.n);
+            tx = lerp(d.x, DR.cx + a.x * DR.r, k); ty = lerp(d.y, DR.cy + a.y * DR.r, k);
+          } else if (e > OUT){                                           // and away over the sea
+            const k = smooth(clamp01((e - OUT) / 3.5)), a = shapePoint(kind, d.i, DR.n);
+            tx = lerp(DR.cx + a.x * DR.r, DR.cx - 500 - psr(d.i) * 300, k);
+            ty = lerp(DR.cy + a.y * DR.r, 40 + psr(d.i + 7) * 60, k);
+          } else {
+            const A = shapePoint(kind, d.i, DR.n), B = shapePoint(nextKind, d.i, DR.n);
+            const ax = lerp(A.x, B.x, morph), ay = lerp(A.y, B.y, morph);
+            const ca = Math.cos(spin), sa = Math.sin(spin);
+            tx = DR.cx + (ax * ca - ay * sa) * DR.r; ty = DR.cy + (ax * sa + ay * ca) * DR.r;
+          }
+          tx += Math.sin(t * 1.3 + d.ph) * 3; ty += Math.cos(t * 1.1 + d.ph) * 3;   // the figure breathes
+          d.px = d.px || tx; d.py = d.py || ty;
+          d.px += (tx - d.px) * Math.min(1, dt * 4.5); d.py += (ty - d.py) * Math.min(1, dt * 4.5);
+          const hue = (d.hue + e * 26 + si * 70) % 360;
+          const a = fade * (0.55 + 0.45 * Math.sin(t * 3 + d.ph));
+          g.fillStyle = 'hsla(' + hue + ',100%,72%,' + a + ')';
+          g.beginPath(); g.arc(d.px, d.py, 2.1, 0, TAU); g.fill();
+          g.globalAlpha = a * 0.5; g.drawImage(sprite('white'), d.px - 9, d.py - 9, 18, 18); g.globalAlpha = 1;
+        }
+        g.restore();
+      }
+
       // ── clicks (design coords) ──
       function onClick(e){
         if (stopped) return;
@@ -933,7 +1125,10 @@
         const [mx, my] = toDesign(e.clientX, e.clientY), t = lastT;
         if (UFO.hit && UFO.st !== 'off' && Math.hypot(mx - UFO.hit[0], my - UFO.hit[1]) < UFO.hit[2]){ ufoRelease(t); return; }
         for (const m of MIS.inc) if (Math.abs(mx - m.x) < 28 && Math.abs(my - m.y) < 28){ MIS.inc.splice(MIS.inc.indexOf(m), 1); popMissile(t, m.x, m.y); return; }
-        if (Math.abs(mx - BX) < 70 && my > BURJ.top - 20 && my < HZ){ Math.random() < 0.7 ? startShow(t, 14) : fireworks(t, 4); return; }
+        if (Math.abs(mx - BX) < 70 && my > BURJ.top - 20 && my < HZ){
+          const r = Math.random();
+          r < 0.45 ? startShow(t, 14) : r < 0.8 ? startNY(t) : fireworks(t, 4);   // LED show / new-year fireworks / a burst
+          return; }
         for (const b of BOATS) if (Math.abs(mx - b.x) < 44 * b.s && Math.abs(my - b.y) < 30){ b.blinkUntil = t + 2.2; return; }
         if (Math.hypot(mx - AIN.x, my - AIN.y) < AIN.r + 16){ spinWheel(t); return; }
         if (mx > ALARAB.x - 40 && mx < ALARAB.x + 80 && my > (ALARAB.top || HZ - 272) - 44 && my < HZ){ washAlArab(t); startMissiles(t); return; }
@@ -941,6 +1136,7 @@
         if (mx > LAKE.x0 && mx < LAKE.x1 && Math.abs(my - HZ) < 34){ startFountain(t, 20); return; }
         for (const T of TOWERS){ const d = T.w + (T.d || T.w * 0.42); if (mx > T.x && mx < T.x + d && my > HZ - T.h - 30 && my < HZ){ T.boostUntil = t + 5; return; } }
         if (my > HZ + 8){ dolphin(t, mx); return; }
+        if (mx < 620 && my < HZ - 260){ startDrones(t); return; }     // the left sky: the drone show
         if (my < HZ - 200){ fireworks(t, 1, mx, my); return; }
       }
 
@@ -951,6 +1147,8 @@
         if (t > nextShow){ nextShow += SHOW_PERIOD; startShow(t, 16); }
         if (t > nextFn){ nextFn += FN_PERIOD; startFountain(t, 24); }
         if (t > nextFw){ nextFw += FW_PERIOD; fireworks(t, 5); }
+        if (t > nextNY){ nextNY += NY_PERIOD; startNY(t); }
+        if (t > nextDrones){ nextDrones += DRONE_PERIOD; startDrones(t); }
         if (SHOW && t - SHOW.t0 > SHOW.len) SHOW = null;
         if (FOUNTAIN && t - FOUNTAIN.t0 > FOUNTAIN.len) FOUNTAIN = null;
 
@@ -978,6 +1176,8 @@
         drawDolphins(g, L, t);
         drawFountain(g, L, t);
         drawFireworks(g, L, t);
+        drawNY(g, L, t);
+        drawDrones(g, L, t, dt);
         drawMissiles(g, L, t, dt);
         drawHeli(g, L, t);
         updateUfo(t, dt); drawUfo(g, L, t);
@@ -1204,7 +1404,7 @@
         // the kills
         for (let i = MIS.booms.length - 1; i >= 0; i--){
           const b = MIS.booms[i], e = t - b.t0;
-          if (e > 1.6){ MIS.booms.splice(i, 1); continue; }
+          if (e < 0 || e > 1.6){ MIS.booms.splice(i, 1); continue; }
           g.save(); g.globalCompositeOperation = 'lighter';
           if (e < 0.5){                                                                            // the fireball
             const k = e / 0.5;
@@ -1221,7 +1421,7 @@
           g.restore();
         }
         // the white flash over the whole picture, at the moment of the kill
-        for (const b of MIS.booms){ const e = t - b.t0; if (e < 0.22){ g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(230,240,255,' + (0.30 * (1 - e / 0.22)) + ')'; g.fillRect(-400, -200, DW + 800, DH + 400); g.restore(); } }
+        for (const b of MIS.booms){ const e = t - b.t0; if (e >= 0 && e < 0.22){ g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(230,240,255,' + (0.30 * (1 - e / 0.22)) + ')'; g.fillRect(-400, -200, DW + 800, DH + 400); g.restore(); } }
       }
       function drawMuseumFx(g, t){
         for (let i = MFX.length - 1; i >= 0; i--){ const m = MFX[i], k = (t - m.t0) / 1.5; if (k > 1){ MFX.splice(i, 1); continue; }
@@ -1266,14 +1466,20 @@
       }
       function drawTraffic(g, L, t, dt){
         const a = 0.25 + 0.7 * L.night;
-        for (const c of CARS){ c.x += c.v * dt; if (c.x > DW + 20) c.x = -20; if (c.x < -20) c.x = DW + 20;
+        for (const c of CARS){
+          c.x += c.v * dt; if (c.x > DW + 20) c.x = -20; if (c.x < -20) c.x = DW + 20;
+          // the road does not cross the fountain lake — the promenade runs round
+          // it, so a car over that span is simply not on the road
+          if (c.x > LAKE.x0 - 14 && c.x < LAKE.x1 + 14) continue;
           const y = HZ - 14 + c.lane * 3.5, head = c.v < 0;
-          g.fillStyle = head ? 'rgba(255,245,220,' + a + ')' : 'rgba(255,60,50,' + a + ')'; g.fillRect(c.x, y, head ? 3 : 2.4, 1.6); }
+          g.fillStyle = head ? 'rgba(255,245,220,' + a + ')' : 'rgba(255,60,50,' + a + ')'; g.fillRect(c.x, y, head ? 3 : 2.4, 1.6);
+        }
       }
       function drawGlints(g, L, t){
         const a = 0.6 * L.sunPath; if (a < 0.03) return;
         g.fillStyle = '#fff5dc';
-        for (const s of GLINTS){ const k = 0.5 + 0.5 * Math.sin(t * 2.2 + s.ph + s.y * 0.3); if (k > 0.55){ g.globalAlpha = (k - 0.55) * 2 * a; g.fillRect(s.x - 3 * k, s.y, 6 * k, 1.1); } }
+        const gx = sunAt(L.ph).x;
+        for (const s of GLINTS){ const k = 0.5 + 0.5 * Math.sin(t * 2.2 + s.ph + s.y * 0.3); if (k > 0.55){ g.globalAlpha = (k - 0.55) * 2 * a; g.fillRect(gx + s.dx - 3 * k, s.y, 6 * k, 1.1); } }
         g.globalAlpha = 1;
       }
       function drawBoats(g, L, t, dt){
@@ -1445,12 +1651,29 @@
       rafId = requestAnimationFrame(frame);
 
       window._dubai3 = BACKGROUNDS.dubai3._test = {
-        seek: ph => { t0 = (t0 === null ? 0 : t0); const nt = lastT + (ph * DAY_PERIOD - (lastT % DAY_PERIOD)); t0 -= (nt - lastT) * 1000; lastT = nt; lookKey = -1; nextShow = nt + 8; nextFn = nt + 30; nextFw = nt + 60; },
+        seek: ph => {
+          t0 = (t0 === null ? 0 : t0);
+          const nt = lastT + (ph * DAY_PERIOD - (lastT % DAY_PERIOD));
+          t0 -= (nt - lastT) * 1000; lastT = nt; lookKey = -1;
+          // sweep everything timed off the old clock — a backward jump would
+          // otherwise leave mid-flight effects with a negative elapsed time
+          FW.length = 0; MFX.length = 0; SHOOTERS.length = 0; DOLPHINS.length = 0;
+          MIS.inc.length = 0; MIS.def.length = 0; MIS.booms.length = 0; MIS.debris.length = 0;
+          MIS.smoke.length = 0; MTRAIL.length = 0; MIS.flash = null; MIS.alertT0 = -99;
+          NY.t0 = -99; NY.sparks.length = 0; NY.fall.length = 0; NY.flash.length = 0;
+          DR.t0 = -99; DR.list.length = 0;
+          UFO.st = 'off'; UFO.target = null; UFO.dust.length = 0;
+          SHOW = null; FOUNTAIN = null; shakeT0 = -99;
+          for (const b of BOATS){ b.taken = false; b.gone = false; b.lift = 0; b.spin = 0; }
+          HELI.taken = false; HELI.gone = false; HELI.lift = 0;
+          nextShow = nt + 8; nextFn = nt + 30; nextFw = nt + 60;
+          nextNY = nt + 25; nextDrones = nt + 18; MIS.nextAt = nt + 40; UFO.nextAt = nt + 60;
+        },
         look: () => LOOK, show: () => startShow(lastT, 16), fountain: () => startFountain(lastT, 24), fireworks: () => fireworks(lastT, 4),
         spin: () => spinWheel(lastT), horn: () => BOATS.forEach(b => b.blinkUntil = lastT + 2), heli: () => (HELI.t0 = lastT - 0.01),
-        dolphin: () => dolphin(lastT, 760), wash: () => washAlArab(lastT), missile: () => startMissiles(lastT), ufo: kind => { UFO.st = 'off'; UFO.nextAt = null; UFO.force = kind || null; if (kind === 'heli'){ HELI.t0 = lastT - 12; HELI.flying = true; } startUfo(lastT); return UFO.kind; }, museum: () => museumRing(lastT), plane: () => (PLANE.t0 = lastT),
+        dolphin: () => dolphin(lastT, 760), wash: () => washAlArab(lastT), missile: () => startMissiles(lastT), ny: () => { NY.t0 = -99; startNY(lastT); }, drones: () => { DR.t0 = -99; startDrones(lastT); }, ufo: kind => { UFO.st = 'off'; UFO.nextAt = null; UFO.force = kind || null; if (kind === 'heli'){ HELI.t0 = lastT - 12; HELI.flying = true; } startUfo(lastT); return UFO.kind; }, museum: () => museumRing(lastT), plane: () => (PLANE.t0 = lastT),
         shoot: () => SHOOTERS.push({ x: rnd(200, 1400), y: rnd(40, 300), t0: lastT, ang: rnd(2.6, 3.0), len: rnd(90, 180) }),
-        boats: () => BOATS, burj: () => BURJ, lobes: () => BURJ.lobes.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL, inc: MIS.inc.length, def: MIS.def.length, booms: MIS.booms.length, ufo: UFO.st, ufoKind: UFO.kind }),
+        boats: () => BOATS, burj: () => BURJ, lobes: () => BURJ.lobes.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL, inc: MIS.inc.length, def: MIS.def.length, booms: MIS.booms.length, ufo: UFO.st, ufoKind: UFO.kind, ufoX: Math.round(UFO.x), ny: +(lastT - NY.t0 < NY.len).toString(), nySparks: NY.sparks.length, drones: DR.list.length && lastT - DR.t0 < DR.len ? DR.list.length : 0 }),
         perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },

@@ -11,7 +11,7 @@ from helpers import *
 
 def _enter_mulc(page):
     """Switch to the אַלּוּפָה multiplication game and wait for a mounted card."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof problems!=='undefined' && problems.length>0 && idx<problems.length"
         " && ptype===TMK && !!document.getElementById('mk-ans') && done===false",
@@ -21,7 +21,7 @@ def _enter_mulc(page):
 def _force_mulc_tmk(page, a, b):
     """Enter אַלּוּפָה, then force ONE mult_champ problem a×b and wait for its card
     (so factor choice is deterministic — needed for the 🔁-switch tests)."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.mult_champ==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -205,7 +205,7 @@ class TestChampMultiplication:
             n = page.evaluate(f"EXERCISES.types.{t}.make('mulc').length")
             assert n == 3, f"{t}.make('mulc') must yield 3 problems (like sup), got {n}"
         # both self-mounting coin types appear in the built mulc deck
-        page.evaluate("setMode('mulc')")
+        enter_mode(page, 'mulc')
         page.wait_for_function(
             "typeof problems!=='undefined' && problems.length>0"
             " && typeof EXERCISES.types.coin_mul==='object'"
@@ -441,7 +441,7 @@ class TestChampMultiplication:
 def _enter_mult_unknown(page, a=3, b=3):
     """Enter אַלּוּפָה, wait for the mult_unknown type + built pool, then force ONE
     a × □ = a·b problem and wait for its card."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.mult_unknown==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -499,7 +499,7 @@ class TestMultUnknown:
         pool = page.evaluate("EXERCISES.types.mult_unknown.make('mulc')")
         assert len(pool) == 3
         assert all(2 <= p["a"] <= 4 and 2 <= p["b"] <= 4 for p in pool), f"bad pool: {pool}"
-        page.evaluate("setMode('mulc')")
+        enter_mode(page, 'mulc')
         page.wait_for_function("problems.length>0", timeout=TIMEOUT)
         assert page.evaluate("problems.some(p=>p.t===TMU)"), \
             "mult_unknown (TMU) must appear in the אַלּוּפָה pool"
@@ -548,7 +548,7 @@ def _dispatch_enter(page, sel, value):
 def _enter_perim(page, problem):
     """Enter אַלּוּפָה, wait for the perimeter type + built pool, then force ONE
     perimeter problem (a JS object literal string) and wait for its board."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.perimeter==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -677,7 +677,7 @@ class TestPerimeter:
 def _enter_compare(page, a, b):
     """Enter אַלּוּפָה, wait for the compare type + built pool, then force ONE
     compare problem."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.compare==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -704,7 +704,7 @@ def _drag_sign(page, op, to_sel=".cp-slot"):
 def _enter_compare_sub(page, a, b, side, op, k, base):
     """Enter אַלּוּפָה, then force ONE compare problem whose `side` carries a
     sub-exercise (`base op k`, resolving to that side's value a/b)."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.compare==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -892,7 +892,7 @@ class TestCompare:
 def _enter_staged_sub(page, mode, a=87, b=23):
     """Enter a staged-column mode, DISABLE the auto-reveal test hook (so the
     horizontal-first stage shows), then force ONE staged subtraction (no-borrow)."""
-    page.evaluate(f"setMode('{mode}')")
+    enter_mode(page, mode)
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.column_sub==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -1023,7 +1023,7 @@ def _enter_triple(page, target=12):
     """Enter אַלּוּפָה, wait for the triple_sum type + built pool, then force ONE
     `__+__+__=target` problem and wait for its board (the real game target varies
     6..12; tests pin it for determinism)."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.triple_sum==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -1145,7 +1145,7 @@ class TestTripleSum:
         """triple_sum is now woven into Queen (mx) and Superman (sup) too, not just
         אַלּוּפָה — and mx never leaves it (a self-mounting type) at slot 0."""
         for mode in ("mx", "sup", "mulc"):
-            page.evaluate(f"setMode('{mode}')")
+            enter_mode(page, mode)
             page.wait_for_function(
                 "typeof problems!=='undefined' && problems.length>0"
                 " && typeof EXERCISES.types.triple_sum==='object'", timeout=TIMEOUT)
@@ -1168,7 +1168,7 @@ class TestTripleSum:
 def _enter_half(page, n=8, k=2):
     """Enter אַלּוּפָה, wait for the half type + built pool, then force ONE
     share-equally problem (n items among k friends) and wait for its board."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.half==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -1333,7 +1333,7 @@ class TestHalfSplit:
 def _enter_plates(page, g=2, s=3):
     """Enter אַלּוּפָה, wait for the plates type + built pool, then force ONE
     groups→total problem and wait for its board."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.plates==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -1447,7 +1447,7 @@ class TestPlates:
 def _enter_ice(page, budget=12, price=2):
     """Enter אַלּוּפָה, wait for the ice_cream type + built pool, then force ONE
     shop problem and wait for its board."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.ice_cream==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -1470,7 +1470,7 @@ class TestIceCreamShop:
         assert sorted(p["b"] for p in pool) == [2, 5, 10], f"one problem per price: {pool}"
         assert all(p["a"] % p["b"] == 0 and 2 <= p["a"] // p["b"] <= 10
                    for p in pool), f"budget must divide exactly into 2..10: {pool}"
-        page.evaluate("setMode('mulc')")
+        enter_mode(page, 'mulc')
         page.wait_for_function(
             "typeof problems!=='undefined' && problems.length>0", timeout=TIMEOUT)
         assert page.evaluate("problems.some(p=>p.t===TIC)"), \
@@ -1600,7 +1600,7 @@ class TestIceCreamShop:
 
 def _load_wordprob(page):
     """Enter אַלּוּפָה (mulc) so the word_prob type file loads, then wait for it."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.word_prob==='object'",
         timeout=TIMEOUT)
@@ -1668,7 +1668,7 @@ class TestWordProblems:
 def _enter_word_chain(page):
     """Enter אַלּוּפָה, wait for the word_chain type + built pool, then force a batch
     of REAL chain stories (from make('wc')) and wait for the first card."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.word_chain==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -1774,7 +1774,7 @@ class TestWordChain:
 
     def test_word_chain_in_mulc_pool(self, page):
         """word_chain (TWC) is woven into the אַלּוּפָה pool."""
-        page.evaluate("setMode('mulc')")
+        enter_mode(page, 'mulc')
         page.wait_for_function(
             "typeof problems!=='undefined' && problems.length>0"
             " && typeof EXERCISES.types.word_chain==='object'", timeout=TIMEOUT)
@@ -1801,7 +1801,7 @@ def _has_niqqud(s):
 def _enter_story(page, mode="mulc"):
     """Enter sup/mulc, wait for the story_quiz type + built pool, then force ONE
     real story card (from make) and wait for its board."""
-    page.evaluate(f"setMode('{mode}')")
+    enter_mode(page, mode)
     page.wait_for_function(
         "typeof EXERCISES!=='undefined' && typeof EXERCISES.types.story_quiz==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -1883,7 +1883,7 @@ class TestStoryQuiz:
                      'coin_mul', 'bagel_cost', 'ice_cream', 'mult_unknown'],
         }
         for mode in ("sup", "mulc"):
-            page.evaluate(f"setMode('{mode}')")
+            enter_mode(page, mode)
             page.wait_for_function(
                 "typeof problems!=='undefined' && problems.length>0"
                 " && typeof EXERCISES.types.story_quiz==='object'"
@@ -2020,7 +2020,7 @@ class TestStoryQuiz:
 def _enter_reading(page, ex, sel):
     """Enter אַלּוּפָה, wait for the given reading module, force ONE of its cards
     and wait for its board (sel = a selector proving the mount)."""
-    page.evaluate("setMode('mulc')")
+    enter_mode(page, 'mulc')
     page.wait_for_function(
         f"typeof EXERCISES!=='undefined' && typeof EXERCISES.types.{ex}==='object'"
         " && typeof problems!=='undefined' && problems.length>0",
@@ -2621,7 +2621,7 @@ class TestReadingBankSize:
               "sent_order": 38, "rhyme": 33}
 
     def test_every_reading_bank_meets_its_floor(self, page):
-        page.evaluate("setMode('mulc')")
+        enter_mode(page, 'mulc')
         page.wait_for_function(
             "typeof EXERCISES!=='undefined' && EXERCISES.types.sent_order"
             " && EXERCISES.types.rhyme && EXERCISES.types.word_match"
@@ -2658,7 +2658,7 @@ class TestReadingBankSize:
                    "word_match": "אריה",      # אריה
                    "cloze": "עצם"}                 # עצם
         for mode in ("sup", "mulc"):
-            page.evaluate(f"setMode('{mode}')")
+            enter_mode(page, mode)
             page.wait_for_function(
                 "typeof problems!=='undefined' && problems.length>0"
                 " && EXERCISES.types.sent_order && EXERCISES.types.rhyme"
@@ -2694,7 +2694,7 @@ class TestLanguageGame:
         """The שפה session mixes EVERY registered reading kind (no rotation cursor
         here — full coverage is the point of this game) and contains NO arithmetic
         card."""
-        page.evaluate("setMode('lang')")
+        enter_mode(page, 'lang')
         page.wait_for_function(
             "typeof problems!=='undefined' && problems.length>0"
             " && ['story_quiz','cloze','true_false','word_match','sent_order','rhyme']"

@@ -11,7 +11,7 @@ class TestSupermanColumnAdd:
     def _enter_sup(self, page, a=17, b=15):
         # the sup pool mixes column-add with big ±1/2 and coin-multiplication
         # problems, so wait for the pool to build, then force a TCA problem
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCA, a: {a}, b: {b}}}; idx = 0; loadProblem()")
@@ -22,7 +22,7 @@ class TestSupermanColumnAdd:
         """Column addition now reaches up to 99: BOTH operands are two-digit and
         the sum stays ≤99 (the result's tens digit is still one digit, never a
         double carry). a∈[13,86], b∈[10, 99−a (≤86)], result ≤ 99."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
         stats = page.evaluate("""(() => {
@@ -82,7 +82,7 @@ class TestSupermanColumnAdd:
         page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(120)
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 13, b: 18}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
@@ -249,7 +249,7 @@ class TestSupermanDigitPreview:
     units digit splits complete-to-ten | remainder."""
 
     def _enter(self, page, a, b):
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(f"problems[0]={{t:TCA,a:{a},b:{b}}}; idx=0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
@@ -338,7 +338,7 @@ class TestColumnSubtraction:
     def _enter_sub(self, page, a=25, b=17):
         # column subtraction now lives inside Superman — build that pool, then
         # force a TCS problem so the column UI mounts.
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCS, a: {a}, b: {b}}}; idx = 0; loadProblem()")
@@ -349,7 +349,7 @@ class TestColumnSubtraction:
         """Entering Superman injects exercises/column_sub.ex.js and mounts it into
         #colx-root (the pool mixes several types, so force a TCS problem to
         guarantee the column UI mounts)."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
@@ -362,7 +362,7 @@ class TestColumnSubtraction:
         BOTH operands two-digit, minuend up to 98 (a∈[23,98], b∈[11,a), a>b);
         BOTH with-borrow and no-borrow occur, and the minuends reach the high
         two-digits — the ceiling was raised to "up to 99" as the child progressed."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
         stats = page.evaluate("""(() => {

@@ -199,7 +199,7 @@ class TestPrizeCount:
         assert "🎁×3" in page.evaluate("document.getElementById('lbsup').textContent")
         assert "🎁×2" in page.evaluate("document.getElementById('lbmulc').textContent"), \
             "mulc keeps its own default ×2 (untouched by setting sup)"
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("typeof problems!=='undefined' && problems.length>0", timeout=TIMEOUT)
         assert "🎁×3" in page.evaluate("document.getElementById('gift-next').textContent")
         page.evaluate("setGiftCount('sup', 1)")        # back to 1 → plain badge

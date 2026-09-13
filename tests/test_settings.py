@@ -96,7 +96,7 @@ class TestModePersistence:
 
     def test_string_mode_survives_refresh(self, page):
         """A string mode (Superman 🦸 — a picker game) restores verbatim."""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function("mode === 'sup' && problems.length > 0", timeout=TIMEOUT)
         page.reload()
         self._ready(page)

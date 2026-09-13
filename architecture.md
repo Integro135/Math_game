@@ -144,17 +144,16 @@ subtraction_game/
 │  │                                     it replaced frozen.bg.js)
 │  ├─ maldives.bg.js
 │  ├─ rumi/                        the roaming character (savanna/dino/reef)
-│  ├─ dubai.bg.js, dubai2.bg.js    legacy, unloaded (superseded by dubai3)
 │  ├─ whales.bg.js                 playground, not game-integrated
 │  ├─ blackhole.html               standalone GR black-hole study (WebGL2) —
 │  │                               the physics space2.bg.js renders its hole with
 │  ├─ space2.html                  thin dev harnesses (one per module):
 │  ├─ unicorns3.html                 open directly in a browser to iterate
-│  ├─ dubai3.html / dubai2.html / dubai_skyline.html   on a scene in isolation
+│  ├─ dubai3.html                  on a scene in isolation
 │  ├─ savanna.html / dinosaurs3.html
 │  ├─ aurora.html / maldives.html
 │  ├─ underwater_happy_reef.html
-│  └─ _verify.js, _verify*.py      per-scene marker/render checks
+│  └─ _verify*.py                  per-scene marker/render checks
 │
 ├─ subtraction_game.html           frozen pruned monolith (superseded, reference)
 ├─ legacy_subtraction_game_v6.52.html   pristine pre-restructure original

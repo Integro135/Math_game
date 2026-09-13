@@ -18,11 +18,13 @@ if(typeof preloadAll==='function' && (typeof introEnabled!=='function'||introEna
 {const _bootMode=mode;
 // (booting into גָּשֵׁר 10 builds its pool below; makeBridgePool advances the
 //  set every build, so reloads alternate instead of always replaying set 1)
+window.POOL_PENDING=true;
 loadExercisesFor(_bootMode,()=>{
   if(mode!==_bootMode)return;
   problems=makePool(_bootMode);
   loadProblem();
   buildGamesMenu();
+  window.POOL_PENDING=false;
 });}
 
 document.addEventListener('keydown',e=>{

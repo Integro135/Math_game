@@ -9,7 +9,7 @@ from helpers import *
 
 class TestBigStepMode:
     def _enter_big(self, page):
-        page.evaluate("setMode('big')")
+        enter_mode(page, 'big')
         page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
         page.wait_for_timeout(150)
 

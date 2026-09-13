@@ -18,6 +18,26 @@ TIMEOUT    = 25_000  # ms
 # Helpers
 # ─────────────────────────────────────────────────────────
 
+def enter_mode(page, m):
+    """setMode(m) starts an ASYNC load of that mode's exercise files; when the
+    LAST one lands, the callback REBUILDS `problems` and re-renders the card.
+    A test that forces its own problem before that callback fires has it wiped a
+    moment later — which is exactly the suite's old order-dependent flake (a
+    different "loads and mounts" test failing on each full run, because whether
+    the .ex.js files were already cached decided who lost the race).
+    core.js raises window.POOL_PENDING for the whole build, so wait for it to
+    clear and the pool is final before the test touches it."""
+    # `m` may be a mode name ('mx'), a level number (10), or — at the call sites
+    # that build it into the JS themselves — a raw JS literal already carrying its
+    # quotes ("'mx'", "20"). Pass a raw literal through untouched.
+    if isinstance(m, str) and (m[:1] in "'\"" or m.isdigit()):
+        lit = m
+    else:
+        lit = repr(m) if isinstance(m, str) else str(m)
+    page.evaluate(f"setMode({lit})")
+    page.wait_for_function("window.POOL_PENDING!==true", timeout=TIMEOUT)
+
+
 def get_state(page) -> dict:
     """Snapshot every relevant JS global in one round-trip."""
     return page.evaluate("""() => ({
@@ -187,9 +207,11 @@ def solve_one(page) -> None:
     Uses wait_for_function for all checks so polling runs inside the browser
     process — robust under CPU load.
     """
-    # Boot/setMode load the pool asynchronously — make sure a real, current
-    # problem is on the board before reading its state (avoids a load race on
-    # the very first solve under heavy CPU load).
+    # Boot/setMode load the pool asynchronously — the callback REBUILDS problems
+    # and re-renders when the last exercise file lands, so solving before it
+    # clears reads a problem that is about to be replaced. POOL_PENDING (core.js)
+    # is the exact edge; the length check below then confirms a real card.
+    page.wait_for_function("window.POOL_PENDING!==true", timeout=TIMEOUT)
     page.wait_for_function(
         "typeof problems !== 'undefined' && problems.length > 0"
         " && idx < problems.length && done === false",

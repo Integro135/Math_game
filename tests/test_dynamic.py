@@ -20,7 +20,7 @@ class TestDynamicExercises:
 
     def test_big_game_uses_big_step(self, page):
         """The dedicated 'big' game builds a 12-problem all-TBG session."""
-        page.evaluate("setMode('big')")
+        enter_mode(page, 'big')
         page.wait_for_function(
             "typeof EXERCISES.types.big_step === 'object'", timeout=TIMEOUT)
         page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
@@ -30,7 +30,7 @@ class TestDynamicExercises:
         """Entering Superman injects exercises/column_add.ex.js and mounts it.
         (The pool also mixes in a couple of big ±1/2 problems, so force a TCA
         problem to guarantee the column UI mounts.)"""
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
         page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
@@ -41,7 +41,7 @@ class TestDynamicExercises:
         """Whole-hundreds addition (TH): appears in BOTH Queen (mx) and Superman
         (sup) pools; operands are whole hundreds + (hundreds|tens), sum ≤ 900;
         200 + 60 = 260 is accepted and a 3-digit answer fits."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function(
             "window.EXERCISES && typeof EXERCISES.types.hundreds === 'object'", timeout=TIMEOUT)
         stats = page.evaluate("""(()=>{
@@ -53,7 +53,7 @@ class TestDynamicExercises:
         assert stats["mx"], "Queen (mx) must include the hundreds type"
         assert stats["bad"] is None, f"invalid hundreds problem: {stats['bad']}"
         # sup pool includes it too
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "window.EXERCISES && typeof EXERCISES.types.hundreds === 'object'", timeout=TIMEOUT)
         sup = page.evaluate("(()=>{let s=false;for(let k=0;k<40;k++){if(makePool('sup').some(p=>p.t===TH))s=true;}return s;})()")
@@ -69,7 +69,7 @@ class TestDynamicExercises:
         """The hundreds number line (revealed after a mistake) starts at the
         FIRST operand and steps by 10 (hundreds+tens) or 100 (hundreds+hundreds),
         with ≤10 ticks so the 3-digit labels fit; the sum sits on the line."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function("window.EXERCISES && EXERCISES.types.hundreds", timeout=TIMEOUT)
         def line_for(a, b, wrong):
             page.evaluate(f"mode='mx';problems=[{{t:TH,a:{a},b:{b}}}];idx=0;report=[];done=false;loadProblem();")
@@ -90,7 +90,7 @@ class TestDynamicExercises:
     def test_hundreds_space_steps_forward(self, page):
         """In the hundreds (addition) exercise, SPACE hops the number line
         FORWARD (right) — it previously defaulted backward."""
-        page.evaluate("setMode('mx')")
+        enter_mode(page, 'mx')
         page.wait_for_function("window.EXERCISES && EXERCISES.types.hundreds", timeout=TIMEOUT)
         page.evaluate("mode='mx';problems=[{t:TH,a:200,b:50}];idx=0;report=[];done=false;loadProblem();")
         page.wait_for_selector("#ans", timeout=TIMEOUT); page.wait_for_timeout(120)
@@ -113,7 +113,7 @@ class TestDynamicExercises:
         "show in column" button; the board (and its inputs) appears only after
         the child taps it. Runs with the auto-reveal test hook OFF."""
         page.evaluate("window.__colxAutoReveal = false")
-        page.evaluate("setMode('sup')")
+        enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object' && "
             "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
@@ -138,14 +138,14 @@ class TestDynamicExercises:
         expected = {"5": 12, "10": 12, "20": 12, "'br'": 25, "'b20'": 15,
                     "'mx'": 20, "'sup'": 20, "'big'": 12}
         for arg, size in expected.items():
-            page.evaluate(f"setMode({arg})")
+            enter_mode(page, arg)
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)
 
     def test_big_step_mixed_into_mx_and_sup(self, page):
         """The big-number ± step type (TBG) is woven into the Queen and Superman
         pools."""
         for arg in ["'mx'", "'sup'"]:
-            page.evaluate(f"setMode({arg})")
+            enter_mode(page, arg)
             page.wait_for_function(
                 "typeof EXERCISES.types.big_step === 'object'", timeout=TIMEOUT)
             page.wait_for_function(
