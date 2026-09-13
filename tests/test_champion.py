@@ -2370,6 +2370,28 @@ class TestSentOrder:
         assert bad["count"] >= 24, f"expected the full bank, got {bad['count']}"
         assert bad["bad"] == [], f"sentences must have distinct words + ≥4 words: {bad['bad']}"
 
+    def test_sent_order_has_no_sentence_with_a_second_natural_order(self, page):
+        """Regression for the two shapes that give a sentence a SECOND correct
+        order, which the exact-string compare then rejects:
+        • LOCATIVE INVERSION after an existential verb — "הַנְּסִיכָה גָּרָה בְּאַרְמוֹן
+          גָּדוֹל" is just as natural as "בְּאַרְמוֹן גָּדוֹל גָּרָה הַנְּסִיכָה" (and the
+          inverted form is the more idiomatic fairy-tale opening).
+        • a REVERSIBLE transitive, where either noun can be the actor —
+          "יָעֵל מְחַבֶּקֶת אֶת הַבֻּבָּה" flips to "הַבֻּבָּה מְחַבֶּקֶת אֶת יָעֵל".
+        Both were found and removed in the 2026-09 bank review; this pins them out
+        and keeps the bank's own rule visible to the next author."""
+        _enter_reading(page, "sent_order", ".so-word")
+        res = page.evaluate("""() => {
+            const pool = EXERCISES.types.sent_order.make('so');
+            const sents = pool.map(p => p.words.join(' '));
+            const BANNED = ['\u05d4\u05b7\u05e0\u05b0\u05bc\u05e1\u05b4\u05d9\u05db\u05b8\u05d4 \u05d2\u05b8\u05bc\u05e8\u05b8\u05d4',
+                            '\u05de\u05b0\u05d7\u05b7\u05d1\u05b6\u05bc\u05e7\u05b6\u05ea \u05d0\u05b6\u05ea \u05d4\u05b7\u05d1\u05bb\u05bc\u05d1\u05b8\u05bc\u05d4'];
+            return {n: sents.length, hits: sents.filter(t => BANNED.some(b => t.includes(b)))};
+        }""")
+        assert res["hits"] == [], \
+            f"these sentences have a second natural word order and must not ship: {res['hits']}"
+        assert res["n"] >= 38, f"the sentence bank must hold >=38 sentences, got {res['n']}"
+
     def test_sent_order_drag_reorders_chosen_words(self, page):
         """A CHOSEN word can be DRAGGED within the strip to change the order: build
         with the first two words swapped (wrong), drag word0 back before word1
@@ -2467,6 +2489,34 @@ class TestRhyme:
         page.wait_for_function("done === true", timeout=TIMEOUT)
         assert page.evaluate("score") == 13
 
+    def test_rhyme_distractors_never_share_the_cue_phoneme(self, page):
+        """The bank guards uniqueness by final LETTER, but ך and ח are the SAME
+        SOUND in Israeli Hebrew — so a ח-final distractor could rhyme with the
+        ך-final pair (מֶלֶךְ/דֶּרֶךְ) even though the letters differ. makeOne now
+        filters distractors by PHONEME (PHON collapses כ and ח). Build many cards
+        and assert no option other than the answer ends on the cue's sound."""
+        _enter_reading(page, "rhyme", ".rh-opt")
+        bad = page.evaluate("""() => {
+            const ex = EXERCISES.types.rhyme;
+            const strip = s => s.replace(/[\u0591-\u05C7]/g, '');
+            const fin = w => {const c = strip(w).slice(-1);
+                return ({'\u05DA':'\u05DB','\u05DD':'\u05DE','\u05DF':'\u05E0',
+                         '\u05E3':'\u05E4','\u05E5':'\u05E6'}[c]) || c;};
+            const phon = c => (c === '\u05DB' || c === '\u05D7') ? 'x' : c;
+            const bad = [];
+            for (let i = 0; i < 300; i++){
+                const card = ex.make('rhy')[0];
+                const cue = phon(fin(card.cue.w));
+                card.opts.forEach((o, k) => {
+                    if (k + 1 === card.a) return;              // the answer may share it
+                    if (phon(fin(o.w)) === cue)
+                        bad.push({cue: card.cue.w, distractor: o.w});
+                });
+            }
+            return bad;
+        }""")
+        assert bad == [], f"a distractor shares the cue's final sound: {bad[:5]}"
+
     def test_rhyme_bank_is_unambiguous(self, page):
         """The pedagogical guard (the cloze/sent_order lesson): in EVERY built card
         exactly ONE option may rhyme with the cue. Mechanically — the answer shares
@@ -2561,6 +2611,73 @@ class TestRhyme:
 # a mixed reading session holding EVERY reading kind (story_quiz / cloze /
 # true_false / word_match / sent_order / rhyme), no arithmetic.
 # ─────────────────────────────────────────────────────────
+
+class TestReadingBankSize:
+    """The reading banks only ever GROW. Each floor is the size shipped after the
+    2026-09 expansion (+62 items); a change that shrinks a bank — a bad merge, a
+    dropped block — fails here instead of quietly serving the same few cards."""
+
+    FLOORS = {"story_quiz": 48, "cloze": 36, "true_false": 36,
+              "sent_order": 38, "rhyme": 33}
+
+    def test_every_reading_bank_meets_its_floor(self, page):
+        page.evaluate("setMode('mulc')")
+        page.wait_for_function(
+            "typeof EXERCISES!=='undefined' && EXERCISES.types.sent_order"
+            " && EXERCISES.types.rhyme && EXERCISES.types.word_match"
+            " && typeof problems!=='undefined' && problems.length>0", timeout=TIMEOUT)
+        got = page.evaluate("""() => {
+            const H = {story_quiz:'story', cloze:'clz', true_false:'tf',
+                       sent_order:'so', rhyme:'rhy'};
+            const out = {};
+            for (const k in H) out[k] = EXERCISES.types[k].make(H[k]).length;
+            // word_match always builds 4 cards — count its PAIR bank instead
+            const seen = new Set();
+            for (let i = 0; i < 60; i++)
+                for (const c of EXERCISES.types.word_match.make('wm'))
+                    for (const p of c.pairs) seen.add(p.w);
+            out.word_match = seen.size;
+            return out;
+        }""")
+        short = {k: (got[k], f) for k, f in self.FLOORS.items() if got[k] < f}
+        assert not short, f"reading banks below their floor (got, floor): {short}"
+        assert got["word_match"] >= 42, \
+            f"the word-match pair bank must hold >=42 pairs, got {got['word_match']}"
+
+    def test_new_reading_items_reach_superman_and_champion(self, page):
+        """The banks are shared: ONE bank per module feeds the שפה game, Superman
+        and אַלּוּפָה alike (problems.js _readingCards calls the same make()). Prove
+        it with items added in the 2026-09 expansion — each must actually turn up
+        in BOTH decks."""
+        # consonant skeletons of words that exist ONLY in the new items —
+        # compared with the niqqud stripped, so a vowel-mark typo in the test
+        # can never masquerade as a missing bank entry
+        NEEDLES = {"sent_order": "הדיג",       # הדיג (the dagesh doubles the yud in sound, not in writing)
+                   "true_false": "איתן",      # איתן
+                   "rhyme": "אגס",                 # אגס
+                   "word_match": "אריה",      # אריה
+                   "cloze": "עצם"}                 # עצם
+        for mode in ("sup", "mulc"):
+            page.evaluate(f"setMode('{mode}')")
+            page.wait_for_function(
+                "typeof problems!=='undefined' && problems.length>0"
+                " && EXERCISES.types.sent_order && EXERCISES.types.rhyme"
+                " && EXERCISES.types.word_match", timeout=TIMEOUT)
+            hit = page.evaluate("""([mode, needles]) => {
+                const R = [TSQ,TCZ,TTF,TWM,TSO,TRH], hit = {};
+                // 400 decks: one kind sits out per game and each bank serves one
+                // card per deck, so a 38-entry bank needs a few hundred draws
+                // before every single entry is near-certain to have appeared
+                for (let g = 0; g < 400; g++) for (const p of makePool(mode)){
+                    if (!R.includes(p.t)) continue;
+                    const blob = JSON.stringify(p).replace(/[֑-ׇ]/g, '');
+                    for (const k in needles) if (blob.includes(needles[k])) hit[k] = (hit[k]||0) + 1;
+                }
+                return hit;
+            }""", [mode, NEEDLES])
+            missing = [k for k in NEEDLES if k not in hit]
+            assert not missing, f"{mode}: new bank items never served: {missing}"
+
 
 class TestLanguageGame:
     def test_lang_registered_under_medium_with_picker_button(self, page):

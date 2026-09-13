@@ -54,6 +54,15 @@ window.EXERCISES.types.rhyme=(()=>{
     {a:{e:'🎁',w:'מַתָּנָה'},    b:{e:'🖼️',w:'תְּמוּנָה'},    sound:'נָה', end:'ה'},
     {a:{e:'🧀',w:'גְּבִינָה'},   b:{e:'⛵',w:'סְפִינָה'},     sound:'אִינָה',end:'ה'},
     {a:{e:'🤴',w:'מֶלֶךְ'},     b:{e:'🛣️',w:'דֶּרֶךְ'},      sound:'אֶךְ', end:'כ'},
+    {a:{e:'🍋',w:'לִימוֹן'},   b:{e:'🏰',w:'אַרְמוֹן'},     sound:'מוֹן',end:'נ'},
+    {a:{e:'🍯',w:'דְּבַשׁ'},     b:{e:'🐍',w:'נָחָשׁ'},       sound:'אַשׁ', end:'ש'},
+    {a:{e:'🐜',w:'נְמָלָה'},    b:{e:'👗',w:'שִׂמְלָה'},      sound:'לָה', end:'ה'},
+    {a:{e:'🛋️',w:'סַפָּה'},     b:{e:'🗺️',w:'מַפָּה'},       sound:'פָּה', end:'ה'},
+    {a:{e:'🍓',w:'תּוּת'},     b:{e:'🏪',w:'חֲנוּת'},      sound:'וּת', end:'ת'},
+    {a:{e:'🔦',w:'פָּנָס'},     b:{e:'🍐',w:'אַגָּס'},       sound:'אַס', end:'ס'},
+    {a:{e:'🦅',w:'נֶשֶׁר'},     b:{e:'🌉',w:'גֶּשֶׁר'},       sound:'אֶשֶׁר',end:'ר'},
+    {a:{e:'🔨',w:'פַּטִּישׁ'},    b:{e:'🕷️',w:'עַכָּבִישׁ'},     sound:'אִישׁ',end:'ש'},
+    {a:{e:'🦷',w:'שֵׁן'},      b:{e:'🛡️',w:'מָגֵן'},       sound:'אֵן', end:'נ'},
   ];
 
   /* THE DISTRACTOR POOL — familiar picturable words, NONE of them a bank word
@@ -94,6 +103,10 @@ window.EXERCISES.types.rhyme=(()=>{
     return BANK[_last];
   }
 
+  // ך and ח are one phoneme in Israeli Hebrew, so a ח-word could rhyme with a
+  // ך-word even though the letters differ — collapse them to one sound key
+  const PHON=c=>({'כ':'x','ח':'x'}[c]||c);
+
   function makeOne(entry){
     // either member may be the cue; the other is then the rhyming answer
     const flip=Math.random()<.5;
@@ -102,7 +115,7 @@ window.EXERCISES.types.rhyme=(()=>{
     // from each other
     const bad=[];
     for(const d of sh(DISTRACTORS.slice())){
-      if(d.end===entry.end)continue;
+      if(PHON(d.end)===PHON(entry.end))continue;   // same SOUND, not just the same letter
       if(bad.some(x=>x.end===d.end))continue;
       bad.push(d);
       if(bad.length===2)break;

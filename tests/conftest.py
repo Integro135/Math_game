@@ -16,6 +16,14 @@ from helpers import GAME_URL, CHROME_EXE, TIMEOUT
 # =============================================================================
 
 _DESC = {
+    "test_every_reading_bank_meets_its_floor":
+        "reading banks only grow: every bank meets its post-expansion floor",
+    "test_new_reading_items_reach_superman_and_champion":
+        "the shared banks feed Superman AND אלופה: new items appear in both decks",
+    "test_sent_order_has_no_sentence_with_a_second_natural_order":
+        "no sentence with locative inversion or a reversible transitive ships",
+    "test_rhyme_distractors_never_share_the_cue_phoneme":
+        "rhyme distractors filtered by SOUND (כ/ח are one phoneme), not by letter",
     "test_perfect_run_produces_all_check_marks":
         "12/12 correct on first try -> grade 1000, every row marked correct",
     "test_wrong_then_correct_flagged_in_report":

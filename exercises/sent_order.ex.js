@@ -9,7 +9,7 @@
    reading. The scramble is guaranteed ≠ the correct order.
 
    Problem: { t:TSO, words:[…correct order], scr:[…scrambled], a:word count }
-   (a → num1). Bank of 24 sentences via a NO-REPEAT shuffled-queue rotation.
+   (a → num1). Bank of 37 sentences via a NO-REPEAT shuffled-queue rotation.
    Interactive: core.js _colxMount into #colx-root; aidsReveal 'always'. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.sent_order=(()=>{
@@ -19,7 +19,11 @@ window.EXERCISES.types.sent_order=(()=>{
   /* THE BANK — simple 4-word sentences with EXACTLY ONE natural everyday order,
      so the string comparison never rejects a legitimate alternative. AVOID:
      • a dative + object ("אִמָּא קוֹרֵאת סִפּוּר לַיְּלָדִים" ↔ "…לַיְּלָדִים סִפּוּר" — both fine)
-     • two adjuncts/PPs that can swap ("מְשַׂחֲקִים בַּכַּדּוּר בֶּחָצֵר" ↔ "…בֶּחָצֵר בַּכַּדּוּר").
+     • two adjuncts/PPs that can swap ("מְשַׂחֲקִים בַּכַּדּוּר בֶּחָצֵר" ↔ "…בֶּחָצֵר בַּכַּדּוּר")
+     • LOCATIVE INVERSION after an existential verb ("הַנְּסִיכָה גָּרָה בְּאַרְמוֹן גָּדוֹל" ↔
+       "בְּאַרְמוֹן גָּדוֹל גָּרָה הַנְּסִיכָה" — the second is the more natural fairy-tale opening)
+     • a REVERSIBLE transitive, where both nouns can act ("יָעֵל מְחַבֶּקֶת אֶת הַבֻּבָּה" ↔
+       "הַבֻּבָּה מְחַבֶּקֶת אֶת יָעֵל").
      PREFER: Subject–Verb–Object–Adjective (adjective locked after its noun) or
      Subject–Verb–single-PP(–Adjective). No duplicate words (unambiguous compare). */
   const BANK=[
@@ -34,7 +38,7 @@ window.EXERCISES.types.sent_order=(()=>{
     'הַפִּיל שׁוֹתֶה מַיִם קָרִים',
     'שָׂרָה לוֹבֶשֶׁת שִׂמְלָה וְרֻדָּה',
     'הַצִּפּוֹר שָׁרָה שִׁיר יָפֶה',
-    'הַנְּסִיכָה גָּרָה בְּאַרְמוֹן גָּדוֹל',
+    'הַנְּסִיכָה פּוֹגֶשֶׁת צְפַרְדֵּעַ יְרֻקָּה',
     'הַתִּינוֹק הַקָּטָן יָשֵׁן בָּעֲגָלָה',
     'סַבָּא שׁוֹתֶה תֵּה חַם',
     'הַיַּלְדָּה קוֹרֵאת סֵפֶר מְעַנְיֵן',
@@ -47,6 +51,20 @@ window.EXERCISES.types.sent_order=(()=>{
     'הָאַרְנָב קוֹפֵץ עַל הַדֶּשֶׁא',
     'הַגַּנָּן מַשְׁקֶה אֶת הַפְּרָחִים',
     'הַנַּגָּר בּוֹנֶה כִּסֵּא חָדָשׁ',
+    'סַבְתָּא אוֹפָה עוּגַת שׁוֹקוֹלָד',
+    'הַדַּיָּג תּוֹפֵס דָּג גָּדוֹל',
+    'הַחַיָּט תּוֹפֵר מְעִיל אָפֹר',
+    'הַקּוֹף מְקַלֵּף בָּנָנָה צְהֻבָּה',
+    'נֹעָה קוֹטֶפֶת פֶּרַח סָגֹל',
+    'הַנְּמָלָה סוֹחֶבֶת פֵּרוּר קָטָן',
+    'הָרוֹעֶה סוֹפֵר אֶת הַכְּבָשִׂים',
+    'הַשּׁוֹטֵר עוֹצֵר אֶת הַמְּכוֹנִית',
+    'הַדּוֹד מְתַקֵּן אֶת הָאוֹפַנַּיִם',
+    'הַמּוֹרָה כּוֹתֶבֶת עַל הַלּוּחַ',
+    'תָּמָר רוֹכֶבֶת עַל הַסּוּס',
+    'מִיכַל מְנַגֶּנֶת בַּפְּסַנְתֵּר הֶחָדָשׁ',
+    'הַכַּדּוּר מִתְגַּלְגֵּל עַל הָרִצְפָּה',
+    'אוּרִי מְנַפֵּחַ בַּלּוֹן אָדֹם',
   ];
 
   let _q=null,_last=-1;
