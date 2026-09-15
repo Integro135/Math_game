@@ -283,7 +283,15 @@ crossing the fountain lake, every promenade lamp flickering on its own),
 `drawSailLife` (the Burj Al Arab's exoskeleton lighting up rung by rung after
 dark, the JBH's windows twinkling). Together they cost about 0.5 ms a frame.
 
-**The sun and the moon ride the hour** (`sunAt(ph)`, `moonAt(ph)`). Both are
+**The sun and the moon ride the hour** (`sunAt(ph)`, `moonAt(ph)`,
+`drawSunMoon`). They are drawn LIVE, between the sky blit and the city blit —
+not into the still layer. That layer is rebuilt only on a look-key change, 24
+times a cycle, so painting them there made both TELEPORT every ~11 s; live they
+glide a few pixels a frame and still pass behind the skyline. The still layer is
+split in two for it (`skyL` the sky alone, `cityL` the city over a transparent
+sky) and the water mirror is built from a scratch composite of the two
+(`mirL`, once per repaint). The sun's broad glow travels with it; the crescent
+is baked once (`moonSprite`) since it is now drawn every frame. Both are
 placed on an arc from the day phase instead of being pinned: the sun starts
 high right of centre (a ROUND disc — it only squashes by refraction in the
 last 90 px above the waterline, and its halo shares that aspect), sinks left
@@ -1326,10 +1334,32 @@ fish once per ~3 min (staggered), a short wavy strand trails from the vent,
 lets go, sinks and fades — never click-driven. Every action blows a bubble
 puff (`puff`).
 
+**Coral life (2026-09-15).** The hard corals stay baked, but every painter
+REGISTERS its living parts while it paints (`coralReg`, `polyp`, and the
+`WORMS` / `VENTS` / `FRINGES` lists; the registry is cleared and rebuilt with
+the still layers on every resize, `PAINT_FORE` tags what belongs to the fore
+band). `drawCoralLife` then animates them per frame in a handful of batched
+paths (~0.3 ms): **polyps** (brain grooves, boulder domes, table plates,
+lettuce leaf-edges, finger caps, staghorn tips) pulse in a slow wave that
+travels across the reef — a soft halo under a bright core, four colour
+buckets × two passes — and PULL IN (`CORALS[].ret`) when a fish brushes past
+(checked every 3rd frame against the fish list) or the coral is tapped, then
+creep back out over a few seconds; **christmas-tree worms** are drawn live
+(scaled in y by `ext`) and dart into their tubes when their coral is startled;
+**sponge openings** breathe (a pulsing `glow` sprite) and let out specks
+(`SPECKS`); **mushroom corals** wave a fringe of short tentacles round the
+rim; the two **giant clams** are LIVE elements (`CLAMS`, `paintClam(g, K,
+open, t)`) — they gape slowly, their mantle spots shimmer blue↔green, and they
+SNAP SHUT (`snapClam`) when a fish comes close or on tap, reopening after
+~3 s. **Tap any coral → coral spawning**: `spawnCoral` releases a cloud of 40
+pink/orange eggs (`EGGS`) that drift up with the current for 7 s. Hooks:
+`corals()` (counts), `startle()`, `spawn(i)`, `clam()`.
+
 **Rendering cost.** Measured in the real game with `_perf_reef2.py` (main-thread
 work via CDP `Performance.getMetrics`, since headless frame gaps here are
 noise): ~8.5% main-thread busy and **~1.8 ms of draw per frame**, against
-dubai3 at ~8.5% / 0.9 ms and aurora at ~14% / 1.6 ms. Getting there took five
+dubai3 at ~8.5% / 0.9 ms and aurora at ~14% / 1.6 ms (with the coral life of
+2026-09-15 on and every hook firing: ~10% / 3.0 ms). Getting there took five
 things, each of which matters if the scene is edited further:
 1. **The crowns are baked.** Repainting 400+ anemone tentacles every frame was
    a third of the budget. Each crown is now painted ONCE into three layers

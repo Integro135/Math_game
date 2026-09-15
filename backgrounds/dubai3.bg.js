@@ -172,7 +172,7 @@
       }
 
       // ── layers ──
-      let cityL = null, reflL = null, skyL = null, fxL = null;   // still city (per look-key) · its water mirror · sky · scratch
+      let skyL = null, cityL = null, reflL = null, mirL = null;  // still SKY · still city over a transparent sky · the water mirror · a scratch composite for it
       let B_SKY = 0;                                             // the sky is only blitted down to where the city is opaque
 
       // ═══════════════════════════ THE STILL CITY ═══════════════════════════
@@ -183,24 +183,10 @@
         g.fillRect(-400, -400, DW + 800, HZ + 400);
         // the sun's glow, low left, and its band along the whole horizon
         g.save(); g.globalCompositeOperation = 'lighter';
-        const SUN = sunAt(L.ph);
-        g.fillStyle = rg(g, SUN.x, Math.min(SUN.y, HZ - 4), 0, 620, [[0, rgb(L.glow, 0.85 * L.glowA)], [0.25, rgb(L.glow, 0.32 * L.glowA)], [0.6, rgb(L.glow, 0.08 * L.glowA)], [1, rgb(L.glow, 0)]]);
-        g.fillRect(-400, 0, DW + 800, HZ);
+        // (the sun's own glow travels with it and is drawn LIVE — see
+        //  drawSunMoon — so it glides instead of stepping with the look-key)
         g.fillStyle = lg(g, 0, HZ - 220, 0, HZ, [[0, rgb(L.haze, 0)], [1, rgb(L.haze, L.hazeA)]]);
         g.fillRect(-400, HZ - 220, DW + 800, 220);
-        // the sun itself, a flattened disc sinking into the haze
-        if (L.sun > 0.02 && SUN.y < HZ + 40){
-          // it flattens and reddens as it meets the haze at the waterline
-          // ROUND all the way down, and only squashed by refraction in the last
-          // 90 px above the waterline — the halo shares the core's aspect, so the
-          // disc never reads as an ellipse hanging in a clear sky
-          const low = clamp01((SUN.y - (HZ - 90)) / 90), R = 30;
-          const rx = R * (1 + 0.55 * low), ry = R * (1 - 0.22 * low);
-          g.fillStyle = rg(g, SUN.x, SUN.y, 0, 100, [[0, rgb(mixc([255, 245, 220], [255, 170, 90], low), 0.95 * L.sun)], [0.3, rgb(mixc([255, 215, 150], [255, 140, 70], low), 0.6 * L.sun)], [1, rgb([255, 190, 120], 0)]]);
-          g.beginPath(); g.ellipse(SUN.x, SUN.y, rx * 2.1, ry * 2.1, 0, 0, TAU); g.fill();
-          g.fillStyle = rgb(mixc([255, 250, 235], [255, 165, 80], low), 0.92 * L.sun);
-          g.beginPath(); g.ellipse(SUN.x, SUN.y, rx, ry, 0, 0, TAU); g.fill();
-        }
         g.restore();
         // cirrus: long streaks lit from below near the horizon, cooler higher up
         for (let i = 0; i < 14; i++){
@@ -223,19 +209,55 @@
           }
         }
         // the moon: high right of centre, a waxing crescent with earthshine
+      }
+
+
+      // ── the sun and the moon, drawn LIVE ────────────────────────────────────
+      //    They ride `look().ph`, which advances every frame — but the still city
+      //    layer is only rebuilt 24 times a cycle, so painting them there made
+      //    both teleport once every ~11 s. They are drawn per frame instead,
+      //    between the sky blit and the city blit, so the motion is smooth AND
+      //    they still pass behind the skyline.
+      // the crescent: a disc with the bite CUT OUT, so the dark side stays sky
+      // and carries only a breath of earthshine. Baked once — it is drawn every
+      // frame now, and allocating a canvas per frame would be absurd.
+      let _moonCv = null;
+      function moonSprite(R){
+        if (_moonCv) return _moonCv;
+        const mc = doc.createElement('canvas'); mc.width = mc.height = Math.ceil(R * 2.4 * 4);
+        const q = mc.getContext('2d'); q.setTransform(4, 0, 0, 4, 0, 0); const c = R * 1.2;
+        q.fillStyle = lg(q, c - R, c, c + R, c, [[0, '#fff6dc'], [1, '#e8d8a8']]); q.beginPath(); q.arc(c, c, R, 0, TAU); q.fill();
+        q.globalCompositeOperation = 'destination-out'; q.beginPath(); q.arc(c - R * 0.55, c - R * 0.08, R * 0.9, 0, TAU); q.fill();
+        q.globalCompositeOperation = 'source-over'; q.fillStyle = 'rgba(190,200,240,0.10)'; q.beginPath(); q.arc(c, c, R, 0, TAU); q.fill();
+        return (_moonCv = mc);
+      }
+      function drawSunMoon(g, L){
+        const SUN = sunAt(L.ph);
+        g.save(); g.globalCompositeOperation = 'lighter';
+        // the broad glow it throws into the sky, travelling with it
+        g.fillStyle = rg(g, SUN.x, Math.min(SUN.y, HZ - 4), 0, 620, [[0, rgb(L.glow, 0.85 * L.glowA)], [0.25, rgb(L.glow, 0.32 * L.glowA)], [0.6, rgb(L.glow, 0.08 * L.glowA)], [1, rgb(L.glow, 0)]]);
+        g.fillRect(-400, 0, DW + 800, HZ);
+        // the sun itself, a flattened disc sinking into the haze
+        if (L.sun > 0.02 && SUN.y < HZ + 40){
+          // it flattens and reddens as it meets the haze at the waterline
+          // ROUND all the way down, and only squashed by refraction in the last
+          // 90 px above the waterline — the halo shares the core's aspect, so the
+          // disc never reads as an ellipse hanging in a clear sky
+          const low = clamp01((SUN.y - (HZ - 90)) / 90), R = 30;
+          const rx = R * (1 + 0.55 * low), ry = R * (1 - 0.22 * low);
+          g.fillStyle = rg(g, SUN.x, SUN.y, 0, 100, [[0, rgb(mixc([255, 245, 220], [255, 170, 90], low), 0.95 * L.sun)], [0.3, rgb(mixc([255, 215, 150], [255, 140, 70], low), 0.6 * L.sun)], [1, rgb([255, 190, 120], 0)]]);
+          g.beginPath(); g.ellipse(SUN.x, SUN.y, rx * 2.1, ry * 2.1, 0, 0, TAU); g.fill();
+          g.fillStyle = rgb(mixc([255, 250, 235], [255, 165, 80], low), 0.92 * L.sun);
+          g.beginPath(); g.ellipse(SUN.x, SUN.y, rx, ry, 0, 0, TAU); g.fill();
+        }
+        g.restore();
         { const MOON = moonAt(L.ph), mx = MOON.x, my = MOON.y, R = 24;
           if (my < HZ - 30) {
           g.save(); g.globalCompositeOperation = 'lighter';
           g.fillStyle = rg(g, mx, my, R * 0.6, R * 5, [[0, 'rgba(255,240,210,0.16)'], [1, 'rgba(255,240,210,0)']]); g.fillRect(mx - R * 5, my - R * 5, R * 10, R * 10);
           g.restore();
-          // the crescent is painted on a scratch canvas (disc minus bite) so the
-          // dark side stays SKY, with only a breath of earthshine on it
-          const mc = doc.createElement('canvas'); mc.width = mc.height = Math.ceil(R * 2.4 * 4);
-          const q = mc.getContext('2d'); q.setTransform(4, 0, 0, 4, 0, 0); const c = R * 1.2;
-          q.fillStyle = lg(q, c - R, c, c + R, c, [[0, '#fff6dc'], [1, '#e8d8a8']]); q.beginPath(); q.arc(c, c, R, 0, TAU); q.fill();
-          q.globalCompositeOperation = 'destination-out'; q.beginPath(); q.arc(c - R * 0.55, c - R * 0.08, R * 0.9, 0, TAU); q.fill();
-          q.globalCompositeOperation = 'source-over'; q.fillStyle = 'rgba(190,200,240,0.10)'; q.beginPath(); q.arc(c, c, R, 0, TAU); q.fill();   // earthshine
-          g.drawImage(mc, mx - c, my - c, c * 2, c * 2); } }
+          const c = R * 1.2;
+          g.drawImage(moonSprite(R), mx - c, my - c, c * 2, c * 2); } }
       }
 
       // ── far haze skyline (two depth layers, silhouettes only) ──
@@ -838,8 +860,9 @@
         tower({ x: 1194, w: 26, h: 150, crown: 'flat', pal: 3, seed: 18, podium: 20, floor: 10 });      // the Dubai Mall front, clear of the Burj's western feet
         for (let i = 0; i < 26; i++){ const x = -60 + i * 68 + psr(i + 900) * 30; if (x < 300 || (x > LAKE.x0 - 20 && x < LAKE.x1 + 20)) continue; PALMS.push({ x, s: 0.8 + psr(i + 901) * 0.5, lean: psr(i + 902) < 0.5 ? -1 : 1, ph: psr(i + 903) * TAU }); }
       }
+      // the city WITHOUT its sky — painted over a transparent top so the live
+      // sun and moon can pass behind it
       function paintCity(g, L){
-        paintSky(g, L);
         paintFar(g, L);
         // depth order: far-left island, Marina, wheel behind its towers? — the
         // wheel stands in FRONT of the Marina (it is on the water), so: towers,
@@ -872,7 +895,7 @@
         const g = reflL.cx, d = reflL.dpr;
         g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, reflL.cv.width, reflL.cv.height); g.restore();
         // the city mirrored around the waterline, sliced with a horizontal wobble
-        const src = cityL.cv, sd = cityL.dpr, hzS = OY + HZ * S;
+        const src = mirL.cv, sd = mirL.dpr, hzS = OY + HZ * S;
         const slice = 3 * S, depth = (H - hzS);
         for (let y = 0; y < depth; y += slice){
           const k = y / depth, wob = Math.sin(y * 0.11 + 1.7) * 3.5 * S * (0.3 + k) + Math.sin(y * 0.031) * 2 * S;
@@ -894,11 +917,24 @@
 
       // ── build / resize ──
       function repaint(L){
-        const g = cityL.cx;
-        g.save(); g.setTransform(cityL.dpr, 0, 0, cityL.dpr, 0, 0); g.clearRect(0, 0, cityL.cv.width, cityL.cv.height); g.restore();
-        g.save(); g.setTransform(cityL.dpr * S, 0, 0, cityL.dpr * S, cityL.dpr * OX, cityL.dpr * OY);
-        paintCity(g, L); paintWater(g, L);
-        g.restore();
+        for (const lay of [skyL, cityL]){
+          const g = lay.cx;
+          g.save(); g.setTransform(lay.dpr, 0, 0, lay.dpr, 0, 0); g.clearRect(0, 0, lay.cv.width, lay.cv.height); g.restore();
+        }
+        { const g = skyL.cx;
+          g.save(); g.setTransform(skyL.dpr * S, 0, 0, skyL.dpr * S, skyL.dpr * OX, skyL.dpr * OY);
+          paintSky(g, L); g.restore(); }
+        { const g = cityL.cx;
+          g.save(); g.setTransform(cityL.dpr * S, 0, 0, cityL.dpr * S, cityL.dpr * OX, cityL.dpr * OY);
+          paintCity(g, L); paintWater(g, L); g.restore(); }
+        // the mirror needs the WHOLE picture, so compose the two into a scratch
+        // layer first (once per repaint, not per frame)
+        { const g = mirL.cx;
+          g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+          g.clearRect(0, 0, mirL.cv.width, mirL.cv.height);
+          g.drawImage(skyL.cv, 0, 0, mirL.cv.width, mirL.cv.height);
+          g.drawImage(cityL.cv, 0, 0, mirL.cv.width, mirL.cv.height);
+          g.restore(); }
         buildRefl(L);
         GCACHE = {};
       }
@@ -912,7 +948,8 @@
         canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
         // cover-fit, bottom-anchored: the waterline keeps its place, wide windows crop the sides
         S = Math.max(W / DW, H / DH); OX = (W - DW * S) / 2; OY = H - DH * S;
-        cityL = makeLayer(W, H, DPR); reflL = makeLayer(W, H, 0.5);
+        skyL = makeLayer(W, H, DPR); cityL = makeLayer(W, H, DPR);
+        mirL = makeLayer(W, H, 0.5); reflL = makeLayer(W, H, 0.5);
         lookKey = -1; GCACHE = {};
         repaintIfNeeded(lastT);
       }
@@ -1657,6 +1694,10 @@
         repaintIfNeeded(t);
         const L = LOOK;
         const sh = shakeAmp(t), shx = sh * S, shy = sh * 0.4 * S;    // a kill shakes the picture
+        ctx.drawImage(skyL.cv, shx, shy, W, H);
+        ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * (OX + shx), DPR * (OY + shy));
+        drawSunMoon(ctx, L);                                        // live, so they glide instead of stepping
+        ctx.restore();
         ctx.drawImage(cityL.cv, shx, shy, W, H);
         mark('city');
         ctx.drawImage(reflL.cv, shx, shy, W, H);
