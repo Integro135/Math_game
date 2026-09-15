@@ -191,10 +191,14 @@
         // the sun itself, a flattened disc sinking into the haze
         if (L.sun > 0.02 && SUN.y < HZ + 40){
           // it flattens and reddens as it meets the haze at the waterline
-          const low = clamp01((SUN.y - (HZ - 150)) / 150), ry = 30 - 8 * low, rx = 30 + 30 * low;
-          g.fillStyle = rg(g, SUN.x, SUN.y, 0, 90, [[0, rgb(mixc([255, 245, 220], [255, 170, 90], low), 0.95 * L.sun)], [0.3, rgb(mixc([255, 215, 150], [255, 140, 70], low), 0.65 * L.sun)], [1, rgb([255, 190, 120], 0)]]);
-          g.beginPath(); g.ellipse(SUN.x, SUN.y, rx * 2, ry * 1.4, 0, 0, TAU); g.fill();
-          g.fillStyle = rgb(mixc([255, 250, 235], [255, 165, 80], low), 0.9 * L.sun);
+          // ROUND all the way down, and only squashed by refraction in the last
+          // 90 px above the waterline — the halo shares the core's aspect, so the
+          // disc never reads as an ellipse hanging in a clear sky
+          const low = clamp01((SUN.y - (HZ - 90)) / 90), R = 30;
+          const rx = R * (1 + 0.55 * low), ry = R * (1 - 0.22 * low);
+          g.fillStyle = rg(g, SUN.x, SUN.y, 0, 100, [[0, rgb(mixc([255, 245, 220], [255, 170, 90], low), 0.95 * L.sun)], [0.3, rgb(mixc([255, 215, 150], [255, 140, 70], low), 0.6 * L.sun)], [1, rgb([255, 190, 120], 0)]]);
+          g.beginPath(); g.ellipse(SUN.x, SUN.y, rx * 2.1, ry * 2.1, 0, 0, TAU); g.fill();
+          g.fillStyle = rgb(mixc([255, 250, 235], [255, 165, 80], low), 0.92 * L.sun);
           g.beginPath(); g.ellipse(SUN.x, SUN.y, rx, ry, 0, 0, TAU); g.fill();
         }
         g.restore();
@@ -1051,7 +1055,7 @@
       //    easing to its own point with a little drift so the figure breathes.
       //    Parked in the LEFT pocket of sky on purpose: the game card sits in the
       //    middle, so a formation there would be hidden behind it.
-      const DR = { n: 64, cx: 300, cy: 250, r: 128, t0: -99, len: 34, list: [], shape: 0 };
+      const DR = { n: 44, cx: 300, cy: 245, r: 150, t0: -99, len: 34, list: [], shape: 0 };
       const SHAPES = ['star', 'heart', 'palm', 'ring'];
       function shapePoint(kind, i, n){
         const u = i / n;
@@ -1110,11 +1114,52 @@
           d.px = d.px || tx; d.py = d.py || ty;
           d.px += (tx - d.px) * Math.min(1, dt * 4.5); d.py += (ty - d.py) * Math.min(1, dt * 4.5);
           const hue = (d.hue + e * 26 + si * 70) % 360;
-          const a = fade * (0.55 + 0.45 * Math.sin(t * 3 + d.ph));
-          g.fillStyle = 'hsla(' + hue + ',100%,72%,' + a + ')';
-          g.beginPath(); g.arc(d.px, d.py, 2.1, 0, TAU); g.fill();
-          g.globalAlpha = a * 0.5; g.drawImage(sprite('white'), d.px - 9, d.py - 9, 18, 18); g.globalAlpha = 1;
+          const a = fade * (0.7 + 0.3 * Math.sin(t * 3 + d.ph));
+          drawDrone(g, d, hue, a, t, tx - d.px);
         }
+        g.restore();
+      }
+      // one machine: a body, four arms, four rotor discs blurred by their own
+      // spin, skids, a white nav strobe and the coloured belly light that draws
+      // the figure. Small — but at this size it still reads as a quadcopter
+      // rather than a dot, which is the whole point of a drone show.
+      function drawDrone(g, d, hue, a, t, vx){
+        const S2 = 4.6, tilt = Math.max(-0.5, Math.min(0.5, vx * 0.05));   // it banks the way it is heading
+        g.save(); g.translate(d.px, d.py); g.rotate(tilt);
+        g.globalAlpha = a;
+        // the glow it throws, so the formation still reads from far away
+        g.globalAlpha = a * 0.20; g.drawImage(sprite('white'), -S2 * 2.4, -S2 * 2.4, S2 * 4.8, S2 * 4.8); g.globalAlpha = a;
+        // arms
+        g.strokeStyle = 'rgba(232,238,250,0.95)'; g.lineWidth = 0.9; g.lineCap = 'round';
+        g.beginPath();
+        g.moveTo(-S2, -S2 * 0.62); g.lineTo(S2, S2 * 0.62);
+        g.moveTo(-S2, S2 * 0.62); g.lineTo(S2, -S2 * 0.62);
+        g.stroke();
+        // four rotor discs, blurred by the spin
+        const blur = 0.55 + 0.45 * Math.sin(t * 22 + d.ph);
+        g.strokeStyle = 'rgba(210,225,255,' + (0.45 + 0.3 * blur) + ')'; g.lineWidth = 0.7;
+        for (const [ox, oy] of [[-S2, -S2 * 0.62], [S2, S2 * 0.62], [-S2, S2 * 0.62], [S2, -S2 * 0.62]]){
+          g.beginPath(); g.ellipse(ox, oy, S2 * 0.62, S2 * 0.2 + S2 * 0.16 * blur, 0, 0, TAU); g.stroke();
+        }
+        // the body and its skids
+        g.fillStyle = 'rgba(30,36,54,0.95)';
+        g.beginPath(); g.ellipse(0, 0, S2 * 0.52, S2 * 0.36, 0, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(225,232,248,0.9)'; g.fillRect(-S2 * 0.5, -S2 * 0.34, S2, S2 * 0.2);
+        g.strokeStyle = 'rgba(200,212,236,0.8)'; g.lineWidth = 0.6;
+        g.beginPath(); g.moveTo(-S2 * 0.4, S2 * 0.3); g.lineTo(-S2 * 0.5, S2 * 0.62);
+        g.moveTo(S2 * 0.4, S2 * 0.3); g.lineTo(S2 * 0.5, S2 * 0.62); g.stroke();
+        // the belly light — this is the pixel that paints the figure
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = a * 0.55;                                        // a COLOURED halo, so the figure reads in its own hue
+        g.fillStyle = 'hsla(' + hue + ',100%,62%,1)';
+        g.beginPath(); g.arc(0, S2 * 0.36, S2 * 1.15, 0, TAU); g.fill();
+        g.globalAlpha = a;
+        g.fillStyle = 'hsla(' + hue + ',100%,72%,1)';
+        g.beginPath(); g.arc(0, S2 * 0.36, S2 * 0.46, 0, TAU); g.fill();
+        g.fillStyle = 'hsla(' + hue + ',100%,94%,1)';
+        g.beginPath(); g.arc(0, S2 * 0.36, S2 * 0.2, 0, TAU); g.fill();
+        // a white strobe, out of step with its neighbours
+        if (((t * 1.6 + d.ph) % 1) < 0.1){ g.globalAlpha = a; g.fillStyle = '#fff'; g.beginPath(); g.arc(S2 * 0.9, -S2 * 0.56, S2 * 0.24, 0, TAU); g.fill(); }
         g.restore();
       }
 

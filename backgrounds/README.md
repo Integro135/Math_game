@@ -5,7 +5,7 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 | Kind | Files | Status |
 |---|---|---|
 | **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives.bg.js` | Loaded by the game at runtime (`dubai.bg.js` is the legacy Dubai scene — nothing loads it; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
 | **Unicorn valley** | `unicorns3.bg.js` + `unicorns/*.item.js` | `girls` → **`unicorns3`**: v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
 | **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
@@ -27,7 +27,7 @@ visible and playable while the backdrop loads. Scenes that don't opt in show no
 veil at all.
 
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns3`,
-`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef`, `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
+`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef2` (the 2026-09 rebuild; `reef.bg.js` is the legacy scene, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
 (🏙️, 🦁 and 🦕 are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
 #stars-layer {display:block}` rule in themes.css, or the stage stays hidden.
@@ -285,7 +285,9 @@ dark, the JBH's windows twinkling). Together they cost about 0.5 ms a frame.
 
 **The sun and the moon ride the hour** (`sunAt(ph)`, `moonAt(ph)`). Both are
 placed on an arc from the day phase instead of being pinned: the sun starts
-high right of centre, sinks left through the golden hour, drops below the
+high right of centre (a ROUND disc — it only squashes by refraction in the
+last 90 px above the waterline, and its halo shares that aspect), sinks left
+through the golden hour, drops below the
 waterline for the night and climbs back; the moon runs the opposite way, rising
 as the sun sets. Everything keyed on the sun follows it — its glow, the disc
 (which flattens and reddens as it meets the haze), the path on the water and
@@ -303,9 +305,13 @@ range: an early cut threw sparks ~1000 design px sideways and they scattered
 across the whole picture as a haze; they are short and fast-falling now.
 
 **The drone show** (`DR`, `SHAPES`, `shapePoint`, `startDrones`, `drawDrones`).
-64 drones climb out of the left horizon, form a STAR → HEART → PALM → RING and
+44 drones climb out of the left horizon, form a STAR → HEART → PALM → RING and
 morph between them, each easing to its own point with a drift so the figure
-breathes, then fly away over the sea. Parked in the LEFT pocket of sky on
+breathes, then fly away over the sea. Each is a REAL MACHINE, not a dot
+(`drawDrone`): a body with skids, four arms in an X, four rotor discs blurred by
+their own spin, a white strobe out of step with its neighbours, and the coloured
+belly light that actually paints the figure — the swarm is 44 on a wider ring
+rather than 64 on a tight one precisely so each one is big enough to read. Parked in the LEFT pocket of sky on
 purpose: the game card sits in the middle, so a formation there would be hidden
 behind it. Click that patch of sky to call it.
 
@@ -1251,9 +1257,10 @@ c:/tmp/dino_rigs + a double-restart leak check).
 ## reef2.bg.js — the coral reef, rebuilt from zero (2026-09)
 
 `window.BACKGROUNDS.reef2 = { skin:'reef', aids:'reef', init({stage}) → cleanup }`.
-Nothing is shared with `reef.bg.js` (still the module `_BG_THEMES` maps the 🐠
-theme to — reef2 is NOT wired in yet; when it is, point `reef:'reef2'` and the
-existing reef skin + aids carry over unchanged). Dev harness `reef2.html`;
+**This is the 🐠 theme's scene** — `_BG_THEMES` maps `reef:'reef2'` (2026-09-14);
+the old `reef.bg.js` is kept in the folder but nothing loads it, and nothing is
+shared between them. The reef skin and aids carry over unchanged. Dev harness
+`reef2.html`;
 verify via `_verify_reef2.py` (stills + fish close-up crops to `c:/tmp/reef2`,
 restart leak check, per-section ms via `_reef2.prof()`).
 
@@ -1296,14 +1303,64 @@ tentacles, dart out when the anemone is tapped), Dory (regal tang, palette
 marking + yellow tail; tap → dash / barrel roll), the threadfin butterflyfish
 pair (the second follows; tap → hearts), two yellow tangs (home boxes kept
 ABOVE the anemone crowns), two royal grammas by the rocks, a school of 14
-chromis (leader wanders, members hold slots; tap → scatter). Giants: the blue
-whale (first 60–110 s, then every 220–340 s) and the orca (18–45 s, then
-90–160 s), never both, fish flee when one passes close. Scheduler: a random
+chromis (leader wanders, members hold slots; tap → scatter). Two bottlenose
+DOLPHINS (`drawDolphin`) cruise the open water fast and rise to the surface
+for a breath every 35–75 s (a burst of bubbles at the top edge; tap → dash /
+roll). Two BLACKTIP REEF SHARKS (`drawShark`, home y 250–560) patrol slowly
+with a sinuous beat; small fish flee within 150 px (260 while a shark
+charges), the school scatters within 220; tap → a charge. A PUFFER
+(`drawPuffer`, `F.puff` 0..1) potters by the rocks and balloons — spines out,
+slower — every 1½–2½ min and on tap (`inflate`). Three CRABS (`CRABS`,
+`drawCrab`/`updateCrab`) scuttle sideways along the centre sand with stepping
+legs and raised claws; tap → a startled hop and a fast scuttle. Six SEA STARS
+(`STARS`) sit on the sand; tapping one summons RUMI. Giants: the blue whale
+(2050 long, riding just under the surface at y 232–262; first 60–110 s, then
+every 220–340 s) and the orca (950 long; 18–45 s, then 90–160 s), never both,
+drawn BEHIND the reef band; fish flee when one passes close. RUMI
+(`rumi/chibi-walker.js`, loaded via `BASE` from the module's own directory so
+it works from the game and the harness) glides across in FLY mode every 2–4
+min, first after 1–3 min (`rumiLayer`, a DOM layer over the canvas;
+`rumiPatrol.stop()` in cleanup). Scheduler: a random
 fish acts every 4–12 s and ~25% of the time also poops. **Poop gag**: every
 fish once per ~3 min (staggered), a short wavy strand trails from the vent,
 lets go, sinks and fades — never click-driven. Every action blows a bubble
 puff (`puff`).
 
+**Rendering cost.** Measured in the real game with `_perf_reef2.py` (main-thread
+work via CDP `Performance.getMetrics`, since headless frame gaps here are
+noise): ~8.5% main-thread busy and **~1.8 ms of draw per frame**, against
+dubai3 at ~8.5% / 0.9 ms and aurora at ~14% / 1.6 ms. Getting there took five
+things, each of which matters if the scene is edited further:
+1. **The crowns are baked.** Repainting 400+ anemone tentacles every frame was
+   a third of the budget. Each crown is now painted ONCE into three layers
+   (`col` = column + disc + shadow, `back`, `front`) and the sway is a
+   horizontal TRANSLATION of the two tentacle layers while the column stays
+   planted (`anemLean`). A *shear* was tried first and was much worse — a
+   non-axis-aligned `drawImage` takes the slow rasteriser path.
+2. **Blits are snapped to whole device pixels** (`anemLayers`' `snap`, and the
+   sway offset). A destination rectangle that lands between pixels is resampled
+   instead of copied; that alone was several ms a frame across 12 blits.
+3. **No per-vertex garbage.** `smoothPath` used to `.map()` a fresh array of
+   `[x,y]` pairs for every outline, twice per animal per frame; it now fills two
+   reused number arrays, and `mkWarp` returns ONE reused pair (so a call site
+   that needs two warped points at once must take them as scalars via `warpY` —
+   see the shark's fin tips and the whale/orca/dolphin dorsals). Mote buckets
+   and the live-bubble list are reused too. Heap growth over 18 s: 0 MB.
+4. **Loops are batched into single paths**: the whale's 260 mottling ellipses,
+   the bubbles (outline / fill / highlight), soft-coral polyps, puffer spots and
+   spines, shark gills, seagrass blades.
+5. **Tiny fish skip the fine detail** (`tiny` in `drawFish`: under ~26 screen px
+   the fin rays, gill arc, pectoral and mouth are dropped) — that is the whole
+   14-strong chromis school.
+
+The loop paces itself like the other scenes (renders every 2nd display frame
+while frames run long, back to full rate after 6 calm seconds), and the first
+1.2 s after init or a resize is EXCLUDED from that decision (`warming`) — the
+theme switch paints every still layer at once and that one-off spike used to
+latch the scene at half rate for good.
+
 Test hooks `window._reef2`: `seek(s)`, `current()`, `counts()`, `fish()`,
 `whale(x)`, `orca(x)`, `act(kind)`, `dart()`, `hide()`, `poop()`, `perf()`,
-`prof()`, `profReset()`.
+`breath()`, `shark()`, `puffer()`, `crab()`, `crabs()`, `rumi()`, `prof()`,
+`pmax()` (worst-case ms per section — what to watch when hunting a stutter),
+`profReset()`.
