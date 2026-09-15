@@ -21,7 +21,23 @@
    · two YELLOW TANGS over the reef tops, two ROYAL GRAMMAS low by the rocks
    · a SCHOOL of 14 blue-green CHROMIS: a leader wanders, the rest hold
      loose slots; tap → scatter and regroup
-   · the passing GIANTS: a BLUE WHALE glides through the upper water every
+   · two bottlenose DOLPHINS, fast in the open water, each rising to the
+     surface for a breath now and then (a burst of bubbles); tap → dash / roll
+   · two BLACKTIP REEF SHARKS patrolling the middle water; the small fish
+     scatter ahead of them; tap → a charge
+   · a PUFFER pottering about the rocks that balloons (spines out) every
+     couple of minutes and on tap
+   · CRABS scuttling sideways along the sand (tap → a startled hop), sea
+     stars on the bottom (tap → summons RUMI)
+   · THE CORALS THEMSELVES LIVE: every hard coral registers its polyps while
+     it is baked, and those pulse per frame in a slow wave across the reef
+     (a few batched paths) and PULL IN when a fish brushes past; christmas-
+     tree worms dart into their tubes; sponges breathe (a glow at each
+     opening, specks drifting out); mushroom corals wave a fringe of
+     tentacles; the giant clams gape slowly, their mantles shimmering, and
+     SNAP SHUT when startled; tap any coral → it SPAWNS a cloud of eggs
+   · RUMI (rumi/chibi-walker.js, fly mode) glides across every 2–4 minutes
+   · the passing GIANTS: a BLUE WHALE glides just under the surface every
      few minutes, an ORCA cruises by now and then (never both at once)
    · every action blows a bubble puff; a scheduler makes a random fish act
      every 4–12 s; and THE POOP GAG — every fish goes once per ~3 minutes,
@@ -52,9 +68,13 @@
    · drifting motes and seep bubbles, a soft vignette
 
    PERF (house rules, see aurora.bg.js / dubai3.bg.js): backing store
-   capped at 1.5× AND ~2.4 MP; the still picture in prebaked layers — the
+   capped at 1.25× AND ~2.0 MP; the still picture in prebaked layers — the
    water (waterL), the reef band (reefL, blitted from its top edge down, so
-   the giants pass BEHIND the rocks) and a foreground band (foreL); the
+   the giants pass BEHIND the rocks; the two are PRE-COMPOSITED into bgL and
+   the frame blits that one layer whenever no giant is passing) and a
+   foreground band (foreL), each with the vignette folded in; the god-rays
+   in a half-res layer refreshed every 4th frame; a QUALITY tier (Q 2/1/0)
+   that draws less before the loop drops to every 2nd frame; the
    caustic tile is baked once and scrolled as a pattern; glows are sprites;
    the rAF loop drops to every 2nd display frame while frames run long.
    Hooks: window._reef2 = BACKGROUNDS.reef2._test.  */
@@ -66,6 +86,7 @@
   const smooth = k => k * k * (3 - 2 * k);
   const psr = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
   const IS_TOUCH = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+  const BASE = (function(){ const s = doc.currentScript; return s && s.src ? s.src.replace(/[^/]*$/, '') : 'backgrounds/'; })();
 
   // ── colour helpers ──
   function hexc(c){
@@ -97,11 +118,13 @@
       // ── the stage ──
       const DW = 1600, DH = 900;
       const SUNX = 330, SUNY = -40;                              // the sun, high left, just off the top
-      const pickDPR = () => Math.max(0.75, Math.min(devicePixelRatio || 1, 1.5, Math.sqrt(2.4e6 / Math.max(1, innerWidth * innerHeight))));
+      const pickDPR = () => Math.max(0.75, Math.min(devicePixelRatio || 1, 1.25, Math.sqrt(2.0e6 / Math.max(1, innerWidth * innerHeight))));
       let DPR = pickDPR(), W = 0, H = 0, S = 1, OX = 0, OY = 0;
       const perf = { gapEma: 16.7, costEma: 0, halfRate: IS_TOUCH, frames: 0, drawn: 0 };
+      let Q = IS_TOUCH ? 1 : 2, lastQ = 0, qUps = 0, qPin = false;  // quality tier: 2 full · 1 reduced · 0 minimal (see frame()); qPin = held by a hook
       const PROF = { frames: 0 }; let profT = 0;
-      const mark = k => { const n = performance.now(); PROF[k] = (PROF[k] || 0) + (n - profT); profT = n; };
+      const PMAX = {};
+      const mark = k => { const n = performance.now(); const d = n - profT; PROF[k] = (PROF[k] || 0) + d; if (d > (PMAX[k] || 0)) PMAX[k] = d; profT = n; };
 
       // ── sprites + layers ──
       const SPR = {};
@@ -157,6 +180,28 @@
         g.save(); g.translate(x + rx * 0.18, y); g.scale(rx, ry);
         g.fillStyle = rg(g, 0, 0, 0, 1, [[0, 'rgba(4,20,40,' + a + ')'], [0.6, 'rgba(4,20,40,' + a * 0.45 + ')'], [1, 'rgba(4,20,40,0)']]);
         g.beginPath(); g.arc(0, 0, 1, 0, TAU); g.fill(); g.restore();
+      }
+
+      // ═══════════════════════════ CORAL LIFE ═══════════════════════════
+      // The hard corals stay baked in the still layers (that is what keeps the
+      // scene cheap), but while they are painted they REGISTER the parts of
+      // themselves that live: polyps (LIFE), christmas-tree worms (WORMS),
+      // sponge openings (VENTS), mushroom-coral fringes (FRINGES). Those are
+      // drawn per frame in a handful of batched paths (drawCoralLife): polyps
+      // pulse in a slow wave across the reef and pull IN when a fish brushes
+      // past or a coral is tapped (CORALS[].ret), worms dart into their tubes,
+      // sponges breathe, and a tapped coral SPAWNS a cloud of eggs. Giant clams
+      // are drawn live (CLAMS): they gape slowly and snap shut when startled.
+      const CORALS = [], LIFE = [], WORMS = [], VENTS = [], FRINGES = [], CLAMS = [], EGGS = [], SPECKS = [];
+      let PAINT_FORE = false;                                     // set while the foreground band is painted
+      const POLYP_COL = ['255,246,228', '255,204,218', '226,246,194', '228,208,255'];   // warm white · pink · pale green · lilac
+      function coralReg(kind, x, y, r, pal){ CORALS.push({ kind, x, y, r, pal, ret: 0, retT: -99, fore: PAINT_FORE }); return CORALS.length - 1; }
+      function polyp(ci, x, y, r, b, sd){ LIFE.push({ x, y, r, b: b & 3, ph: psr(sd) * TAU, ci, fore: PAINT_FORE }); }
+      function startleCoral(C, t){ C.ret = 1; C.retT = t; }
+      function snapClam(K, t){ if (t < K.snapT + 3) return; K.snapT = t; puff(K.x, K.y - K.w * 0.4, 4); }
+      function spawnCoral(C, t){
+        startleCoral(C, t);
+        for (let i = 0; i < 40; i++) EGGS.push({ x: C.x + (Math.random() - 0.5) * C.r * 1.5, y: C.y - Math.random() * C.r * 0.7, v: 12 + Math.random() * 22, t0: t + Math.random() * 1.2, ph: Math.random() * TAU, k: Math.random() < 0.6 ? 0 : 1 });
       }
 
       // ═══════════════════════════ THE STILL REEF ═══════════════════════════
@@ -319,6 +364,7 @@
         const { x, y, r, sd, z = 0.1, pal = 0 } = C, ry = r * 0.72;
         const base = [[196, 164, 96], [150, 168, 92], [178, 140, 110], [120, 160, 130]][pal];
         const c = haze(base, y, z), hi = haze(lit(base, 0.35), y, z), groove = haze(lit(base, -0.55), y, z);
+        const ci = coralReg('brain', x, y - ry * 0.3, r, pal);
         shadow(g, x, y + ry * 0.7, r * 1.1, ry * 0.3, 0.4);
         blobPath(g, x, y, r, ry, 16, 0.08, sd, true);
         g.fillStyle = rg(g, x - r * 0.35, y - ry * 0.55, 0, r * 1.5, [[0, rgb(hi)], [0.5, rgb(c)], [1, rgb(lit(c, -0.35))]]);
@@ -333,6 +379,8 @@
           const pts = [[px, py]];
           for (let k = 0; k < 8 + rnd() * 10; k++){ a += (rnd() - 0.5) * 2.2; px += Math.cos(a) * 5; py += Math.sin(a) * 4; pts.push([px, py]); }
           walks.push(pts);
+          // polyps sit in the grooves; keep the ones inside the dome
+          for (let k = 2; k < pts.length; k += 5){ const nx = (pts[k][0] - x) / r, ny = (pts[k][1] - y) / ry; if (nx * nx + ny * ny < 0.8) polyp(ci, pts[k][0], pts[k][1], 1.3, [0, 2, 1, 2][pal], sd + w * 7 + k); }
         }
         const draw = (w, col) => { g.strokeStyle = col; g.lineWidth = w; for (const pts of walks){ g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.stroke(); } };
         draw(3.6, rgb(groove, 0.85));
@@ -345,6 +393,8 @@
         const { x, y, r, sd, z = 0.1, pal = 0 } = C, ry = r * (C.flat ? 0.5 : 0.8);
         const base = [[190, 170, 120], [130, 150, 90], [160, 120, 140], [110, 140, 160], [200, 150, 90]][pal];
         const c = haze(base, y, z), hi = haze(lit(base, 0.3), y, z), lo = haze(lit(base, -0.4), y, z);
+        const ci = coralReg('boulder', x, y - ry * 0.3, r, pal);
+        for (let i = 0; i < Math.round(r * 0.6); i++){ const a = psr(sd + 400 + i * 2) * TAU, d = Math.sqrt(psr(sd + 401 + i * 2)) * 0.92; polyp(ci, x + Math.cos(a) * d * r, y + Math.sin(a) * d * ry, 1.1 + psr(sd + i) * 0.5, [0, 2, 3, 0, 1][pal], sd + 500 + i); }
         shadow(g, x, y + ry * 0.7, r * 1.1, ry * 0.3, 0.38);
         blobPath(g, x, y, r, ry, 16, 0.10, sd, true);
         g.fillStyle = rg(g, x - r * 0.35, y - ry * 0.5, 0, r * 1.5, [[0, rgb(hi)], [0.55, rgb(c)], [1, rgb(lo)]]);
@@ -361,11 +411,12 @@
           }
         }
         g.restore();
-        // christmas-tree worms living on it
+        // christmas-tree worms living on it — drawn live so they can retract
         if (C.worms) for (let i = 0; i < C.worms; i++){
           const wx = x + (psr(sd + 200 + i * 2) - 0.5) * r * 1.2, wy = y - ry * 0.2 + (psr(sd + 201 + i * 2) - 0.5) * ry * 0.8;
           const wc = [[255, 120, 60], [60, 140, 230], [250, 210, 70], [240, 240, 240]][(sd + i) % 4];
-          paintWorm(g, wx, wy, 5 + psr(sd + i) * 3, haze(wc, wy, z));
+          g.fillStyle = rgb(lo, 0.7); g.beginPath(); g.ellipse(wx + 1, wy + 1, 6, 2, 0, 0, TAU); g.fill();   // the tube mouths they hide in
+          WORMS.push({ x: wx, y: wy, h: 5 + psr(sd + i) * 3, col: haze(wc, wy, z), ci, ext: 1, ph: psr(sd + i + 7) * TAU, fore: PAINT_FORE });
         }
       }
       function paintWorm(g, x, y, h, col){
@@ -385,6 +436,7 @@
         const { x, y, h, sd, z = 0.1, pal = 0, spread = 1 } = C;
         const base = [[176, 140, 100], [120, 130, 190], [188, 150, 112], [200, 170, 120], [150, 110, 160]][pal];
         const c = haze(base, y, z), tip = haze(pal === 2 ? [214, 190, 236] : lit(base, 0.7), y, z), dark = haze(lit(base, -0.4), y, z);
+        const ci = coralReg('staghorn', x, y - h * 0.45, h * 0.55, pal);
         shadow(g, x, y + 4, h * 0.55, h * 0.12, 0.35);
         const rnd = makeRng(sd * 17 + 3);
         g.lineCap = 'round';
@@ -399,6 +451,7 @@
           if (depth <= 0 || w < 1.4){
             // pale growing tip
             g.fillStyle = rgb(tip); g.beginPath(); g.arc(x1, y1, w * 0.55 + 0.4, 0, TAU); g.fill();
+            polyp(ci, x1, y1, w * 0.5 + 0.9, pal === 2 ? 3 : 0, sd + x1 * 3 + y1);
             return;
           }
           const n = rnd() < 0.7 ? 2 : 1;
@@ -419,6 +472,8 @@
         const { x, y, w, sd, z = 0.1, pal = 0 } = C, h = w * 0.42, py = y - h, ry = w * 0.16;
         const base = [[188, 160, 108], [130, 150, 100], [176, 150, 120]][pal];
         const c = haze(base, y, z), hi = haze(lit(base, 0.35), y, z), lo = haze(lit(base, -0.45), y, z);
+        const ci = coralReg('table', x, py, w * 0.5, pal);
+        for (let i = 0; i < Math.round(w * 0.3); i++){ const a = psr(sd + 600 + i * 2) * TAU, d = Math.sqrt(psr(sd + 601 + i * 2)) * 0.92; polyp(ci, x + Math.cos(a) * d * w * 0.5, py + Math.sin(a) * d * ry, 1.1 + psr(sd + i) * 0.5, [0, 2, 0][pal], sd + 700 + i); }
         shadow(g, x, y + 3, w * 0.5, w * 0.08, 0.35);
         // stalk
         g.fillStyle = lg(g, x - w * 0.1, 0, x + w * 0.1, 0, [[0, rgb(hi)], [0.5, rgb(c)], [1, rgb(lo)]]);
@@ -445,10 +500,12 @@
       function paintLettuce(g, C){
         const { x, y, w, sd, z = 0.1, pal = 0 } = C;
         const base = [[214, 150, 70], [150, 170, 80], [200, 120, 90], [190, 160, 200]][pal];
+        const ci = coralReg('lettuce', x, y - w * 0.2, w * 0.5, pal);
         shadow(g, x, y + 3, w * 0.55, w * 0.1, 0.35);
         const layers = 5;
         for (let L = 0; L < layers; L++){
           const k = L / (layers - 1), ly = y - k * w * 0.36, lw = w * (0.55 - k * 0.22), lh = w * (0.16 - k * 0.04);
+          for (let i = 1; i < 24; i += 3){ const u = i / 24, px = x - lw + u * lw * 2, wave = Math.sin(u * TAU * 3 + sd + L) * lh * 0.32; polyp(ci, px, ly - Math.sin(u * Math.PI) * lh * 1.9 + wave + 1.5, 1.1, [0, 2, 1, 3][pal], sd + L * 40 + i); }
           const col = haze(lit(base, -0.3 + k * 0.55), ly, z), edge = haze(lit(base, 0.5), ly, z);
           g.fillStyle = lg(g, 0, ly - lh, 0, ly + lh * 0.4, [[0, rgb(lit(col, 0.15))], [1, rgb(lit(col, -0.25))]]);
           g.beginPath(); g.moveTo(x - lw, ly);
@@ -487,6 +544,8 @@
         // the central mouth slit
         g.fillStyle = rgb(lo, 0.9); g.beginPath(); g.ellipse(x, y, r * 0.22, ry * 0.12, 0, 0, TAU); g.fill();
         g.strokeStyle = rgb(hi, 0.5); g.lineWidth = 1; g.beginPath(); g.ellipse(x, y, r, ry, 0, 0, TAU); g.stroke();
+        const ci = coralReg('mushroom', x, y, r, pal);
+        FRINGES.push({ x, y, rx: r * 1.02, ry: ry * 1.02, col: rgb(lit(hi, 0.3), 0.85), ci, n: Math.round(r * 1.1), ph: psr(sd) * TAU, fore: PAINT_FORE });
       }
 
       // ── FINGER CORAL: knobbly upright fingers ──
@@ -499,8 +558,10 @@
         const fingers = [];
         for (let i = 0; i < n; i++){ const u = (i - (n - 1) / 2) / n; fingers.push({ fx: x + u * w * 1.3 + (rnd() - 0.5) * 6, fh: w * (0.45 + rnd() * 0.5) * (1 - Math.abs(u) * 0.7), fw: w * (0.09 + rnd() * 0.05), lean: (rnd() - 0.5) * 0.25 + u * 0.35 }); }
         fingers.sort((a, b) => b.fh - a.fh);   // taller (further back) first
+        const ci = coralReg('fingers', x, y - w * 0.35, w * 0.7, pal);
         for (const f of fingers){
           const tx = f.fx + f.lean * f.fh, ty = y - f.fh;
+          polyp(ci, tx, ty, f.fw * 0.7, [3, 0, 0, 1][pal], sd + tx * 3);
           g.save();
           g.strokeStyle = rgb(lo); g.lineCap = 'round'; g.lineWidth = f.fw * 2 + 1.5; g.beginPath(); g.moveTo(f.fx, y + 2); g.quadraticCurveTo(f.fx + f.lean * f.fh * 0.3, y - f.fh * 0.5, tx, ty); g.stroke();
           g.strokeStyle = lg(g, f.fx - f.fw, 0, f.fx + f.fw, 0, [[0, rgb(hi)], [0.55, rgb(c)], [1, rgb(lo)]]); g.lineWidth = f.fw * 2;
@@ -526,8 +587,10 @@
         const tubes = [];
         for (let i = 0; i < n; i++){ const u = (i - (n - 1) / 2) / Math.max(1, n - 1); tubes.push({ tx: x + u * h * 0.5, th: h * (0.6 + rnd() * 0.4) * (1 - Math.abs(u) * 0.35), tw: h * (0.08 + rnd() * 0.05), lean: u * 0.4 + (rnd() - 0.5) * 0.2 }); }
         tubes.sort((a, b) => b.th - a.th);
+        const ci = coralReg('tubes', x, y - h * 0.5, h * 0.5, pal);
         for (const T of tubes){
           const tx = T.tx + T.lean * T.th, ty = y - T.th;
+          VENTS.push({ x: tx, y: ty, r: T.tw, ci, ph: psr(sd + tx) * TAU, nextAt: Math.random() * 3, fore: PAINT_FORE });
           g.save();
           g.beginPath(); g.moveTo(T.tx - T.tw * 0.8, y + 2); g.quadraticCurveTo(T.tx - T.tw + T.lean * T.th * 0.4, y - T.th * 0.5, tx - T.tw, ty);
           g.lineTo(tx + T.tw, ty); g.quadraticCurveTo(T.tx + T.tw + T.lean * T.th * 0.4, y - T.th * 0.5, T.tx + T.tw * 0.8, y + 2); g.closePath();
@@ -559,11 +622,13 @@
         g.restore();
         g.fillStyle = rgb(lit(lo, -0.55)); g.beginPath(); g.ellipse(x, y - h, w * 0.5, w * 0.2, 0, 0, TAU); g.fill();
         g.strokeStyle = rgb(hi, 0.85); g.lineWidth = 2; g.beginPath(); g.ellipse(x, y - h, w * 0.5, w * 0.2, 0, 0, TAU); g.stroke();
+        const ci = coralReg('barrel', x, y - h * 0.5, w * 0.6, 0);
+        VENTS.push({ x, y: y - h, r: w * 0.45, ci, ph: psr(sd) * TAU, nextAt: Math.random() * 3, big: true, fore: PAINT_FORE });
       }
 
       // ── GIANT CLAM: a ridged shell with a wavy iridescent mantle ──
-      function paintClam(g, C){
-        const { x, y, w, sd, z = 0.1 } = C, h = w * 0.55;
+      function paintClam(g, C, open, t){
+        const { x, y, w, sd, z = 0.1 } = C, h = w * 0.55, o = open === undefined ? 1 : open, tt = t || 0;
         const shell = haze([200, 190, 170], y, z), shellLo = haze([120, 110, 100], y, z);
         const mantle = haze([40, 110, 160], y, z), mantleHi = haze([90, 220, 230], y, z), spots = haze([20, 60, 120], y, z);
         shadow(g, x, y + 3, w * 0.55, h * 0.2, 0.35);
@@ -573,21 +638,25 @@
         // the mantle: a wavy band between the valves
         g.beginPath();
         for (let i = 0; i <= 30; i++){ const u = i / 30, px = x - w * 0.5 + u * w, py = y - h * 0.5 - Math.sin(u * Math.PI) * h * 0.2 + Math.sin(u * TAU * 3.5 + sd) * h * 0.12; i ? g.lineTo(px, py) : g.moveTo(px, py); }
-        for (let i = 30; i >= 0; i--){ const u = i / 30, px = x - w * 0.5 + u * w, py = y - h * 0.5 - Math.sin(u * Math.PI) * h * 0.55 - Math.sin(u * TAU * 3.5 + sd + 1) * h * 0.12; g.lineTo(px, py); }
+        // the gape: the upper valve rides on the mantle, which shrinks to nothing when the clam shuts
+        const gape = 0.2 + 0.45 * o;
+        for (let i = 30; i >= 0; i--){ const u = i / 30, px = x - w * 0.5 + u * w, py = y - h * 0.5 - Math.sin(u * Math.PI) * h * gape - Math.sin(u * TAU * 3.5 + sd + 1) * h * 0.12 * o; g.lineTo(px, py); }
         g.closePath();
         g.fillStyle = lg(g, x - w * 0.5, 0, x + w * 0.5, 0, [[0, rgb(mantle)], [0.5, rgb(mantleHi)], [1, rgb(mantle)]]); g.fill();
-        g.save(); g.clip(); g.fillStyle = rgb(spots, 0.8);
-        for (let i = 0; i < 24; i++){ g.beginPath(); g.arc(x - w * 0.45 + psr(sd + i * 2) * w * 0.9, y - h * 0.62 - psr(sd + i * 2 + 1) * h * 0.25, 1.2 + psr(sd + i) * 1.4, 0, TAU); g.fill(); }
+        g.save(); g.clip();
+        // the mantle's iridescent spots shimmer between blue and green
+        for (let i = 0; i < 24; i++){ const k = 0.5 + 0.5 * Math.sin(tt * 2 + i * 1.7); g.fillStyle = rgb(mixc(spots, mantleHi, k * 0.7), 0.85); g.beginPath(); g.arc(x - w * 0.45 + psr(sd + i * 2) * w * 0.9, y - h * 0.5 - (0.12 + psr(sd + i * 2 + 1) * 0.25) * h * gape / 0.65, 1.2 + psr(sd + i) * 1.4, 0, TAU); g.fill(); }
         g.restore();
         // upper valve ridges
         g.fillStyle = lg(g, x - w * 0.5, 0, x + w * 0.5, 0, [[0, rgb(lit(shell, 0.2))], [1, rgb(shellLo)]]);
         g.beginPath();
-        for (let i = 0; i <= 30; i++){ const u = i / 30, px = x - w * 0.5 + u * w, py = y - h * 0.5 - Math.sin(u * Math.PI) * h * 0.55 - Math.sin(u * TAU * 3.5 + sd + 1) * h * 0.12; i ? g.lineTo(px, py) : g.moveTo(px, py); }
-        for (let i = 30; i >= 0; i--){ const u = i / 30, px = x - w * 0.5 + u * w, py = y - h * 0.5 - Math.sin(u * Math.PI) * h * 1.15 - Math.sin(u * TAU * 3.5 + sd + 1) * h * 0.1; g.lineTo(px, py); }
+        for (let i = 0; i <= 30; i++){ const u = i / 30, px = x - w * 0.5 + u * w, py = y - h * 0.5 - Math.sin(u * Math.PI) * h * gape - Math.sin(u * TAU * 3.5 + sd + 1) * h * 0.12 * o; i ? g.lineTo(px, py) : g.moveTo(px, py); }
+        for (let i = 30; i >= 0; i--){ const u = i / 30, px = x - w * 0.5 + u * w, py = y - h * 0.5 - Math.sin(u * Math.PI) * h * (gape + 0.6) - Math.sin(u * TAU * 3.5 + sd + 1) * h * 0.1; g.lineTo(px, py); }
         g.closePath(); g.fill();
         g.strokeStyle = rgb(shellLo, 0.55); g.lineWidth = 1;
-        for (let i = 1; i < 7; i++){ const u = i / 7; g.beginPath(); g.moveTo(x - w * 0.5 + u * w, y - h * 0.5 - Math.sin(u * Math.PI) * h * 0.6); g.lineTo(x + (u - 0.5) * w * 0.5, y - h * 0.5 - Math.sin(u * Math.PI) * h * 1.1); g.stroke(); }
+        for (let i = 1; i < 7; i++){ const u = i / 7; g.beginPath(); g.moveTo(x - w * 0.5 + u * w, y - h * 0.5 - Math.sin(u * Math.PI) * h * (gape + 0.05)); g.lineTo(x + (u - 0.5) * w * 0.5, y - h * 0.5 - Math.sin(u * Math.PI) * h * (gape + 0.55)); g.stroke(); }
       }
+      function drawClam(g, K, t){ paintClam(g, K, K.open, t); }
 
       // ── SEA STAR / URCHIN / SHELL ──
       function paintStar(g, C){
@@ -651,10 +720,10 @@
         }
         // the lattice: wavy arcs crossing the branches, lighter
         g.strokeStyle = rgb(hi, 0.65); g.lineWidth = h * 0.012;
-        for (let r = 0.22; r < 0.98; r += 0.11){
+        for (let r = 0.22; r < 0.98; r += 0.13){
           g.beginPath();
-          for (let i = 0; i <= 24; i++){
-            const u = i / 24, a = -TAU / 4 - 1.05 + u * 2.1, rr = h * r * (1 - Math.abs(u - 0.5) * 0.5) * (1 + Math.sin(u * 30 + sd + r * 40) * 0.05);
+          for (let i = 0; i <= 16; i++){
+            const u = i / 16, a = -TAU / 4 - 1.05 + u * 2.1, rr = h * r * (1 - Math.abs(u - 0.5) * 0.5) * (1 + Math.sin(u * 30 + sd + r * 40) * 0.05);
             const px = Math.cos(a) * rr, py = Math.sin(a) * rr - h * 0.12;
             i ? g.lineTo(px, py) : g.moveTo(px, py);
           }
@@ -686,14 +755,19 @@
           const wob = Math.sin(t * 1.1 + s.ph) * 0.03 + lean * 0.9;
           const ex = Math.cos(s.a + wob) * s.len + lean * h * 0.35, ey = Math.sin(s.a + wob) * s.len - h * 0.25;
           g.strokeStyle = rgb(stalk, 0.7); g.lineWidth = h * 0.035; g.beginPath(); g.moveTo(lean * h * 0.35, -h * 0.25); g.quadraticCurveTo(lean * h * 0.35 + (ex - lean * h * 0.35) * 0.4, -h * 0.25 + (ey + h * 0.25) * 0.6, ex, ey); g.stroke();
-          // the puffs: a cluster of polyp balls, lighter core
+          // the puffs: a cluster of polyp balls, lighter core (one path per colour)
+          g.fillStyle = rgb(col, 0.9); g.beginPath();
+          for (const p of s.puffs){ const px = ex + p.dx, py = ey + p.dy; g.moveTo(px + p.r, py); g.arc(px, py, p.r, 0, TAU); }
+          g.fill();
+          g.fillStyle = rgb(hi, 0.7); g.beginPath();
+          for (const p of s.puffs){ const px = ex + p.dx - p.r * 0.3, py = ey + p.dy - p.r * 0.3, pr = p.r * 0.5; g.moveTo(px + pr, py); g.arc(px, py, pr, 0, TAU); }
+          g.fill();
+          g.fillStyle = rgb(lit(col, -0.3), 0.5); g.beginPath();
           for (const p of s.puffs){
-            const px = ex + p.dx, py = ey + p.dy;
-            g.fillStyle = rgb(col, 0.9); g.beginPath(); g.arc(px, py, p.r, 0, TAU); g.fill();
-            g.fillStyle = rgb(hi, 0.7); g.beginPath(); g.arc(px - p.r * 0.3, py - p.r * 0.3, p.r * 0.5, 0, TAU); g.fill();
-            g.fillStyle = rgb(lit(col, -0.3), 0.5);
-            for (let k = 0; k < 5; k++){ const a = k / 5 * TAU + p.r; g.beginPath(); g.arc(px + Math.cos(a) * p.r * 0.75, py + Math.sin(a) * p.r * 0.75, p.r * 0.22, 0, TAU); g.fill(); }
+            const px = ex + p.dx, py = ey + p.dy, pr = p.r * 0.22;
+            for (let k = 0; k < 5; k++){ const a = k / 5 * TAU + p.r, cxp = px + Math.cos(a) * p.r * 0.75, cyp = py + Math.sin(a) * p.r * 0.75; g.moveTo(cxp + pr, cyp); g.arc(cxp, cyp, pr, 0, TAU); }
           }
+          g.fill();
         }
         g.restore();
       }
@@ -718,26 +792,31 @@
         const { x, y, h, n = 9, z = 0.05, sd } = Gr, base = [70, 150, 80];
         const col = haze(base, y, z), hi = haze(lit(base, 0.4), y, z);
         g.lineCap = 'round';
-        for (let i = 0; i < n; i++){
-          const u = (i - (n - 1) / 2) / n, len = h * (0.6 + psr(sd + i) * 0.4), bx = x + u * h * 0.35;
-          const bend = (c * 0.7 + Math.sin(t * 1.3 + sd * 2 + i * 0.7) * 0.15) * len * 0.5 + u * len * 0.3;
-          g.strokeStyle = rgb(psr(sd + i + 30) < 0.5 ? col : hi, 0.92); g.lineWidth = 1.4 + psr(sd + i + 60) * 1.2;
-          g.beginPath(); g.moveTo(bx, y + 2); g.quadraticCurveTo(bx + bend * 0.15, y - len * 0.6, bx + bend, y - len + Math.abs(bend) * 0.3); g.stroke();
+        for (let pass = 0; pass < 2; pass++){                    // dark blades, then pale ones
+          g.strokeStyle = rgb(pass ? hi : col, 0.92); g.lineWidth = 1.8; g.beginPath();
+          for (let i = 0; i < n; i++){
+            if ((psr(sd + i + 30) < 0.5 ? 0 : 1) !== pass) continue;
+            const u = (i - (n - 1) / 2) / n, len = h * (0.6 + psr(sd + i) * 0.4), bx = x + u * h * 0.35;
+            const bend = (c * 0.7 + Math.sin(t * 1.3 + sd * 2 + i * 0.7) * 0.15) * len * 0.5 + u * len * 0.3;
+            g.moveTo(bx, y + 2); g.quadraticCurveTo(bx + bend * 0.15, y - len * 0.6, bx + bend, y - len + Math.abs(bend) * 0.3);
+          }
+          g.stroke();
         }
       }
 
       // ── SEA ANEMONE: the clownfish house ──
       function buildAnemone(A){
+        A.idx = ANEMS.length;
         const rnd = makeRng(A.sd * 19 + 23), tents = [], n = A.n || 130;
         for (let i = 0; i < n; i++){
           const th0 = rnd() * TAU, rho = Math.sqrt(rnd());            // where on the oral disc it grows (angle, radius 0..1)
-          const len = A.r * (0.7 + rnd() * 0.6), th = A.r * (0.035 + rnd() * 0.03);
+          const len = A.r * (0.7 + rnd() * 0.6), th = A.r * (0.036 + rnd() * 0.03);
           tents.push({ th0, rho, len, th, tipR: th * (1.0 + rnd() * 0.7), ph: rnd() * TAU, wob: 0.5 + rnd() * 0.9, curl: 0.4 + rnd() * 0.7, v: (Math.sin(th0) + 1) / 2 });
         }
         tents.sort((a, b) => a.v - b.v);                                // back of the disc first (v small = back)
         A.tents = tents; return A;
       }
-      function drawAnemone(g, A, t, c){
+      function paintAnemone(g, A, t, c, part){
         const { x, y, r, z = 0.08, pal = 0, sd } = A;
         const PAL = [
           { col: [120, 50, 140], tent: [196, 176, 128], tip: [232, 120, 160] },   // purple column, sandy tentacles, pink bulbs
@@ -758,6 +837,10 @@
         }
         const { colC, colHi, colLo } = A.pre;
         const lean = c * 0.3;
+        const n = A.tents.length, back = n >> 1;
+        g.lineCap = 'round';
+        if (part === 'front'){ for (let i = back; i < n; i++) drawTent(A.tents[i], g, t, lean); return; }
+        if (part === 'back'){ for (let i = 0; i < back; i++) drawTent(A.tents[i], g, t, lean); return; }
         shadow(g, x, y + r * 0.08, r * 1.2, r * 0.26, 0.42);
         // the column: mostly hidden under the drape, fleshy, striped
         g.fillStyle = lg(g, x - cw, 0, x + cw, 0, [[0, rgb(colHi)], [0.45, rgb(colC)], [1, rgb(colLo)]]);
@@ -770,9 +853,9 @@
         // the oral disc
         g.fillStyle = lg(g, 0, top - dr, 0, top + dr, [[0, rgb(lit(colC, 0.3))], [1, rgb(colLo)]]);
         g.beginPath(); g.ellipse(x, top, cw * 1.02, dr, 0, 0, TAU); g.fill();
-        // tentacles: each grows outward from its spot on the disc, rises, and curls
-        g.lineCap = 'round';
-        const drawTent = T => {
+        // the mouth — the tentacles live in their own layers, drawn either side of this one
+        g.fillStyle = rgb(lit(colLo, -0.3), 0.9); g.beginPath(); g.ellipse(x, top, cw * 0.2, dr * 0.3, 0, 0, TAU); g.fill();
+        function drawTent(T, g, t, lean){
           const bx = x + T.bx, by = top + T.by;
           const out = T.rho * 0.9 + 0.25;                                          // outward push: edge tentacles splay, centre ones stand
           const dirx = Math.cos(T.th0) * out * 1.15 + lean + Math.sin(t * T.wob + T.ph) * 0.08;
@@ -789,11 +872,44 @@
           g.fillStyle = T.cTip; g.beginPath(); g.arc(ex, ey, T.tipR, 0, TAU); g.fill();
           g.fillStyle = T.cTipHi; g.beginPath(); g.arc(ex - T.tipR * 0.3, ey - T.tipR * 0.35, T.tipR * 0.38, 0, TAU); g.fill();
         };
-        const n = A.tents.length, back = n >> 1;
-        for (let i = 0; i < back; i++) drawTent(A.tents[i]);
-        g.fillStyle = rgb(lit(colLo, -0.3), 0.9); g.beginPath(); g.ellipse(x, top, cw * 0.2, dr * 0.3, 0, 0, TAU); g.fill();
-        if (A.midDraw){ g.save(); g.lineCap = 'butt'; A.midDraw(g); g.restore(); g.lineCap = 'round'; }
-        for (let i = back; i < n; i++) drawTent(A.tents[i]);
+      }
+      // one baked layer per half (back+column, front); the sway is a transform
+      let anemBuilt = 0;                                          // at most one crown is baked per frame
+      function anemLayers(A){
+        const scale = DPR * S, q = 1 / scale;                     // one device pixel, in design units
+        const snap = v => Math.round(v * scale) * q;
+        const w = snap(A.r * 5.2), h = snap(A.r * 3.4);
+        const ox = snap(A.x - w / 2), oy = snap(A.y + A.r * 0.45 - h);
+        if (!A.L || A.L.scale !== scale){
+          A.L = { scale, q, w, h, ox, oy, col: makeLayer(w, h, scale), back: makeLayer(w, h, scale), front: makeLayer(w, h, scale), built: false };
+        }
+        return A.L;
+      }
+      function bakeAnemone(A){
+        const L = anemLayers(A);
+        for (const k of ['col', 'back', 'front']){
+          const g = L[k].cx;
+          g.save(); g.setTransform(L.scale, 0, 0, L.scale, 0, 0); g.clearRect(0, 0, L[k].cv.width, L[k].cv.height); g.restore();
+          g.save(); g.translate(-L.ox, -L.oy); paintAnemone(g, A, 0, 0, k); g.restore();
+        }
+        L.built = true;
+      }
+      // how far the crown leans this frame: the current plus two slow breaths
+      function anemLean(A, t, c){
+        return (c * 0.24 + Math.sin(t * 0.7 + A.sd) * 0.06 + Math.sin(t * 1.13 + A.sd * 2) * 0.035) * A.r * 0.5;
+      }
+      function drawAnemone(g, A, t, c){
+        const L = anemLayers(A);
+        if (!L.built){
+          if (anemBuilt >= 1) return;                             // spread the first bake over a few frames
+          anemBuilt++; bakeAnemone(A);
+        }
+        const q = L.q, raw = anemLean(A, t, c);
+        const dx = Math.round(raw / q) * q, dy = Math.round(-Math.abs(raw) * 0.12 / q) * q;   // whole device pixels
+        g.drawImage(L.col.cv, L.ox, L.oy, L.w, L.h);
+        g.drawImage(L.back.cv, L.ox + dx, L.oy + dy, L.w, L.h);
+        if (A.midDraw){ g.save(); A.midDraw(g); g.restore(); }
+        g.drawImage(L.front.cv, L.ox + dx, L.oy + dy, L.w, L.h);
       }
 
       // ═══════════════════════════ THE LAYOUT ═══════════════════════════
@@ -832,7 +948,7 @@
         p = onRock(L1, 0.72); { const q = p; still(q[1] + 4, g => paintStaghorn(g, { x: q[0], y: q[1], h: 120, sd: 103, z: 0.11, pal: 1 })); }
         p = onRock(L1, -0.95); { const q = p; still(q[1] + 4, g => paintTubes(g, { x: q[0] + 20, y: q[1] + 10, h: 90, sd: 104, z: 0.12, pal: 0 })); }
         p = onRock(L2, -0.5); { const q = p; still(q[1] + 4, g => paintBoulder(g, { x: q[0], y: q[1] - 4, r: 48, sd: 105, z: 0.10, pal: 0, worms: 3 })); }
-        p = onRock(L2, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[0], t, c, DT)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 66, sd: 106, z: 0.09, pal: 0, n: 130 })); }
+        p = onRock(L2, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[0], t, c, DT)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 66, sd: 106, z: 0.09, pal: 0, n: 120 })); }
         p = onRock(L2, -0.05); { const q = p; still(q[1] + 3, g => paintMushroom(g, { x: q[0] + 8, y: q[1] + 8, r: 26, sd: 107, z: 0.10, pal: 0 })); }
         p = onRock(L2, 0.95); { const q = p; live(q[1] + 3, (g, t, c) => drawFan(g, FANS[0], t, c)); FANS.push(buildFan({ x: q[0], y: q[1] + 6, h: 95, sd: 108, z: 0.1, pal: 0 })); }
         p = onRock(L3, -0.4); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 110, sd: 109, z: 0.06, pal: 0 })); }
@@ -842,7 +958,7 @@
         p = onRock(L4, 0.6); { const q = p; live(q[1] + 3, (g, t, c) => drawSoft(g, SOFTS[0], t, c), true); SOFTS.push(buildSoft({ x: q[0], y: q[1], h: 78, sd: 113, z: 0.03, pal: 0 })); }
         p = onRock(L5, 0.55); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 105, sd: 114, z: 0.0, pal: 2, spread: 1.15 }), true); }
         p = onRock(L5, 0.0); { const q = p; still(q[1] + 3, g => paintBrain(g, { x: q[0], y: q[1] - 4, r: 50, sd: 115, z: 0.0, pal: 1 }), true); }
-        p = onRock(L5, 0.9); { const q = p; still(q[1] + 2, g => paintClam(g, { x: q[0] + 14, y: q[1] + 4, w: 64, sd: 116, z: 0.0 }), true); }
+        p = onRock(L5, 0.9); { const q = p; const K = { x: q[0] + 14, y: q[1] + 4, w: 64, sd: 116, z: 0.0, open: 0.8, snapT: -99, ph: 1.3 }; CLAMS.push(K); live(q[1] + 2, (g, t) => drawClam(g, K, t), true); }
         still(770, g => paintTubes(g, { x: 400, y: 760, h: 70, sd: 117, z: 0.09, pal: 1 }));
 
         // ── corals on the right ──
@@ -853,17 +969,17 @@
         p = onRock(R2, -0.2); { const q = p; still(q[1] + 3, g => paintBrain(g, { x: q[0], y: q[1] - 6, r: 70, sd: 125, z: 0.12, pal: 2 })); }
         p = onRock(R2, 0.6); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 130, sd: 126, z: 0.12, pal: 1 })); }
         p = onRock(R2, -0.75); { const q = p; live(q[1] + 3, (g, t, c) => drawSoft(g, SOFTS[1], t, c)); SOFTS.push(buildSoft({ x: q[0], y: q[1], h: 90, sd: 127, z: 0.12, pal: 1 })); }
-        p = onRock(R3, -0.55); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[1], t, c, DT)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 74, sd: 128, z: 0.09, pal: 1, n: 140 })); }
+        p = onRock(R3, -0.55); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[1], t, c, DT)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 74, sd: 128, z: 0.09, pal: 1, n: 132 })); }
         p = onRock(R3, 0.5); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 4, r: 56, sd: 129, z: 0.10, pal: 2, worms: 3 })); }
         p = onRock(R3, 0.98); { const q = p; still(q[1] + 3, g => paintMushroom(g, { x: q[0], y: q[1] + 6, r: 24, sd: 130, z: 0.10, pal: 2 })); }
         p = onRock(R4, -0.5); { const q = p; still(q[1] + 3, g => paintFingers(g, { x: q[0], y: q[1] + 2, w: 58, sd: 131, z: 0.06, pal: 2 })); }
         p = onRock(R4, 0.5); { const q = p; still(q[1] + 3, g => paintBarrel(g, { x: q[0], y: q[1] + 2, h: 74, sd: 132, z: 0.06 })); }
         p = onRock(R5, -0.5); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 2, r: 64, sd: 133, z: 0.02, pal: 1, flat: true, worms: 2 }), true); }
-        p = onRock(R5, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[2], t, c, DT), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 4, r: 58, sd: 134, z: 0.02, pal: 2, n: 110 })); }
+        p = onRock(R5, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[2], t, c, DT), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 4, r: 58, sd: 134, z: 0.02, pal: 2, n: 104 })); }
         p = onRock(R6, -0.2); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 110, sd: 135, z: 0.0, pal: 0 }), true); }
         p = onRock(R6, -0.85); { const q = p; live(q[1] + 3, (g, t, c) => drawWhips(g, { x: q[0], y: q[1] + 4, h: 130, n: 7, sd: 136, z: 0.0, pal: 1 }, t, c), true); }
         p = onRock(R6, 0.4); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 120, sd: 137, z: 0.0, pal: 2 }), true); }
-        { const q = [1240, 800]; still(q[1] + 2, g => paintClam(g, { x: q[0], y: q[1], w: 58, sd: 138, z: 0.05 })); }
+        { const q = [1240, 800]; const K = { x: q[0], y: q[1], w: 58, sd: 138, z: 0.05, open: 0.8, snapT: -99, ph: 4.1 }; CLAMS.push(K); live(q[1] + 2, (g, t) => drawClam(g, K, t)); }
         { const q = [1180, 700]; live(q[1] + 3, (g, t, c) => drawFan(g, FANS[2], t, c)); FANS.push(buildFan({ x: q[0], y: q[1] + 2, h: 72, sd: 139, z: 0.15, pal: 2 })); }
 
         // ── the centre channel ──
@@ -872,11 +988,11 @@
         p = onRock(C2, 0.2); { const q = p; still(q[1] + 3, g => paintFingers(g, { x: q[0], y: q[1] + 2, w: 40, sd: 143, z: 0.04, pal: 1 })); }
         p = onRock(C3, 0.0); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 70, sd: 144, z: 0.12, pal: 3, spread: 1.2 })); }
         { const q = [640, 850]; live(q[1] + 3, (g, t, c) => drawSoft(g, SOFTS[2], t, c), true); SOFTS.push(buildSoft({ x: q[0], y: q[1], h: 60, sd: 145, z: 0.0, pal: 2 })); }
-        { const q = [980, 860]; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[3], t, c, DT), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1], r: 46, sd: 146, z: 0.0, pal: 0, n: 90 })); }
+        { const q = [980, 860]; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[3], t, c, DT), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1], r: 46, sd: 146, z: 0.0, pal: 0, n: 84 })); }
         // sea stars, urchins, shells, grass on the sand
-        still(842, g => paintStar(g, { x: 590, y: 838, r: 22, sd: 151, z: 0.04, pal: 0 }));
-        still(884, g => paintStar(g, { x: 1090, y: 880, r: 26, sd: 152, z: 0.0, pal: 1 }), true);
-        still(830, g => paintStar(g, { x: 860, y: 826, r: 15, sd: 153, z: 0.05, pal: 2 }));
+        const star = (x, y, r, sd, z, pal, fore) => { STARS.push({ x, y, r }); still(y + 4, g => paintStar(g, { x, y, r, sd, z, pal }), fore); };
+        star(590, 838, 22, 151, 0.04, 0); star(1090, 880, 26, 152, 0.0, 1, true); star(860, 826, 15, 153, 0.05, 2);
+        star(720, 872, 20, 159, 0.0, 1, true); star(1290, 858, 18, 149, 0.02, 0, true); star(470, 862, 17, 148, 0.02, 2, true);
         still(846, g => paintUrchin(g, { x: 1000, y: 842, r: 12, sd: 154, z: 0.04 }));
         still(816, g => paintUrchin(g, { x: 540, y: 812, r: 9, sd: 155, z: 0.06 }));
         still(850, g => paintShell(g, { x: 760, y: 848, r: 12, sd: 156 }));
@@ -915,17 +1031,20 @@
       }
       function drawCaustics(g, t){
         // two scrolling passes over the lower water + sand, brighter on the sand
+        if (Q === 0) return;
         g.save(); g.globalCompositeOperation = 'lighter';
         // the light plays on the sand proper; a breath of it reaches the rock band above
         const sandClip = () => { g.beginPath(); g.moveTo(-400, DH + 300); for (let x = -400; x <= DW + 400; x += 20) g.lineTo(x, ground(x)); g.lineTo(DW + 400, DH + 300); g.closePath(); };
-        const passes = [[sandClip, 0.30], [() => { g.beginPath(); g.rect(-400, 660, DW + 800, 140); }, 0.05]];
-        for (const [clip, a] of passes){
+        const bandClip = () => { g.beginPath(); g.rect(-400, 660, DW + 800, 140); };
+        const passes = Q === 2 ? [[sandClip, 0.36, 1], [bandClip, 0.06, 1]] : [[sandClip, 0.36, 1]];
+        for (const [clip, a, np] of passes){
           g.save(); clip(); g.clip();
-          for (let pass = 0; pass < 2; pass++){
+          for (let pass = 0; pass < np; pass++){
             const sc = pass ? 2.1 : 1.5, ox = (t * (pass ? 7 : -5)) % 256, oy = (t * (pass ? 3 : 5)) % 256;
             g.save(); g.translate(ox, oy); g.scale(sc, sc * 0.45);
             g.fillStyle = causPat; g.globalAlpha = a * (pass ? 0.7 : 1);
-            g.fillRect(-1600, -400, 5200, 3400);
+            // only the band the clip can show, in this pass's scaled space
+            g.fillRect(-500 / sc, 600 / (sc * 0.45), (DW + 1000) / sc, 500 / (sc * 0.45));
             g.restore();
           }
           g.restore();
@@ -934,7 +1053,7 @@
       }
       // god-rays: a few long soft wedges from the sun, swinging slowly; each
       // ray is three nested wedges so its edges melt into the water
-      function drawRays(g, t){
+      function paintRays(g, t){
         g.save(); g.globalCompositeOperation = 'lighter';
         for (let i = 0; i < 6; i++){
           const a0 = 0.78 + i * 0.19 + Math.sin(t * 0.09 + i * 1.7) * 0.035, w0 = 0.04 + psr(i + 500) * 0.05;
@@ -951,27 +1070,58 @@
         }
         g.restore();
       }
+      // Eighteen long additive gradient wedges were the single biggest painted
+      // area in the scene. They swing at ~0.09 rad/s, so they are painted into a
+      // HALF-resolution layer every 4th frame (8th at reduced quality) and the
+      // frame takes one additive blit; at minimal quality they are skipped.
+      let raysL = null, rayTick = 0;
+      function drawRays(g, t){
+        if (Q === 0 || !raysL) return;
+        if (!raysL.built || (rayTick++ % (Q === 2 ? 4 : 8)) === 0){
+          const q = raysL.cx;
+          q.save(); q.setTransform(1, 0, 0, 1, 0, 0); q.clearRect(0, 0, raysL.cv.width, raysL.cv.height); q.restore();
+          q.save(); q.setTransform(raysL.dpr * S, 0, 0, raysL.dpr * S, raysL.dpr * OX, raysL.dpr * OY); paintRays(q, t); q.restore();
+          raysL.built = true;
+        }
+        g.save(); g.setTransform(DPR, 0, 0, DPR, 0, 0); g.globalCompositeOperation = 'lighter';
+        g.drawImage(raysL.cv, 0, 0, W, H);
+        g.restore();
+      }
       // motes drifting with the current, bubbles seeping up from the reef
+      const BUCK = [[], [], [], [], []], LIVEB = [];             // reused scratch: mote buckets, live bubbles
       const MOTES = Array.from({ length: 110 }, (_, i) => ({ x: psr(i + 600) * DW, y: psr(i + 601) * DH, r: 0.6 + psr(i + 602) * 1.6, vy: -2 - psr(i + 603) * 5, ph: psr(i + 604) * TAU, a: 0.15 + psr(i + 605) * 0.35 }));
       const SEEPS = [[250, 690], [1330, 705], [1460, 470], [720, 800], [1560, 640]];
       const BUBBLES = [];
       let nextBub = 1;
       function drawParticles(g, t, dt, c){
-        for (const m of MOTES){
+        for (let b = 0; b < 5; b++) BUCK[b].length = 0;          // 5 alpha buckets → 5 fills instead of 110
+        for (let mi = 0; mi < MOTES.length; mi += (Q === 2 ? 1 : Q === 1 ? 2 : 4)){ const m = MOTES[mi];
           m.x += (c * 14 + Math.sin(t * 0.7 + m.ph) * 4) * dt; m.y += m.vy * dt;
           if (m.y < -20) m.y = DH + 10; if (m.x < -20) m.x = DW + 10; else if (m.x > DW + 20) m.x = -10;
-          g.fillStyle = 'rgba(220,245,255,' + (m.a * (0.6 + 0.4 * Math.sin(t * 1.3 + m.ph))) + ')';
-          g.beginPath(); g.arc(m.x, m.y, m.r, 0, TAU); g.fill();
+          BUCK[Math.min(4, (m.a * (0.6 + 0.4 * Math.sin(t * 1.3 + m.ph)) * 10) | 0)].push(m);
+        }
+        for (let b = 0; b < 5; b++){
+          if (!BUCK[b].length) continue;
+          g.fillStyle = 'rgba(220,245,255,' + ((b + 0.5) / 10).toFixed(2) + ')';
+          g.beginPath();
+          for (const m of BUCK[b]){ g.moveTo(m.x + m.r, m.y); g.arc(m.x, m.y, m.r, 0, TAU); }
+          g.fill();
         }
         if (t > nextBub){ nextBub = t + 0.8 + Math.random() * 2.2; const s = SEEPS[Math.floor(Math.random() * SEEPS.length)]; const n = 1 + Math.floor(Math.random() * 4); for (let i = 0; i < n; i++) BUBBLES.push({ x: s[0] + (Math.random() - 0.5) * 12, y: s[1], r: 1.5 + Math.random() * 3, v: 40 + Math.random() * 40, ph: Math.random() * TAU, t0: t + i * 0.25 }); }
         g.lineWidth = 1;
+        const live = LIVEB; live.length = 0;
         for (let i = BUBBLES.length - 1; i >= 0; i--){
           const b = BUBBLES[i]; if (t < b.t0) continue;
           b.y -= b.v * dt; b.x += (Math.sin(t * 3 + b.ph) * 12 + c * 10) * dt; b.r += dt * 0.6;
           if (b.y < -10){ BUBBLES.splice(i, 1); continue; }
-          g.strokeStyle = 'rgba(230,250,255,0.55)'; g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.stroke();
-          g.fillStyle = 'rgba(255,255,255,0.7)'; g.beginPath(); g.arc(b.x - b.r * 0.35, b.y - b.r * 0.4, b.r * 0.28, 0, TAU); g.fill();
-          g.fillStyle = 'rgba(200,240,255,0.12)'; g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.fill();
+          live.push(b);
+        }
+        if (live.length){
+          g.beginPath(); for (const b of live){ g.moveTo(b.x + b.r, b.y); g.arc(b.x, b.y, b.r, 0, TAU); }
+          g.fillStyle = 'rgba(200,240,255,0.12)'; g.fill();
+          g.strokeStyle = 'rgba(230,250,255,0.55)'; g.stroke();
+          g.beginPath(); for (const b of live){ const hx = b.x - b.r * 0.35, hy = b.y - b.r * 0.4, hr = b.r * 0.28; g.moveTo(hx + hr, hy); g.arc(hx, hy, hr, 0, TAU); }
+          g.fillStyle = 'rgba(255,255,255,0.7)'; g.fill();
         }
       }
 
@@ -983,19 +1133,23 @@
       // beat; the caudal fin adds its own swing on top. The fish is placed
       // with translate / rotate(pitch) / scale(face·s, s): `face` runs
       // −1..1, so a turn thins the fish through zero instead of snapping.
-      const FISH = [], HEARTS = [];
+      const FISH = [], HEARTS = [], SHARKS = [];
+      const _WX = [], _WY = [], _W2 = [0, 0];                     // reused: warped outlines, and one warped point
       function smoothPath(g, pts, wp, closed){
         // closed Catmull-Rom through (warped) points → cubic beziers
-        const P = pts.map(p => wp(p[0], p[1])), n = P.length;
-        g.moveTo(P[0][0], P[0][1]);
+        const n = pts.length;
+        for (let i = 0; i < n; i++){ const q = wp(pts[i][0], pts[i][1]); _WX[i] = q[0]; _WY[i] = q[1]; }
+        g.moveTo(_WX[0], _WY[0]);
         for (let i = 0; i < (closed ? n : n - 1); i++){
-          const p0 = P[(i - 1 + n) % n], p1 = P[i], p2 = P[(i + 1) % n], p3 = P[(i + 2) % n];
-          g.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6, p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
+          const a = (i - 1 + n) % n, b = i, c = (i + 1) % n, d = (i + 2) % n;
+          g.bezierCurveTo(_WX[b] + (_WX[c] - _WX[a]) / 6, _WY[b] + (_WY[c] - _WY[a]) / 6, _WX[c] - (_WX[d] - _WX[b]) / 6, _WY[c] - (_WY[d] - _WY[b]) / 6, _WX[c], _WY[c]);
         }
         if (closed) g.closePath();
       }
-      const poly = (g, pts, wp) => { pts.forEach((p, i) => { const q = wp(p[0], p[1]); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.closePath(); };
-      const mkWarp = bend => (x, y) => x < 0 ? [x, y + bend * x * x * 1.6] : [x, y];
+      const poly = (g, pts, wp) => { for (let i = 0; i < pts.length; i++){ const q = wp(pts[i][0], pts[i][1]); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); } g.closePath(); };
+      // the warp returns ONE reused pair — read it before calling again
+      const mkWarp = bend => (x, y) => { _W2[0] = x; _W2[1] = x < 0 ? y + bend * x * x * 1.6 : y; return _W2; };
+      const warpY = (bend, x, y) => x < 0 ? y + bend * x * x * 1.6 : y;
 
       // ── species ──
       // body: outline anchors · tail: {kind, len} · dorsal/anal: fin polygons ·
@@ -1075,7 +1229,8 @@
 
       // pre-hazed palette per fish (colours don't change while it swims)
       function fishPalette(F){
-        const sp = SPECIES[F.kind], y = F.y, z = F.z, C = sp.col;
+        const sp = SPECIES[F.kind]; if (!sp) return;
+        const y = F.y, z = F.z, C = sp.col;
         const H = c => rgb(haze(c, y, z));
         F.P = {
           top: H(C.top), bot: H(C.bot), fin: H(C.fin), edge: H(C.edge),
@@ -1086,6 +1241,7 @@
 
       function drawFish(g, F, t){
         const sp = SPECIES[F.kind], P = F.P, s = F.s * (1 - F.z * 0.55);
+        const tiny = s * S < 26;                                  // too small on screen for the fine detail
         const wag = Math.sin(F.ph) * F.wagAmp;
         const wp = mkWarp(wag * 0.9); P.wp = wp;
         g.save(); g.translate(F.x, F.y); g.rotate(F.pitch);
@@ -1101,10 +1257,11 @@
         else { g.moveTo(0.02, -0.06); g.quadraticCurveTo(-T.len * 1.1, -T.h * 1.3, -T.len, 0); g.quadraticCurveTo(-T.len * 1.1, T.h * 1.3, 0.02, 0.06); }
         g.closePath(); g.fill();
         g.strokeStyle = P.edge; g.lineWidth = 0.012; g.stroke();
-        // fin rays
-        g.strokeStyle = P.edge; g.globalAlpha *= 0.35; g.lineWidth = 0.008;
-        for (let k = -2; k <= 2; k++){ g.beginPath(); g.moveTo(0, 0); g.lineTo(-T.len * 0.95, k * T.h * 0.45); g.stroke(); }
-        g.globalAlpha /= 0.35;
+        if (!tiny){                                               // fin rays
+          g.strokeStyle = P.edge; g.globalAlpha *= 0.35; g.lineWidth = 0.008;
+          for (let k = -2; k <= 2; k++){ g.beginPath(); g.moveTo(0, 0); g.lineTo(-T.len * 0.95, k * T.h * 0.45); g.stroke(); }
+          g.globalAlpha /= 0.35;
+        }
         g.restore();
         // dorsal + anal + pelvic fins
         g.fillStyle = P.finA; g.strokeStyle = P.edge; g.lineWidth = 0.012;
@@ -1116,22 +1273,24 @@
         sp.pattern(g, P);
         // belly light, back sheen, gill line
         g.fillStyle = lg(g, 0, -0.3, 0, 0.3, [[0, 'rgba(255,255,255,0.22)'], [0.35, 'rgba(255,255,255,0)'], [0.75, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.18)']]); g.fillRect(-0.6, -0.5, 1.2, 1);
-        g.strokeStyle = 'rgba(0,0,0,0.18)'; g.lineWidth = 0.012; g.beginPath(); g.arc(0.14, 0.0, 0.16, -1.1, 1.1); g.stroke();
+        if (!tiny){ g.strokeStyle = 'rgba(0,0,0,0.18)'; g.lineWidth = 0.012; g.beginPath(); g.arc(0.14, 0.0, 0.16, -1.1, 1.1); g.stroke(); }
         g.restore();
         g.strokeStyle = P.edge; g.lineWidth = 0.012; g.globalAlpha *= 0.6; g.beginPath(); smoothPath(g, sp.body, wp, true); g.stroke(); g.globalAlpha /= 0.6;
         // pectoral fin (flaps)
-        const [px, py, pl] = sp.pect, flap = Math.sin(F.ph * 1.3 + 1) * 0.35 - 0.2;
-        g.save(); g.translate(px, py); g.rotate(0.5 + flap);
-        g.fillStyle = P.finA; g.globalAlpha *= 0.8; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-pl * 0.5, pl * 0.25, -pl, pl * 0.1); g.quadraticCurveTo(-pl * 0.6, pl * 0.5, -pl * 0.1, pl * 0.35); g.closePath(); g.fill();
-        g.strokeStyle = P.edge; g.lineWidth = 0.01; g.stroke(); g.restore();
+        if (!tiny){
+          const [px, py, pl] = sp.pect, flap = Math.sin(F.ph * 1.3 + 1) * 0.35 - 0.2;
+          g.save(); g.translate(px, py); g.rotate(0.5 + flap);
+          g.fillStyle = P.finA; g.globalAlpha *= 0.8; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-pl * 0.5, pl * 0.25, -pl, pl * 0.1); g.quadraticCurveTo(-pl * 0.6, pl * 0.5, -pl * 0.1, pl * 0.35); g.closePath(); g.fill();
+          g.strokeStyle = P.edge; g.lineWidth = 0.01; g.stroke(); g.restore();
+        }
         // eye: ring, pupil, catchlight
         const [ex, ey, er] = sp.eye;
         g.fillStyle = P.eyeIris; g.beginPath(); g.arc(ex, ey, er, 0, TAU); g.fill();
         g.fillStyle = '#0a0a12'; g.beginPath(); g.arc(ex + er * 0.05, ey, er * 0.62, 0, TAU); g.fill();
         g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(ex + er * 0.3, ey - er * 0.35, er * 0.25, 0, TAU); g.fill();
         // mouth (opens now and then)
-        const mo = F.mouth || 0;
-        g.strokeStyle = P.edge; g.lineWidth = 0.014; g.beginPath(); g.moveTo(0.5, sp.body[0][1]); g.lineTo(0.44, sp.body[0][1] + 0.02 + mo * 0.05); g.stroke();
+        const mo = tiny ? 0 : (F.mouth || 0);
+        if (!tiny){ g.strokeStyle = P.edge; g.lineWidth = 0.014; g.beginPath(); g.moveTo(0.5, sp.body[0][1]); g.lineTo(0.44, sp.body[0][1] + 0.02 + mo * 0.05); g.stroke(); }
         if (mo > 0.2){ g.fillStyle = 'rgba(20,10,10,0.7)'; g.beginPath(); g.moveTo(0.5, sp.body[0][1] - 0.01); g.lineTo(0.45, sp.body[0][1] + 0.005); g.lineTo(0.5, sp.body[0][1] + 0.02 + mo * 0.05); g.closePath(); g.fill(); }
         g.restore();
       }
@@ -1178,7 +1337,7 @@
       function updatePoop(g, F, t, dt, vx, vy, w){
         if (!F.poopAt) F.poopAt = t + Math.random() * 180;
         let p = F.poop;
-        const maxLen = Math.max(14, F.s * 0.55);                  // the strand never grows longer than about half the fish
+        const maxLen = Math.min(60, Math.max(14, F.s * 0.55));    // never longer than about half the fish, and never a log
         if (!p){ if (t > F.poopAt) F.poop = { pts: [[vx, vy]], detachT: t + 1.6 + Math.random() * 1.4, fade: 1, len: 0 }; return; }
         if (p.detachT !== null){
           const last = p.pts[p.pts.length - 1], jump = Math.hypot(vx - last[0], vy - last[1]);
@@ -1195,7 +1354,8 @@
         g.beginPath(); g.moveTo(p.pts[0][0], p.pts[0][1]); for (let i = 1; i < p.pts.length; i++) g.lineTo(p.pts[i][0], p.pts[i][1]); g.stroke();
       }
       const ventOf = F => { const s = F.s * (1 - F.z * 0.55); return [F.x - F.face * s * 0.4, F.y + s * 0.12]; };
-      const drawFishFull = (g, F, t, dt) => { drawFish(g, F, t); const v = ventOf(F); updatePoop(g, F, t, dt, v[0], v[1], Math.max(1, F.s * 0.03)); };
+      const DRAWERS = { dolphin: (g, F, t) => drawDolphin(g, F, t), shark: (g, F, t) => drawShark(g, F, t), puffer: (g, F, t) => drawPuffer(g, F, t) };
+      const drawFishFull = (g, F, t, dt) => { (DRAWERS[F.kind] || drawFish)(g, F, t); const v = ventOf(F); updatePoop(g, F, t, dt, v[0], v[1], Math.min(3, Math.max(1, F.s * 0.03))); };
 
       // ── bubble puff + hearts ──
       function puff(x, y, n){ for (let i = 0; i < (n || 6); i++) BUBBLES.push({ x: x + (Math.random() - 0.5) * 16, y: y + (Math.random() - 0.5) * 10, r: 1.2 + Math.random() * 2.5, v: 30 + Math.random() * 40, ph: Math.random() * TAU, t0: lastT + Math.random() * 0.3 }); }
@@ -1233,7 +1393,7 @@
       }
       function drawAnemoneAndFish(g, A, t, c, dt){
         // residents hiding in the crown are drawn between the back and front tentacles
-        A.midDraw = g2 => { for (const F of A.fish) if (F.inside > 0.5) drawFishFull(g2, F, t, dt); };
+        A.midDraw = g2 => { const dx = anemLean(A, t, c); g2.save(); g2.translate(dx, 0); for (const F of A.fish) if (F.inside > 0.5) drawFishFull(g2, F, t, dt); g2.restore(); };
         drawAnemone(g, A, t, c);
         for (const F of A.fish) if (F.inside <= 0.5) drawFishFull(g, F, t, dt);
       }
@@ -1252,7 +1412,7 @@
       }
 
       // ── the passing giants ──
-      const WHALE = { kind: 'whale', active: false, nextAt: null, first: [60, 110], gap: [220, 340], len: 2050, yr: [280, 340], spd: 95, z: 0.34, ph: Math.random() * TAU };
+      const WHALE = { kind: 'whale', active: false, nextAt: null, first: [60, 110], gap: [220, 340], len: 2050, yr: [232, 262], spd: 95, z: 0.34, ph: Math.random() * TAU };
       const ORCA = { kind: 'orca', active: false, nextAt: null, first: [18, 45], gap: [90, 160], len: 950, yr: [380, 450], spd: 160, z: 0.24, ph: Math.random() * TAU };
       function updateGiant(G, t, dt, other){
         if (!G.active){
@@ -1275,18 +1435,21 @@
         g.fillStyle = mid; g.beginPath(); g.moveTo(0.02, -0.02); g.quadraticCurveTo(-0.12, -0.11, -0.2, -0.045); g.quadraticCurveTo(-0.1, -0.01, -0.06, 0); g.quadraticCurveTo(-0.1, 0.02, -0.2, 0.06); g.quadraticCurveTo(-0.12, 0.11, 0.02, 0.02); g.closePath(); g.fill();
         g.restore();
         // the small hooked dorsal fin (its base hidden under the body)
-        g.fillStyle = mid; const d0 = wp(-0.26, -0.03), d1 = wp(-0.33, -0.135), d2 = wp(-0.37, -0.03);
-        g.beginPath(); g.moveTo(d0[0], d0[1]); g.quadraticCurveTo(d1[0] + 0.03, d1[1] + 0.02, d1[0], d1[1]); g.quadraticCurveTo(d1[0] - 0.01, d1[1] + 0.05, d2[0], d2[1]); g.closePath(); g.fill();
+        g.fillStyle = mid;
+        { const d0y = warpY(beat * 0.7, -0.26, -0.03), d1y = warpY(beat * 0.7, -0.33, -0.135), d2y = warpY(beat * 0.7, -0.37, -0.03);
+          g.beginPath(); g.moveTo(-0.26, d0y); g.quadraticCurveTo(-0.33 + 0.03, d1y + 0.02, -0.33, d1y); g.quadraticCurveTo(-0.33 - 0.01, d1y + 0.05, -0.37, d2y); g.closePath(); g.fill(); }
         // the body
         const body = [[0.5, 0.02], [0.45, -0.055], [0.28, -0.1], [0.02, -0.12], [-0.22, -0.095], [-0.4, -0.05], [-0.5, -0.02], [-0.5, 0.02], [-0.4, 0.05], [-0.22, 0.1], [0.02, 0.135], [0.28, 0.135], [0.45, 0.085]];
         g.beginPath(); smoothPath(g, body, wp, true);
         g.fillStyle = lg(g, 0, -0.12, 0, 0.14, [[0, top], [0.5, mid], [0.72, mid], [1, bot]]); g.fill();
         g.save(); g.clip();
         // mottling on the back, throat pleats, the long mouth line, the eye
-        g.fillStyle = 'rgba(200,215,235,0.13)';
-        for (let i = 0; i < 260; i++){ const q = wp(-0.44 + psr(i + 300) * 0.9, -0.115 + psr(i + 301) * 0.17); g.beginPath(); g.ellipse(q[0], q[1], 0.0025 + psr(i + 302) * 0.006, 0.0018 + psr(i + 303) * 0.003, 0, 0, TAU); g.fill(); }
-        g.strokeStyle = 'rgba(40,50,80,0.22)'; g.lineWidth = 0.004;
-        for (let i = 0; i < 7; i++){ const yy = 0.06 + i * 0.011; g.beginPath(); g.moveTo(0.44, yy); g.quadraticCurveTo(0.3, yy + 0.05, 0.05, yy + 0.06); g.stroke(); }
+        g.fillStyle = 'rgba(200,215,235,0.13)'; g.beginPath();
+        for (let i = 0; i < 260; i++){ const q = wp(-0.44 + psr(i + 300) * 0.9, -0.115 + psr(i + 301) * 0.17); const rx = 0.0025 + psr(i + 302) * 0.006; g.moveTo(q[0] + rx, q[1]); g.ellipse(q[0], q[1], rx, 0.0018 + psr(i + 303) * 0.003, 0, 0, TAU); }
+        g.fill();
+        g.strokeStyle = 'rgba(40,50,80,0.22)'; g.lineWidth = 0.004; g.beginPath();
+        for (let i = 0; i < 7; i++){ const yy = 0.06 + i * 0.011; g.moveTo(0.44, yy); g.quadraticCurveTo(0.3, yy + 0.05, 0.05, yy + 0.06); }
+        g.stroke();
         g.strokeStyle = dark; g.lineWidth = 0.006; g.beginPath(); g.moveTo(0.49, 0.03); g.quadraticCurveTo(0.35, 0.07, 0.2, 0.055); g.stroke();
         g.restore();
         g.fillStyle = dark; g.beginPath(); g.arc(0.39, 0.03, 0.009, 0, TAU); g.fill();
@@ -1310,17 +1473,250 @@
         g.save(); g.clip();
         // white chin and belly, the flank lobe, the eye patch, the grey saddle
         g.fillStyle = wht; g.beginPath(); smoothPath(g, [[0.5, 0.035], [0.44, 0.07], [0.25, 0.12], [0.0, 0.14], [-0.2, 0.12], [-0.3, 0.04], [-0.22, 0.0], [-0.12, 0.06], [0.1, 0.09], [0.3, 0.08], [0.46, 0.05]], wp, true); g.fill();
-        g.beginPath(); g.ellipse(0.3, -0.055, 0.065, 0.024, -0.25, 0, TAU); g.fill();
+        g.beginPath(); g.ellipse(0.285, -0.062, 0.078, 0.022, 0.3, 0, TAU); g.fill();
         g.fillStyle = sad; g.beginPath(); smoothPath(g, [[-0.05, -0.12], [-0.12, -0.13], [-0.25, -0.1], [-0.22, -0.05], [-0.12, -0.04], [-0.06, -0.08]], wp, true); g.fill();
         g.restore();
-        // eye, mouth line
-        g.fillStyle = blk; g.beginPath(); g.arc(0.37, -0.01, 0.008, 0, TAU); g.fill();
+        // the eye: a small dark eye in a lighter socket, just in front of and below the patch
+        g.fillStyle = rgb(haze([92, 98, 108], y, G.z)); g.beginPath(); g.arc(0.362, -0.028, 0.013, 0, TAU); g.fill();
+        g.fillStyle = '#07070c'; g.beginPath(); g.arc(0.363, -0.028, 0.0085, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.85)'; g.beginPath(); g.arc(0.366, -0.031, 0.003, 0, TAU); g.fill();
+        // mouth line
         g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 0.006; g.beginPath(); g.moveTo(0.49, 0.04); g.quadraticCurveTo(0.4, 0.06, 0.3, 0.05); g.stroke();
         // the tall dorsal fin and the near pectoral paddle
-        const f0 = wp(0.08, -0.115), f1 = wp(-0.05, -0.42), f2 = wp(-0.16, -0.11);
-        g.fillStyle = blk; g.beginPath(); g.moveTo(f0[0], f0[1]); g.quadraticCurveTo(f0[0] - 0.02, f1[1] + 0.1, f1[0], f1[1]); g.quadraticCurveTo(f1[0] - 0.03, f1[1] + 0.15, f2[0], f2[1]); g.closePath(); g.fill();
+        { const bw = beat * 0.8, f0y = warpY(bw, 0.08, -0.115), f1y = warpY(bw, -0.05, -0.42), f2y = warpY(bw, -0.16, -0.11);
+          g.fillStyle = blk; g.beginPath(); g.moveTo(0.08, f0y); g.quadraticCurveTo(0.08 - 0.02, f1y + 0.1, -0.05, f1y); g.quadraticCurveTo(-0.05 - 0.03, f1y + 0.15, -0.16, f2y); g.closePath(); g.fill(); }
         g.beginPath(); g.ellipse(0.2, 0.15, 0.1, 0.05, 0.8 + beat * 0.6, 0, TAU); g.fill();
         g.restore();
+      }
+
+
+      // ═══════════════ DOLPHINS · SHARKS · THE PUFFER · CRABS · RUMI ═══════════════
+      // Custom renderers for the animals a "fish" template can't carry; they
+      // share the placement (translate / rotate(pitch) / scale(face·s, s)),
+      // the body warp and the behaviour engine (steer / integrate / wander).
+      const pal = (F, mk) => F.P || (F.P = mk());          // per-animal pre-hazed palette
+      const CRABS = [], STARS = [];
+
+      // ── DOLPHIN: bottlenose — melon, beak, curved dorsal, flippers, flukes ──
+      function drawDolphin(g, F, t){
+        const s = F.s * (1 - F.z * 0.55), wag = Math.sin(F.ph) * F.wagAmp, wp = mkWarp(wag * 0.8);
+        const P = pal(F, () => { const H = c => rgb(haze(c, F.y, F.z)); return { top: H([84, 100, 122]), side: H([148, 164, 182]), belly: H([236, 240, 244]), dark: H([40, 50, 66]), edge: rgb(haze([30, 40, 56], F.y, F.z), 0.5) }; });
+        g.save(); g.translate(F.x, F.y); g.rotate(F.pitch);
+        const roll = F.rollT !== undefined && t < F.rollT ? Math.cos((F.rollT - t) / F.rollLen * TAU) : 1;
+        g.scale(F.face * s, s * roll);
+        // flukes (edge-on lobes) swinging with the beat
+        const tb = wp(-0.5, 0); g.save(); g.translate(tb[0], tb[1]); g.rotate(wag * 1.6);
+        g.fillStyle = P.top; g.beginPath(); g.moveTo(0.02, -0.015); g.quadraticCurveTo(-0.1, -0.1, -0.2, -0.06); g.quadraticCurveTo(-0.1, -0.01, -0.06, 0); g.quadraticCurveTo(-0.1, 0.02, -0.2, 0.07); g.quadraticCurveTo(-0.1, 0.11, 0.02, 0.015); g.closePath(); g.fill(); g.restore();
+        // far flipper
+        g.fillStyle = P.side; g.beginPath(); g.moveTo(0.22, 0.06); g.quadraticCurveTo(0.1, 0.16, 0.0, 0.2); g.quadraticCurveTo(0.08, 0.13, 0.15, 0.08); g.closePath(); g.fill();
+        // body
+        const body = [[0.5, 0.03], [0.46, -0.01], [0.38, -0.06], [0.22, -0.105], [0.0, -0.12], [-0.2, -0.095], [-0.38, -0.05], [-0.5, -0.02], [-0.5, 0.02], [-0.38, 0.06], [-0.2, 0.11], [0.0, 0.13], [0.22, 0.125], [0.38, 0.1], [0.46, 0.065]];
+        g.beginPath(); smoothPath(g, body, wp, true);
+        g.fillStyle = lg(g, 0, -0.12, 0, 0.13, [[0, P.top], [0.45, P.side], [0.7, P.side], [0.8, P.belly], [1, P.belly]]); g.fill();
+        g.save(); g.clip();
+        g.fillStyle = P.top; g.beginPath(); smoothPath(g, [[0.44, -0.03], [0.3, -0.08], [0.0, -0.13], [-0.3, -0.09], [-0.5, -0.03], [-0.3, -0.02], [0.0, -0.025], [0.3, -0.015]], wp, true); g.fill();   // the darker cape
+        g.fillStyle = 'rgba(255,255,255,0.14)'; g.beginPath(); g.ellipse(0.05, -0.05, 0.3, 0.025, 0, 0, TAU); g.fill();
+        g.restore();
+        g.strokeStyle = P.edge; g.lineWidth = 0.008; g.beginPath(); smoothPath(g, body, wp, true); g.stroke();
+        // dorsal fin (curved back), the near flipper
+        g.fillStyle = P.top;
+        { const bw = wag * 0.8, d0y = warpY(bw, 0.06, -0.1), d1y = warpY(bw, -0.12, -0.3), d2y = warpY(bw, -0.16, -0.08);
+          g.beginPath(); g.moveTo(0.06, d0y); g.quadraticCurveTo(0.06 - 0.02, d1y + 0.06, -0.12, d1y); g.quadraticCurveTo(-0.12, d1y + 0.14, -0.16, d2y); g.closePath(); g.fill(); }
+        g.fillStyle = P.side; g.beginPath(); g.moveTo(0.24, 0.08); g.quadraticCurveTo(0.14, 0.2, 0.04, 0.24); g.quadraticCurveTo(0.1, 0.14, 0.18, 0.09); g.closePath(); g.fill(); g.strokeStyle = P.edge; g.stroke();
+        // smile along the beak, blowhole, eye
+        g.strokeStyle = P.dark; g.lineWidth = 0.01; g.beginPath(); g.moveTo(0.5, 0.035); g.quadraticCurveTo(0.42, 0.075, 0.33, 0.06); g.stroke();
+        g.fillStyle = P.dark; g.beginPath(); g.ellipse(0.2, -0.115, 0.012, 0.006, 0, 0, TAU); g.fill();
+        g.fillStyle = '#0a0a12'; g.beginPath(); g.arc(0.37, 0.005, 0.016, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(0.375, 0.0, 0.006, 0, TAU); g.fill();
+        g.restore();
+      }
+
+      // ── SHARK: blacktip reef shark — heterocercal tail, black-tipped fins, gill slits ──
+      function drawShark(g, F, t){
+        const s = F.s * (1 - F.z * 0.55), wag = Math.sin(F.ph) * F.wagAmp, wp = mkWarp(wag * 1.0);
+        const P = pal(F, () => { const H = c => rgb(haze(c, F.y, F.z)); return { top: H([116, 114, 106]), mid: H([160, 158, 150]), belly: H([232, 230, 222]), black: H([24, 22, 24]), edge: rgb(haze([40, 40, 40], F.y, F.z), 0.45), gill: rgb(haze([60, 58, 54], F.y, F.z), 0.7) }; });
+        g.save(); g.translate(F.x, F.y); g.rotate(F.pitch); g.scale(F.face * s, s);
+        // caudal fin: the upper lobe long, both tips black
+        const tailPath = () => { g.beginPath(); g.moveTo(0.02, -0.02); g.quadraticCurveTo(-0.12, -0.06, -0.26, -0.19); g.quadraticCurveTo(-0.2, -0.06, -0.12, 0.0); g.quadraticCurveTo(-0.16, 0.05, -0.18, 0.1); g.quadraticCurveTo(-0.1, 0.05, 0.02, 0.03); g.closePath(); };
+        const tb = wp(-0.5, 0); g.save(); g.translate(tb[0], tb[1]); g.rotate(wag * 1.7);
+        g.fillStyle = P.mid; tailPath(); g.fill(); g.strokeStyle = P.edge; g.lineWidth = 0.008; g.stroke();
+        g.fillStyle = P.black; g.beginPath(); g.moveTo(-0.19, -0.12); g.lineTo(-0.26, -0.19); g.lineTo(-0.2, -0.17); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(-0.15, 0.07); g.lineTo(-0.18, 0.1); g.lineTo(-0.165, 0.065); g.closePath(); g.fill();
+        g.restore();
+        // far pectoral
+        g.fillStyle = P.mid; g.beginPath(); g.moveTo(0.2, 0.06); g.quadraticCurveTo(0.05, 0.14, -0.06, 0.2); g.quadraticCurveTo(0.06, 0.1, 0.12, 0.08); g.closePath(); g.fill();
+        // body
+        const body = [[0.5, 0.02], [0.45, -0.035], [0.32, -0.08], [0.12, -0.1], [-0.1, -0.09], [-0.3, -0.06], [-0.45, -0.03], [-0.5, -0.015], [-0.5, 0.015], [-0.45, 0.035], [-0.3, 0.07], [-0.1, 0.1], [0.12, 0.1], [0.32, 0.085], [0.45, 0.05]];
+        g.beginPath(); smoothPath(g, body, wp, true);
+        g.fillStyle = lg(g, 0, -0.1, 0, 0.1, [[0, P.top], [0.5, P.mid], [0.66, P.belly], [1, P.belly]]); g.fill();
+        g.save(); g.clip();
+        g.strokeStyle = P.gill; g.lineWidth = 0.007; g.beginPath();
+        for (let i = 0; i < 5; i++){ const gx = 0.3 - i * 0.022; g.moveTo(gx, -0.02); g.quadraticCurveTo(gx - 0.012, 0.02, gx, 0.06); }
+        g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.12)'; g.beginPath(); g.ellipse(0.05, -0.04, 0.3, 0.02, 0, 0, TAU); g.fill();
+        g.restore();
+        g.strokeStyle = P.edge; g.lineWidth = 0.008; g.beginPath(); smoothPath(g, body, wp, true); g.stroke();
+        // fins: first dorsal (black tip), second dorsal, pelvic, anal, near pectoral (black tip)
+        const fin = (pts, tip) => {
+          g.fillStyle = P.mid; g.beginPath(); poly(g, pts, wp); g.fill(); g.strokeStyle = P.edge; g.stroke();
+          if (tip !== undefined){
+            const bw = wag * 1.0, i1 = (tip + 1) % pts.length, i2 = (tip + 2) % pts.length;
+            const ax = pts[tip][0], ay = warpY(bw, ax, pts[tip][1]);
+            const bx = pts[i1][0], by = warpY(bw, bx, pts[i1][1]);
+            const cx2 = pts[i2][0], cy2 = warpY(bw, cx2, pts[i2][1]);
+            g.fillStyle = P.black; g.beginPath(); g.moveTo(ax, ay); g.lineTo(lerp(ax, bx, 0.3), lerp(ay, by, 0.3)); g.lineTo(lerp(ax, cx2, 0.3), lerp(ay, cy2, 0.3)); g.closePath(); g.fill(); }
+        };
+        fin([[0.14, -0.09], [-0.02, -0.3], [-0.1, -0.08]], 1);
+        fin([[-0.28, -0.06], [-0.35, -0.14], [-0.4, -0.04]]);
+        fin([[-0.12, 0.09], [-0.2, 0.15], [-0.24, 0.08]]);
+        fin([[-0.32, 0.065], [-0.38, 0.12], [-0.42, 0.045]]);
+        g.fillStyle = P.mid; g.beginPath(); g.moveTo(0.22, 0.08); g.quadraticCurveTo(0.06, 0.18, -0.06, 0.26); g.quadraticCurveTo(0.08, 0.12, 0.14, 0.095); g.closePath(); g.fill(); g.strokeStyle = P.edge; g.stroke();
+        g.fillStyle = P.black; g.beginPath(); g.moveTo(-0.06, 0.26); g.lineTo(-0.005, 0.215); g.lineTo(0.005, 0.235); g.closePath(); g.fill();
+        // eye, the underslung mouth
+        g.fillStyle = '#0a0a12'; g.beginPath(); g.arc(0.41, -0.02, 0.012, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.8)'; g.beginPath(); g.arc(0.414, -0.024, 0.004, 0, TAU); g.fill();
+        g.strokeStyle = P.gill; g.lineWidth = 0.009; g.beginPath(); g.moveTo(0.47, 0.045); g.quadraticCurveTo(0.42, 0.07, 0.34, 0.065); g.stroke();
+        g.restore();
+      }
+
+      // ── PUFFER: a round spotted blowfish; `F.puff` 0..1 balloons it and brings out the spines ──
+      function drawPuffer(g, F, t){
+        const s = F.s * (1 - F.z * 0.55), p = F.puff || 0, wag = Math.sin(F.ph) * F.wagAmp;
+        const P = pal(F, () => { const H = c => rgb(haze(c, F.y, F.z)); return { top: H([206, 176, 112]), mid: H([226, 204, 150]), belly: H([246, 240, 226]), spot: H([96, 66, 40]), fin: rgb(haze([230, 200, 140], F.y, F.z), 0.85), edge: rgb(haze([90, 70, 40], F.y, F.z), 0.6), spine: H([225, 210, 185]) }; });
+        const rx = 0.5 * (1 + p * 0.25), ry = lerp(0.3, rx, p);
+        g.save(); g.translate(F.x, F.y); g.rotate(F.pitch); g.scale(F.face * s, s);
+        g.fillStyle = P.fin; g.strokeStyle = P.edge; g.lineWidth = 0.01;
+        g.save(); g.translate(-rx * 0.98, 0); g.rotate(wag * 2);
+        g.beginPath(); g.moveTo(0, -0.06); g.quadraticCurveTo(-0.2, -0.16, -0.22, 0); g.quadraticCurveTo(-0.2, 0.16, 0, 0.06); g.closePath(); g.fill(); g.stroke(); g.restore();
+        const fl = Math.sin(F.ph * 2.2) * 0.25;
+        g.beginPath(); g.moveTo(-0.05, -ry * 0.95); g.quadraticCurveTo(-0.18 + fl * 0.1, -ry - 0.12, -0.26, -ry * 0.85); g.closePath(); g.fill(); g.stroke();
+        g.beginPath(); g.moveTo(-0.05, ry * 0.95); g.quadraticCurveTo(-0.18 - fl * 0.1, ry + 0.11, -0.26, ry * 0.85); g.closePath(); g.fill(); g.stroke();
+        g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, TAU);
+        g.fillStyle = lg(g, 0, -ry, 0, ry, [[0, P.top], [0.5, P.mid], [0.72, P.belly], [1, P.belly]]); g.fill();
+        g.save(); g.clip();
+        g.fillStyle = P.spot; g.beginPath();
+        for (let i = 0; i < 26; i++){ const a = psr(i + 700) * TAU, d = Math.sqrt(psr(i + 701)); const sx = Math.cos(a) * d * rx * 0.9, sy = -Math.abs(Math.sin(a)) * d * ry * 0.85 + ry * 0.1, srx = 0.02 + psr(i + 702) * 0.025; g.moveTo(sx + srx, sy); g.ellipse(sx, sy, srx, 0.016 + psr(i + 703) * 0.02, 0, 0, TAU); }
+        g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.2)'; g.beginPath(); g.ellipse(-0.05, -ry * 0.55, rx * 0.5, ry * 0.18, 0, 0, TAU); g.fill();
+        g.restore();
+        g.strokeStyle = P.edge; g.lineWidth = 0.012; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, TAU); g.stroke();
+        if (p > 0.15){
+          g.strokeStyle = P.spine; g.lineWidth = 0.014; g.lineCap = 'round';
+          const n = 34, L = 0.03 + 0.09 * p; g.beginPath();
+          for (let i = 0; i < n; i++){ const a = i / n * TAU + 0.1, x0 = Math.cos(a) * rx * 0.98, y0 = Math.sin(a) * ry * 0.98; g.moveTo(x0, y0); g.lineTo(x0 + Math.cos(a) * L, y0 + Math.sin(a) * L); }
+          g.stroke();
+        }
+        g.save(); g.translate(rx * 0.3, 0.02); g.rotate(0.4 + Math.sin(F.ph * 2.4) * 0.5);
+        g.fillStyle = P.fin; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(-0.1, 0.03, -0.16, 0.0); g.quadraticCurveTo(-0.1, 0.1, -0.02, 0.09); g.closePath(); g.fill(); g.strokeStyle = P.edge; g.lineWidth = 0.008; g.stroke(); g.restore();
+        const ex = rx * 0.58, ey = -ry * 0.28, er = 0.075 + p * 0.02;
+        g.fillStyle = '#fff'; g.beginPath(); g.arc(ex, ey, er, 0, TAU); g.fill();
+        g.fillStyle = P.spot; g.beginPath(); g.arc(ex + er * 0.15, ey, er * 0.62, 0, TAU); g.fill();
+        g.fillStyle = '#0a0a12'; g.beginPath(); g.arc(ex + er * 0.2, ey, er * 0.4, 0, TAU); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(ex + er * 0.35, ey - er * 0.35, er * 0.2, 0, TAU); g.fill();
+        g.strokeStyle = P.edge; g.lineWidth = 0.012; g.beginPath(); g.ellipse(rx * 0.98, 0.03, 0.03, 0.045, 0, 0, TAU); g.stroke();   // the pout
+        g.restore();
+      }
+
+      // ── CRAB: a red reef crab that scuttles sideways along the sand ──
+      function drawCrab(g, C, t){
+        const s = C.s;
+        const P = pal(C, () => { const H = c => rgb(haze(c, C.y, 0.02)); return { top: H([226, 96, 54]), mid: H([196, 70, 40]), lo: H([130, 40, 26]), hi: H([250, 160, 110]) }; });
+        const hop = C.hopUntil && t < C.hopUntil ? Math.sin((C.hopUntil - t) / C.hopLen * Math.PI) * 14 : 0;
+        const moving = Math.abs(C.vx) > 2, step = C.legPh;
+        g.save(); g.translate(C.x, C.y - hop); g.scale(s, s);
+        shadow(g, 0, 0.55 + hop / s * 0.3, 1.3, 0.28, 0.3);
+        g.lineCap = 'round'; g.lineJoin = 'round';
+        for (let side = -1; side <= 1; side += 2){
+          for (let i = 0; i < 4; i++){
+            const ph = step + i * 1.6 + (side > 0 ? Math.PI : 0), lift = moving ? Math.max(0, Math.sin(ph)) * 0.18 : 0;
+            const bx = side * (0.45 + i * 0.12), by = 0.05 + i * 0.05;
+            const kx = side * (0.95 + i * 0.1), ky = -0.25 + i * 0.12 - lift, fx = side * (1.15 + i * 0.12) + (moving ? Math.cos(ph) * 0.06 * side : 0), fy = 0.5 + i * 0.02 - lift * 0.5;
+            g.strokeStyle = P.lo; g.lineWidth = 0.13; g.beginPath(); g.moveTo(bx, by); g.lineTo(kx, ky); g.lineTo(fx, fy); g.stroke();
+            g.strokeStyle = P.mid; g.lineWidth = 0.08; g.beginPath(); g.moveTo(bx, by); g.lineTo(kx, ky); g.lineTo(fx, fy); g.stroke();
+          }
+        }
+        const raise = C.hopUntil && t < C.hopUntil + 0.6 ? 0.45 : 0.1 + Math.sin(t * 1.3 + C.ph0) * 0.05;
+        for (let side = -1; side <= 1; side += 2){
+          const ax = side * 0.55, ay = -0.15, ex = side * 1.0, ey = -0.45 - raise;
+          g.strokeStyle = P.lo; g.lineWidth = 0.2; g.beginPath(); g.moveTo(ax, ay); g.lineTo(side * 0.9, -0.1 - raise * 0.5); g.lineTo(ex, ey); g.stroke();
+          g.strokeStyle = P.mid; g.lineWidth = 0.13; g.beginPath(); g.moveTo(ax, ay); g.lineTo(side * 0.9, -0.1 - raise * 0.5); g.lineTo(ex, ey); g.stroke();
+          g.fillStyle = P.top; g.beginPath(); g.ellipse(ex, ey - 0.12, 0.2, 0.15, side * 0.4, 0, TAU); g.fill();
+          g.strokeStyle = P.lo; g.lineWidth = 0.03; g.stroke();
+          g.fillStyle = P.lo; g.beginPath(); g.moveTo(ex + side * 0.08, ey - 0.26); g.lineTo(ex + side * 0.2, ey - 0.16); g.lineTo(ex + side * 0.02, ey - 0.12); g.closePath(); g.fill();
+        }
+        g.beginPath(); g.moveTo(-0.7, 0.1); g.quadraticCurveTo(-0.75, -0.45, 0, -0.5); g.quadraticCurveTo(0.75, -0.45, 0.7, 0.1); g.quadraticCurveTo(0.4, 0.42, 0, 0.42); g.quadraticCurveTo(-0.4, 0.42, -0.7, 0.1); g.closePath();
+        g.fillStyle = lg(g, 0, -0.5, 0, 0.42, [[0, P.hi], [0.35, P.top], [1, P.mid]]); g.fill();
+        g.strokeStyle = P.lo; g.lineWidth = 0.04; g.stroke();
+        g.fillStyle = P.lo; for (let i = 0; i < 6; i++){ g.beginPath(); g.arc(-0.4 + i * 0.16, -0.05 + Math.sin(i * 1.7) * 0.06, 0.035, 0, TAU); g.fill(); }
+        g.fillStyle = 'rgba(255,255,255,0.25)'; g.beginPath(); g.ellipse(-0.15, -0.3, 0.3, 0.08, 0.1, 0, TAU); g.fill();
+        for (let side = -1; side <= 1; side += 2){
+          g.strokeStyle = P.mid; g.lineWidth = 0.07; g.beginPath(); g.moveTo(side * 0.22, -0.42); g.lineTo(side * 0.26, -0.68); g.stroke();
+          g.fillStyle = '#fff'; g.beginPath(); g.arc(side * 0.26, -0.72, 0.1, 0, TAU); g.fill();
+          g.fillStyle = '#0a0a12'; g.beginPath(); g.arc(side * 0.27 + (C.vx > 0 ? 0.02 : C.vx < 0 ? -0.02 : 0), -0.72, 0.055, 0, TAU); g.fill();
+        }
+        g.strokeStyle = P.lo; g.lineWidth = 0.03; g.beginPath(); g.moveTo(-0.1, 0.22); g.quadraticCurveTo(0, 0.3, 0.1, 0.22); g.stroke();
+        g.restore();
+      }
+      function updateCrab(C, t, dt){
+        if (C.wait > 0){ C.wait -= dt; C.vx = 0; }
+        else {
+          if (C.target === null) C.target = lerp(C.home[0], C.home[1], Math.random());
+          const d = C.target - C.x, spd = (C.hopUntil && t < C.hopUntil + 0.8) ? 95 : 26;
+          if (Math.abs(d) < 3){ C.target = null; C.wait = 1 + Math.random() * 4; C.vx = 0; }
+          else { C.vx = Math.sign(d) * spd; C.x += C.vx * dt; C.legPh += dt * spd * 0.3; }
+        }
+        C.y = ground(C.x) + C.dy;
+      }
+      function startleCrab(C, t){
+        C.hopUntil = t + 0.5; C.hopLen = 0.5; C.wait = 0;
+        C.target = Math.max(C.home[0], Math.min(C.home[1], C.x + (Math.random() < 0.5 ? -1 : 1) * (80 + Math.random() * 80)));
+        puff(C.x, C.y - 10, 4);
+      }
+      const crabAt = (dx, dy) => CRABS.find(C => Math.hypot((dx - C.x) / (C.s * 1.6), (dy - C.y) / (C.s * 1.1)) < 1);
+
+      // ── behaviours ──
+      function updateDolphin(F, t, dt){
+        if (F.breathing){
+          steer(F, F.target[0], F.target[1], F.spd * 1.5, dt, 2.5); integrate(F, dt, t);
+          if (F.y < -30){ puff(F.x, 6, 10); F.breathing = false; F.breathAt = t + 35 + Math.random() * 40; F.target = [F.x + F.face * 220, 180 + Math.random() * 220]; F.wait = 0; }
+        } else if (t > F.breathAt){ F.breathing = true; F.target = [F.x + (F.face > 0 ? 1 : -1) * 260, -90]; }
+        else wander(F, t, dt);
+      }
+      function updatePuffer(F, t, dt){
+        if (!F.puffAt) F.puffAt = t + 25 + Math.random() * 50;
+        if (t > F.puffAt && F.puffT0 === undefined) inflate(F, t);
+        if (F.puffT0 !== undefined){
+          const e = t - F.puffT0;
+          F.puff = e < 0.6 ? smooth(e / 0.6) : e < 3.6 ? 1 : e < 4.8 ? 1 - smooth((e - 3.6) / 1.2) : 0;
+          if (e >= 4.8){ F.puffT0 = undefined; F.puff = 0; F.puffAt = t + 90 + Math.random() * 60; }
+        }
+        const base = F.spd; F.spd = base * (1 - 0.7 * (F.puff || 0)); wander(F, t, dt); F.spd = base;
+      }
+      function inflate(F, t){ if (F.puffT0 === undefined){ F.puffT0 = t; puff(F.x, F.y, 5); } }
+
+      // ── rumi (backgrounds/rumi/chibi-walker.js) glides past in FLY mode every few
+      //    minutes; a tapped sea star summons her early (as in the old reef) ──
+      const rumiLayer = doc.createElement('div');
+      rumiLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden';
+      stage.appendChild(rumiLayer);
+      let rumiPatrol = null;
+      const RUMI_FLY = { mode: 'fly', direction: 'ltr', height: '30vh', bottom: '40%', duration: 3250, zIndex: 7 };
+      function needRumi(cb){
+        if (window.ChibiWalker){ cb(); return; }
+        const ex = doc.querySelector('script[data-chibi-walker]');
+        if (ex){ ex.addEventListener('load', cb); ex.addEventListener('error', cb); return; }
+        const s = doc.createElement('script');
+        s.src = BASE + 'rumi/chibi-walker.js'; s.setAttribute('data-chibi-walker', '1');
+        s.onload = cb; s.onerror = cb;
+        doc.head.appendChild(s);
+      }
+      needRumi(() => {
+        if (stopped || !window.ChibiWalker) return;
+        rumiPatrol = window.ChibiWalker.patrol(rumiLayer, Object.assign({}, RUMI_FLY, { alternate: false, gapMin: 120000, gapMax: 240000, startDelay: 60000 + Math.random() * 120000 }));
+      });
+      function summonRumi(){
+        if (stopped) return;
+        needRumi(() => { if (stopped || !window.ChibiWalker || rumiLayer.querySelector('.chibi-walker')) return; window.ChibiWalker.walk(rumiLayer, RUMI_FLY); });
       }
 
       // ── build the cast ──
@@ -1345,6 +1741,19 @@
         // royal grammas low by the rocks
         makeFish({ kind: 'gramma', x: 1200, y: 700, z: 0.08, s: 30, spd: 30, home: [1060, 1560, 560, 740] });
         makeFish({ kind: 'gramma', x: 450, y: 720, z: 0.06, s: 28, spd: 30, home: [200, 620, 600, 750] });
+        // two bottlenose dolphins, fast in the open water, rising for a breath now and then
+        makeFish({ kind: 'dolphin', x: 400, y: 260, z: 0.1, s: 230, spd: 85, turn: 1.3, wagBase: 0.7, wagRate: 0.6, home: [60, 1540, 90, 470], breathAt: 20 + Math.random() * 30, dash: 'roll' });
+        makeFish({ kind: 'dolphin', x: 1200, y: 320, z: 0.16, s: 205, spd: 85, turn: 1.3, wagBase: 0.7, wagRate: 0.6, home: [60, 1540, 90, 470], breathAt: 45 + Math.random() * 30, dash: 'roll' });
+        // two blacktip reef sharks patrolling the middle water
+        SHARKS.push(makeFish({ kind: 'shark', x: 250, y: 500, z: 0.14, s: 250, spd: 40, turn: 0.9, wagBase: 0.9, wagRate: 0.55, home: [-40, 1640, 250, 560] }));
+        SHARKS.push(makeFish({ kind: 'shark', x: 1300, y: 420, z: 0.22, s: 215, spd: 40, turn: 0.9, wagBase: 0.9, wagRate: 0.55, home: [-40, 1640, 250, 560] }));
+        // the blowfish, pottering about the rocks
+        makeFish({ kind: 'puffer', x: 640, y: 640, z: 0.1, s: 62, spd: 18, turn: 1.4, wagBase: 0.8, wagRate: 2.2, home: [220, 1380, 470, 730], puff: 0 });
+        // crabs on the sand of the centre channel
+        for (let i = 0; i < 3; i++){
+          const dy = [14, 34, 52][i], home = [[560, 1040], [600, 1000], [540, 1060]][i];
+          CRABS.push({ x: lerp(home[0], home[1], Math.random()), y: 0, dy, s: 15 + dy * 0.12, home, target: null, wait: Math.random() * 3, vx: 0, legPh: Math.random() * TAU, ph0: Math.random() * TAU });
+        }
         // the chromis school
         const leader = makeFish({ kind: 'chromis', x: 900, y: 260, z: 0.3, s: 20, spd: 44, home: [300, 1300, 120, 440] });
         SCHOOL = { leader, members: [], spread: 1 };
@@ -1361,16 +1770,26 @@
       function updateFish(t, dt){
         for (const F of FISH){
           if (!F.isClown && !F.schooling && !(F.dashUntil && t < F.dashUntil)){ const G = giantNear(F); if (G) fleeFrom(F, G.x, G.y - 40, t); }
+          if (!F.isClown && !F.schooling && F.kind !== 'shark' && F.kind !== 'dolphin' && !(F.dashUntil && t < F.dashUntil))
+            for (const Sh of SHARKS) if (Math.hypot(Sh.x - F.x, Sh.y - F.y) < (Sh.dashUntil && t < Sh.dashUntil ? 260 : 150)){ fleeFrom(F, Sh.x, Sh.y, t); break; }
           if (F.isClown) updateClown(F, t, dt);
+          else if (F.kind === 'dolphin') updateDolphin(F, t, dt);
+          else if (F.kind === 'puffer') updatePuffer(F, t, dt);
           else if (F.schooling || F === (SCHOOL && SCHOOL.leader)) continue;
           else if (F.follow){ const L = F.follow; steer(F, L.x - L.face * 46 + Math.sin(t * 0.8) * 10, L.y + 14, F.spd * (F.dashUntil && t < F.dashUntil ? 3 : 1) + Math.hypot(L.x - F.x, L.y - F.y) * 0.6, dt, 2.4); integrate(F, dt, t); }
           else wander(F, t, dt);
         }
-        if (SCHOOL) updateSchool(t, dt);
+        if (SCHOOL){
+          for (const Sh of SHARKS) if (Math.hypot(Sh.x - SCHOOL.leader.x, Sh.y - SCHOOL.leader.y) < 220) SCHOOL.scatterUntil = t + 1.2;
+          updateSchool(t, dt);
+        }
+        for (const C of CRABS) updateCrab(C, t, dt);
       }
       // actions (clicks + the scheduler share these)
       function actOn(F, t){
         const m = F.face > 0 ? F.x + F.s * 0.4 : F.x - F.s * 0.4; puff(m, F.y, 5);
+        if (F.kind === 'puffer'){ inflate(F, t); return; }
+        if (F.kind === 'shark'){ F.dashUntil = t + 1.6; F.target = [lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())]; F.wait = 0; return; }
         if (F.bfly){ for (let i = 0; i < 3; i++) HEARTS.push({ x: F.x + (Math.random() - 0.5) * 20, y: F.y - F.s * 0.3, t0: t + i * 0.25, ph: Math.random() * TAU, s: 8 + Math.random() * 6 }); F.dashUntil = t + 0.6; }
         else if (F.dash === 'roll' && Math.random() < 0.5){ F.rollT = t + 1.1; F.rollLen = 1.1; }
         else if (F.isClown){ F.dartUntil = t + 3; F.target = null; }
@@ -1393,17 +1812,81 @@
         if (updateGiant(WHALE, t, dt, ORCA)) drawWhale(g, WHALE, t);
         if (updateGiant(ORCA, t, dt, WHALE)) drawOrca(g, ORCA, t);
       }
-      const drawFishBand = (g, t, dt, far) => { for (const F of FISH) if (!F.isClown && (far ? F.z > 0.22 : F.z <= 0.22)) drawFishFull(g, F, t, dt); };
+      const drawFishBand = (g, t, dt, far) => { for (const F of FISH) if (!F.isClown && (far ? F.z > 0.22 : F.z <= 0.22)) drawFishFull(g, F, t, dt); if (!far) for (const C of CRABS) drawCrab(g, C, t); };
+
+      // ── coral life, per frame ──
+      function updateCorals(t, dt){
+        for (const C of CORALS) if (C.ret > 0 && t > C.retT + 2.5) C.ret = Math.max(0, C.ret - dt * 0.4);   // polyps creep back out
+        if ((PROF.frames % 3) === 0){                             // a fish brushing past pulls the polyps in, shuts a clam
+          for (const C of CORALS){
+            if (C.ret > 0.9) continue;
+            for (const F of FISH){
+              if (F.isClown) continue;
+              const s = F.s * (1 - F.z * 0.55) * 0.5;
+              if (Math.abs(F.x - C.x) < C.r * 0.9 + s && Math.abs(F.y - C.y) < C.r * 0.6 + s * 0.6){ startleCoral(C, t); break; }
+            }
+          }
+          for (const K of CLAMS){ if (K.open < 0.3) continue; for (const F of FISH){ if (F.isClown) continue; const s = F.s * (1 - F.z * 0.55) * 0.5; if (Math.hypot(F.x - K.x, F.y - K.y) < K.w * 0.8 + s){ snapClam(K, t); break; } } }
+        }
+        for (const W of WORMS){ const want = CORALS[W.ci].ret > 0.5 ? 0 : 1; W.ext += (want - W.ext) * Math.min(1, dt * (want ? 1.4 : 9)); }
+        for (const K of CLAMS){ const want = t < K.snapT + 3 ? 0.02 : 0.7 + 0.3 * Math.sin(t * 0.45 + K.ph); K.open += (want - K.open) * Math.min(1, dt * (want < 0.1 ? 14 : 0.8)); }
+        for (const V of VENTS) if (t > V.nextAt){ V.nextAt = t + (V.big ? 0.8 : 2) + Math.random() * 3; SPECKS.push({ x: V.x + (Math.random() - 0.5) * V.r, y: V.y, v: 7 + Math.random() * 9, t0: t, ph: Math.random() * TAU }); }
+        for (let i = SPECKS.length - 1; i >= 0; i--){ const p = SPECKS[i]; p.y -= p.v * dt; p.x += Math.sin(t * 2 + p.ph) * 4 * dt; if (t - p.t0 > 5) SPECKS.splice(i, 1); }
+        const c = cur(t);
+        for (let i = EGGS.length - 1; i >= 0; i--){ const e = EGGS[i]; if (t < e.t0) continue; e.y -= e.v * dt; e.x += (Math.sin(t * 1.7 + e.ph) * 8 + c * 12) * dt; if (t - e.t0 > 7) EGGS.splice(i, 1); }
+      }
+      function drawCoralLife(g, t, fore){
+        if (Q === 0) return;
+        // polyps: a slow pulse that travels across the reef; pulled in when startled
+        for (let b = 0; b < 4; b++){
+          for (let pass = Q === 2 ? 0 : 1; pass < 2; pass++){       // a soft halo (full quality only), then the bright core
+            let any = false; g.beginPath();
+            for (const Pp of LIFE){
+              if (Pp.fore !== fore || Pp.b !== b) continue;
+              const C = CORALS[Pp.ci], pulse = 0.5 + 0.5 * Math.sin(t * 1.4 + Pp.ph + (Pp.x + Pp.y) * 0.012);
+              const r = Pp.r * 1.6 * (0.3 + 0.7 * pulse) * (1 - C.ret) * (pass ? 1 : 2.1);
+              if (r < 0.3) continue;
+              g.moveTo(Pp.x + r, Pp.y); g.arc(Pp.x, Pp.y, r, 0, TAU); any = true;
+            }
+            if (any){ g.fillStyle = 'rgba(' + POLYP_COL[b] + (pass ? ',0.95)' : ',0.28)'); g.fill(); }
+          }
+        }
+        // mushroom fringes: a ring of short tentacles that lengthen, shorten and waver
+        g.lineCap = 'round'; g.lineWidth = 1.4;
+        for (const Fr of FRINGES){
+          if (Fr.fore !== fore) continue;
+          const L = (3.5 + 3.5 * (0.5 + 0.5 * Math.sin(t * 1.1 + Fr.ph))) * (1 - CORALS[Fr.ci].ret); if (L < 0.4) continue;
+          g.strokeStyle = Fr.col; g.beginPath();
+          for (let i = 0; i < Fr.n; i++){ const a = i / Fr.n * TAU, wob = Math.sin(t * 2.3 + i * 1.3 + Fr.ph) * 0.3; const x0 = Fr.x + Math.cos(a) * Fr.rx, y0 = Fr.y + Math.sin(a) * Fr.ry; g.moveTo(x0, y0); g.lineTo(x0 + Math.cos(a + wob) * L, y0 + Math.sin(a + wob) * L * 0.7); }
+          g.stroke();
+        }
+        // christmas-tree worms: feather crowns that sway, and vanish into their tubes when startled
+        for (const W of WORMS){ if (W.fore !== fore || W.ext < 0.04) continue; g.save(); g.translate(W.x, W.y); g.rotate(Math.sin(t * 1.6 + W.ph) * 0.07); g.scale(1, W.ext); paintWorm(g, 0, 0, W.h, W.col); g.restore(); }
+        // sponges pumping: a breathing glow at each opening, specks drifting out
+        if (Q === 2) for (const V of VENTS){ if (V.fore !== fore) continue; glow(g, 'cyan', V.x, V.y - V.r * 0.3, V.r * 2.6, 0.12 + 0.10 * Math.sin(t * 1.1 + V.ph)); }
+        if (!fore){
+          if (SPECKS.length){ g.fillStyle = 'rgba(230,245,255,0.5)'; g.beginPath(); for (const p of SPECKS){ const a = 1 - (t - p.t0) / 5, r = 0.8 + a * 0.7; g.moveTo(p.x + r, p.y); g.arc(p.x, p.y, r, 0, TAU); } g.fill(); }
+          // coral spawning: clouds of eggs rising
+          if (EGGS.length) for (let k = 0; k < 2; k++){
+            g.fillStyle = k ? 'rgba(255,170,120,0.85)' : 'rgba(255,190,205,0.85)'; g.beginPath(); let any = false;
+            for (const e of EGGS){ if (e.k !== k || t < e.t0) continue; const r = 1.7 * (1 - (t - e.t0) / 7 * 0.5); g.moveTo(e.x + r, e.y); g.arc(e.x, e.y, r, 0, TAU); any = true; }
+            if (any) g.fill();
+          }
+        }
+      }
 
       // ── layers ──
-      let waterL = null, reefL = null, foreL = null, vigL = null, FORE_TOP = 0, REEF_TOP = 0;
+      let waterL = null, reefL = null, foreL = null, bgL = null, FORE_TOP = 0, REEF_TOP = 0;
       function paintWaterL(g){ paintWater(g); paintFarReef(g); }
-      function paintReefL(g){ paintSand(g); for (const e of STILL) if (!e.fore) e.draw(g); }
-      function paintFore(g){ for (const e of STILL) if (e.fore) e.draw(g); }
-      function buildVignette(){
-        vigL = makeLayer(W, H, 0.25); const g = vigL.cx;
+      function paintReefL(g){ CORALS.length = LIFE.length = WORMS.length = VENTS.length = FRINGES.length = 0; PAINT_FORE = false; paintSand(g); for (const e of STILL) if (!e.fore) e.draw(g); }
+      function paintFore(g){ PAINT_FORE = true; for (const e of STILL) if (e.fore) e.draw(g); PAINT_FORE = false; }
+      // the vignette used to be a full-screen blend every frame; it is now folded
+      // into each still layer once (source-atop on the transparent ones, so it
+      // only darkens what they paint) — the same darkening, no per-frame cost
+      function foldVignette(L, comp){
+        const g = L.cx; g.save(); g.setTransform(L.dpr, 0, 0, L.dpr, 0, 0); g.globalCompositeOperation = comp;
         g.fillStyle = rg(g, W * 0.5, H * 0.45, Math.min(W, H) * 0.45, Math.max(W, H) * 0.78, [[0, 'rgba(2,20,40,0)'], [0.7, 'rgba(2,20,40,0.18)'], [1, 'rgba(2,20,40,0.50)']]);
-        g.fillRect(0, 0, W, H);
+        g.fillRect(0, 0, W, H); g.restore();
       }
       function resize(){
         W = innerWidth; H = innerHeight; DPR = pickDPR();
@@ -1413,9 +1896,15 @@
         let g = waterL.cx; g.save(); g.setTransform(waterL.dpr * S, 0, 0, waterL.dpr * S, waterL.dpr * OX, waterL.dpr * OY); paintWaterL(g); g.restore();
         g = reefL.cx; g.save(); g.setTransform(reefL.dpr * S, 0, 0, reefL.dpr * S, reefL.dpr * OX, reefL.dpr * OY); paintReefL(g); g.restore();
         g = foreL.cx; g.save(); g.setTransform(foreL.dpr * S, 0, 0, foreL.dpr * S, foreL.dpr * OX, foreL.dpr * OY); paintFore(g); g.restore();
+        foldVignette(waterL, 'source-over'); foldVignette(reefL, 'source-atop'); foldVignette(foreL, 'source-atop');
+        // water + reef pre-composited: the frame blits ONE layer unless a giant is passing between them
+        bgL = makeLayer(W, H, DPR);
+        { const b = bgL.cx; b.save(); b.setTransform(1, 0, 0, 1, 0, 0); b.drawImage(waterL.cv, 0, 0); b.drawImage(reefL.cv, 0, 0); b.restore(); }
+        raysL = makeLayer(W, H, DPR * 0.5); raysL.built = false;
+        for (const A of ANEMS) A.L = null;                      // the crown caches are resolution-bound
+        warmTs = 0;                                             // repainting every layer: don't judge these frames
         REEF_TOP = Math.max(0, Math.floor(OY + 300 * S));       // the reef band starts here (design y 300: above the tallest coral)
         FORE_TOP = Math.max(0, Math.floor(OY + 560 * S));       // the foreground band starts here (design y 560)
-        buildVignette();
         PROF.repaints = (PROF.repaints || 0) + 1;
       }
 
@@ -1424,40 +1913,45 @@
         const dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
         profT = performance.now(); PROF.frames++;
         const c = cur(t); DT = dt;
-        updateFish(t, dt); scheduler(t);
+        anemBuilt = 0;
+        updateFish(t, dt); scheduler(t); updateCorals(t, dt);
         mark('think');
-        ctx.drawImage(waterL.cv, 0, 0, W, H);
+        const giantOn = WHALE.active || ORCA.active;              // only then must the water and the reef be separate layers
+        ctx.drawImage((giantOn ? waterL : bgL).cv, 0, 0, W, H);
         mark('water');
         ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * OX, DPR * OY);
         drawGiants(ctx, t, dt); mark('giants');
         drawFishBand(ctx, t, dt, true); mark('farfish');
         ctx.restore();
-        if (REEF_TOP < H){ const sy = REEF_TOP * reefL.dpr; ctx.drawImage(reefL.cv, 0, sy, reefL.cv.width, reefL.cv.height - sy, 0, REEF_TOP, W, H - REEF_TOP); }
+        if (giantOn && REEF_TOP < H){ const sy = REEF_TOP * reefL.dpr; ctx.drawImage(reefL.cv, 0, sy, reefL.cv.width, reefL.cv.height - sy, 0, REEF_TOP, W, H - REEF_TOP); }
         mark('reef');
         ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * OX, DPR * OY);
         drawRays(ctx, t); mark('rays');
         drawCaustics(ctx, t); mark('caustics');
         for (const e of LIVE) if (!e.fore) e.draw(ctx, t, c);
         mark('live');
+        drawCoralLife(ctx, t, false); mark('corals');
         drawFishBand(ctx, t, dt, false); mark('fish');
         ctx.restore();
         if (FORE_TOP < H){ const sy = FORE_TOP * foreL.dpr; ctx.drawImage(foreL.cv, 0, sy, foreL.cv.width, foreL.cv.height - sy, 0, FORE_TOP, W, H - FORE_TOP); }
         mark('fore');
         ctx.save(); ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * OX, DPR * OY);
         for (const e of LIVE) if (e.fore) e.draw(ctx, t, c);
+        drawCoralLife(ctx, t, true);
         drawParticles(ctx, t, dt, c);
         drawHearts(ctx, t);
         ctx.restore();
         mark('front');
-        ctx.drawImage(vigL.cv, 0, 0, W, H);
-        mark('vignette');
       }
-      let prevTs = null, lastDrawTs = 0, lastDecide = 0, calmSince = 0, frameErr = false;
+      let prevTs = null, lastDrawTs = 0, lastDecide = 0, calmSince = 0, frameErr = false, warmTs = 0;
       function frame(ts){
         if (stopped) return;
         if (t0 === null) t0 = ts;
         rafId = requestAnimationFrame(frame);
-        if (prevTs !== null) perf.gapEma += ((ts - prevTs) - perf.gapEma) * 0.08;
+        if (!warmTs) warmTs = ts;
+        const warming = ts - warmTs < 1200;                        // the build spike must not latch half rate
+        if (warming){ perf.gapEma = 16.7; perf.costEma = 0; lastDecide = ts; calmSince = ts; }
+        else if (prevTs !== null) perf.gapEma += ((ts - prevTs) - perf.gapEma) * 0.08;
         prevTs = ts; perf.frames++;
         if (perf.halfRate && ts - lastDrawTs < perf.gapEma * 1.5) return;
         lastDrawTs = ts; perf.drawn++;
@@ -1466,11 +1960,21 @@
         catch (e){ if (!frameErr){ frameErr = true; console.error('reef2 frame error', e); } }
         perf.costEma += ((performance.now() - c0) - perf.costEma) * 0.08;
         if (ts - lastDecide > 1500){
+          // While frames run long the scene first DRAWS LESS (Q 2→1→0: cached rays
+          // refreshed half as often, one caustic pass, no polyp halos / vent glows,
+          // fewer motes; then no rays, caustics or coral life at all) and only
+          // then falls back to every 2nd display frame. It climbs back after a
+          // long calm, at most twice, so a borderline machine doesn't flap.
           lastDecide = ts;
-          const heavy = perf.costEma > 7 || perf.gapEma > 21;
-          if (heavy){ perf.halfRate = true; calmSince = ts; }
-          else if (perf.costEma > 3.5 || perf.gapEma > 17.5) calmSince = ts;
+          const heavy = perf.costEma > 8 || perf.gapEma > 21, warm = perf.costEma > 5 || perf.gapEma > 19.5;
+          if (heavy || warm){
+            calmSince = ts;
+            if (!qPin && Q > 0 && ts - lastQ > 3000){ Q--; lastQ = ts; }
+            else if (heavy && Q === 0) perf.halfRate = true;
+          }
+          else if (perf.costEma > 4 || perf.gapEma > 18.5) calmSince = ts;
           else if (perf.halfRate && !IS_TOUCH && ts - calmSince > 6000) perf.halfRate = false;
+          else if (!qPin && Q < 2 && !IS_TOUCH && qUps < 2 && ts - calmSince > 12000 && ts - lastQ > 12000){ Q++; qUps++; lastQ = ts; }
         }
       }
 
@@ -1481,6 +1985,12 @@
         const dx = (e.clientX - OX) / S, dy = (e.clientY - OY) / S, t = lastT;
         const F = fishAt(dx, dy);
         if (F){ actOn(F, t); return; }
+        const C = crabAt(dx, dy);
+        if (C){ startleCrab(C, t); return; }
+        for (const st of STARS) if (Math.hypot(dx - st.x, dy - st.y) < st.r * 1.6){ puff(st.x, st.y - 6, 5); summonRumi(); return; }
+        for (const K of CLAMS) if (Math.hypot(dx - K.x, dy - K.y) < K.w * 0.7){ snapClam(K, t); return; }
+        { let best = null, bd = 1e9; for (const C of CORALS){ const d = Math.hypot((dx - C.x) / (C.r * 1.05), (dy - C.y) / (C.r * 0.8)); if (d < 1 && d < bd){ bd = d; best = C; } }
+          if (best){ spawnCoral(best, t); puff(best.x, best.y - best.r * 0.5, 3); return; } }
         for (const A of ANEMS){
           if (Math.hypot((dx - A.x) / (A.r * 1.1), (dy - (A.y - A.r * 0.6)) / (A.r * 0.9)) < 1){ puff(A.x, A.y - A.r * 0.8, 8); for (const f of A.fish){ f.dartUntil = t + 3 + Math.random(); f.target = null; } return; }
         }
@@ -1498,14 +2008,26 @@
         seek: s => { t0 = (t0 === null ? 0 : t0); t0 -= (s - lastT) * 1000; lastT = s; },
         current: () => cur(lastT),
         counts: () => ({ still: STILL.length, live: LIVE.length, rocks: ROCKS.length, anemones: ANEMS.length, fans: FANS.length, softs: SOFTS.length, bubbles: BUBBLES.length, fish: FISH.length, hearts: HEARTS.length, whale: WHALE.active, orca: ORCA.active }),
-        fish: () => FISH.map(F => ({ kind: F.kind, x: Math.round(F.x), y: Math.round(F.y), face: +F.face.toFixed(2), inside: F.inside })),
+        fish: () => FISH.map(F => ({ kind: F.kind, x: Math.round(F.x), y: Math.round(F.y), face: +F.face.toFixed(2), inside: F.inside, puff: F.puff })),
         whale: x => { WHALE.active = true; WHALE.dir = 1; WHALE.x = x === undefined ? 800 : x; WHALE.y = (WHALE.yr[0] + WHALE.yr[1]) / 2; WHALE.t0 = lastT; },
         orca: x => { ORCA.active = true; ORCA.dir = -1; ORCA.x = x === undefined ? 800 : x; ORCA.y = (ORCA.yr[0] + ORCA.yr[1]) / 2; ORCA.t0 = lastT; },
         act: kind => { const F = FISH.find(f => f.kind === kind); if (F) actOn(F, lastT); return !!F; },
         dart: () => ANEMS.forEach(A => A.fish.forEach(f => { f.dartUntil = lastT + 3; f.target = null; })),
         hide: () => ANEMS.forEach(A => A.fish.forEach(f => { f.hiding = true; f.hideAt = lastT + 6; f.target = null; })),
         poop: () => FISH.forEach(F => { if (!F.poop) F.poopAt = lastT; }),
-        perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
+        breath: () => { const D = FISH.find(f => f.kind === 'dolphin'); if (D){ D.breathAt = lastT - 1; } return !!D; },
+        shark: () => SHARKS.forEach(S => actOn(S, lastT)),
+        puffer: () => { const F = FISH.find(f => f.kind === 'puffer'); if (F) inflate(F, lastT); return !!F; },
+        crab: () => CRABS.forEach(C => startleCrab(C, lastT)),
+        crabs: () => CRABS.map(C => ({ x: Math.round(C.x), y: Math.round(C.y) })),
+        rumi: () => { summonRumi(); return !!window.ChibiWalker; },
+        corals: () => ({ corals: CORALS.length, polyps: LIFE.length, worms: WORMS.length, vents: VENTS.length, fringes: FRINGES.length, clams: CLAMS.length, eggs: EGGS.length }),
+        startle: () => { CORALS.forEach(C => startleCoral(C, lastT)); CLAMS.forEach(K => snapClam(K, lastT)); },
+        spawn: i => { const C = CORALS[i === undefined ? Math.floor(Math.random() * CORALS.length) : i]; if (C) spawnCoral(C, lastT); return !!C; },
+        clam: () => CLAMS.forEach(K => snapClam(K, lastT)),
+        perf: () => ({ dpr: +DPR.toFixed(2), q: Q, halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
+        quality: q => { if (q === null){ qPin = false; } else if (q !== undefined){ Q = Math.max(0, Math.min(2, q | 0)); qPin = true; lastQ = performance.now(); } return Q; },   // quality(2) pins; quality(null) releases
+        pmax: () => PMAX,
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },
       };
@@ -1515,6 +2037,7 @@
         if (rafId) cancelAnimationFrame(rafId);
         removeEventListener('resize', resize);
         doc.removeEventListener('click', onClick);
+        if (rumiPatrol){ try { rumiPatrol.stop(); } catch (e) {} }
         if (window._reef2 === BACKGROUNDS.reef2._test) delete window._reef2;
         stage.innerHTML = '';
       };

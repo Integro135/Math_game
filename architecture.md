@@ -137,12 +137,13 @@ subtraction_game/
 │  ├─ space2.bg.js                 ★ background MODULES — single source of
 │  ├─ unicorns3.bg.js + unicorns/    truth, used by BOTH the game and the
 │  ├─ dubai3.bg.js                   harness; themes map to them via
-│  ├─ reef.bg.js                     _BG_THEMES (themes.js). LIVE: space2,
-│  ├─ savanna.bg.js + savanna_animals/   unicorns3, dubai3, reef, savanna,
-│  ├─ dinosaurs3.bg.js + dino_rigs/      dinosaurs3, aurora, maldives
+│  ├─ reef2.bg.js                    _BG_THEMES (themes.js). LIVE: space2,
+│  ├─ savanna.bg.js + savanna_animals/   unicorns3, dubai3, reef2, savanna,
+│  ├─ dinosaurs3.bg.js + dino_rigs/      dinosaurs3, aurora, maldives2
 │  ├─ aurora.bg.js + princess/ + olaf/   (aurora serves the ❄️ theme;
 │  │                                     it replaced frozen.bg.js)
-│  ├─ maldives.bg.js
+│  ├─ maldives2.bg.js + pokemons/    the 🏝️ beach: day cycle + storms (canvas) + pokemon walkers
+│  ├─ reef.bg.js / maldives.bg.js    legacy scenes, kept but unloaded
 │  ├─ rumi/                        the roaming character (savanna/dino/reef)
 │  ├─ whales.bg.js                 playground, not game-integrated
 │  ├─ blackhole.html               standalone GR black-hole study (WebGL2) —
@@ -151,7 +152,7 @@ subtraction_game/
 │  ├─ unicorns3.html                 open directly in a browser to iterate
 │  ├─ dubai3.html                  on a scene in isolation
 │  ├─ savanna.html / dinosaurs3.html
-│  ├─ aurora.html / maldives.html
+│  ├─ aurora.html / maldives2.html / reef2.html
 │  ├─ underwater_happy_reef.html
 │  └─ _verify*.py                  per-scene marker/render checks
 │

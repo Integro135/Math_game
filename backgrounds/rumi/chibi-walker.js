@@ -245,7 +245,7 @@
 
   /* ---- animation + base CSS, injected once (keyframes namespaced) ---- */
   var CSS =
-    '.chibi-walker{position:absolute;left:0;bottom:0;pointer-events:none;will-change:transform;}' +
+    '.chibi-walker{position:absolute;left:0;bottom:0;pointer-events:none;will-change:transform;direction:ltr;}' +
     '.chibi-walker .chibi-svg{height:100%;width:auto;display:block;overflow:visible;}' +
     '.chibi-walker.chibi-flip .chibi-svg{transform:scaleX(-1);}' +
     '.chibi-svg .arm-l,.chibi-svg .arm-r,.chibi-svg .leg-l,.chibi-svg .leg-r{transform-box:fill-box;}' +

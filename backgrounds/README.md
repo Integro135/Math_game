@@ -4,8 +4,8 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives.bg.js` | Loaded by the game at runtime (`dubai.bg.js` is the legacy Dubai scene — nothing loads it; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `dinosaurs3.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef2.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives2.bg.js` | Loaded by the game at runtime (`reef.bg.js` and `maldives.bg.js` are the legacy reef / beach scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `dinosaurs3.html`, `maldives2.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
 | **Unicorn valley** | `unicorns3.bg.js` + `unicorns/*.item.js` | `girls` → **`unicorns3`**: v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
 | **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
@@ -27,8 +27,9 @@ visible and playable while the backdrop loads. Scenes that don't opt in show no
 veil at all.
 
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns3`,
-`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef2` (the 2026-09 rebuild; `reef.bg.js` is the legacy scene, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`
-(🏙️, 🦁 and 🦕 are their own themes in the menu). Canvas-scene themes spawn no
+`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef2` (the 2026-09 rebuild; `reef.bg.js` is the legacy scene, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`,
+`maldives→maldives2` (the 2026-09 canvas rebuild with the day cycle, storms and the pokemon walkers; `maldives.bg.js` is the legacy SVG scene, unloaded)
+(🏙️, 🦁, 🦕 and 🏝️ are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
 #stars-layer {display:block}` rule in themes.css, or the stage stays hidden.
 
@@ -1353,7 +1354,7 @@ open, t)`) — they gape slowly, their mantle spots shimmer blue↔green, and th
 SNAP SHUT (`snapClam`) when a fish comes close or on tap, reopening after
 ~3 s. **Tap any coral → coral spawning**: `spawnCoral` releases a cloud of 40
 pink/orange eggs (`EGGS`) that drift up with the current for 7 s. Hooks:
-`corals()` (counts), `startle()`, `spawn(i)`, `clam()`.
+`corals()` (counts), `startle()`, `spawn(i)`, `clam()`, `quality(q)` (`perf().q` reports the live tier).
 
 **Rendering cost.** Measured in the real game with `_perf_reef2.py` (main-thread
 work via CDP `Performance.getMetrics`, since headless frame gaps here are
@@ -1383,6 +1384,28 @@ things, each of which matters if the scene is edited further:
    the fin rays, gill arc, pectoral and mouth are dropped) — that is the whole
    14-strong chromis school.
 
+**Fill rate (2026-09-15).** Eran reported the reef "too heavy to render" on
+his machine even though the main-thread numbers above matched dubai3 — the
+cost was GPU FILL: this scene painted ~9 screens of pixels a frame (18 long
+additive ray wedges, three caustic passes, a full-screen vignette blend, water
++ reef as separate full-screen blits) where dubai3 paints ~2–3. Now: the rays
+are painted into a HALF-res layer every 4th frame and blitted once (`raysL`,
+`drawRays`/`paintRays`); caustics are one pass on the sand plus one faint band
+(a second sand pass only ever added shimmer); the vignette is FOLDED into the
+three still layers at bake time (`foldVignette`, `source-atop` on the
+transparent ones) instead of a per-frame blend; water and reef are
+PRE-COMPOSITED into `bgL` and the frame blits that one layer unless a giant is
+actually passing between them (`giantOn`); the backing store cap dropped to
+1.25× / 2.0 MP. ≈ 4 screens a frame. On top of that a **quality tier** `Q`
+(2 full · 1 reduced · 0 minimal) steps DOWN before the loop halves its frame
+rate: Q1 refreshes the ray layer every 8th frame, drops the second caustic
+pass, the polyp halos, the vent glows and half the motes; Q0 drops rays,
+caustics and the coral life entirely. It steps down after 3 s of long frames
+(gap > 19.5 ms or cost > 5 ms), climbs back after 12 s of calm at most twice,
+and is pinned by `_reef2.quality(q)` (`quality(null)` releases) — the harness
+and the perf probe pin Q2 because headless frame gaps would otherwise step it
+down on their own. Touch devices start at Q1.
+
 The loop paces itself like the other scenes (renders every 2nd display frame
 while frames run long, back to full rate after 6 calm seconds), and the first
 1.2 s after init or a resize is EXCLUDED from that decision (`warming`) — the
@@ -1394,3 +1417,151 @@ Test hooks `window._reef2`: `seek(s)`, `current()`, `counts()`, `fish()`,
 `breath()`, `shark()`, `puffer()`, `crab()`, `crabs()`, `rumi()`, `prof()`,
 `pmax()` (worst-case ms per section — what to watch when hunting a stutter),
 `profReset()`.
+
+---
+
+## maldives2.bg.js — the island shore, rebuilt from zero (the 🏝️ theme, 2026-09)
+
+Theme `maldives` → `maldives2` (`_BG_THEMES`). Harness `maldives2.html`
+(Dawn / Morning / Noon / Golden / Sunset / Dusk / Night jump the clock, Pause,
+Fast ×20, Storm forces a squall, Bolt one strike, Clear ends the storm,
+Restart); verify with `_verify_maldives2.py` (seven hour stills + a storm and
+a rainbow still + crops, restart/leak check, perf/prof), measure with
+`_perf_maldives2.py` (main-thread cost in the real game, fair weather AND
+mid-storm, against reef2 / dubai3 / aurora). Skin `game/skins/maldives.skin.css`
+and aids `maldives` are reused unchanged. The older `maldives.bg.js` (DOM/SVG
+scene) stays in the folder, unloaded — nothing is shared with it except the
+pokemon rigs both scenes use (`pokemons/*.js`, see **The pokemon walkers**
+below). No boats, birds or fish: the beach life is the pokemon.
+
+**Stage.** Design space 1600×900, waterline `HZ = 470`, cover-fitted and
+bottom-anchored (`S`, `OX`, `OY`). The beach is a soft BAY: `shoreYAt(x)` puts
+the sand forward on both sides and back in the middle, so the game card
+(centre, max-width 720) sits over calm water and the palms frame it from both
+edges. Everything is drawn back to front: the SKY layer (gradient, horizon
+glow, the sun's bloom, the moon's glow, haze, the atoll islands with their
+palm silhouettes), live stars / sun / moon / clouds / rainbow, the SEA layer
+(ocean → reef break → turquoise flats, the sky mirrored along the horizon,
+soft coral heads), live water (ripples, storm whitecaps, the glitter path,
+lightning), the SAND layer (dry sand, the wet band, ripples, grains, shells,
+the palms' shadows), the live WASH, the PALMS, the rain, then the tone pass
+(ambient tint, storm gloom, lightning flash) and a ¼-res vignette.
+
+**The hour** (`KEYS`, `lookAt`, `DAY_SEC = 300`): seven keyed looks — dawn
+0.04, morning 0.16, noon 0.34, golden 0.56, sunset 0.70, dusk 0.80, night
+0.91 — every colour, alpha and scalar in the look is interpolated between the
+two keys around `tod` with a smoothstep. `sunPos` rises left (x 480) at tod 0,
+peaks at 0.36 and sets right of centre (x 1160) at 0.72; `moonPos` rises on
+the LEFT at 0.72 as the sun sets on the right, peaks at 0.94, sets right at
+1.16 — both travel left → right, and the moon is never drawn on top of the
+setting sun (an early cut had it rising right where the sun set). The still
+layers repaint per look-key (`repaintIfNeeded`: 24 steps per key-to-key
+transition, plus the storm's darkness quantised to 12 steps). Click the sun or
+the moon → the clock tweens to the next key (`tweenTo`). Boot is tod 0.10, a
+bright early morning.
+
+**The palms** (`PALMS`, six of them, three each side). The trunk is drawn live
+(`drawTrunk`: a tapering curved strip with rings, bent by the wind toward the
+top). Every FROND is a baked sprite: `frondSpine` starts the rachis at its fan
+angle and bends it progressively toward straight down (`droopK`), so upright
+fronds curl over and side fronds droop — gravity does the shaping;
+`drawFrondAt` lays 34 pairs of leaflets along it (each a pointed blade leaving
+the rachis forward-and-out with a sag; the side whose leaflets face up is the
+lit one), so the fronds read as dense feathered blades, not fern sprigs.
+Sprites are baked in SCREEN orientation and drawn by translation + a small
+sway rotation about the crown (never sheared); they are rebaked only when the
+frond colour actually changes (`crownKeyOf`, colour quantised to 12 levels) —
+~8 ms per palm, ~29 MB of sprites for all six at 1.5×. Two dead brown fronds
+hang from each big palm; a crown boss and coconuts sit under the fronds; the
+crown's SHADOW on the sand is a star of narrow ellipses (one per frond) plus
+the trunk's strip, leaning away from the sun (or the moon) and stretching as
+the light drops.
+
+**The water.** The glitter path under the sun (or the moon) is three nested
+fans with a vertical fade plus ~90 dancing glints; it widens and brightens as
+the source drops toward the horizon (`low`), and the low sun adds a blaze on
+the water. The WASH (`WAVES`, three sets with their own periods) runs each
+wave front up the beach (`fillShoreBand` between two shore offsets) — a wet
+darkening that lingers and drains, a translucent water sheet, a jagged foam
+edge with speckle — so the shoreline is never still.
+
+**The weather** (`STORM`, `updateStorm`). Every 2–4 min (rarer at night) a
+squall: `build` (9 s — the bank of cumulonimbus `SCLOUDS` rolls in from one
+side, `front` 0→1), `peak`, `fade` (the bank slides OUT the far side, staying
+solid rather than fading to a ghost over the fair-weather clouds). `STORM.k`
+eases toward its target and drives everything: `stormify(look, k)` pulls the
+WHOLE look toward a grey-green gloom (sand, sea, fronds, trunks, clouds,
+daylight, shadow, glitter, stars), the sky gets an overcast gradient, the
+wind (`wind(t)`, one shared gust) bends every trunk and streams every frond,
+RAIN (`DROPS`, ≤ 420, two depths) falls slanted with the wind and splashes on
+the water (rings) and the sand (little crowns), whitecaps appear on the
+lagoon, and LIGHTNING (`strike`, midpoint-displacement bolts with 1–3
+branches, some as sheet lightning inside the cloud) drops out of the cloud
+base over the sea with a flicker, a glow in the cloud, a sky flash and a fan
+of light on the water. As the rain thins in daylight a RAINBOW stands over
+the lagoon opposite the sun (`drawRainbow`), then fades with the last drops.
+
+**The pokemon walkers** (`WALKERS`, `PROFILE`, `spawnWalker`, `updateWalkers`).
+The DOM rigs in `pokemons/*.js` (`window.Pokemons`: eevee, pikachu, bulbasaur,
+squirtle, jigglypuff, and the flying gooey ghost) are injected on demand
+(`needPokemon` from the module's own folder; `preload()` warms them during
+the splash) and placed in an ACTORS layer (`.mv2-actors`) between TWO
+canvases: the world (sky, sea, sand, wash) behind them and the front canvas
+(palms, rain, tone, vignette) over them — so they walk the dry sand in front
+of the water and behind the trunks, and the storm gloom and lightning flash
+fall on them too. Foot line `FOOT_Y = 838` (design), heights as % of the
+stage (`PROFILE.h`), one ground walker at a time from a shuffled round-robin
+(`nextGround`: every one appears once per cycle), the flyer on its own rarer
+schedule (35–70 s between visits). Their MOVEMENT is not the rigs' own WAAPI
+`patrol`: it is driven per frame from the scene loop as one compositor-only
+transform on the rig's wrapper (`translate · rotate · scale`, origin at the
+feet; the rigs' flip and click acts live on inner layers with additive
+compositing, so nothing fights). Each pokemon has a profile:
+- **pikachu** — scampers (120–160 px/s), leg cadence from the speed
+  (`--pk-step`), a joyful skip-hop at ~45 % of its events, short stops.
+- **eevee** — its rig faces the CAMERA, so a plain slide read as skating: it
+  now leans 6° into its travel, bounces harder, hops often, and sometimes
+  stops, turns back for a few steps, turns again and carries on.
+- **bulbasaur** — plods (45–62 px/s), the body rocking ±3° with the 1.5 s leg
+  cycle, long pauses; its always-on leg CSS is paused while standing
+  (`mv2-idle`, injected by `injectCSS`).
+- **squirtle** — waddles with a ±3.5° rock on its 0.5 s beat, an occasional
+  little hop; bounce/limb CSS paused while standing.
+- **jigglypuff** — does not walk: it BOUNCES along (parabolic hops, moves only
+  while airborne, a squash-and-stretch on every landing, a beat on the
+  ground between hops) and stops to dance.
+- **gooey** — floats over the lagoon (design y 400–500, below the game card)
+  on a slow bob, wandering up and down, leaning into its drift, hovering in
+  place now and then.
+States: `walk · idle · turnA → back → turnB`, plus `hop` riding on walk. When
+a STORM is up (`STORM.k > 0.3`) the ground walkers HURRY off (×1.6, no
+pauses, cadence follows) and no new one comes out until it passes; the ghost
+keeps floating. Walkers are pixel-sized, so a resize removes them and the
+schedule respawns. Clicking a pokemon fires the rig's own signature move
+(its document-level hit-test, game UI filtered).
+
+**Performance** (house rules): backing store `pickDPR` (1.5× and ~2.4 MP);
+three full-screen still layers repainted per look-key; frond sprites by
+translation; batched single-path loops for stars, glints, ripples, rain,
+splashes; one transform write per walker per frame; adaptive half-rate
+pacing with the 1.2 s `warming` guard after init/resize. Measured in the
+real game (`_perf_maldives2.py`) with a walker on stage: ~1.3 ms of draw per
+frame fair or stormy, ~14 % main-thread (the DOM rigs' own CSS animations add
+~3 % style/layout — reef2 is 9.5 %, aurora 16.7 %); `palms` is the largest
+section (~0.5 ms), then `skylive` and `wash` (~0.3 ms each).
+
+**Test hooks** `window._mv2 = BACKGROUNDS.maldives2._test = { tod(), setTod(v),
+setSpeed(v), phase(), look(), seek(s), storm(len?), stormAt(k, phase?),
+clearStorm(), bolt(), stormState(), wind(), sun(), moon(), palms(),
+walk(name?, xFrac?), fly(xFrac?), walkers(), hold(b), auto(b), clear(),
+act(name, fn), nextName(), pokeReady(), perf(), pmax(), prof(), profReset() }` —
+`act('squirtle','water')` / `act('pikachu','zap')` / `act('eevee','stars')`
+fire a live walker's own rig method (how the water gun and the eevee blink
+were verified with frame strips); `stormAt(1)`
+jumps straight to a full squall (rain + wind + bank in place), `stormAt(0)`
+clears everything; `walk('eevee', 0.3)` parks one at 30 % of the width for a
+still, `walk()` sends out the round-robin's next, `hold(true)` freezes the
+walkers, `auto(false)` stops the scheduler (a probe that spawns its own
+walkers must turn it off, or the scheduler slips one in between two calls),
+`clear()` removes them all. The harness / verify script use `setSpeed(0)` to
+hold the clock for stills.

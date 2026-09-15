@@ -61,7 +61,7 @@
 
   var CSS = [
     /* ── wrapper / scale plumbing (house sprite pattern) ── */
-    '.pkw-bulb{position:absolute;pointer-events:none;will-change:transform}',
+    '.pkw-bulb{position:absolute;pointer-events:none;will-change:transform;direction:ltr}',   /* the pens assume LTR; the game is RTL */
     '.pkw-bulb .pkbulb-sc{position:absolute;left:0;bottom:0;transform-origin:0 100%}',
     '.pkw-bulb .pk-shadow{position:absolute;left:50%;bottom:0;width:62%;height:5%;transform:translateX(-50%);',
     '  border-radius:50%;background:radial-gradient(ellipse,rgba(15,25,20,.30),transparent 70%)}',
@@ -89,7 +89,7 @@
     '.pkbulb .bulbasaur .bulbs{left:-10px;top:-8px;transform:rotate(15deg);z-index:2;animation:pkbulbBulb 1.5s infinite}',
     '.pkbulb .bulbasaur .bulbs::before{content:"";position:absolute;width:38px;height:38px;background:#006356;',
     '  border-bottom-left-radius:100%;border-bottom-right-radius:100%;border-top-left-radius:100%;',
-    '  right:20px;bottom:30px;left:15px;transform:rotate(-20deg);z-index:3}',
+    '  bottom:30px;left:15px;transform:rotate(-20deg);z-index:3}',   /* the pen also set right:20px — over-constrained; RTL honoured it and threw the leaf off the body */
     '.pkbulb .bulbasaur .bulbs::after{content:"";position:absolute;width:35px;height:35px;background:#006356;',
     '  border-bottom-left-radius:100%;border-bottom-right-radius:100%;border-top-right-radius:100%;',
     '  left:40px;bottom:30px;transform:rotate(45deg);z-index:2}',

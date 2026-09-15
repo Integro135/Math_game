@@ -59,7 +59,7 @@
   var instSeq = 0;
 
   var CSS = [
-    '.pkw-go{position:absolute;pointer-events:none;will-change:transform}',
+    '.pkw-go{position:absolute;pointer-events:none;will-change:transform;direction:ltr}',   /* the pens assume LTR; the game is RTL */
     '.pkw-go .pkgo-sc{position:absolute;left:0;bottom:0;width:' + NATIVE_W + 'px;height:' + NATIVE_H + 'px;transform-origin:0 100%}',
     '.pkw-go .pkgo-fl{position:absolute;left:0;top:0;width:100%;height:100%}',
     '.pkw-go.pk-flip .pkgo-fl{transform:scaleX(-1)}',

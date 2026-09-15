@@ -50,7 +50,7 @@
   var NATIVE_W = 820, NATIVE_H = 690;   // the cropped viewBox
 
   var CSS = [
-    '.pkw-pi{position:absolute;pointer-events:none;will-change:transform}',
+    '.pkw-pi{position:absolute;pointer-events:none;will-change:transform;direction:ltr}',   /* the pens assume LTR; the game is RTL */
     '.pkw-pi svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;display:block}',
     '.pkw-pi .pk-shadow{position:absolute;left:50%;bottom:0;width:70%;height:6%;transform:translateX(-50%);',
     '  border-radius:50%;background:radial-gradient(ellipse,rgba(15,25,20,.32),transparent 70%)}',

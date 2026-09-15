@@ -29,6 +29,8 @@ SHOTS = [
     ["reef2_whale",  9.0,  ["whale(700)", "act('bfly')", "poop()"],   2200],
     ["reef2_orca",  70.0,  ["orca(900)", "dart()", "act('dory')"],    1400],
     ["reef2_hide",  90.0,  ["hide()"],                                3500],
+    ["reef2_life", 110.0,  ["puffer()", "shark()", "breath()", "crab()", "rumi()"], 1500],
+    ["reef2_spawn", 130.0, ["spawn(0)", "spawn(4)", "spawn(9)", "clam()", "startle()"], 2200],
 ]
 # crops of the LAST shot, upscaled ×2, for judging the fish at real size:
 # name → (x0, y0, x1, y1) as fractions of the frame
@@ -36,6 +38,7 @@ CROPS = {
     "left_anemone":  (0.10, 0.58, 0.34, 0.78),
     "right_anemone": (0.66, 0.58, 0.90, 0.80),
     "midwater":      (0.28, 0.40, 0.62, 0.66),
+    "sand":          (0.30, 0.78, 0.70, 1.00),
 }
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -58,8 +61,12 @@ with sync_playwright() as pw:
         page.evaluate(f"applyTheme('{THEME}')")
     page.wait_for_function("window._reef2", timeout=20000)
     page.wait_for_timeout(WAIT_MS)
+    # headless frame gaps are inflated, which would step the scene down to its
+    # minimal tier — pin FULL quality so the stills show the real look
+    page.evaluate("window._reef2.quality(2)")
     shots = []
     for name, tt, hooks, wait in SHOTS:
+        page.evaluate("window._reef2.quality(2)")
         if tt is not None:
             page.evaluate(f"window._reef2.seek({tt})")
             page.wait_for_timeout(200)

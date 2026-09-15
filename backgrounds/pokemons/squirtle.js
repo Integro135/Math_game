@@ -35,12 +35,17 @@
    patrol({speed:px/s, edgePad, pauseMs:[min,max]}) walks the parent's
    full width side to side forever, flipping at each edge to face the
    travel direction. Faces LEFT natively → flip mirrors to face right.
-   CLICK → WATER GUN: clicking Squirtle shoots a water jet from its mouth
-   (layered SVG arcs revealed nozzle-first, droplet spray, splash rings at
-   the landing point, ~1s, auto-removed; the overlay mirrors with .pk-flip
-   so the jet always fires forward). Detected via a document capture-phase
-   listener hit-testing the live box (game-UI filtered). inst.water() fires
-   it on demand.
+   CLICK → WATER GUN: clicking Squirtle shoots a PRESSURIZED STREAM from its
+   mouth that arcs under gravity and lands on the ground ahead of it (~1.75s,
+   auto-removed; the overlay mirrors with .pk-flip so the jet always fires
+   forward). Rewritten 2026-09: a mist puff at the lips and a recoil as it
+   fires, the head of the stream racing out along a sampled parabola, then
+   the stream HOLDING with a moving dashed sheen (the water visibly flows)
+   and a pulsing core while spray peels off it, a splash at the impact point
+   (foam blob, rings every ~150ms, droplets bouncing up, a wet patch on the
+   sand), and finally the tail leaving the mouth with the last slug falling
+   to the ground. Detected via a document capture-phase listener hit-testing
+   the live box (game-UI filtered). inst.water() fires it on demand.
    ES5, file:// safe, no dependencies.
    ===================================================================== */
 (function (w) {
@@ -49,7 +54,7 @@
   var NATIVE_W = 320, NATIVE_H = 320;   // the 20em×20em canvas at 16px
 
   var CSS = [
-    '.pkw-sq{position:absolute;pointer-events:none;will-change:transform}',
+    '.pkw-sq{position:absolute;pointer-events:none;will-change:transform;direction:ltr}',   /* the pens assume LTR; the game is RTL */
     /* flip lives on its own layer: the figure root (.pksq) animates transform
        (pksqBounce), and a running animation OVERRIDES any static transform —
        a scaleX(-1) on .pksq itself would simply never show */
@@ -190,22 +195,35 @@
     doc.head.appendChild(s);
   }
 
-  /* ── water gun: click Squirtle → a stream of water shoots from its mouth
-     (its water-type move). Pure SVG drawn in front of the figure on the
-     wrapper's own px canvas, so it works in ANY host. The jet is layered
-     arcs revealed nozzle-first via stroke-dashoffset, with droplets flying
-     along it and a splash where it lands. The figure faces LEFT natively;
-     when the wrapper is flipped (.pk-flip) the overlay mirrors too, so the
-     stream always leaves the mouth forward. ── */
+  /* ── water gun: click Squirtle → a PRESSURIZED STREAM shoots from its
+     mouth, arcs under gravity and lands on the SAND ahead of it, where it
+     splashes (its water-type move). Pure SVG drawn in front of the figure on
+     the wrapper (mirrored with pk-flip so it always leaves the mouth).
+     Timeline (~1.75 s):
+       0 ms    a puff of mist at the lips; Squirtle recoils a touch
+       0–320   the HEAD of the stream races out along the arc (dashoffset)
+       320–1000 the stream HOLDS: three layered strokes (translucent body,
+               blue core, white highlight) with a moving dashed sheen so the
+               water visibly flows, the core pulsing; SPRAY peels off along
+               the stream and falls; at the impact point a foam blob, rings
+               every ~130 ms and droplets bouncing up; a wet patch spreads
+       1000–1380 the TAIL leaves the mouth — the last slug travels down the
+               arc to the ground (dashoffset 0 → −L)
+       1350–1750 everything fades and is removed.
+     The arc is a sampled parabola (jetPath): lips → up a little → down to
+     the ground line (footFrac 0.90), so the water truly falls. ── */
   var NSVG = 'http://www.w3.org/2000/svg';
-  function waterArc(ox, oy, len, droop) {
-    return 'M' + ox + ',' + oy +
-      ' C' + (ox - len * 0.38) + ',' + (oy - len * 0.10 + droop * 0.2) +
-      ' ' + (ox - len * 0.72) + ',' + (oy + droop * 0.6) +
-      ' ' + (ox - len) + ',' + (oy + droop);
+  function jetPoint(ox, oy, R, drop, rise, u) {
+    return [ox - R * u, oy + drop * u * u - rise * 4 * u * (1 - u)];
+  }
+  function jetPath(ox, oy, R, drop, rise) {
+    var d = '', q;
+    for (var i = 0; i <= 24; i++) { q = jetPoint(ox, oy, R, drop, rise, i / 24); d += (i ? ' L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1); }
+    return d;
   }
   function fireWater(wrap) {
-    if (typeof doc === 'undefined' || !wrap) return;
+    if (typeof doc === 'undefined' || !wrap || wrap._watering) return;
+    wrap._watering = true;
     var r = wrap.getBoundingClientRect();
     var W = Math.round(r.width) || 200, Hh = Math.round(r.height) || 200;
 
@@ -218,71 +236,111 @@
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + Hh);
     svg.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;';
     host.appendChild(svg);
+    function mk(tag, attrs) {
+      var e = doc.createElementNS(NSVG, tag);
+      for (var k in attrs) if (attrs.hasOwnProperty(k)) e.setAttribute(k, attrs[k]);
+      svg.appendChild(e); return e;
+    }
+    function centred(e) { e.style.transformBox = 'fill-box'; e.style.transformOrigin = '50% 50%'; return e; }
+    function anim(e, kf, opts) { if (e.animate) { try { return e.animate(kf, opts); } catch (err) {} } return null; }
 
-    var ox = W * 0.30, oy = Hh * 0.45;                    // ≈ the mouth (left-facing)
-    var len = W * 0.72, droop = Hh * 0.14;                // jet reach + gravity droop
-    var jw = Math.max(4, len * 0.075);
-    /* the jet: three layered arcs with slightly different droops */
+    var ox = W * 0.33, oy = Hh * 0.49;                    // the lips (left-facing figure)
+    var gy = Hh * 0.90;                                   // the ground line under the feet
+    var R = W * 1.05, drop = gy - oy, rise = Hh * 0.10;   // reach, fall, initial lift
+    var jw = Math.max(4, W * 0.075);
+    var d = jetPath(ox, oy, R, drop, rise);
+    var end = jetPoint(ox, oy, R, drop, rise, 1);
+    var T_HEAD = 320, T_TAIL = 1000, T_END = 1750;
+
+    /* the wet patch spreading on the sand under the splash */
+    var wet = centred(mk('ellipse', { cx: end[0].toFixed(1), cy: (end[1] + 1).toFixed(1), rx: (jw * 2.6).toFixed(1), ry: (jw * 0.7).toFixed(1), fill: 'rgba(50,100,130,0.30)' }));
+    anim(wet, [{ transform: 'scale(.15)', opacity: 0 }, { transform: 'scale(1)', opacity: 1, offset: 0.45 }, { transform: 'scale(1.2)', opacity: 0 }],
+      { duration: T_END - T_HEAD, delay: T_HEAD, easing: 'ease-out', fill: 'both' });
+
+    /* the stream: body, core, highlight + a moving dashed sheen */
     var layers = [
-      { d: waterArc(ox, oy, len, droop * 1.25), c: '#74c0fc', w: jw, o: 0.5 },
-      { d: waterArc(ox, oy, len * 0.99, droop), c: '#339af0', w: jw * 0.6, o: 0.9 },
-      { d: waterArc(ox, oy, len * 0.97, droop * 0.85), c: '#e7f5ff', w: jw * 0.28, o: 1 }
+      { c: '#74c0fc', w: jw, o: 0.5 },
+      { c: '#339af0', w: jw * 0.62, o: 0.92 },
+      { c: '#e7f5ff', w: jw * 0.26, o: 1 }
     ];
-    var paths = [];
-    layers.forEach(function (l) {
-      var p = doc.createElementNS(NSVG, 'path');
-      p.setAttribute('d', l.d); p.setAttribute('fill', 'none');
-      p.setAttribute('stroke', l.c); p.setAttribute('stroke-width', l.w);
-      p.setAttribute('stroke-linecap', 'round'); p.setAttribute('opacity', l.o);
-      svg.appendChild(p); paths.push(p);
+    var paths = layers.map(function (l) {
+      return mk('path', { d: d, fill: 'none', stroke: l.c, 'stroke-width': l.w.toFixed(2), 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: l.o });
     });
-    /* droplets spraying off the jet */
-    for (var i = 0; i < 9; i++) {
-      var f = 0.25 + Math.random() * 0.75;
-      var dx = ox - len * f, dy = oy + droop * f * f + (Math.random() - 0.5) * jw * 2.4;
-      var c = doc.createElementNS(NSVG, 'circle');
-      c.setAttribute('cx', dx.toFixed(1)); c.setAttribute('cy', dy.toFixed(1));
-      c.setAttribute('r', (1.5 + Math.random() * 2.2).toFixed(1));
-      c.setAttribute('fill', Math.random() < 0.5 ? '#74c0fc' : '#a5d8ff');
-      svg.appendChild(c);
-      if (c.animate) c.animate(
-        [{ opacity: 0, transform: 'translate(0,0)' },
-         { opacity: 1, offset: 0.25 },
-         { opacity: 0, transform: 'translate(' + (-jw * 1.5).toFixed(1) + 'px,' + (jw * (1 + Math.random())).toFixed(1) + 'px)' }],
-        { duration: 500, delay: 140 + i * 40, easing: 'ease-out', fill: 'both' });
+    var sheen = mk('path', { d: d, fill: 'none', stroke: '#d0ebff', 'stroke-width': (jw * 0.34).toFixed(2), 'stroke-linecap': 'round', opacity: 0 });
+    sheen.style.strokeDasharray = (jw * 1.2).toFixed(1) + ' ' + (jw * 2.4).toFixed(1);
+    var L = paths[0].getTotalLength();
+    paths.forEach(function (p, idx) {
+      p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+      /* the head races out … */
+      anim(p, [{ strokeDashoffset: L }, { strokeDashoffset: 0 }], { duration: T_HEAD, delay: idx * 25, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' });
+      /* … and the tail leaves the mouth, the slug falling to the ground */
+      anim(p, [{ strokeDashoffset: 0 }, { strokeDashoffset: -L }], { duration: 380, delay: T_TAIL + idx * 20, easing: 'cubic-bezier(.5,0,.9,.6)', fill: 'forwards' });
+    });
+    /* the core pulses while the stream holds */
+    anim(paths[1], [{ strokeWidth: (jw * 0.62).toFixed(2) + 'px' }, { strokeWidth: (jw * 0.72).toFixed(2) + 'px', offset: 0.5 }, { strokeWidth: (jw * 0.62).toFixed(2) + 'px' }],
+      { duration: 170, delay: T_HEAD, iterations: 4, easing: 'ease-in-out' });
+    /* the sheen: dashes sliding along the stream = the water flowing */
+    anim(sheen, [{ opacity: 0 }, { opacity: 0.85, offset: 0.15 }, { opacity: 0.85, offset: 0.85 }, { opacity: 0 }], { duration: T_TAIL - 120, delay: 120, fill: 'both' });
+    anim(sheen, [{ strokeDashoffset: 0 }, { strokeDashoffset: (-jw * 3.6 * 9).toFixed(1) }], { duration: T_TAIL, delay: 120, easing: 'linear', fill: 'forwards' });
+
+    /* mist at the lips as it starts */
+    for (var m = 0; m < 4; m++) {
+      var puff = centred(mk('circle', { cx: (ox - jw * 0.4).toFixed(1), cy: (oy + (m - 1.5) * jw * 0.5).toFixed(1), r: (jw * 0.45).toFixed(1), fill: 'rgba(231,245,255,0.85)' }));
+      anim(puff, [{ transform: 'translate(0,0) scale(.4)', opacity: 0.9 }, { transform: 'translate(' + (-jw * (1.2 + m * 0.5)).toFixed(1) + 'px,' + ((m - 1.5) * jw * 0.9).toFixed(1) + 'px) scale(1.6)', opacity: 0 }],
+        { duration: 300 + m * 40, delay: m * 20, easing: 'ease-out', fill: 'both' });
     }
-    /* splash rings where the jet lands */
-    var ex = ox - len, ey = oy + droop;
-    for (var s2 = 0; s2 < 3; s2++) {
-      var ring = doc.createElementNS(NSVG, 'circle');
-      ring.setAttribute('cx', ex.toFixed(1)); ring.setAttribute('cy', ey.toFixed(1));
-      ring.setAttribute('r', (jw * (1.1 + s2 * 0.5)).toFixed(1));
-      ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', '#a5d8ff');
-      ring.setAttribute('stroke-width', Math.max(1.2, jw * 0.18));
-      svg.appendChild(ring);
-      if (ring.animate) ring.animate(
-        [{ opacity: 0, transform: 'scale(.3)', transformOrigin: ex + 'px ' + ey + 'px' },
-         { opacity: 0.9, offset: 0.35, transformOrigin: ex + 'px ' + ey + 'px' },
-         { opacity: 0, transform: 'scale(1.6)', transformOrigin: ex + 'px ' + ey + 'px' }],
-        { duration: 480, delay: 240 + s2 * 90, easing: 'ease-out', fill: 'both' });
+
+    /* spray peeling off the stream while it holds, falling under gravity */
+    for (var i = 0; i < 16; i++) {
+      var u = 0.2 + Math.random() * 0.72, q = jetPoint(ox, oy, R, drop, rise, u);
+      var side = Math.random() < 0.5 ? -1 : 1;
+      var drop_ = centred(mk('circle', { cx: q[0].toFixed(1), cy: q[1].toFixed(1), r: (1.2 + Math.random() * 1.6).toFixed(1), fill: Math.random() < 0.5 ? '#74c0fc' : '#a5d8ff' }));
+      var dx = -jw * (1.5 + Math.random() * 1.5), dy0 = side * jw * (0.5 + Math.random() * 0.8), dyf = jw * (2.2 + Math.random() * 1.8);
+      anim(drop_, [
+        { transform: 'translate(0,0)', opacity: 0 },
+        { transform: 'translate(' + (dx * 0.45).toFixed(1) + 'px,' + dy0.toFixed(1) + 'px)', opacity: 1, offset: 0.3 },
+        { transform: 'translate(' + dx.toFixed(1) + 'px,' + (dy0 + dyf).toFixed(1) + 'px)', opacity: 0 }],
+        { duration: 420 + Math.random() * 160, delay: 220 + i * 46, easing: 'cubic-bezier(.3,.3,.7,1)', fill: 'both' });
     }
+
+    /* the splash where it lands: a foam blob, rings, and droplets bouncing up */
+    var foam = centred(mk('ellipse', { cx: end[0].toFixed(1), cy: (end[1] - jw * 0.25).toFixed(1), rx: (jw * 0.95).toFixed(1), ry: (jw * 0.6).toFixed(1), fill: 'rgba(240,250,255,0.9)' }));
+    anim(foam, [{ transform: 'scale(.2)', opacity: 0 }, { transform: 'scale(1)', opacity: 0.95, offset: 0.12 }, { transform: 'scale(1.15)', opacity: 0.95, offset: 0.5 }, { transform: 'scale(.95)', opacity: 0.95, offset: 0.8 }, { transform: 'scale(1.3)', opacity: 0 }],
+      { duration: 1300, delay: T_HEAD - 40, easing: 'ease-out', fill: 'both' });
+    for (var s2 = 0; s2 < 6; s2++) {
+      var ring = centred(mk('ellipse', { cx: end[0].toFixed(1), cy: end[1].toFixed(1), rx: (jw * 1.5).toFixed(1), ry: (jw * 0.55).toFixed(1), fill: 'none', stroke: '#c5e8ff', 'stroke-width': Math.max(1.2, jw * 0.16).toFixed(2) }));
+      anim(ring, [{ opacity: 0, transform: 'scale(.3)' }, { opacity: 0.9, offset: 0.3 }, { opacity: 0, transform: 'scale(1.9)' }],
+        { duration: 460, delay: T_HEAD + s2 * 150, easing: 'ease-out', fill: 'both' });
+    }
+    for (var k = 0; k < 12; k++) {
+      var ang = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, sp = jw * (1.6 + Math.random() * 1.6);
+      var bx = Math.cos(ang) * sp, by = Math.sin(ang) * sp;
+      var bd = centred(mk('circle', { cx: end[0].toFixed(1), cy: end[1].toFixed(1), r: (1.3 + Math.random() * 1.7).toFixed(1), fill: k % 3 ? '#a5d8ff' : '#ffffff' }));
+      anim(bd, [
+        { transform: 'translate(0,0)', opacity: 0 },
+        { transform: 'translate(' + (bx * 0.6).toFixed(1) + 'px,' + (by * 0.9).toFixed(1) + 'px)', opacity: 1, offset: 0.35 },
+        { transform: 'translate(' + bx.toFixed(1) + 'px,' + (Math.abs(by) * 0.4 + jw * 0.3).toFixed(1) + 'px)', opacity: 0 }],
+        { duration: 380 + Math.random() * 120, delay: T_HEAD + 60 + k * 75, easing: 'cubic-bezier(.3,.4,.6,1)', fill: 'both' });
+    }
+
     wrap.appendChild(host);
 
-    /* shoot the jet nozzle-first (dashoffset L→0), hold, then fade it all */
-    paths.forEach(function (p, idx) {
-      var L = p.getTotalLength();
-      p.style.strokeDasharray = L;
-      p.style.strokeDashoffset = L;
-      if (p.animate) p.animate([{ strokeDashoffset: L }, { strokeDashoffset: 0 }],
-        { duration: 240, delay: idx * 30, easing: 'ease-out', fill: 'forwards' });
-      else p.style.strokeDashoffset = 0;
-    });
-    var kill = function () { if (host.parentNode) host.parentNode.removeChild(host); };
+    /* the recoil: Squirtle rocks back as the jet leaves (additive, on the flip
+       layer — the same layer the hop uses, so the two simply combine) */
+    var fl = wrap.querySelector ? wrap.querySelector('.pksq-fl') : null;
+    if (fl && fl.animate) {
+      try {
+        fl.animate([{ transform: 'translateX(0px)' }, { transform: 'translateX(' + (W * 0.045).toFixed(1) + 'px) rotate(-3deg)', offset: 0.18 }, { transform: 'translateX(' + (W * 0.02).toFixed(1) + 'px) rotate(-1.5deg)', offset: 0.6 }, { transform: 'translateX(0px) rotate(0deg)' }],
+          { duration: T_TAIL + 380, easing: 'ease-out', composite: 'add' });
+      } catch (e) {}
+    }
+
+    var kill = function () { if (host.parentNode) host.parentNode.removeChild(host); wrap._watering = false; };
     if (host.animate) {
-      host.animate([{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.66 }, { opacity: 0, offset: 1 }],
-        { duration: 1050, easing: 'ease-in' }).onfinish = kill;
+      host.animate([{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.77 }, { opacity: 0, offset: 1 }],
+        { duration: T_END, easing: 'ease-in' }).onfinish = kill;
     } else {
-      setTimeout(kill, 1050);
+      setTimeout(kill, T_END);
     }
   }
 

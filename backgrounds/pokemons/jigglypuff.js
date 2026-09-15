@@ -42,7 +42,7 @@
   var NATIVE_W = 168, NATIVE_H = 190;   // the cropped viewBox (see SVG below)
 
   var CSS = [
-    '.pkw-jg{position:absolute;pointer-events:none;will-change:transform}',
+    '.pkw-jg{position:absolute;pointer-events:none;will-change:transform;direction:ltr}',   /* the pens assume LTR; the game is RTL */
     '.pkw-jg svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;display:block}',
     '.pkw-jg .pk-shadow{position:absolute;left:50%;bottom:0;width:60%;height:6%;transform:translateX(-50%);',
     '  border-radius:50%;background:radial-gradient(ellipse,rgba(15,25,20,.30),transparent 70%)}',

@@ -37,6 +37,19 @@
    golden flash, ~1s, auto-removed. Detected via a document capture-phase
    listener hit-testing the live bounding box (game-UI filtered).
    inst.stars() fires it on demand.
+   EYES (fixed 2026-09): the pen's blink slid a rounded-RECTANGLE lid over
+   each almond eye without clipping, so mid-blink a tan block stuck out past
+   the eye; the eye now clips its children (overflow:hidden) and the lid
+   carries the eye's own almond radii, so a closed eye is a tan almond with
+   a curved lash line. The dark crease stroke the pen drew above each outer
+   corner (.eye::before) read as a permanent angry brow and was dropped.
+   RTL (fixed 2026-09-15): the game is Hebrew, <html dir="rtl">. The pen's
+   first eye had no left/right, so its static position — the LEFT edge in
+   the pen — became the RIGHT edge in the game and the two eyes sat on top
+   of each other as one blob. The wrapper now forces direction:ltr (every
+   pokemon rig and rumi do the same) and the first eye has an explicit
+   left:0. The head's 3D stage (preserve-3d/perspective/rotateY/translateZ)
+   was flattened to 2D equivalents in the same pass — identical look.
    patrol({speed:px/s, edgePad, pauseMs:[min,max]}) starts walking the
    parent's full width edge-to-edge forever: a linear WAAPI translateX
    on the wrapper carries the figure; at each edge it stops for a beat,
@@ -74,7 +87,7 @@
 
   var CSS = [
     /* ── wrapper / scale plumbing (house sprite pattern) ── */
-    '.pkw-ev{position:absolute;pointer-events:none;will-change:transform}',
+    '.pkw-ev{position:absolute;pointer-events:none;will-change:transform;direction:ltr}',   /* the pens assume LTR; the game is RTL */
     '.pkw-ev .pkev-sc{position:absolute;left:0;bottom:0;transform-origin:0 100%}',
     '.pkw-ev .pk-shadow{position:absolute;left:50%;bottom:0;width:76%;height:7%;transform:translateX(-50%);',
     '  border-radius:50%;background:radial-gradient(ellipse,rgba(15,25,20,.32),transparent 70%)}',
@@ -126,8 +139,7 @@
     '.pkev .fur:not(:first-child)>.patch::after{animation-delay:0.1s;left:100%;top:0}',
 
     /* ── head (3D stage for the eyes/ears) + crown fluff ── */
-    '.pkev .head{animation:' + A('Head') + ';height:149px;width:144px;top:-110px;left:-35px;z-index:10;',
-    '  transform-style:preserve-3d;perspective:1000px}',
+    '.pkev .head{animation:' + A('Head') + ';height:149px;width:144px;top:-110px;left:-35px;z-index:10}',
     '.pkev .head::before{content:"";position:absolute;display:block;height:100%;width:100%;top:0;left:0}',
     '.pkev .head::after{content:"";position:absolute;display:block;height:20%;width:20%;',
     '  transform:skewX(30deg) rotate(40deg);left:50%;top:-2%;background:#C49152;',
@@ -148,27 +160,27 @@
     '  background:radial-gradient(farthest-side,#6a3c1c,#5A3318);transform-origin:bottom left;',
     '  border:12px solid #260F02;border-top-left-radius:100%;border-bottom-right-radius:100%}',
     '.pkev .ear::after{border:8px solid #9D7442;background:transparent}',
-    '.pkev .ear+.ear{transform:translateX(-40px) rotateY(180deg)}',
+    '.pkev .ear+.ear{transform:translateX(-40px) scaleX(-1)}',
     '.pkev .ear>.lobe{height:20%;width:20%;background:#9D7442;bottom:25%;left:-5%;',
     '  transform:skewX(-50deg);border-top-right-radius:15%;box-shadow:9px 6px 0 #9D7442}',
 
     /* ── eyes (blink via the eyelid pseudo sliding down) ── */
     '.pkev .eyes{animation:' + A('Eyes') + ';width:77%;height:33%;left:5%;top:35%}',
-    '.pkev .eye{height:100%;width:28%;background-color:#260F02;box-shadow:inset 0 0 0 3px #260F02;',
+    '.pkev .eye{height:100%;width:28%;background-color:#260F02;box-shadow:inset 0 0 0 3px #260F02;overflow:hidden;',
     '  border-top-left-radius:50% 65%;border-top-right-radius:50% 65%;',
     '  border-bottom-left-radius:50% 35%;border-bottom-right-radius:50% 35%;',
     '  background-image:radial-gradient(ellipse 5px 10px at 50% 65%,#260F02 0%,#260F02 99%,transparent 100%),',
     '   radial-gradient(ellipse 10px 20px at 50% 90%,#955D27 0%,#955D27 99%,transparent 100%),',
     '   radial-gradient(ellipse 4px 6px at 55% 20%,#fff 0%,#fff 99%,transparent 100%)}',
-    '.pkev .eye:last-child{right:10%;transform:rotateY(180deg)}',
-    '.pkev .eye::before{content:"";display:block;position:absolute;height:30%;width:30%;',
-    '  background:transparent;border-radius:50%;border-right:3px solid #260F02;',
-    '  border-left:1px solid transparent;border-top:1px solid transparent;border-bottom:1px solid transparent;',
-    '  transform:rotate(-38deg);top:-4px;left:auto;right:2px;opacity:.6;z-index:1}',
+    '.pkev .eye:first-child{left:0}',   /* explicit: with no offset an absolute box takes its STATIC position, which in an RTL page is the RIGHT edge */
+    '.pkev .eye:last-child{right:10%;transform:scaleX(-1)}',
+    '.pkev .eye::before{display:none}',   /* the pen's dark crease above the eye read as an angry brow — dropped */
     '.pkev .eye>.eyelid{height:102%;width:102%;left:-1%;top:-1%;overflow:hidden}',
     '.pkev .eye>.eyelid::before{animation:' + A('Eyelid') + ';content:"";position:absolute;display:block;',
     '  top:0;left:0;height:100%;width:100%;background:#C49152;border-bottom:3px solid #260F02;',
-    '  transform-origin:center bottom;transform:translateY(-100%);border-radius:50% 50% 15% 15%}',
+    '  transform-origin:center bottom;transform:translateY(-100%);',
+    '  border-top-left-radius:50% 65%;border-top-right-radius:50% 65%;',
+    '  border-bottom-left-radius:50% 35%;border-bottom-right-radius:50% 35%}',
 
     /* ── nose + mouth (the mouth SHAPE morphs open with step-end during
           the pounce; the sides fade out while it is open) ── */
@@ -237,10 +249,10 @@
     ' 34.6154%{transform:translateY(-5%)}38.4615%{transform:translateY(5%)}',
     ' 76.9231%{transform:translateY(-4%)}84.6154%{transform:translateY(10%) scale(0.9)}}',
 
-    '@keyframes pkevEyes{' + DOWN + '{transform:rotateX(-7deg) translateZ(10px)}',
-    ' ' + UP + '{transform:rotateX(7deg) translateZ(10px)}',
-    ' 76.9231%{transform:translateY(5%) rotateX(-20deg) translateZ(10px)}',
-    ' 84.6154%{transform:rotateX(20deg) translateZ(10px)}}',
+    '@keyframes pkevEyes{' + DOWN + '{transform:translateY(-1%) scaleY(0.99)}',
+    ' ' + UP + '{transform:translateY(1%) scaleY(0.99)}',
+    ' 76.9231%{transform:translateY(6%) scaleY(0.94)}',
+    ' 84.6154%{transform:translateY(-2%) scaleY(0.94)}}',
 
     '@keyframes pkevEyelid{0%,23.0769%,24.6154%,76.9231%,95.3846%{transform:translateY(-120%) rotate(-30deg)}',
     ' 23.4615%,24.4615%,77.3077%,93.8462%{transform:translateY(0) rotate(0)}',
