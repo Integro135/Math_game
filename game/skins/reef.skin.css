@@ -31,7 +31,7 @@ body.theme-reef .glass{
 /* ════ HEADER — a thin waterline strip ════ */
 body.theme-reef .header{
   background:linear-gradient(180deg,rgba(4,32,48,.30),rgba(4,32,48,.08));
-  border:none;box-shadow:none;border-radius:18px;
+  border:none;box-shadow:none;border-radius:18px 18px 12px 12px;
   padding:10px 18px 10px;margin-bottom:10px;position:relative;
 }
 body.theme-reef .header::after{
@@ -111,7 +111,7 @@ body.theme-reef .lvl-btn.active:hover{transform:scale(1.08)}
 /* ════ THE CARD — an open frame; the water flows through it ════ */
 body.theme-reef .card{
   background:radial-gradient(120% 90% at 50% 30%,rgba(4,32,48,.24),rgba(4,32,48,.08) 70%);
-  border:1px solid rgba(102,224,255,.20);border-radius:20px;
+  border:1px solid rgba(102,224,255,.20);border-radius:12px 12px 20px 20px;
   box-shadow:none;padding:18px 18px 14px;
 }
 /* corner air-bubbles */
@@ -132,7 +132,6 @@ body.theme-reef .eq-row{
   background:rgba(4,38,56,.34);
   backdrop-filter:blur(9px) saturate(1.1);-webkit-backdrop-filter:blur(9px) saturate(1.1);
   border:1px solid rgba(102,224,255,.24);border-radius:18px;
-  padding:10px 14px;
 }
 body.theme-reef .eq-n,body.theme-reef .eq-res{
   color:#F4FDFF;

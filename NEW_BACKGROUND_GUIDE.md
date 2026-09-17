@@ -72,6 +72,12 @@ and never for longer than 40 s. Nothing to do in your module: keep `init()`
 synchronous and start your rAF loop inside it, as every scene here does. The
 intro splash and `preloadAll` wait for it (`GAME_LOADING.onReady`), so the
 active world is never fighting seven other worlds for the CPU while it bakes.
+A SLOW scene — one whose `init()` blocks for seconds or paints progressively
+(space2's black hole) — marks itself `slowLoad: true` (or is listed in
+`SLOW_BGS`): it then gets the loading screen on EVERY switch to it, even when
+its module is already loaded, and must call `window.BG_LOADING.done()` from
+its first rendered frame to take the screen down. `LOAD_LABELS` /
+`LOAD_STEPS` in bg-loader.js hold a per-scene status line.
 
 **Rules that matter** (full checklist in `backgrounds/README.md`):
 - Mount the canvas inside `stage`, never on `document.body`.

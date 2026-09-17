@@ -31,7 +31,7 @@ body.theme-maldives .glass{
 /* ════ HEADER — a thin waterline strip ════ */
 body.theme-maldives .header{
   background:linear-gradient(180deg,rgba(6,54,72,.30),rgba(6,54,72,.06));
-  border:none;box-shadow:none;border-radius:18px;
+  border:none;box-shadow:none;border-radius:18px 18px 12px 12px;
   padding:10px 18px 10px;margin-bottom:10px;position:relative;
 }
 body.theme-maldives .header::after{
@@ -111,7 +111,7 @@ body.theme-maldives .lvl-btn.active:hover{transform:scale(1.08)}
 /* ════ THE CARD — an open frame; the lagoon flows through it ════ */
 body.theme-maldives .card{
   background:radial-gradient(120% 90% at 50% 30%,rgba(6,54,72,.24),rgba(6,54,72,.06) 70%);
-  border:1px solid rgba(111,230,216,.20);border-radius:20px;
+  border:1px solid rgba(111,230,216,.20);border-radius:12px 12px 20px 20px;
   box-shadow:none;padding:18px 18px 14px;
 }
 /* corner sun-glints */
@@ -129,7 +129,7 @@ body.theme-maldives .card::after {bottom:-3px;left:-3px;box-shadow:0 0 10px rgba
 body.theme-maldives .eq-row{
   background:rgba(6,60,80,.34);
   backdrop-filter:blur(9px) saturate(1.1);-webkit-backdrop-filter:blur(9px) saturate(1.1);
-  border:1px solid rgba(111,230,216,.24);border-radius:18px;padding:10px 14px;
+  border:1px solid rgba(111,230,216,.24);border-radius:18px;
 }
 body.theme-maldives .eq-n,body.theme-maldives .eq-res{
   color:#F4FDFF;

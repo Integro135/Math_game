@@ -19,6 +19,14 @@ floats *in front of* that scene.
 - **Layered on top of `game/css/`.** Skins load *after* the base stylesheets
   (`base.css`, `aids.css`, `effects.css`, …), so they override defaults purely
   by cascade order — no `!important` needed (and mostly forbidden; see §3).
+- **`game/css/form.css` is the form's SHAPE layer.** It loads after
+  `responsive.css` and before the skin, and owns the geometry + motion of the
+  exercise form on every world: the slim header (stat chips, full-width
+  progress rail in `--skin-accent`), the equation island, operator coins,
+  the keycap answer box with its `?` placeholder, the pressing check coin,
+  the hint pill, and the docked header/card corners. A skin still owns every
+  colour, glow and fill of those parts — restyle the palette in the skin,
+  restyle the shape in `form.css`, never in `base.css`.
 - **Removed on unload.** `unloadBackground()` calls `applySkin(null)`, which
   clears the link's `href` (the `<link>` node stays, reusable). With no skin
   active, the game falls back to the bare `game/css/` defaults

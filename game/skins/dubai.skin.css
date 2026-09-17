@@ -42,7 +42,7 @@ body.theme-dubai .glass{
 /* ════ HEADER — a slim brass nameplate, not a box ════ */
 body.theme-dubai .header{
   background:linear-gradient(180deg,rgba(8,14,34,.44),rgba(8,14,34,.10));
-  border:none;box-shadow:none;border-radius:14px;
+  border:none;box-shadow:none;border-radius:14px 14px 12px 12px;
   padding:10px 18px 10px;margin-bottom:10px;position:relative;
 }
 /* hairline gold rule closing the nameplate */
@@ -127,7 +127,7 @@ body.theme-dubai .lvl-btn.active:hover{transform:scale(1.07)}
 /* ════ THE CARD — a pane of hotel glass with a gilt edge ════ */
 body.theme-dubai .card{
   background:linear-gradient(180deg,rgba(8,14,34,.42),rgba(8,14,34,.20));
-  border:1px solid rgba(255,191,105,.26);border-radius:16px;
+  border:1px solid rgba(255,191,105,.26);border-radius:12px 12px 16px 16px;
   box-shadow:0 18px 50px rgba(2,5,18,.45);padding:18px 18px 14px;
 }
 /* a single gilt highlight along the top edge — the only ornament */

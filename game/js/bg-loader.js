@@ -233,14 +233,18 @@ function loadBackground(name){
       }
       // a scene that reports readiness keeps the veil / loading screen until its first frame
       if(!(mod.slowLoad || SLOW_BGS.indexOf(name) >= 0)){ hideBgVeil(true); _signalSceneReady(); }
-      else if(gl) gl.step(LOAD_STEPS[name] || 'מְצַיְּרִים אֶת הָעוֹלָם…', 0.6);   // …and BG_LOADING.done() takes it down
+      // (a slow scene: BG_LOADING.done() from its first rendered frame takes the screen down)
     };
-    // let the veil paint first — init() is synchronous and can block for seconds
+    const slowNow = mod.slowLoad || SLOW_BGS.indexOf(name) >= 0;
+    if(slowNow && gl) gl.step(LOAD_STEPS[name] || 'מְצַיְּרִים אֶת הָעוֹלָם…', 0.6);   // shown while init blocks
+    // let the veil / loading screen paint first — init() is synchronous and can block for seconds
     if(veiled) requestAnimationFrame(() => requestAnimationFrame(run));
     else run();
   };
   if(window.BACKGROUNDS[name]){ start(); return; }
-  if(gl) gl.step('טוֹעֲנִים אֶת הָרֶקַע…', 0.3);
+  // (space2 does its heavy black-hole precomputation while its script runs, so a
+  //  slow scene's "drawing" label goes up before the fetch, not after)
+  if(gl) gl.step(slow ? (LOAD_STEPS[name] || 'מְצַיְּרִים אֶת הָעוֹלָם…') : 'טוֹעֲנִים אֶת הָרֶקַע…', 0.3);
   _injectScript('backgrounds/' + name + '.bg.js', () => {
     if(!window.BACKGROUNDS[name] && gl) gl.done();   // the script failed — never leave the screen up
     start();

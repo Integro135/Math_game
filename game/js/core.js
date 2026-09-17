@@ -476,7 +476,7 @@ function renderEq(){
   const nB=(t,base,o)=>{const s=_bridgeSplit(base,o,t);
     return `<span class="eq-n" data-num="${t}"${s?` data-split="${s.left},${s.right}"`:''}>${t}</span>`;};
   const op=(t,c)=>`<span class="eq-op ${c}">${t}</span>`;
-  const inp=`<input id="ans" class="ans-inp" type="number" min="0" max="20"
+  const inp=`<input id="ans" class="ans-inp" type="number" placeholder="?" min="0" max="20"
     oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)"
     onkeydown="if(event.key==='Enter')checkAns()">`;
   const res=t=>`<span class="eq-res" data-num="${t}">${t}</span>`;
@@ -527,7 +527,7 @@ function renderEq(){
       `<div class="tc-answer-row"><span class="tc-eq-lbl">סְכוּם =</span>${inp}</div></div>`;
   }
   else if(ptype===TT){
-    const ttInp=`<input id="ans" class="ans-inp" type="number" min="0" max="100"`+
+    const ttInp=`<input id="ans" class="ans-inp" type="number" placeholder="?" min="0" max="100"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,3)"`+
       ` onkeydown="if(event.key==='Enter')checkAns()">`;
     const hintStr=ttOp==='add'?`${num1/10}+${num2/10}`:`${num1/10}-${num2/10}`;
@@ -538,7 +538,7 @@ function renderEq(){
     // whole-hundreds addition — a 3-digit answer (≤ 900). Big round numbers are
     // NOT hoverable (no data-num) — a hundreds count of dots is meaningless.
     const nh=t=>`<span class="eq-n">${t}</span>`;
-    const hInp=`<input id="ans" class="ans-inp ans-inp-3d" type="number" min="0" max="999"`+
+    const hInp=`<input id="ans" class="ans-inp ans-inp-3d" type="number" placeholder="?" min="0" max="999"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,3)"`+
       ` onkeydown="if(event.key==='Enter')checkAns()">`;
     h=`<div class="tt-eq-wrap">${nh(num1)}${op('+','op-p')}${nh(num2)}${op('=','op-e')}${hInp}</div>`;
@@ -546,7 +546,7 @@ function renderEq(){
   else if(ptype===TDA||ptype===TDS){
     // the FIRST addend input previews its value as objects while typing
     // (`_nttInput`); plain count, no make-ten split. Hidden on blur.
-    const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="30"`+
+    const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" placeholder="?" min="0" max="30"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this);tdaJarSync(this)':''}"`+
       (id==='ans1'?` onblur="_nttHide()"`:'')+
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
@@ -557,7 +557,7 @@ function renderEq(){
     // Each box: hovering it AFTER typing a number shows that number's splits
     // (number-bonds) as emojis (_nttSplitsFromInput); ans1 also previews its
     // plain count while typing (_nttInput).
-    const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" min="0" max="20"`+
+    const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" placeholder="?" min="0" max="20"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this);tdaJarSync(this)':''}"`+
       (id==='ans1'?` onblur="_nttHide()"`:'')+
       ` onmouseenter="_nttSplitsFromInput(this)" onmouseleave="_nttHide()"`+

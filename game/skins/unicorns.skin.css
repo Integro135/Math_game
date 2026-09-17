@@ -36,7 +36,7 @@ body.theme-girls .glass{
 /* ════ HEADER — a thin ribbon, not a box ════ */
 body.theme-girls .header{
   background:linear-gradient(180deg,rgba(255,247,252,.38),rgba(255,247,252,.10));
-  border:none;box-shadow:none;border-radius:18px;
+  border:none;box-shadow:none;border-radius:18px 18px 12px 12px;
   padding:10px 18px 10px;margin-bottom:10px;position:relative;
 }
 /* a rainbow thread closes the strip */
@@ -150,7 +150,7 @@ body.theme-girls .hist-empty{color:rgba(122,64,112,.72)}
 /* ════ THE CARD — an open frame of light ════ */
 body.theme-girls .card{
   background:radial-gradient(120% 90% at 50% 30%,rgba(255,247,252,.34),rgba(255,247,252,.12) 70%);
-  border:1px solid rgba(214,112,171,.30);border-radius:20px;
+  border:1px solid rgba(214,112,171,.30);border-radius:12px 12px 20px 20px;
   box-shadow:none;padding:18px 18px 14px;
 }
 /* corner light-pins — pink and lilac */
