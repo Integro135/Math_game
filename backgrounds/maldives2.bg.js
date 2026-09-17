@@ -290,7 +290,16 @@
       const UI_SEL = '.wrap,button,input,select,textarea,#particles,.special-uni,#games-menu,#theme-menu,#fw-ov,#sad-ov,#report-ov,#settings-ov,#parent-ov';
 
       // ── the stage ──
-      const DW = 1600, DH = 900, HZ = 470;                          // design space, waterline
+      // RESPONSIVE (2026-09): the design height is fixed, the design WIDTH follows
+      // the screen's aspect so the sides are never cropped — 1600 on 16:9, ~1200
+      // on a landscape tablet, ~675 portrait tablet, ~415 phone. The palms and
+      // the far islands keep their 1600-space x in the code and are placed by
+      // AX(): left things hold to the left edge, right things to the right edge,
+      // the middle compresses; on a narrow screen the two medium palms are left
+      // out and the big ones shrink a little so the crowns don't swallow the view.
+      const DW0 = 1600, DH = 900, HZ = 470;                         // reference design space, waterline
+      let DW = DW0, AXK = 1;
+      const AX = x => x < 620 ? x * AXK : x >= 1100 ? DW - (DW0 - x) * AXK : DW / 2 + (x - 800) * AXK;
       const pickDPR = () => Math.max(0.75, Math.min(devicePixelRatio || 1, 1.5, Math.sqrt(2.4e6 / Math.max(1, innerWidth * innerHeight))));
       let DPR = pickDPR(), W = 0, H = 0, S = 1, OX = 0, OY = 0;
       const perf = { gapEma: 16.7, costEma: 0, halfRate: IS_TOUCH, frames: 0, drawn: 0 };
@@ -472,19 +481,19 @@
       const CIRRUS = []; for (let i = 0; i < 4; i++) CIRRUS.push({ x: R1() * DW, y: 40 + R1() * 120, w: 260 + R1() * 300, v: 10 + R1() * 6 });
       // the atoll islands on the horizon: x, width, height, haze 0..1 (far), palms [offset, height]
       const ISLANDS = [
-        { x: 190, w: 280, h: 15, far: 0.5, palms: [[-0.3, 34], [-0.12, 44], [0.08, 40], [0.28, 30]] },
-        { x: 560, w: 130, h: 7, far: 0.8, palms: [[0, 18]] },
-        { x: 1080, w: 190, h: 10, far: 0.7, palms: [[-0.2, 24], [0.1, 28]] },
-        { x: 1430, w: 360, h: 18, far: 0.35, palms: [[-0.35, 38], [-0.2, 50], [-0.02, 46], [0.15, 56], [0.32, 36]] },
+        { x: 190, x0: 190, w: 280, h: 15, far: 0.5, palms: [[-0.3, 34], [-0.12, 44], [0.08, 40], [0.28, 30]] },
+        { x: 560, x0: 560, w: 130, h: 7, far: 0.8, palms: [[0, 18]] },
+        { x: 1080, x0: 1080, w: 190, h: 10, far: 0.7, palms: [[-0.2, 24], [0.1, 28]] },
+        { x: 1430, x0: 1430, w: 360, h: 18, far: 0.35, palms: [[-0.35, 38], [-0.2, 50], [-0.02, 46], [0.15, 56], [0.32, 36]] },
       ];
       function sunPos(tod){
         const p = sunP(tod);                                          // 0 rise … 1 set
-        const x = lerp(480, 1160, p), y = HZ - Math.sin(clamp01(p) * Math.PI) * 400 + 14;
+        const x = lerp(0.30, 0.725, p) * DW, y = HZ - Math.sin(clamp01(p) * Math.PI) * 400 + 14;
         return { x, y, up: p > -0.02 && p < 1.02 };
       }
       function moonPos(tod){
         const p = moonP(tod);
-        const x = lerp(450, 1150, p), y = HZ - Math.sin(clamp01(p) * Math.PI) * 360 + 12;
+        const x = lerp(0.28, 0.72, p) * DW, y = HZ - Math.sin(clamp01(p) * Math.PI) * 360 + 12;
         return { x, y, up: p > -0.02 && p < 1.02, p };
       }
       let skyL = null;
@@ -653,14 +662,28 @@
       // ══════════════════════════════════════════════════════════════════════
       // x, y = trunk base; h = height; lean = -1 left / +1 right; fronds = count;
       // ph = a seed; big = scale; coco = coconuts; dead = hanging dry fronds
-      const PALMS = [
+      const PALMS_ALL = [
         { x: 90,   y: 850, h: 540, lean: 0.5,   fronds: 13, ph: 0.3, big: 1,    coco: true,  dead: 2 },
-        { x: 265,  y: 878, h: 390, lean: 0.35,  fronds: 11, ph: 1.9, big: 0.85, coco: true,  dead: 1 },
+        { x: 265,  y: 878, h: 390, lean: 0.35,  fronds: 11, ph: 1.9, big: 0.85, coco: true,  dead: 1, medium: true },
         { x: 25,   y: 900, h: 300, lean: 0.75,  fronds: 9,  ph: 4.1, big: 0.7,  coco: false, dead: 0 },
         { x: 1560, y: 855, h: 560, lean: -0.45, fronds: 13, ph: 2.6, big: 1,    coco: true,  dead: 2 },
-        { x: 1360, y: 885, h: 360, lean: -0.3,  fronds: 11, ph: 5.0, big: 0.8,  coco: true,  dead: 1 },
+        { x: 1360, y: 885, h: 360, lean: -0.3,  fronds: 11, ph: 5.0, big: 0.8,  coco: true,  dead: 1, medium: true },
         { x: 1585, y: 900, h: 290, lean: -0.8,  fronds: 9,  ph: 0.9, big: 0.7,  coco: false, dead: 0 },
       ];
+      for (const P of PALMS_ALL){ P.x0 = P.x; P.h0 = P.h; P.big0 = P.big; }
+      const PALMS = [];                                              // the ones in play for this width (layoutBeach)
+      let layoutDW = -1;
+      function layoutBeach(){
+        AXK = Math.min(1, DW / DW0);
+        const shrink = Math.max(0.5, Math.min(1, DW / DW0 + 0.24));  // the palms lose up to half their height on a phone, so the crowns frame the view instead of filling it
+        for (const I of ISLANDS) I.x = AX(I.x0);
+        PALMS.length = 0;
+        for (const P of PALMS_ALL){
+          if (P.medium && DW < 900) continue;
+          P.x = AX(P.x0); P.h = P.h0 * shrink; P.big = P.big0 * shrink; P.crown = null;
+          PALMS.push(P);
+        }
+      }
       function trunkPt(P, u, bend){
         const x = P.x + P.lean * P.h * 0.42 * u * u + bend * P.h * 0.3 * u * u * u;
         const y = P.y - P.h * u * (1 - 0.08 * u);
@@ -1084,7 +1107,10 @@
         W = innerWidth; H = innerHeight; DPR = pickDPR();
         canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
         canvasF.width = W * DPR; canvasF.height = H * DPR; ctxF.setTransform(DPR, 0, 0, DPR, 0, 0);
-        S = Math.max(W / DW, H / DH); OX = (W - DW * S) / 2; OY = H - DH * S;
+        // the design is as wide as the window is, at the fixed design height — nothing is cropped
+        DW = Math.max(400, Math.min(2400, Math.round(DH * W / Math.max(1, H))));
+        S = H / DH; OX = (W - DW * S) / 2; OY = 0;
+        if (DW !== layoutDW){ layoutDW = DW; layoutBeach(); }
         clearWalkers(); nextGroundAt = lastT + 2.5; nextFlyAt = lastT + 8;
         skyL = makeLayer(W, H, DPR); seaL = makeLayer(W, H, DPR); sandL = makeLayer(W, H, DPR);
         for (const P of PALMS) P.crown = null;
@@ -1380,7 +1406,8 @@
         clear: () => clearWalkers(),
         nextName: () => nextGround(),
         pokeReady: () => pokeReady,
-        perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
+        layout: () => ({ DW, k: +AXK.toFixed(3), palms: PALMS.map(P => Math.round(P.x)), islands: ISLANDS.map(I => Math.round(I.x)) }),
+        perf: () => ({ dpr: +DPR.toFixed(2), DW, halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         pmax: () => PMAX,
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints' || k === 'crowns') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; PROF.repaints = 0; PROF.crowns = 0; },

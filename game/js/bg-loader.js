@@ -56,13 +56,15 @@ function _injectScript(src, onload){
 }
 
 /* ── game skin ── */
+let _bgSkinLoaded = true;                    // false while a skin stylesheet is still on its way
 function applySkin(skin){
   if(!_skinLink){
     _skinLink = document.createElement('link');
     _skinLink.rel = 'stylesheet';
+    _skinLink.onload = _skinLink.onerror = () => { _bgSkinLoaded = true; };
     document.head.appendChild(_skinLink);
   }
-  if(skin) _skinLink.href = 'game/skins/' + skin + '.skin.css';
+  if(skin){ _bgSkinLoaded = false; _skinLink.href = 'game/skins/' + skin + '.skin.css'; }
   else _skinLink.removeAttribute('href');
 }
 
@@ -161,7 +163,13 @@ function hideBgVeil(now){
 }
 
 /* the scene tells us when its first frame is actually on screen */
-window.BG_LOADING = { done: () => hideBgVeil(), showing: () => !!_veil };
+let _slowPending = false;
+const LOAD_LABELS = { space2: 'טוֹעֲנִים אֶת הֶחָלָל…' };
+const LOAD_STEPS  = { space2: 'מְצַיְּרִים חוֹר שָׁחוֹר 🌌' };
+window.BG_LOADING = {
+  done: () => { hideBgVeil(); const gl = _gameLoading(); if(gl && _slowPending){ _slowPending = false; gl.step('כִּמְעַט מוּכָן…', 0.95); gl.done(); } },
+  showing: () => !!_veil || (!!_gameLoading() && _gameLoading().isUp()),
+};
 
 /* ── backgrounds ── */
 function unloadBackground(){
@@ -171,14 +179,42 @@ function unloadBackground(){
   loadAids('classic');
 }
 
+/* ── the full LOADING SCREEN (index.html, window.GAME_LOADING): shown whenever
+   the theme's scene module still has to be fetched and parsed — at boot, or on
+   the first switch to a scene the preload hasn't reached yet. It comes down
+   only when the scene has drawn its first frames, its skin stylesheet is in
+   and the fonts are ready (each capped, so a stalled resource can't hold it). */
+const _gameLoading = () => (typeof window !== 'undefined' && window.GAME_LOADING) ? window.GAME_LOADING : null;
+function _signalSceneReady(){
+  const gl = _gameLoading(); if(!gl || !gl.isUp()) return;
+  gl.step('מְצַיְּרִים אֶת הָעוֹלָם…', 0.7);
+  let frames = 0;
+  const tick = () => {
+    if(++frames < 3){ requestAnimationFrame(tick); return; }   // the scene's own rAF has run at least twice
+    gl.step('כִּמְעַט מוּכָן…', 0.9);
+    const t0 = performance.now();
+    const waitRest = () => {
+      const fontsOk = !document.fonts || document.fonts.status === 'loaded';
+      if((_bgSkinLoaded && fontsOk) || performance.now() - t0 > 3000) gl.done();
+      else setTimeout(waitRest, 60);
+    };
+    waitRest();
+  };
+  requestAnimationFrame(tick);
+}
 function loadBackground(name){
   if(_bgCleanup){ _bgCleanup(); _bgCleanup = null; }
   hideBgVeil(true);
+  const gl = _gameLoading();
   const stage0 = document.getElementById('stars-layer');
-  // a slow scene gets the veil BEFORE anything heavy runs
+  // a slow scene (its init blocks for seconds and it paints progressively) gets the
+  // full loading screen BEFORE anything heavy runs — even when its module is already
+  // loaded — and keeps it until the scene itself reports its first frame
   const slow = SLOW_BGS.indexOf(name) >= 0 ||
                !!(window.BACKGROUNDS[name] && window.BACKGROUNDS[name].slowLoad);
-  if(slow && stage0){ stage0.innerHTML = ''; showBgVeil(stage0); }
+  _slowPending = slow;
+  if(gl && (slow || !window.BACKGROUNDS[name])) gl.show(LOAD_LABELS[name] || 'טוֹעֲנִים אֶת הָעוֹלָם…');
+  else if(slow && stage0){ stage0.innerHTML = ''; showBgVeil(stage0); }   // no loading screen on this page: the old stage veil
   const start = () => {
     const mod = window.BACKGROUNDS[name];
     if(!mod){ hideBgVeil(); return; }
@@ -186,7 +222,7 @@ function loadBackground(name){
     loadAids(mod.aids || 'classic');
     const stage = document.getElementById('stars-layer');
     if(!stage){ hideBgVeil(); return; }
-    const veiled = !!_veil;
+    const veiled = !!_veil || (gl && gl.isUp());
     const run = () => {
       if(veiled){                       // the scene wipes the stage — re-hang the veil on top
         const v = _veil;
@@ -195,15 +231,20 @@ function loadBackground(name){
       } else {
         _bgCleanup = mod.init({ stage }) || null;
       }
-      // a scene that reports readiness keeps the veil until its first frame
-      if(!(mod.slowLoad || SLOW_BGS.indexOf(name) >= 0)) hideBgVeil(true);
+      // a scene that reports readiness keeps the veil / loading screen until its first frame
+      if(!(mod.slowLoad || SLOW_BGS.indexOf(name) >= 0)){ hideBgVeil(true); _signalSceneReady(); }
+      else if(gl) gl.step(LOAD_STEPS[name] || 'מְצַיְּרִים אֶת הָעוֹלָם…', 0.6);   // …and BG_LOADING.done() takes it down
     };
     // let the veil paint first — init() is synchronous and can block for seconds
     if(veiled) requestAnimationFrame(() => requestAnimationFrame(run));
     else run();
   };
   if(window.BACKGROUNDS[name]){ start(); return; }
-  _injectScript('backgrounds/' + name + '.bg.js', start);
+  if(gl) gl.step('טוֹעֲנִים אֶת הָרֶקַע…', 0.3);
+  _injectScript('backgrounds/' + name + '.bg.js', () => {
+    if(!window.BACKGROUNDS[name] && gl) gl.done();   // the script failed — never leave the screen up
+    start();
+  });
 }
 
 /* ── boot preload: warm EVERY background (+ its aid art & skin) and EVERY

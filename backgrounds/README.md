@@ -27,6 +27,24 @@ visible and playable while the backdrop loads. Scenes that don't opt in show no
 veil at all.
 
 Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns3`,
+**Responsive fit (2026-09-15).** The three 2026-09 scenes (reef2, dubai3,
+maldives2) no longer cover-fit-and-crop a fixed 1600×900 design. The design
+HEIGHT stays 900 and the design WIDTH follows the window's aspect
+(`DW = round(900·W/H)`, clamped 400–2400; `S = H/900`, `OX = (W − DW·S)/2`),
+so a phone gets a ~415-wide design, a portrait tablet ~675, a landscape tablet
+~1200, a 16:9 desktop the original 1600 — nothing is cropped. Positions in the
+code stay in 1600-space and go through an anchor: left things `x·k`, right
+things `DW − (1600−x)·k`, middle things `DW/2 + (x−800)·k`, with
+`k = min(1, DW/1600)` — positions slide toward their edge, sizes do not. reef2
+additionally switches to a hand-composed NARROW layout below DW 1000
+(`layoutNarrow`: one shelf each side, a stone in the middle, everything a
+fraction of the width, fish homes and sizes in fractions too, 3 anemones);
+dubai3 drops the Marina towers and the JBH below DW 820 and rebuilds the Burj
+on the anchored axis (`layoutCity`); maldives2 drops its two medium palms
+below DW 900 and shrinks the rest to half on a phone (`layoutBeach`). Each
+rebuilds its layout in `resize()` when DW changes (an orientation flip), and
+reports it through `_reef2.layout()` / `_dubai3.layout()` / `_mv2.layout()`.
+
 `dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef2` (the 2026-09 rebuild; `reef.bg.js` is the legacy scene, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`,
 `maldives→maldives2` (the 2026-09 canvas rebuild with the day cycle, storms and the pokemon walkers; `maldives.bg.js` is the legacy SVG scene, unloaded)
 (🏙️, 🦁, 🦕 and 🏝️ are their own themes in the menu). Canvas-scene themes spawn no
@@ -1411,6 +1429,18 @@ while frames run long, back to full rate after 6 calm seconds), and the first
 1.2 s after init or a resize is EXCLUDED from that decision (`warming`) — the
 theme switch paints every still layer at once and that one-off spike used to
 latch the scene at half rate for good.
+
+**Steering (fixed 2026-09-17).** A wanderer's goal used to be a fixed 30 px
+circle round its target; velocity turns toward the target at rate `turn`, so a
+fish whose turning radius (speed/turn — 65 px for a dolphin, 44 for a shark)
+is wider than the goal could ORBIT the target forever — Eran watched a dolphin
+loop for hundreds of turns. `reached()` now retires a target when the fish is
+within a turning-radius-aware goal (`max(30, 1.6·speed/turn)`), or once the
+closest approach is behind it (distance growing again inside 200 px), or after
+a give-up time scaled to the swim (`tMax` in `newTarget`); the dolphin's
+breath run gives up after 8 s, the clownfish hover/dart goals scale the same
+way. `_reef2.orbit()` counts how targets were retired (`arrived / passed /
+stale`) — after two minutes of swimming `stale` should stay at 0.
 
 Test hooks `window._reef2`: `seek(s)`, `current()`, `counts()`, `fish()`,
 `whale(x)`, `orca(x)`, `act(kind)`, `dart()`, `hide()`, `poop()`, `perf()`,

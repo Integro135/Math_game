@@ -62,6 +62,17 @@ window.BACKGROUNDS.<name> = {
 };
 ```
 
+**The loading screen.** `index.html` paints an opaque full-screen loading
+screen (`#load-screen`, controller `window.GAME_LOADING`) before anything else,
+and `bg-loader.js` takes it down only after your `init()` has returned AND the
+scene's rAF loop has drawn a couple of frames (plus the skin stylesheet and the
+fonts, each capped). It is shown whenever a scene module still has to be
+fetched — at boot, or the first switch to a scene the preload hasn't reached —
+and never for longer than 40 s. Nothing to do in your module: keep `init()`
+synchronous and start your rAF loop inside it, as every scene here does. The
+intro splash and `preloadAll` wait for it (`GAME_LOADING.onReady`), so the
+active world is never fighting seven other worlds for the CPU while it bakes.
+
 **Rules that matter** (full checklist in `backgrounds/README.md`):
 - Mount the canvas inside `stage`, never on `document.body`.
 - Put click listeners on `document` and bail on game UI first:

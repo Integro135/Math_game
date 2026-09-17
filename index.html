@@ -11,8 +11,74 @@
 <link rel="stylesheet" href="game/css/themes.css">
 <link rel="stylesheet" href="game/css/responsive.css">
 <link rel="stylesheet" href="game/css/numpad.css">
+<!-- ── LOADING SCREEN: opaque, first thing painted, hides the game AND its
+     background until the theme's scene has drawn its first frame (or 40 s).
+     Inline so it needs no stylesheet or font to appear. bg-loader.js reports
+     progress/readiness through window.GAME_LOADING; main.js delays the intro
+     splash and the background preload until it is gone. ── -->
+<style id="load-css">
+#load-screen{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  direction:rtl;text-align:center;color:#eef2ff;font-family:'Fredoka One','Nunito','Segoe UI',Arial,sans-serif;
+  background:radial-gradient(ellipse at 50% 40%,#2a1d5e 0%,#160f3a 55%,#0a0720 100%);transition:opacity .5s ease}
+#load-screen.out{opacity:0;pointer-events:none}
+#load-screen .ld-title{font-size:clamp(28px,6vw,46px);letter-spacing:.02em;text-shadow:0 3px 18px rgba(0,0,0,.6),0 0 30px rgba(180,150,255,.35)}
+#load-screen .ld-ring{width:78px;height:78px;border-radius:50%;border:6px solid rgba(160,170,255,.2);border-top-color:#ffd27d;border-right-color:#c9a6ff;animation:ldSpin 1.1s linear infinite}
+#load-screen .ld-txt{font-family:'Nunito','Segoe UI',Arial,sans-serif;font-weight:800;font-size:clamp(16px,3.4vw,21px);color:#dfe6ff;min-height:1.4em}
+#load-screen .ld-bar{width:min(70vw,360px);height:8px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
+#load-screen .ld-bar i{display:block;height:100%;width:8%;border-radius:999px;background:linear-gradient(90deg,#ffd27d,#ff9ecf,#9ec2ff);transition:width .5s ease}
+#load-screen .ld-hint{font-family:'Nunito','Segoe UI',Arial,sans-serif;font-size:14px;color:rgba(200,210,255,.7);opacity:0;transition:opacity .5s}
+#load-screen .ld-hint.on{opacity:1}
+@keyframes ldSpin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
+
+<div id="load-screen">
+  <div class="ld-title">מִשְׂחֲקֵי חֶשְׁבּוֹן</div>
+  <div class="ld-ring"></div>
+  <div class="ld-txt">טוֹעֲנִים אֶת הָעוֹלָם…</div>
+  <div class="ld-bar"><i></i></div>
+  <div class="ld-hint">עוֹד רֶגַע, מְצַיְּרִים אֶת הָרֶקַע 🎨</div>
+</div>
+<script>
+/* window.GAME_LOADING — the loading screen's controller (see bg-loader.js).
+   show(): put it up (boot, or a theme whose scene isn't loaded yet)
+   step(label, frac): status line + progress bar (frac 0..1)
+   done(): fade out and remove; fires the 'game-ready' event once
+   onReady(fn): run fn now if ready, else when it happens
+   Safety: the screen never stays longer than MAX ms. */
+(function(){
+  var MAX = 40000, el = document.getElementById('load-screen'), ready = false, maxTO = null, hintTO = null, up = true;
+  function q(s){ return el ? el.querySelector(s) : null; }
+  function done(){
+    if (!el || !up){ if (!ready){ ready = true; window.dispatchEvent(new CustomEvent('game-ready')); } return; }
+    up = false; clearTimeout(maxTO); clearTimeout(hintTO);
+    var b = q('.ld-bar i'); if (b) b.style.width = '100%';
+    el.classList.add('out');
+    setTimeout(function(){ if (el && el.parentNode) el.parentNode.removeChild(el); el = null; }, 560);
+    if (!ready){ ready = true; window.dispatchEvent(new CustomEvent('game-ready')); }
+  }
+  function arm(){ clearTimeout(maxTO); clearTimeout(hintTO); maxTO = setTimeout(done, MAX); hintTO = setTimeout(function(){ var h = q('.ld-hint'); if (h) h.classList.add('on'); }, 5000); }
+  window.GAME_LOADING = {
+    show: function(label){
+      if (!el){                                  // a later theme switch to a scene not yet loaded: rebuild it
+        el = document.createElement('div'); el.id = 'load-screen';
+        el.innerHTML = '<div class="ld-title">מִשְׂחֲקֵי חֶשְׁבּוֹן</div><div class="ld-ring"></div><div class="ld-txt"></div><div class="ld-bar"><i></i></div><div class="ld-hint">עוֹד רֶגַע, מְצַיְּרִים אֶת הָרֶקַע 🎨</div>';
+        document.body.appendChild(el);
+      }
+      up = true; el.classList.remove('out'); ready = false;
+      var t = q('.ld-txt'); if (t && label) t.textContent = label;
+      var b = q('.ld-bar i'); if (b) b.style.width = '8%';
+      arm();
+    },
+    step: function(label, frac){ var t = q('.ld-txt'); if (t && label) t.textContent = label; var b = q('.ld-bar i'); if (b && frac != null) b.style.width = Math.round(Math.max(0.08, Math.min(1, frac)) * 100) + '%'; },
+    done: done,
+    onReady: function(fn){ if (ready) fn(); else window.addEventListener('game-ready', function h(){ window.removeEventListener('game-ready', h); fn(); }); },
+    isUp: function(){ return up; }
+  };
+  arm();
+})();
+</script>
 
 <div id="bg"></div>
 <div id="stars-layer"></div>

@@ -116,8 +116,18 @@
       const UI_SEL = '.wrap,button,input,select,textarea,#particles,.special-uni,#games-menu,#theme-menu,#fw-ov,#sad-ov,#report-ov';
 
       // ── the stage ──
-      const DW = 1600, DH = 900;
-      const SUNX = 330, SUNY = -40;                              // the sun, high left, just off the top
+      // RESPONSIVE: the design HEIGHT is fixed (900) and the design WIDTH follows
+      // the screen's aspect, so the picture always fills the window exactly
+      // instead of cropping the sides — 1600 on a 16:9 desktop, ~1200 on a
+      // landscape tablet, ~675 on a portrait tablet, ~415 on a phone. The layout
+      // is rebuilt for the width in hand: WIDE (≥1000) keeps the desktop
+      // composition with the left group anchored to the left edge, the right
+      // group to the right edge and the centre compressed; NARROW (<1000) is a
+      // separate compact composition — one shelf each side, a stone in the
+      // middle, everything sized as a fraction of the width.
+      const DW0 = 1600, DH = 900;
+      let DW = DW0, NARROW = false, SUNX = 330;
+      const SUNY = -40;                                          // the sun, high left, just off the top
       const pickDPR = () => Math.max(0.75, Math.min(devicePixelRatio || 1, 1.25, Math.sqrt(2.0e6 / Math.max(1, innerWidth * innerHeight))));
       let DPR = pickDPR(), W = 0, H = 0, S = 1, OX = 0, OY = 0;
       const perf = { gapEma: 16.7, costEma: 0, halfRate: IS_TOUCH, frames: 0, drawn: 0 };
@@ -923,23 +933,33 @@
       const onRock = (R, u) => [R.x + u * R.rx * 0.82, R.y - R.ry * Math.sqrt(Math.max(0, 1 - u * u * 0.67)) * 0.92 + 3];
 
       function buildReef(){
+        NARROW = DW < 1000;
+        const kL = Math.min(1, DW / DW0);                       // groups slide toward their edge as the screen narrows
+        const LX = x => x * kL, RX = x => DW - (DW0 - x) * kL, CX = x => DW / 2 + (x - 800) * kL;
+        if (NARROW) layoutNarrow(); else layoutWide(LX, RX, CX);
+        STILL.sort((a, b) => a.y - b.y);
+        LIVE.sort((a, b) => a.y - b.y);
+      }
+
+      // ── WIDE: the desktop composition, anchored (LX left · RX right · CX centre) ──
+      function layoutWide(LX, RX, CX){
         // ── LEFT REEF: a heaped shelf climbing to the left edge ──
-        const L1 = rock({ x: 60, y: 690, rx: 210, ry: 130, sd: 11, z: 0.12, tone: 1 });
-        const L2 = rock({ x: 300, y: 730, rx: 150, ry: 92, sd: 12, z: 0.10 });
-        const L3 = rock({ x: 470, y: 790, rx: 120, ry: 58, sd: 13, z: 0.06, tone: 2 });
-        const L4 = rock({ x: 170, y: 800, rx: 130, ry: 62, sd: 14, z: 0.03, tone: 2, fore: true });
-        const L5 = rock({ x: -40, y: 840, rx: 170, ry: 80, sd: 15, z: 0.0, tone: 1, fore: true });
+        const L1 = rock({ x: LX(60), y: 690, rx: 210, ry: 130, sd: 11, z: 0.12, tone: 1 });
+        const L2 = rock({ x: LX(300), y: 730, rx: 150, ry: 92, sd: 12, z: 0.10 });
+        const L3 = rock({ x: LX(470), y: 790, rx: 120, ry: 58, sd: 13, z: 0.06, tone: 2 });
+        const L4 = rock({ x: LX(170), y: 800, rx: 130, ry: 62, sd: 14, z: 0.03, tone: 2, fore: true });
+        const L5 = rock({ x: LX(-40), y: 840, rx: 170, ry: 80, sd: 15, z: 0.0, tone: 1, fore: true });
         // ── RIGHT REEF: a pinnacle and a broad shelf ──
-        const R1 = rock({ x: 1450, y: 600, rx: 120, ry: 170, sd: 21, z: 0.14, tone: 1 });     // the pinnacle
-        const R2 = rock({ x: 1560, y: 700, rx: 190, ry: 120, sd: 22, z: 0.12 });
-        const R3 = rock({ x: 1270, y: 740, rx: 160, ry: 88, sd: 23, z: 0.10, tone: 2 });
-        const R4 = rock({ x: 1120, y: 795, rx: 110, ry: 54, sd: 24, z: 0.06 });
-        const R5 = rock({ x: 1420, y: 810, rx: 150, ry: 66, sd: 25, z: 0.02, tone: 2, fore: true });
-        const R6 = rock({ x: 1640, y: 850, rx: 170, ry: 80, sd: 26, z: 0.0, tone: 1, fore: true });
+        const R1 = rock({ x: RX(1450), y: 600, rx: 120, ry: 170, sd: 21, z: 0.14, tone: 1 });     // the pinnacle
+        const R2 = rock({ x: RX(1560), y: 700, rx: 190, ry: 120, sd: 22, z: 0.12 });
+        const R3 = rock({ x: RX(1270), y: 740, rx: 160, ry: 88, sd: 23, z: 0.10, tone: 2 });
+        const R4 = rock({ x: RX(1120), y: 795, rx: 110, ry: 54, sd: 24, z: 0.06 });
+        const R5 = rock({ x: RX(1420), y: 810, rx: 150, ry: 66, sd: 25, z: 0.02, tone: 2, fore: true });
+        const R6 = rock({ x: RX(1640), y: 850, rx: 170, ry: 80, sd: 26, z: 0.0, tone: 1, fore: true });
         // ── CENTRE: low rocks in the sand channel ──
-        const C1 = rock({ x: 700, y: 812, rx: 70, ry: 30, sd: 31, z: 0.06, tone: 2 });
-        const C2 = rock({ x: 900, y: 826, rx: 60, ry: 26, sd: 32, z: 0.04 });
-        const C3 = rock({ x: 810, y: 780, rx: 46, ry: 22, sd: 33, z: 0.12, tone: 1 });
+        const C1 = rock({ x: CX(700), y: 812, rx: 70, ry: 30, sd: 31, z: 0.06, tone: 2 });
+        const C2 = rock({ x: CX(900), y: 826, rx: 60, ry: 26, sd: 32, z: 0.04 });
+        const C3 = rock({ x: CX(810), y: 780, rx: 46, ry: 22, sd: 33, z: 0.12, tone: 1 });
 
         let p;
         // ── corals on the left shelf ──
@@ -948,68 +968,124 @@
         p = onRock(L1, 0.72); { const q = p; still(q[1] + 4, g => paintStaghorn(g, { x: q[0], y: q[1], h: 120, sd: 103, z: 0.11, pal: 1 })); }
         p = onRock(L1, -0.95); { const q = p; still(q[1] + 4, g => paintTubes(g, { x: q[0] + 20, y: q[1] + 10, h: 90, sd: 104, z: 0.12, pal: 0 })); }
         p = onRock(L2, -0.5); { const q = p; still(q[1] + 4, g => paintBoulder(g, { x: q[0], y: q[1] - 4, r: 48, sd: 105, z: 0.10, pal: 0, worms: 3 })); }
-        p = onRock(L2, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[0], t, c, DT)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 66, sd: 106, z: 0.09, pal: 0, n: 120 })); }
+        p = onRock(L2, 0.45); anemoneAt(p[0], p[1] + 2, 66, 106, 0.09, 0, 120, false);
         p = onRock(L2, -0.05); { const q = p; still(q[1] + 3, g => paintMushroom(g, { x: q[0] + 8, y: q[1] + 8, r: 26, sd: 107, z: 0.10, pal: 0 })); }
-        p = onRock(L2, 0.95); { const q = p; live(q[1] + 3, (g, t, c) => drawFan(g, FANS[0], t, c)); FANS.push(buildFan({ x: q[0], y: q[1] + 6, h: 95, sd: 108, z: 0.1, pal: 0 })); }
+        p = onRock(L2, 0.95); fanAt(p[0], p[1] + 6, 95, 108, 0.1, 0, false);
         p = onRock(L3, -0.4); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 110, sd: 109, z: 0.06, pal: 0 })); }
         p = onRock(L3, 0.55); { const q = p; still(q[1] + 3, g => paintFingers(g, { x: q[0], y: q[1] + 2, w: 64, sd: 110, z: 0.06, pal: 0 })); }
-        p = onRock(L3, 0.95); { const q = p; live(q[1] + 2, (g, t, c) => drawWhips(g, { x: q[0], y: q[1] + 4, h: 120, n: 6, sd: 111, z: 0.06, pal: 0 }, t, c)); }
+        p = onRock(L3, 0.95); whipsAt(p[0], p[1] + 4, 120, 6, 111, 0.06, 0, false);
         p = onRock(L4, -0.3); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 2, r: 58, sd: 112, z: 0.03, pal: 4, flat: true, worms: 2 }), true); }
-        p = onRock(L4, 0.6); { const q = p; live(q[1] + 3, (g, t, c) => drawSoft(g, SOFTS[0], t, c), true); SOFTS.push(buildSoft({ x: q[0], y: q[1], h: 78, sd: 113, z: 0.03, pal: 0 })); }
+        p = onRock(L4, 0.6); softAt(p[0], p[1], 78, 113, 0.03, 0, true);
         p = onRock(L5, 0.55); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 105, sd: 114, z: 0.0, pal: 2, spread: 1.15 }), true); }
         p = onRock(L5, 0.0); { const q = p; still(q[1] + 3, g => paintBrain(g, { x: q[0], y: q[1] - 4, r: 50, sd: 115, z: 0.0, pal: 1 }), true); }
-        p = onRock(L5, 0.9); { const q = p; const K = { x: q[0] + 14, y: q[1] + 4, w: 64, sd: 116, z: 0.0, open: 0.8, snapT: -99, ph: 1.3 }; CLAMS.push(K); live(q[1] + 2, (g, t) => drawClam(g, K, t), true); }
-        still(770, g => paintTubes(g, { x: 400, y: 760, h: 70, sd: 117, z: 0.09, pal: 1 }));
+        p = onRock(L5, 0.9); clamAt(p[0] + 14, p[1] + 4, 64, 116, 0.0, 1.3, true);
+        still(770, g => paintTubes(g, { x: LX(400), y: 760, h: 70, sd: 117, z: 0.09, pal: 1 }));
 
         // ── corals on the right ──
         p = onRock(R1, -0.35); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1] + 2, h: 105, sd: 121, z: 0.14, pal: 2, spread: 1.05 })); }
         p = onRock(R1, 0.55); { const q = p; still(q[1] + 3, g => paintTable(g, { x: q[0], y: q[1] + 2, w: 120, sd: 122, z: 0.14, pal: 0 })); }
-        p = onRock(R1, -0.95); { const q = p; live(q[1] + 3, (g, t, c) => drawFan(g, FANS[1], t, c)); FANS.push(buildFan({ x: q[0] - 6, y: q[1] + 14, h: 110, sd: 123, z: 0.13, pal: 1 })); }
-        { const q = [1400, 700]; still(q[1] + 2, g => paintTubes(g, { x: q[0], y: q[1], h: 110, sd: 124, z: 0.12, pal: 1 })); }
+        p = onRock(R1, -0.95); fanAt(p[0] - 6, p[1] + 14, 110, 123, 0.13, 1, false);
+        still(702, g => paintTubes(g, { x: RX(1400), y: 700, h: 110, sd: 124, z: 0.12, pal: 1 }));
         p = onRock(R2, -0.2); { const q = p; still(q[1] + 3, g => paintBrain(g, { x: q[0], y: q[1] - 6, r: 70, sd: 125, z: 0.12, pal: 2 })); }
         p = onRock(R2, 0.6); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 130, sd: 126, z: 0.12, pal: 1 })); }
-        p = onRock(R2, -0.75); { const q = p; live(q[1] + 3, (g, t, c) => drawSoft(g, SOFTS[1], t, c)); SOFTS.push(buildSoft({ x: q[0], y: q[1], h: 90, sd: 127, z: 0.12, pal: 1 })); }
-        p = onRock(R3, -0.55); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[1], t, c, DT)); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 2, r: 74, sd: 128, z: 0.09, pal: 1, n: 132 })); }
+        p = onRock(R2, -0.75); softAt(p[0], p[1], 90, 127, 0.12, 1, false);
+        p = onRock(R3, -0.55); anemoneAt(p[0], p[1] + 2, 74, 128, 0.09, 1, 132, false);
         p = onRock(R3, 0.5); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 4, r: 56, sd: 129, z: 0.10, pal: 2, worms: 3 })); }
         p = onRock(R3, 0.98); { const q = p; still(q[1] + 3, g => paintMushroom(g, { x: q[0], y: q[1] + 6, r: 24, sd: 130, z: 0.10, pal: 2 })); }
         p = onRock(R4, -0.5); { const q = p; still(q[1] + 3, g => paintFingers(g, { x: q[0], y: q[1] + 2, w: 58, sd: 131, z: 0.06, pal: 2 })); }
         p = onRock(R4, 0.5); { const q = p; still(q[1] + 3, g => paintBarrel(g, { x: q[0], y: q[1] + 2, h: 74, sd: 132, z: 0.06 })); }
         p = onRock(R5, -0.5); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 2, r: 64, sd: 133, z: 0.02, pal: 1, flat: true, worms: 2 }), true); }
-        p = onRock(R5, 0.45); { const q = p; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[2], t, c, DT), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1] + 4, r: 58, sd: 134, z: 0.02, pal: 2, n: 104 })); }
+        p = onRock(R5, 0.45); anemoneAt(p[0], p[1] + 4, 58, 134, 0.02, 2, 104, true);
         p = onRock(R6, -0.2); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 110, sd: 135, z: 0.0, pal: 0 }), true); }
-        p = onRock(R6, -0.85); { const q = p; live(q[1] + 3, (g, t, c) => drawWhips(g, { x: q[0], y: q[1] + 4, h: 130, n: 7, sd: 136, z: 0.0, pal: 1 }, t, c), true); }
+        p = onRock(R6, -0.85); whipsAt(p[0], p[1] + 4, 130, 7, 136, 0.0, 1, true);
         p = onRock(R6, 0.4); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 120, sd: 137, z: 0.0, pal: 2 }), true); }
-        { const q = [1240, 800]; const K = { x: q[0], y: q[1], w: 58, sd: 138, z: 0.05, open: 0.8, snapT: -99, ph: 4.1 }; CLAMS.push(K); live(q[1] + 2, (g, t) => drawClam(g, K, t)); }
-        { const q = [1180, 700]; live(q[1] + 3, (g, t, c) => drawFan(g, FANS[2], t, c)); FANS.push(buildFan({ x: q[0], y: q[1] + 2, h: 72, sd: 139, z: 0.15, pal: 2 })); }
+        clamAt(RX(1240), 800, 58, 138, 0.05, 4.1, false);
+        fanAt(RX(1180), 702, 72, 139, 0.15, 2, false);
 
         // ── the centre channel ──
         p = onRock(C1, -0.3); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1], r: 30, sd: 141, z: 0.06, pal: 3, flat: true })); }
         p = onRock(C1, 0.7); { const q = p; still(q[1] + 3, g => paintMushroom(g, { x: q[0], y: q[1] + 4, r: 20, sd: 142, z: 0.06, pal: 1 })); }
         p = onRock(C2, 0.2); { const q = p; still(q[1] + 3, g => paintFingers(g, { x: q[0], y: q[1] + 2, w: 40, sd: 143, z: 0.04, pal: 1 })); }
         p = onRock(C3, 0.0); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 70, sd: 144, z: 0.12, pal: 3, spread: 1.2 })); }
-        { const q = [640, 850]; live(q[1] + 3, (g, t, c) => drawSoft(g, SOFTS[2], t, c), true); SOFTS.push(buildSoft({ x: q[0], y: q[1], h: 60, sd: 145, z: 0.0, pal: 2 })); }
-        { const q = [980, 860]; live(q[1] + 2, (g, t, c) => drawAnemoneAndFish(g, ANEMS[3], t, c, DT), true); ANEMS.push(buildAnemone({ x: q[0], y: q[1], r: 46, sd: 146, z: 0.0, pal: 0, n: 84 })); }
+        softAt(CX(640), 850, 60, 145, 0.0, 2, true);
+        anemoneAt(CX(980), 860, 46, 146, 0.0, 0, 84, true);
         // sea stars, urchins, shells, grass on the sand
-        const star = (x, y, r, sd, z, pal, fore) => { STARS.push({ x, y, r }); still(y + 4, g => paintStar(g, { x, y, r, sd, z, pal }), fore); };
-        star(590, 838, 22, 151, 0.04, 0); star(1090, 880, 26, 152, 0.0, 1, true); star(860, 826, 15, 153, 0.05, 2);
-        star(720, 872, 20, 159, 0.0, 1, true); star(1290, 858, 18, 149, 0.02, 0, true); star(470, 862, 17, 148, 0.02, 2, true);
-        still(846, g => paintUrchin(g, { x: 1000, y: 842, r: 12, sd: 154, z: 0.04 }));
-        still(816, g => paintUrchin(g, { x: 540, y: 812, r: 9, sd: 155, z: 0.06 }));
-        still(850, g => paintShell(g, { x: 760, y: 848, r: 12, sd: 156 }));
-        still(870, g => paintShell(g, { x: 1180, y: 868, r: 10, sd: 157 }), true);
-        still(838, g => paintShell(g, { x: 430, y: 836, r: 9, sd: 158 }));
+        star(CX(590), 838, 22, 151, 0.04, 0); star(CX(1090), 880, 26, 152, 0.0, 1, true); star(CX(860), 826, 15, 153, 0.05, 2);
+        star(CX(720), 872, 20, 159, 0.0, 1, true); star(RX(1290), 858, 18, 149, 0.02, 0, true); star(LX(470), 862, 17, 148, 0.02, 2, true);
+        still(846, g => paintUrchin(g, { x: CX(1000), y: 842, r: 12, sd: 154, z: 0.04 }));
+        still(816, g => paintUrchin(g, { x: CX(540), y: 812, r: 9, sd: 155, z: 0.06 }));
+        still(850, g => paintShell(g, { x: CX(760), y: 848, r: 12, sd: 156 }));
+        still(870, g => paintShell(g, { x: RX(1180), y: 868, r: 10, sd: 157 }), true);
+        still(838, g => paintShell(g, { x: LX(430), y: 836, r: 9, sd: 158 }));
         for (let i = 0; i < 9; i++){
-          const gx = 520 + i * 68 + psr(i + 170) * 30, gy = 812 + psr(i + 171) * 60, gh = 26 + psr(i + 172) * 30;
-          live(gy, (g, t, c) => drawGrass(g, { x: gx, y: gy, h: gh, n: 7 + (i % 4), sd: 160 + i, z: 0.04 }, t, c), gy > 840);
+          const gx = CX(520 + i * 68 + psr(i + 170) * 30), gy = 812 + psr(i + 171) * 60, gh = 26 + psr(i + 172) * 30;
+          grassAt(gx, gy, gh, 7 + (i % 4), 160 + i, gy > 840);
         }
         for (let i = 0; i < 6; i++){
-          const gx = i < 3 ? 380 + i * 40 : 1180 + (i - 3) * 44, gy = 806 + psr(i + 180) * 40, gh = 22 + psr(i + 181) * 22;
-          live(gy, (g, t, c) => drawGrass(g, { x: gx, y: gy, h: gh, n: 6, sd: 180 + i, z: 0.05 }, t, c));
+          const gx = i < 3 ? LX(380 + i * 40) : RX(1180 + (i - 3) * 44), gy = 806 + psr(i + 180) * 40, gh = 22 + psr(i + 181) * 22;
+          grassAt(gx, gy, gh, 6, 180 + i, false);
         }
-        STILL.sort((a, b) => a.y - b.y);
-        LIVE.sort((a, b) => a.y - b.y);
+        SEEPS.push([LX(250), 690], [RX(1330), 705], [RX(1460), 470], [CX(720), 800], [RX(1560), 640]);
+        CRAB_HOMES.length = 0; CRAB_HOMES.push([CX(560), CX(1040)], [CX(600), CX(1000)], [CX(540), CX(1060)]);
       }
-      const ANEMS = [], FANS = [], SOFTS = [];
+
+      // ── NARROW: a compact reef for portrait screens, everything a fraction of the width ──
+      function layoutNarrow(){
+        const W_ = DW, f = v => v * W_;                         // f(0.3) = 30% of the width
+        const sz = Math.max(0.62, Math.min(1, W_ / 675));       // element scale: 1 on a portrait tablet, ~0.62 on a phone
+        // two shelves, a stone in the middle, small fore rocks in the corners
+        const A = rock({ x: f(0.17), y: 748, rx: f(0.30), ry: f(0.30) * 0.6, sd: 11, z: 0.11, tone: 1 });
+        const B = rock({ x: f(0.84), y: 756, rx: f(0.28), ry: f(0.28) * 0.6, sd: 22, z: 0.10 });
+        const C = rock({ x: f(0.50), y: 806, rx: f(0.13), ry: f(0.13) * 0.42, sd: 31, z: 0.06, tone: 2 });
+        const FL = rock({ x: f(0.03), y: 846, rx: f(0.22), ry: f(0.22) * 0.38, sd: 15, z: 0.0, tone: 2, fore: true });
+        const FR = rock({ x: f(0.98), y: 850, rx: f(0.20), ry: f(0.20) * 0.38, sd: 26, z: 0.0, tone: 1, fore: true });
+        let p;
+        // left shelf: brain, staghorn, tubes, the first anemone, a fan
+        p = onRock(A, -0.55); { const q = p; still(q[1] + 6, g => paintBrain(g, { x: q[0], y: q[1] - 4, r: 46 * sz, sd: 101, z: 0.11, pal: 0 })); }
+        p = onRock(A, 0.05); { const q = p; still(q[1] + 4, g => paintStaghorn(g, { x: q[0], y: q[1], h: 96 * sz, sd: 103, z: 0.11, pal: 1 })); }
+        p = onRock(A, -0.95); { const q = p; still(q[1] + 4, g => paintTubes(g, { x: q[0] + 12, y: q[1] + 8, h: 70 * sz, sd: 104, z: 0.11, pal: 0 })); }
+        p = onRock(A, 0.6); anemoneAt(p[0], p[1] + 2, 54 * sz, 106, 0.09, 0, 100, false);
+        p = onRock(A, 0.98); fanAt(p[0], p[1] + 6, 70 * sz, 108, 0.1, 0, false);
+        // right shelf: lettuce, fingers, mushroom, the second anemone, soft coral, boulder with worms
+        p = onRock(B, 0.45); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 96 * sz, sd: 126, z: 0.10, pal: 1 })); }
+        p = onRock(B, -0.05); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 3, r: 42 * sz, sd: 129, z: 0.10, pal: 2, worms: 2 })); }
+        p = onRock(B, 0.95); { const q = p; still(q[1] + 3, g => paintFingers(g, { x: q[0], y: q[1] + 2, w: 48 * sz, sd: 131, z: 0.10, pal: 2 })); }
+        p = onRock(B, -0.6); anemoneAt(p[0], p[1] + 2, 58 * sz, 128, 0.09, 1, 104, false);
+        p = onRock(B, -0.98); softAt(p[0], p[1], 70 * sz, 127, 0.10, 1, false);
+        // the middle stone: mushroom + a small staghorn; whips behind it
+        p = onRock(C, -0.4); { const q = p; still(q[1] + 3, g => paintMushroom(g, { x: q[0], y: q[1] + 4, r: 20 * sz, sd: 142, z: 0.06, pal: 1 })); }
+        p = onRock(C, 0.5); { const q = p; still(q[1] + 3, g => paintStaghorn(g, { x: q[0], y: q[1], h: 60 * sz, sd: 144, z: 0.06, pal: 3, spread: 1.2 })); }
+        whipsAt(f(0.62), 800, 90 * sz, 5, 111, 0.06, 0, false);
+        // fore corners: a clam and a boulder on the left, lettuce and the third anemone on the right
+        p = onRock(FL, 0.7); clamAt(p[0], p[1] + 3, 50 * sz, 116, 0.0, 1.3, true);
+        p = onRock(FL, 0.0); { const q = p; still(q[1] + 3, g => paintBoulder(g, { x: q[0], y: q[1] - 2, r: 40 * sz, sd: 112, z: 0.0, pal: 4, flat: true, worms: 2 }), true); }
+        p = onRock(FR, -0.6); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 80 * sz, sd: 137, z: 0.0, pal: 2 }), true); }
+        p = onRock(FR, 0.1); anemoneAt(p[0], p[1] + 4, 44 * sz, 134, 0.02, 2, 84, true);
+        // the sand: stars, an urchin, shells, grass
+        star(f(0.40), 838, 16 * sz, 151, 0.04, 0); star(f(0.62), 876, 20 * sz, 152, 0.0, 1, true); star(f(0.30), 866, 15 * sz, 148, 0.02, 2, true);
+        still(846, g => paintUrchin(g, { x: f(0.56), y: 842, r: 9 * sz, sd: 154, z: 0.04 }));
+        still(850, g => paintShell(g, { x: f(0.46), y: 850, r: 9 * sz, sd: 156 }));
+        for (let i = 0; i < 6; i++){
+          const gx = f(0.28 + i * 0.09) + psr(i + 170) * 12, gy = 812 + psr(i + 171) * 60, gh = (22 + psr(i + 172) * 22) * sz;
+          grassAt(gx, gy, gh, 6 + (i % 3), 160 + i, gy > 840);
+        }
+        SEEPS.push([f(0.2), 690], [f(0.82), 700], [f(0.5), 800]);
+        CRAB_HOMES.length = 0; CRAB_HOMES.push([f(0.30), f(0.70)], [f(0.34), f(0.66)]);
+      }
+
+      // ── element helpers shared by both compositions ──
+      function anemoneAt(x, y, r, sd, z, pal, n, fore){
+        const A = buildAnemone({ x, y, r, sd, z, pal, n }); ANEMS.push(A);
+        live(y + 2, (g, t, c) => drawAnemoneAndFish(g, A, t, c, DT), fore);
+      }
+      function fanAt(x, y, h, sd, z, pal, fore){ const F = buildFan({ x, y, h, sd, z, pal }); FANS.push(F); live(y + 3, (g, t, c) => drawFan(g, F, t, c), fore); }
+      function softAt(x, y, h, sd, z, pal, fore){ const Sf = buildSoft({ x, y, h, sd, z, pal }); SOFTS.push(Sf); live(y + 3, (g, t, c) => drawSoft(g, Sf, t, c), fore); }
+      function whipsAt(x, y, h, n, sd, z, pal, fore){ const Wp = { x, y, h, n, sd, z, pal }; live(y + 2, (g, t, c) => drawWhips(g, Wp, t, c), fore); }
+      function grassAt(x, y, h, n, sd, fore){ const Gr = { x, y, h, n, sd, z: 0.04 }; live(y, (g, t, c) => drawGrass(g, Gr, t, c), fore); }
+      function clamAt(x, y, w, sd, z, ph, fore){ const K = { x, y, w, sd, z, open: 0.8, snapT: -99, ph }; CLAMS.push(K); live(y + 2, (g, t) => drawClam(g, K, t), fore); }
+      function star(x, y, r, sd, z, pal, fore){ STARS.push({ x, y, r }); still(y + 4, g => paintStar(g, { x, y, r, sd, z, pal }), fore); }
+      const CRAB_HOMES = [];
+      const ANEMS = [], FANS = [], SOFTS = [];   // filled by the layout; cleared and rebuilt when the width changes
       let DT = 0;                                                // this frame's dt, for live elements that animate residents
 
       // ═══════════════════════════ LIVE WATER ═══════════════════════════
@@ -1090,7 +1166,7 @@
       // motes drifting with the current, bubbles seeping up from the reef
       const BUCK = [[], [], [], [], []], LIVEB = [];             // reused scratch: mote buckets, live bubbles
       const MOTES = Array.from({ length: 110 }, (_, i) => ({ x: psr(i + 600) * DW, y: psr(i + 601) * DH, r: 0.6 + psr(i + 602) * 1.6, vy: -2 - psr(i + 603) * 5, ph: psr(i + 604) * TAU, a: 0.15 + psr(i + 605) * 0.35 }));
-      const SEEPS = [[250, 690], [1330, 705], [1460, 470], [720, 800], [1560, 640]];
+      const SEEPS = [];                                          // bubble sources, placed by the layout
       const BUBBLES = [];
       let nextBub = 1;
       function drawParticles(g, t, dt, c){
@@ -1321,16 +1397,27 @@
         if (t > F.mouthAt){ F.mouth = Math.max(0, Math.sin((t - F.mouthAt) * 6)); if (t > F.mouthAt + 0.5){ F.mouth = 0; F.mouthAt = t + 3 + Math.random() * 8; } }
       }
       // a free swimmer wandering its home box
+      const ORBIT = { arrived: 0, passed: 0, stale: 0 };          // how targets get retired (a diagnostic)
+      function newTarget(F, t, tx, ty){ F.target = [tx, ty]; F.tT0 = t; F.lastD = 1e9; F.tMax = 5 + Math.hypot(tx - F.x, ty - F.y) / Math.max(10, F.spd) * 2.5; }
+      // has this target been reached? — within a turning-radius-aware goal, or the
+      // closest approach is already behind us, or we have chased it for too long
+      function reached(F, t, d, speed, turn){
+        const goal = Math.max(30, 1.6 * speed / turn);
+        if (d < goal){ ORBIT.arrived++; return true; }
+        if (d < 200 && F.lastD !== undefined && d > F.lastD + 0.25){ ORBIT.passed++; return true; }
+        if (F.tT0 !== undefined && t - F.tT0 > (F.tMax || 12)){ ORBIT.stale++; return true; }
+        F.lastD = d; return false;
+      }
       function wander(F, t, dt){
         const dash = F.dashUntil && t < F.dashUntil, hover = F.wait > 0;
-        if (!F.target){ F.target = [lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())]; }
-        const speed = F.spd * (dash ? 3.4 : 1) * (hover ? 0.18 : 1);
-        const d = steer(F, F.target[0], F.target[1], speed, dt, dash ? 5 : undefined);
-        if (d < 30 && !hover){ F.wait = 0.5 + Math.random() * 2.5; F.target = null; }
+        if (!F.target) newTarget(F, t, lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random()));
+        const speed = F.spd * (dash ? 3.4 : 1) * (hover ? 0.18 : 1), turn = dash ? 5 : F.turn;
+        const d = steer(F, F.target[0], F.target[1], speed, dt, turn);
+        if (!hover && reached(F, t, d, speed, turn)){ F.wait = 0.5 + Math.random() * 2.5; F.target = null; }
         if (hover){ F.wait -= dt; }
         integrate(F, dt, t);
       }
-      function fleeFrom(F, x, y, t){ const dx = F.x - x, dy = F.y - y, d = Math.hypot(dx, dy) || 1; F.target = [F.x + dx / d * 260, Math.max(100, Math.min(720, F.y + dy / d * 120))]; F.dashUntil = t + 1.1; F.wait = 0; }
+      function fleeFrom(F, x, y, t){ const dx = F.x - x, dy = F.y - y, d = Math.hypot(dx, dy) || 1; newTarget(F, t, F.x + dx / d * 260, Math.max(100, Math.min(720, F.y + dy / d * 120))); F.dashUntil = t + 1.1; F.wait = 0; }
 
       // ── the poop gag: every fish goes once per ~3 minutes, staggered; the
       //    strand trails from the vent, lets go, sinks and fades (never on click) ──
@@ -1375,15 +1462,16 @@
       function updateClown(F, t, dt){
         const A = F.home_a, cx = A.x, cy = A.y - A.r * 0.78, r = A.r;
         if (F.dartUntil && t < F.dartUntil){
-          if (!F.target || Math.hypot(F.target[0] - F.x, F.target[1] - F.y) < 24) F.target = [cx + (Math.random() - 0.5) * r * 4, cy - r * (0.6 + Math.random() * 1.6)];
+          if (!F.target || Math.hypot(F.target[0] - F.x, F.target[1] - F.y) < Math.max(24, F.spd * 3.2 / 6 * 1.6) || t - F.tT0 > 3) newTarget(F, t, cx + (Math.random() - 0.5) * r * 4, cy - r * (0.6 + Math.random() * 1.6));
           steer(F, F.target[0], F.target[1], F.spd * 3.2, dt, 6);
           F.inside += (0 - F.inside) * Math.min(1, dt * 6);
         } else {
           if (t > F.hideAt){ F.hiding = !F.hiding; F.hideAt = t + (F.hiding ? 3 + Math.random() * 4 : 6 + Math.random() * 14); F.target = null; }
           const near = Math.hypot(F.x - cx, F.y - (cy + r * 0.15)) < r * 0.6;
           const want = F.hiding && near ? 1 : 0; F.inside += (want - F.inside) * Math.min(1, dt * 4);
-          if (!F.target || Math.hypot(F.target[0] - F.x, F.target[1] - F.y) < 8){
-            F.target = F.hiding ? [cx + (Math.random() - 0.5) * r * 0.8, cy + r * (0.05 + Math.random() * 0.25)] : [cx + (Math.random() - 0.5) * r * 1.7, cy - r * (0.05 + Math.random() * 0.55)];
+          if (!F.target || Math.hypot(F.target[0] - F.x, F.target[1] - F.y) < Math.max(8, F.spd / 2.6 * 1.2) || t - F.tT0 > 6){
+            if (F.hiding) newTarget(F, t, cx + (Math.random() - 0.5) * r * 0.8, cy + r * (0.05 + Math.random() * 0.25));
+            else newTarget(F, t, cx + (Math.random() - 0.5) * r * 1.7, cy - r * (0.05 + Math.random() * 0.55));
           }
           steer(F, F.target[0], F.target[1], F.spd * (F.hiding && !near ? 1.3 : F.hiding ? 0.5 : 1) * (0.6 + 0.4 * Math.sin(t * 0.7 + F.ph0)), dt, 2.6);
         }
@@ -1678,8 +1766,8 @@
       function updateDolphin(F, t, dt){
         if (F.breathing){
           steer(F, F.target[0], F.target[1], F.spd * 1.5, dt, 2.5); integrate(F, dt, t);
-          if (F.y < -30){ puff(F.x, 6, 10); F.breathing = false; F.breathAt = t + 35 + Math.random() * 40; F.target = [F.x + F.face * 220, 180 + Math.random() * 220]; F.wait = 0; }
-        } else if (t > F.breathAt){ F.breathing = true; F.target = [F.x + (F.face > 0 ? 1 : -1) * 260, -90]; }
+          if (F.y < -30 || t - F.breathT0 > 8){ if (F.y < -30) puff(F.x, 6, 10); F.breathing = false; F.breathAt = t + 35 + Math.random() * 40; newTarget(F, t, F.x + F.face * 220, 180 + Math.random() * 220); F.wait = 0; }
+        } else if (t > F.breathAt){ F.breathing = true; F.breathT0 = t; newTarget(F, t, F.x + (F.face > 0 ? 1 : -1) * 260, -90); }
         else wander(F, t, dt);
       }
       function updatePuffer(F, t, dt){
@@ -1721,46 +1809,51 @@
 
       // ── build the cast ──
       function buildFish(){
+        const f = v => v * DW, kF = Math.max(0.5, Math.min(1, DW / DW0));   // fish sizes shrink with the width, to half at most
         // clownfish: two for each big anemone, one for the small one
         ANEMS.forEach((A, i) => {
           A.fish = [];
           const n = A.r > 50 ? 2 : 1;
           for (let k = 0; k < n; k++){
-            const F = makeFish({ kind: 'clown', x: A.x + (k - 0.5) * 40, y: A.y - A.r * 0.9, z: A.z, s: (A.r > 50 ? 34 : 28) * (0.85 + k * 0.25), spd: 42, turn: 2.5, wagBase: 1.4, wagRate: 1.5, home_a: A, inside: 0, hiding: false, hideAt: 8 + Math.random() * 12, ph0: Math.random() * TAU });
+            const F = makeFish({ kind: 'clown', x: A.x + (k - 0.5) * 40, y: A.y - A.r * 0.9, z: A.z, s: (A.r > 50 ? 34 : 28) * (0.85 + k * 0.25) * Math.max(0.7, kF), spd: 42, turn: 2.5, wagBase: 1.4, wagRate: 1.5, home_a: A, inside: 0, hiding: false, hideAt: 8 + Math.random() * 12, ph0: Math.random() * TAU });
             F.isClown = true; A.fish.push(F);
           }
         });
         // Dory — the regal blue tang, cruising the open water
-        makeFish({ kind: 'dory', x: 800, y: 380, z: 0.12, s: 78, spd: 46, home: [120, 1480, 160, 620], dash: 'roll' });
+        makeFish({ kind: 'dory', x: f(0.5), y: 380, z: 0.12, s: 78 * kF, spd: 46, home: [f(0.08), f(0.92), 160, 620], dash: 'roll' });
         // the butterflyfish pair
-        const B1 = makeFish({ kind: 'bfly', x: 500, y: 300, z: 0.18, s: 58, spd: 36, home: [200, 1400, 180, 600], bfly: true });
-        const B2 = makeFish({ kind: 'bfly', x: 460, y: 320, z: 0.2, s: 54, spd: 40, follow: B1, bfly: true });
+        const B1 = makeFish({ kind: 'bfly', x: f(0.3), y: 300, z: 0.18, s: 58 * kF, spd: 36, home: [f(0.12), f(0.88), 180, 600], bfly: true });
+        makeFish({ kind: 'bfly', x: f(0.28), y: 320, z: 0.2, s: 54 * kF, spd: 40, follow: B1, bfly: true });
         // two yellow tangs grazing the reef tops
-        makeFish({ kind: 'tang', x: 300, y: 480, z: 0.14, s: 62, spd: 34, home: [60, 560, 340, 540] });
-        makeFish({ kind: 'tang', x: 1350, y: 460, z: 0.2, s: 56, spd: 34, home: [1000, 1580, 300, 520] });
+        makeFish({ kind: 'tang', x: f(0.19), y: 480, z: 0.14, s: 62 * kF, spd: 34, home: [f(0.04), f(0.35), 340, 540] });
+        makeFish({ kind: 'tang', x: f(0.84), y: 460, z: 0.2, s: 56 * kF, spd: 34, home: [f(0.62), f(0.98), 300, 520] });
         // royal grammas low by the rocks
-        makeFish({ kind: 'gramma', x: 1200, y: 700, z: 0.08, s: 30, spd: 30, home: [1060, 1560, 560, 740] });
-        makeFish({ kind: 'gramma', x: 450, y: 720, z: 0.06, s: 28, spd: 30, home: [200, 620, 600, 750] });
+        makeFish({ kind: 'gramma', x: f(0.75), y: 700, z: 0.08, s: 30 * kF, spd: 30, home: [f(0.66), f(0.97), 560, 740] });
+        makeFish({ kind: 'gramma', x: f(0.28), y: 720, z: 0.06, s: 28 * kF, spd: 30, home: [f(0.12), f(0.39), 600, 750] });
         // two bottlenose dolphins, fast in the open water, rising for a breath now and then
-        makeFish({ kind: 'dolphin', x: 400, y: 260, z: 0.1, s: 230, spd: 85, turn: 1.3, wagBase: 0.7, wagRate: 0.6, home: [60, 1540, 90, 470], breathAt: 20 + Math.random() * 30, dash: 'roll' });
-        makeFish({ kind: 'dolphin', x: 1200, y: 320, z: 0.16, s: 205, spd: 85, turn: 1.3, wagBase: 0.7, wagRate: 0.6, home: [60, 1540, 90, 470], breathAt: 45 + Math.random() * 30, dash: 'roll' });
+        makeFish({ kind: 'dolphin', x: f(0.25), y: 260, z: 0.1, s: 230 * kF, spd: 85, turn: 1.3, wagBase: 0.7, wagRate: 0.6, home: [f(0.04), f(0.96), 90, 470], breathAt: 20 + Math.random() * 30, dash: 'roll' });
+        makeFish({ kind: 'dolphin', x: f(0.75), y: 320, z: 0.16, s: 205 * kF, spd: 85, turn: 1.3, wagBase: 0.7, wagRate: 0.6, home: [f(0.04), f(0.96), 90, 470], breathAt: 45 + Math.random() * 30, dash: 'roll' });
         // two blacktip reef sharks patrolling the middle water
-        SHARKS.push(makeFish({ kind: 'shark', x: 250, y: 500, z: 0.14, s: 250, spd: 40, turn: 0.9, wagBase: 0.9, wagRate: 0.55, home: [-40, 1640, 250, 560] }));
-        SHARKS.push(makeFish({ kind: 'shark', x: 1300, y: 420, z: 0.22, s: 215, spd: 40, turn: 0.9, wagBase: 0.9, wagRate: 0.55, home: [-40, 1640, 250, 560] }));
+        SHARKS.push(makeFish({ kind: 'shark', x: f(0.16), y: 500, z: 0.14, s: 250 * kF, spd: 40, turn: 0.9, wagBase: 0.9, wagRate: 0.55, home: [-40, DW + 40, 250, 560] }));
+        SHARKS.push(makeFish({ kind: 'shark', x: f(0.81), y: 420, z: 0.22, s: 215 * kF, spd: 40, turn: 0.9, wagBase: 0.9, wagRate: 0.55, home: [-40, DW + 40, 250, 560] }));
         // the blowfish, pottering about the rocks
-        makeFish({ kind: 'puffer', x: 640, y: 640, z: 0.1, s: 62, spd: 18, turn: 1.4, wagBase: 0.8, wagRate: 2.2, home: [220, 1380, 470, 730], puff: 0 });
+        makeFish({ kind: 'puffer', x: f(0.4), y: 640, z: 0.1, s: 62 * kF, spd: 18, turn: 1.4, wagBase: 0.8, wagRate: 2.2, home: [f(0.14), f(0.86), 470, 730], puff: 0 });
         // crabs on the sand of the centre channel
-        for (let i = 0; i < 3; i++){
-          const dy = [14, 34, 52][i], home = [[560, 1040], [600, 1000], [540, 1060]][i];
-          CRABS.push({ x: lerp(home[0], home[1], Math.random()), y: 0, dy, s: 15 + dy * 0.12, home, target: null, wait: Math.random() * 3, vx: 0, legPh: Math.random() * TAU, ph0: Math.random() * TAU });
+        for (let i = 0; i < CRAB_HOMES.length; i++){
+          const dy = [14, 34, 52][i], home = CRAB_HOMES[i];
+          CRABS.push({ x: lerp(home[0], home[1], Math.random()), y: 0, dy, s: (15 + dy * 0.12) * Math.max(0.7, kF), home, target: null, wait: Math.random() * 3, vx: 0, legPh: Math.random() * TAU, ph0: Math.random() * TAU });
         }
         // the chromis school
-        const leader = makeFish({ kind: 'chromis', x: 900, y: 260, z: 0.3, s: 20, spd: 44, home: [300, 1300, 120, 440] });
+        const leader = makeFish({ kind: 'chromis', x: f(0.56), y: 260, z: 0.3, s: 20 * kF, spd: 44, home: [f(0.19), f(0.81), 120, 440] });
         SCHOOL = { leader, members: [], spread: 1 };
-        for (let i = 0; i < 13; i++){
-          const a = Math.random() * TAU, d = 20 + Math.random() * 70;
-          SCHOOL.members.push(makeFish({ kind: 'chromis', x: leader.x + Math.cos(a) * d, y: leader.y + Math.sin(a) * d * 0.5, z: 0.26 + Math.random() * 0.12, s: 16 + Math.random() * 6, spd: 44, slot: [Math.cos(a) * d, Math.sin(a) * d * 0.5], ph0: Math.random() * TAU, schooling: true }));
+        const members = NARROW ? 9 : 13;
+        for (let i = 0; i < members; i++){
+          const a = Math.random() * TAU, d = (20 + Math.random() * 70) * Math.max(0.6, kF);
+          SCHOOL.members.push(makeFish({ kind: 'chromis', x: leader.x + Math.cos(a) * d, y: leader.y + Math.sin(a) * d * 0.5, z: 0.26 + Math.random() * 0.12, s: (16 + Math.random() * 6) * kF, spd: 44, slot: [Math.cos(a) * d, Math.sin(a) * d * 0.5], ph0: Math.random() * TAU, schooling: true }));
         }
+        // the giants scale with the width too (still far bigger than the screen)
+        const kG = Math.max(0.35, Math.min(1.2, DW / DW0));
+        WHALE.len = 2050 * kG; ORCA.len = 950 * kG;
         FISH.sort((a, b) => b.z - a.z);
       }
       function giantNear(F){
@@ -1789,12 +1882,12 @@
       function actOn(F, t){
         const m = F.face > 0 ? F.x + F.s * 0.4 : F.x - F.s * 0.4; puff(m, F.y, 5);
         if (F.kind === 'puffer'){ inflate(F, t); return; }
-        if (F.kind === 'shark'){ F.dashUntil = t + 1.6; F.target = [lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())]; F.wait = 0; return; }
+        if (F.kind === 'shark'){ F.dashUntil = t + 1.6; newTarget(F, t, lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())); F.wait = 0; return; }
         if (F.bfly){ for (let i = 0; i < 3; i++) HEARTS.push({ x: F.x + (Math.random() - 0.5) * 20, y: F.y - F.s * 0.3, t0: t + i * 0.25, ph: Math.random() * TAU, s: 8 + Math.random() * 6 }); F.dashUntil = t + 0.6; }
         else if (F.dash === 'roll' && Math.random() < 0.5){ F.rollT = t + 1.1; F.rollLen = 1.1; }
         else if (F.isClown){ F.dartUntil = t + 3; F.target = null; }
         else if (F.schooling || (SCHOOL && F === SCHOOL.leader)){ SCHOOL.scatterUntil = t + 1.6; }
-        else { F.dashUntil = t + 1.2; F.target = [lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())]; F.wait = 0; }
+        else { F.dashUntil = t + 1.2; newTarget(F, t, lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())); F.wait = 0; }
       }
       let nextAct = 6;
       function scheduler(t){
@@ -1888,10 +1981,20 @@
         g.fillStyle = rg(g, W * 0.5, H * 0.45, Math.min(W, H) * 0.45, Math.max(W, H) * 0.78, [[0, 'rgba(2,20,40,0)'], [0.7, 'rgba(2,20,40,0.18)'], [1, 'rgba(2,20,40,0.50)']]);
         g.fillRect(0, 0, W, H); g.restore();
       }
+      let layoutDW = -1;
+      function rebuildLayout(){
+        for (const a of [STILL, LIVE, ROCKS, ANEMS, FANS, SOFTS, CLAMS, STARS, FISH, SHARKS, CRABS, HEARTS, EGGS, SPECKS, BUBBLES, SEEPS]) a.length = 0;
+        SCHOOL = null; nextAct = lastT + 6;
+        buildReef(); buildFish();
+      }
       function resize(){
         W = innerWidth; H = innerHeight; DPR = pickDPR();
         canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-        S = Math.max(W / DW, H / DH); OX = (W - DW * S) / 2; OY = H - DH * S;
+        // the design is as wide as the window is, at the fixed design height
+        DW = Math.max(400, Math.min(2400, Math.round(DH * W / Math.max(1, H))));
+        S = H / DH; OX = (W - DW * S) / 2; OY = 0;
+        SUNX = Math.round(DW * 0.206);
+        if (DW !== layoutDW){ layoutDW = DW; rebuildLayout(); }
         waterL = makeLayer(W, H, DPR); reefL = makeLayer(W, H, DPR); foreL = makeLayer(W, H, DPR);
         let g = waterL.cx; g.save(); g.setTransform(waterL.dpr * S, 0, 0, waterL.dpr * S, waterL.dpr * OX, waterL.dpr * OY); paintWaterL(g); g.restore();
         g = reefL.cx; g.save(); g.setTransform(reefL.dpr * S, 0, 0, reefL.dpr * S, reefL.dpr * OX, reefL.dpr * OY); paintReefL(g); g.restore();
@@ -1997,9 +2100,7 @@
       }
 
       buildCaustics();
-      buildReef();
-      buildFish();
-      resize();
+      resize();                                                  // sizes the design to the window and builds the layout for it
       addEventListener('resize', resize);
       doc.addEventListener('click', onClick);
       rafId = requestAnimationFrame(frame);
@@ -2021,11 +2122,13 @@
         crab: () => CRABS.forEach(C => startleCrab(C, lastT)),
         crabs: () => CRABS.map(C => ({ x: Math.round(C.x), y: Math.round(C.y) })),
         rumi: () => { summonRumi(); return !!window.ChibiWalker; },
+        orbit: () => ORBIT,
         corals: () => ({ corals: CORALS.length, polyps: LIFE.length, worms: WORMS.length, vents: VENTS.length, fringes: FRINGES.length, clams: CLAMS.length, eggs: EGGS.length }),
         startle: () => { CORALS.forEach(C => startleCoral(C, lastT)); CLAMS.forEach(K => snapClam(K, lastT)); },
         spawn: i => { const C = CORALS[i === undefined ? Math.floor(Math.random() * CORALS.length) : i]; if (C) spawnCoral(C, lastT); return !!C; },
         clam: () => CLAMS.forEach(K => snapClam(K, lastT)),
-        perf: () => ({ dpr: +DPR.toFixed(2), q: Q, halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
+        layout: () => ({ DW, narrow: NARROW, S: +S.toFixed(3), W, H }),
+        perf: () => ({ dpr: +DPR.toFixed(2), q: Q, DW, narrow: NARROW, halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         quality: q => { if (q === null){ qPin = false; } else if (q !== undefined){ Q = Math.max(0, Math.min(2, q | 0)); qPin = true; lastQ = performance.now(); } return Q; },   // quality(2) pins; quality(null) releases
         pmax: () => PMAX,
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },

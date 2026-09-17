@@ -5,13 +5,21 @@ renderModePicker();
 applyTheme();
 spawnParticles();
 updateGiftIndicator();
-bootIntroSplash();   // the opening celebration (toggle lives in settings)
-// while the intro splash plays, warm EVERY background, aid, exercise type and
-// skin so later theme/level switches are seamless (no first-visit loading hitch).
-// Gated on the splash (like bootIntroSplash): with no splash there's no idle time
-// to hide the work, so each mode loads its own types lazily instead.
-if(typeof preloadAll==='function' && (typeof introEnabled!=='function'||introEnabled()))
-  setTimeout(preloadAll, 60);
+// The LOADING SCREEN (index.html) covers everything until the theme's scene has
+// drawn. The opening celebration and the background preload both wait for it:
+// the celebration so it is actually seen, the preload so that fetching and
+// parsing every other world does not compete with the one being drawn (on a
+// tablet that contest was most of a 30-second wait).
+const _afterLoad = fn => (window.GAME_LOADING ? window.GAME_LOADING.onReady(fn) : fn());
+_afterLoad(() => {
+  bootIntroSplash();   // the opening celebration (toggle lives in settings)
+  // warm EVERY background, aid, exercise type and skin so later theme/level
+  // switches are seamless (no first-visit loading hitch). Gated on the splash
+  // (like bootIntroSplash): with no splash there's no idle time to hide the
+  // work, so each mode loads its own types lazily instead.
+  if(typeof preloadAll==='function' && (typeof introEnabled!=='function'||introEnabled()))
+    setTimeout(preloadAll, 1200);
+});
 // the mode's exercise-type files load dynamically (one file per type).
 // GUARD: if a mode is picked before the boot load finishes, setMode's own
 // callback owns the pool — this late one must not overwrite it.

@@ -91,25 +91,35 @@
       const UI_SEL = '.wrap,button,input,select,textarea,#particles,.special-uni,#games-menu,#theme-menu,#fw-ov,#sad-ov,#report-ov';
 
       // ── the stage ──
-      const DW = 1600, DH = 900, HZ = 790;                       // design space; waterline
+      // RESPONSIVE (2026-09): the design height is fixed, the design WIDTH follows
+      // the screen's aspect (1600 on 16:9, ~1200 on a landscape tablet, ~675
+      // portrait tablet, ~415 phone) so nothing is cropped away. Every landmark
+      // keeps its 1600-space coordinate in the code and is placed through AX():
+      // the Al Arab / Marina group holds to the LEFT edge, the Burj / downtown /
+      // Frame group to the RIGHT edge, the middle is compressed — positions
+      // slide, sizes do not, so the skyline simply gets denser as it narrows.
+      const DW0 = 1600, DH = 900, HZ = 790;                      // reference design space; waterline
+      let DW = DW0;                                              // the live design width (set in resize)
+      let AXK = 1;                                               // the anchoring factor min(1, DW/DW0)
+      const AX = x => x < 620 ? x * AXK : x >= 1100 ? DW - (DW0 - x) * AXK : DW / 2 + (x - 800) * AXK;
       // The sun and the moon RIDE THE HOUR. `look().ph` runs 0..1 over the day
       // cycle, and both bodies are placed on an arc from it: the sun starts high
       // right of centre, sinks left through the golden hour, drops below the
       // waterline for the night and climbs back; the moon runs the opposite way,
       // rising as the sun sets. Everything keyed on the sun (its glow, the band
       // on the horizon, the path on the water, the glints) follows them.
-      const SUN_SET = 520;                                       // where it touches down
+      let SUN_SET = 520;                                         // where it touches down (rescaled with the width)
       function sunAt(ph){
         // 0 → high right, .30 → touching the horizon left of centre, .5 → deep
         // below, 1 → back up. A cosine arc keeps the motion even, not linear.
         const u = (ph + 0.18) % 1, ang = u * TAU;
-        return { x: 1180 - 900 * u * 1.0, y: 470 - 330 * Math.cos(ang) };
+        return { x: (1180 - 900 * u) * DW / DW0, y: 470 - 330 * Math.cos(ang) };
       }
       function moonAt(ph){
         const u = (ph + 0.68) % 1, ang = u * TAU;
-        return { x: 1280 - 1060 * u, y: 430 - 330 * Math.cos(ang) };
+        return { x: (1280 - 1060 * u) * DW / DW0, y: 430 - 330 * Math.cos(ang) };
       }
-      const BX = 1290;                                           // Burj Khalifa axis
+      let BX = 1290;                                             // Burj Khalifa axis (anchored in layoutCity)
       const DAY_PERIOD = 260;                                    // golden → blue hour → night → golden
       const pickDPR = () => Math.max(0.75, Math.min(devicePixelRatio || 1, 1.5, Math.sqrt(2.4e6 / Math.max(1, innerWidth * innerHeight))));
       let DPR = pickDPR(), W = 0, H = 0, S = 1, OX = 0, OY = 0;  // S: design → screen scale; OX/OY: design origin on screen
@@ -278,7 +288,7 @@
       // Two lit faces (west warm / east cool), floor spandrels, mullions, a
       // podium with shopfronts, crowns: 'flat' | 'spire' | 'crown' | 'slant' | 'twin'
       const TOWERS = [];
-      function tower(o){ TOWERS.push(o); return o; }
+      function tower(o){ o.x0 = o.x; o.x = AX(o.x); if (o.minDW && DW < o.minDW) return o; TOWERS.push(o); return o; }
       function paintTower(g, L, T){
         const { x, w, h, d = w * 0.42, crown = 'flat', tone = 0.5, pal = 0 } = T, base = HZ - (T.lift || 0), top = base - h;
         const GLASS = [[120, 150, 190], [70, 95, 150], [70, 130, 150], [160, 125, 95], [150, 158, 175], [110, 100, 140], [50, 60, 95], [200, 196, 190]][pal];
@@ -337,7 +347,7 @@
       // toward the core, capped by rounded shoulders. Silver-blue banded glass;
       // the sun climbs the west edge, the east faces sit in cool shadow.
       const BURJ = { x: BX, base: HZ - 2, top: 58, lobes: [], wins: [] };
-      (function buildBurj(){
+      function buildBurj(){
         // The tower is a Y of three wings; from the lake you see the wings' ROUND
         // tips as a bundle of slender cylinders stepping up toward the core, the
         // setbacks spiralling (the east steps sit lower than the west). Each lobe:
@@ -352,9 +362,11 @@
         BURJ.lobes = L; BURJ.bodyTop = BURJ.base - 545; BURJ.spireTop = BURJ.top;
         // the core steps into the mast: [width, height] cylinders, then the needle
         BURJ.spire = [[10, 40], [7, 44], [4.6, 44], [2.6, 30], [1.6, 22], [0.9, 15]];
+        BURJ.x = BX;
         // lit windows for the night, fixed to lobes
         for (let i = 0; i < 46; i++){ const lb = L[Math.floor(psr(i + 300) * (L.length - 1))]; BURJ.wins.push({ x: lb.x + 1.5 + psr(i + 301) * (lb.w - 4), y: BURJ.base - psr(i + 302) * (lb.h - 12) - 6, ph: psr(i + 303) * TAU, sp: 0.3 + psr(i + 304) * 0.9 }); }
-      })();
+      }
+      buildBurj();
       function burjBody(g){ for (const lb of BURJ.lobes) g.rect(lb.x, BURJ.base - lb.h, lb.w, lb.h); }
       function burjSpire(g){
         let y = BURJ.bodyTop;
@@ -420,7 +432,7 @@
       // white X-BRACED exoskeleton along the billowing trailing edge, the HELIPAD
       // on its cantilevered arm to the sea, AL MUNTAHA landward, all on an island
       // with a lit sea wall and a causeway to the shore.
-      const ALARAB = { x: 175, base: HZ + 2, h: 272 };
+      const ALARAB = { x: 175, x0: 175, base: HZ + 2, h: 272 };
       function sailPath(g){ const { x, base, h } = ALARAB, top = base - h;
         g.beginPath(); g.moveTo(x - 2, base); g.quadraticCurveTo(x - 7, base - h * 0.55, x + 3, top + 6); g.quadraticCurveTo(x + 62, top + 42, x + 74, base); g.closePath(); }
       function atriumPath(g){ const { x, base, h } = ALARAB, top = base - h;
@@ -494,7 +506,7 @@
       }
 
       // ── AIN DUBAI: the wheel on Bluewaters ──
-      const AIN = { x: 470, y: HZ - 132, r: 112 };
+      const AIN = { x: 470, x0: 470, y: HZ - 132, r: 112 };
       function paintAinStatic(g, L){
         // the island podium + the two A-frame legs
         g.fillStyle = rgb(mixc([46, 52, 80], L.warm, 0.18)); g.fillRect(AIN.x - 150, HZ - 12, 300, 12);
@@ -506,7 +518,7 @@
       }
 
       // ── the MUSEUM OF THE FUTURE: the torus on its mound ──
-      const MUSEUM = { x: 905, y: HZ - 82, rx: 46, ry: 60 };
+      const MUSEUM = { x: 905, x0: 905, y: HZ - 82, rx: 46, ry: 60 };
       function paintMuseum(g, L){
         const { x, y, rx, ry } = MUSEUM, night = L.night;
         g.fillStyle = rgb(mixc([60, 100, 70], L.cool, 0.35)); g.beginPath(); g.ellipse(x, HZ - 2, 86, 24, 0, Math.PI, TAU); g.fill();   // the green mound
@@ -522,7 +534,7 @@
       }
 
       // ── the DUBAI FRAME far right ──
-      const FRAME = { x: 1548, w: 62, h: 150 };
+      const FRAME = { x: 1548, x0: 1548, w: 62, h: 150 };
       function paintFrame(g, L){
         const { x, w, h } = FRAME, base = HZ - 4, gold = mixc([235, 190, 100], L.warm, 0.3), night = L.night;
         g.fillStyle = lg(g, x, base - h, x, base, [[0, rgb(mixc(gold, [255, 255, 255], 0.25))], [1, rgb(mixc(gold, [60, 40, 20], 0.4))]]);
@@ -533,7 +545,7 @@
 
       // ── the shore: promenade, palms, the SZR road, the fountain lake ──
       const PALMS = [];
-      const LAKE = { x0: 1120, x1: 1470, y: HZ };
+      const LAKE = { x0: 1120, x1: 1470, y: HZ, ref: [1120, 1470] };
       function paintShore(g, L){
         const night = L.night;
         // the promenade strip along the whole waterline
@@ -838,13 +850,13 @@
       function buildCity(){
         TOWERS.length = 0; PALMS.length = 0;
         // Marina cluster (behind the wheel and left of centre), tall and close
-        tower({ x: 300, w: 30, h: 250, crown: 'spire', pal: 1, seed: 1, podium: 14, tone: 0.8, floor: 8 });
-        tower({ x: 345, w: 40, h: 320, crown: 'flat', pal: 6, seed: 2, tone: 0.9, floor: 10, winCool: 1 });
-        tower({ x: 405, w: 26, h: 290, crown: 'crown', pal: 4, seed: 3, floor: 7 });
-        tower({ x: 540, w: 34, h: 340, crown: 'flat', pal: 7, seed: 4, podium: 12, floor: 9 });
-        tower({ x: 590, w: 44, h: 405, crown: 'slant', pal: 2, seed: 5, tone: 0.7, floor: 11, winCool: 1 });   // the tallest of the Marina
-        tower({ x: 650, w: 30, h: 300, crown: 'spire', pal: 0, seed: 6, floor: 8 });
-        tower({ x: 700, w: 36, h: 250, crown: 'flat', pal: 3, seed: 7, podium: 16, floor: 9 });
+        tower({ x: 300, minDW: 820, w: 30, h: 250, crown: 'spire', pal: 1, seed: 1, podium: 14, tone: 0.8, floor: 8 });
+        tower({ x: 345, minDW: 820, w: 40, h: 320, crown: 'flat', pal: 6, seed: 2, tone: 0.9, floor: 10, winCool: 1 });
+        tower({ x: 405, minDW: 820, w: 26, h: 290, crown: 'crown', pal: 4, seed: 3, floor: 7 });
+        tower({ x: 540, minDW: 820, w: 34, h: 340, crown: 'flat', pal: 7, seed: 4, podium: 12, floor: 9 });
+        tower({ x: 590, minDW: 820, w: 44, h: 405, crown: 'slant', pal: 2, seed: 5, tone: 0.7, floor: 11, winCool: 1 });   // the tallest of the Marina
+        tower({ x: 650, minDW: 820, w: 30, h: 300, crown: 'spire', pal: 0, seed: 6, floor: 8 });
+        tower({ x: 700, minDW: 820, w: 36, h: 250, crown: 'flat', pal: 3, seed: 7, podium: 16, floor: 9 });
         // downtown middle: low, so the card floats over calm sky
         tower({ x: 760, w: 34, h: 232, crown: 'twin', pal: 4, seed: 8, floor: 8 });                     // Emirates Towers
         tower({ x: 812, w: 30, h: 202, crown: 'twin', pal: 4, seed: 9, floor: 8 });
@@ -858,7 +870,7 @@
         tower({ x: 1425, w: 34, h: 300, crown: 'flat', pal: 1, seed: 16, floor: 9 });                    // Sky View pair (bridge painted after)
         tower({ x: 1482, w: 26, h: 220, crown: 'spire', pal: 7, seed: 17, floor: 7 });
         tower({ x: 1194, w: 26, h: 150, crown: 'flat', pal: 3, seed: 18, podium: 20, floor: 10 });      // the Dubai Mall front, clear of the Burj's western feet
-        for (let i = 0; i < 26; i++){ const x = -60 + i * 68 + psr(i + 900) * 30; if (x < 300 || (x > LAKE.x0 - 20 && x < LAKE.x1 + 20)) continue; PALMS.push({ x, s: 0.8 + psr(i + 901) * 0.5, lean: psr(i + 902) < 0.5 ? -1 : 1, ph: psr(i + 903) * TAU }); }
+        for (let i = 0, x = -60; x < DW + 60; i++, x = -60 + i * 68){ const px = x + psr(i + 900) * 30; if (px < AX(300) || (px > LAKE.x0 - 20 && px < LAKE.x1 + 20)) continue; PALMS.push({ x: px, s: 0.8 + psr(i + 901) * 0.5, lean: psr(i + 902) < 0.5 ? -1 : 1, ph: psr(i + 903) * TAU }); }
       }
       // the city WITHOUT its sky — painted over a transparent top so the live
       // sun and moon can pass behind it
@@ -868,17 +880,17 @@
         // wheel stands in FRONT of the Marina (it is on the water), so: towers,
         // then the wheel's frame, then downtown, the Burj, then the shore
         const byX = TOWERS.slice().sort((a, b) => a.x - b.x);
-        paintJBH(g, L);
-        for (const T of byX) if (T.x < 720) paintTower(g, L, T);
+        if (DW >= 820) paintJBH(g, L);
+        for (const T of byX) if (T.x0 < 720) paintTower(g, L, T);
         paintAlArab(g, L);
         paintAinStatic(g, L);
-        for (const T of byX) if (T.x >= 720 && T.x < 1100) paintTower(g, L, T);
+        for (const T of byX) if (T.x0 >= 720 && T.x0 < 1100) paintTower(g, L, T);
         paintMuseum(g, L);
-        for (const T of byX) if (T.x >= 1100 && T.x !== 1194) paintTower(g, L, T);
+        for (const T of byX) if (T.x0 >= 1100 && T.x0 !== 1194) paintTower(g, L, T);
         // the Sky View bridge between its two towers
-        g.fillStyle = rgb(mixc([200, 215, 235], L.cool, 0.3)); g.fillRect(1414, HZ - 300 + 6, 14, 22);
+        g.fillStyle = rgb(mixc([200, 215, 235], L.cool, 0.3)); g.fillRect(AX(1414), HZ - 300 + 6, 14, 22);
         paintBurj(g, L);
-        for (const T of byX) if (T.x === 1194) paintTower(g, L, T);
+        for (const T of byX) if (T.x0 === 1194) paintTower(g, L, T);
         paintFrame(g, L);
         paintShore(g, L);
         // haze at the horizon over everything far
@@ -943,11 +955,22 @@
         LOOK = L;
         if (key !== lookKey){ lookKey = key; repaint(L); PROF.repaints = (PROF.repaints || 0) + 1; }
       }
+      // place every landmark for the width in hand, then rebuild the towers and their window life
+      let layoutDW = -1;
+      function layoutCity(){
+        AXK = Math.min(1, DW / DW0);
+        BX = AX(1290); ALARAB.x = AX(ALARAB.x0); AIN.x = AX(AIN.x0); MUSEUM.x = AX(MUSEUM.x0); FRAME.x = AX(FRAME.x0);
+        LAKE.x0 = AX(LAKE.ref[0]); LAKE.x1 = AX(LAKE.ref[1]);
+        SUN_SET = 520 * DW / DW0; DR.cx = AX(300);
+        buildBurj(); buildCity(); buildWinLife();
+      }
       function resize(){
         W = innerWidth; H = innerHeight; DPR = pickDPR();
         canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-        // cover-fit, bottom-anchored: the waterline keeps its place, wide windows crop the sides
-        S = Math.max(W / DW, H / DH); OX = (W - DW * S) / 2; OY = H - DH * S;
+        // the design is as wide as the window is, at the fixed design height — nothing is cropped
+        DW = Math.max(400, Math.min(2400, Math.round(DH * W / Math.max(1, H))));
+        S = H / DH; OX = (W - DW * S) / 2; OY = 0;
+        if (DW !== layoutDW){ layoutDW = DW; layoutCity(); }
         skyL = makeLayer(W, H, DPR); cityL = makeLayer(W, H, DPR);
         mirL = makeLayer(W, H, 0.5); reflL = makeLayer(W, H, 0.5);
         lookKey = -1; GCACHE = {};
@@ -989,7 +1012,7 @@
       function startFountain(t, len){ FOUNTAIN = { t0: t, len: len || 24, mode: Math.floor(Math.random() * 3) }; }
       function fireworks(t, n, x, y){
         for (let i = 0; i < (n || 1); i++){
-          const hue = Math.floor(Math.random() * 360), fx = x !== undefined ? x : rnd(1000, 1500), fy = y !== undefined ? y : rnd(120, 330);
+          const hue = Math.floor(Math.random() * 360), fx = x !== undefined ? x : BX + rnd(-290, 210) * AXK, fy = y !== undefined ? y : rnd(120, 330);
           const sparks = [];
           for (let k = 0; k < 64; k++){ const a = rnd(0, TAU), v = rnd(0.35, 1); sparks.push({ ca: Math.cos(a) * v, sa: Math.sin(a) * v, r: rnd(1, 2.2), life: rnd(1.2, 2) }); }
           FW.push({ x: fx, y: fy, t0: t + i * rnd(0.3, 0.7), hue, sparks, rise: rnd(0.8, 1.1) });
@@ -1092,7 +1115,7 @@
       //    easing to its own point with a little drift so the figure breathes.
       //    Parked in the LEFT pocket of sky on purpose: the game card sits in the
       //    middle, so a formation there would be hidden behind it.
-      const DR = { n: 44, cx: 300, cy: 245, r: 150, t0: -99, len: 34, list: [], shape: 0 };
+      const DR = { n: 44, cx: 300, cy: 245, r: 150, t0: -99, len: 34, list: [], shape: 0 };   // cx re-anchored in layoutCity
       const SHAPES = ['star', 'heart', 'palm', 'ring'];
       function shapePoint(kind, i, n){
         const u = i / n;
@@ -1729,9 +1752,7 @@
         }
       }
 
-      buildCity();
-      buildWinLife();
-      resize();
+      resize();                                                  // sizes the design to the window and lays the city out for it
       addEventListener('resize', resize);
       doc.addEventListener('click', onClick);
       rafId = requestAnimationFrame(frame);
@@ -1758,9 +1779,10 @@
         look: () => LOOK, show: () => startShow(lastT, 16), fountain: () => startFountain(lastT, 24), fireworks: () => fireworks(lastT, 4),
         spin: () => spinWheel(lastT), horn: () => BOATS.forEach(b => b.blinkUntil = lastT + 2), heli: () => (HELI.t0 = lastT - 0.01),
         dolphin: () => dolphin(lastT, 760), wash: () => washAlArab(lastT), missile: () => startMissiles(lastT), ny: () => { NY.t0 = -99; startNY(lastT); }, drones: () => { DR.t0 = -99; startDrones(lastT); }, ufo: kind => { UFO.st = 'off'; UFO.nextAt = null; UFO.force = kind || null; if (kind === 'heli'){ HELI.t0 = lastT - 12; HELI.flying = true; } startUfo(lastT); return UFO.kind; }, museum: () => museumRing(lastT), plane: () => (PLANE.t0 = lastT),
-        shoot: () => SHOOTERS.push({ x: rnd(200, 1400), y: rnd(40, 300), t0: lastT, ang: rnd(2.6, 3.0), len: rnd(90, 180) }),
+        shoot: () => SHOOTERS.push({ x: rnd(0.125, 0.875) * DW, y: rnd(40, 300), t0: lastT, ang: rnd(2.6, 3.0), len: rnd(90, 180) }),
         boats: () => BOATS, burj: () => BURJ, lobes: () => BURJ.lobes.length, busy: () => ({ show: !!SHOW, fountain: !!FOUNTAIN, fw: FW.length, refl: !!reflL, inc: MIS.inc.length, def: MIS.def.length, booms: MIS.booms.length, ufo: UFO.st, ufoKind: UFO.kind, ufoX: Math.round(UFO.x), ny: +(lastT - NY.t0 < NY.len).toString(), nySparks: NY.sparks.length, drones: DR.list.length && lastT - DR.t0 < DR.len ? DR.list.length : 0 }),
-        perf: () => ({ dpr: +DPR.toFixed(2), halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
+        layout: () => ({ DW, k: +AXK.toFixed(3), BX: Math.round(BX), alArab: Math.round(ALARAB.x), towers: TOWERS.length }),
+        perf: () => ({ dpr: +DPR.toFixed(2), DW, halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         prof: () => { const o = {}; for (const k in PROF) o[k] = (k === 'frames' || k === 'repaints') ? PROF[k] : PROF[k] / Math.max(1, PROF.frames); return o; },
         profReset: () => { for (const k in PROF) delete PROF[k]; PROF.frames = 0; },
       };
