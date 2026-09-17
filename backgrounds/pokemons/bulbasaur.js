@@ -114,12 +114,18 @@
     '.pkbulb .bulbasaur .head .eye{width:14px;height:16px;background:#fff;overflow:hidden;left:15px;top:13px;',
     '  border-radius:88% 12% 11% 89% / 83% 47% 53% 17%;transform:rotate(5deg);border:1px solid #295980;',
     '  transform-origin:50% 10%;animation:pkbulbBlink 4.3s ease-in-out infinite}',
-    /* the red pupil is a SOLID fill (was a radial-gradient(#df005d 100%,transparent)
-       — that edge-case stop rasterised as transparent on some tablet/mobile GPUs, so
-       the eye lost its red there; a plain background-color is device-robust). The
-       white glint stays as an explicit-sized gradient overlay on top. */
-    '.pkbulb .bulbasaur .head .eye .pupil{width:12px;height:15px;border-radius:100%;left:-2px;background-color:#df005d;',
-    '  background-image:radial-gradient(1px 5px at center,#fff 100%,transparent)}',
+    /* NOT ONE GRADIENT IN THIS EYE. The red was a radial-gradient(#df005d 100%,
+       transparent) and rasterised as TRANSPARENT on some tablet/mobile GPUs — the
+       eye lost its red there — so it became a plain background-color; the white
+       glint then kept the very same edge-case stop (#fff 100%, transparent) as a
+       background-image and lost the red all over again on those devices (user,
+       2026-09: "בלבזור… העין שלו פתאום לא אדומה"), because a GPU that mishandles
+       the stop floods the whole box with the white instead of the tiny ellipse.
+       The glint is now a solid-filled ::after — 2x10px, the gradient's own ending
+       shape — which every device paints the same. */
+    '.pkbulb .bulbasaur .head .eye .pupil{width:12px;height:15px;border-radius:100%;left:-2px;background-color:#df005d}',
+    '.pkbulb .bulbasaur .head .eye .pupil::after{content:"";position:absolute;left:5px;top:3px;',
+    '  width:2px;height:10px;border-radius:100%;background:#fff}',
     '.pkbulb .bulbasaur .head .eye-lid{width:1px;height:8px;background:#00abd6;border-radius:100px;left:22px;top:8px;transform:rotate(60deg)}',
     '.pkbulb .bulbasaur .head .smile{width:10px;height:6px;border-radius:100%;border-top:1px solid #0c506b;top:32px;left:-2px;transform:rotate(5deg)}',
     '.pkbulb .bulbasaur .head .smile::after{content:"";position:absolute;width:15px;height:6px;border-radius:100%;',
