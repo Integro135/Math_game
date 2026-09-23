@@ -1869,7 +1869,7 @@ class TestStoryQuiz:
     def test_reading_cards_one_per_four_and_no_type_dropped(self, page):
         """The built Superman AND אַלּוּפָה decks carry a READING card at EVERY 4th
         slot (indexes 3/7/11/15/19 → positions 4/8/12/16/20) — exactly
-        READING_SLOTS=5 DISTINCT kinds per 20-card deck (with 6 kinds registered
+        READING_SLOTS=5 DISTINCT kinds per deck (20 cards + 2 logic cards = 22) (with 6 kinds registered
         the kinds ROTATE across games, so the cadence never exceeds 1-per-4).
         Crucially, weaving the reading cards must NOT drop any arithmetic type —
         every base type still appears (splice inserts, the cap preserves
@@ -1900,7 +1900,7 @@ class TestStoryQuiz:
                     kinds.forEach(k=>everKind.add(k));
                     const nonReading=new Set(d.filter(p=>!R.includes(p.t)).map(p=>p.t));
                     const missing=expected.filter(t=>!nonReading.has(t));
-                    if(d.length!==20) bad={reason:'len',len:d.length};
+                    if(d.length!==22) bad={reason:'len',len:d.length};   // 20 + 2 הִגָּיוֹן cards (test_logic.py)
                     else if(JSON.stringify(at)!=='[3,7,11,15,19]') bad={reason:'slots',at};
                     else if(kinds.size!==READING_SLOTS) bad={reason:'kinds',kinds:[...kinds]};
                     else if(missing.length) bad={reason:'dropped',missing};

@@ -122,6 +122,18 @@ function _capPool(pool,n,minKeep){
   return out.length>n?out.slice(0,n):out;
 }
 
+// הִגָּיוֹן 🧠 cards in Superman + אַלּוּפָה: ADDED on top of the 20-card deck
+// (→ 22), so no arithmetic type and no reading slot is given up. They are
+// spliced into the arithmetic base at base index 4 and 10 BEFORE the reading
+// cards go in at every 4th slot — which lands them at the 6th and 14th question
+// (final index 5 and 13), between the reading cards: M M M R M L M R M M M R M L…
+const LOGIC_BASE_AT=[4,10];
+function _weaveLogic(base,m){
+  const lg=EX('logic')?EX('logic').make(m):[];
+  const out=base.slice();
+  lg.forEach((c,i)=>out.splice(Math.min(LOGIC_BASE_AT[i],out.length),0,c));
+  return out;
+}
 function makePool(m){
   if(m===0)return EX('add').make(0);                 // the full 1+1 ladder
   if(m==='mx'){
@@ -148,7 +160,8 @@ function makePool(m){
   // shifts the other cards right, so nothing "falls through the cracks".
   if(m==='sup'){
     const rd=_readingCards(m);
-    const deck=_withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])]),QUEEN_SUPER_COUNT-rd.length);
+    let deck=_withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])]),QUEEN_SUPER_COUNT-rd.length);
+    deck=_weaveLogic(deck,m);
     rd.forEach((s,k)=>deck.splice(Math.min(3+k*4,deck.length),0,s));
     return deck;
   }
@@ -185,8 +198,9 @@ function makePool(m){
     // word-problems — stay mixed through the deck).
     const ti=pool.findIndex(p=>p.t===TMK);
     if(ti>0){const tp=pool.splice(ti,1)[0];pool.unshift(tp);}
-    rd.forEach((s,k)=>pool.splice(Math.min(3+k*4,pool.length),0,s));
-    return pool;
+    const lpool=_weaveLogic(pool,m);
+    rd.forEach((s,k)=>lpool.splice(Math.min(3+k*4,lpool.length),0,s));
+    return lpool;
   }
   // "שפה" — the LANGUAGE game (medium tier): a mixed reading session holding ALL
   // the reading kinds (no rotation cursor here — the whole point of this game is
@@ -207,6 +221,7 @@ function makePool(m){
   if(m==='tf')return EX('true_false')?EX('true_false').make('tf'):[];   // true/false only (internal handle)
   if(m==='wm')return EX('word_match')?EX('word_match').make('wm'):[];   // word-match only (internal handle)
   if(m==='so')return EX('sent_order')?EX('sent_order').make('so'):[];   // sentence-order only (internal handle)
+  if(m==='logic')return EX('logic')?EX('logic').make('logic'):[];      // "הִגָּיוֹן 🧠" — the logic game: 15 cards over every logic kind
   if(m==='rhy')return EX('rhyme')?EX('rhyme').make('rhy'):[];           // rhyme-matching only (internal handle)
   if(m==='ice')return EX('ice_cream')?EX('ice_cream').make('ice'):[]; // ice-cream shop only (internal handle)
   if(m==='mulu')return EX('mult_unknown')?EX('mult_unknown').make('mulu'):[]; // mult-with-unknown only (internal handle)
@@ -337,8 +352,8 @@ function makeBridgePool(){
   return set;
 }
 
-// ── bridging-20 ("גָּשֵׁר 20") — FOUR fixed pedagogical sets of 15, served in
-//    ROTATION (set 1 → 2 → 3 → 4 → 1 …), like גָּשֵׁר 10. The turn is PERSISTED so the
+// ── bridging-20 ("גָּשֵׁר 20") — FIVE fixed pedagogical sets of 15, served in
+//    ROTATION (set 1 → 2 → 3 → 4 → 5 → 1 …), like גָּשֵׁר 10. The turn is PERSISTED so the
 //    rotation survives refreshes. All cross 20 into the LOW-MID 20s (results 21–25);
 //    the order INSIDE each set is the curriculum and must NEVER change; fresh
 //    objects each build.
@@ -349,6 +364,7 @@ function makeBridgePool(){
 //            inverses, then the three smallest crossings to 21 (18+3, 17+4, 16+5).
 //    SET 4 — DOUBLES & near-doubles that cross 20: 11+11, 12+12, 11+12, 11+13, 12+13
 //            … (→22–25) with inverses — a fresh angle (both operands in the low teens).
+//    SET 5 — FACT FAMILIES: 15+6, 6+15, 21−6, 21−15 … — one fact four ways (→21/25).
 let _b20Turn=0;
 try{const _s=localStorage.getItem('b20Turn');if(_s!=null)_b20Turn=(+_s)||0;}catch(e){}
 function _bridge20Set1(){
@@ -388,9 +404,22 @@ function _bridge20Set4(){
     A(12,13),A(13,12),S(25,12),                        // 12 & 13 → 25 (+ one inverse to finish)
   ];
 }
+// SET 5 — FACT FAMILIES (מִשְׁפְּחוֹת מִסְפָּרִים) that cross 20: the same three numbers
+// four ways — a+b, b+a (turn it around: start from the big one), s−b, s−a — so the
+// child sees that adding and subtracting are one fact. Fresh pairs the other sets
+// don't use (15|6, 13|8 → 21; 18|7 → 25), finished by the 12|9 → 21 family.
+function _bridge20Set5(){
+  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  return[
+    A(15,6),A(6,15),S(21,6),S(21,15),                  // 15 | 6 | 21
+    A(13,8),A(8,13),S(21,8),S(21,13),                  // 13 | 8 | 21
+    A(18,7),A(7,18),S(25,7),S(25,18),                  // 18 | 7 | 25
+    A(12,9),A(9,12),S(21,9),                           // 12 | 9 | 21 (three to finish)
+  ];
+}
 // the one-unknown type is woven into EVERY set by _sprinkleUnknowns (~1 in 4),
 // instead of being a separate set — so it recurs throughout bridge-20 too.
-const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2,_bridge20Set3,_bridge20Set4];
+const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2,_bridge20Set3,_bridge20Set4,_bridge20Set5];
 function makeBridge20Pool(){
   const set=_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length]());
   _b20Turn=(_b20Turn+1)%_BRIDGE20_SETS.length;
@@ -400,4 +429,4 @@ function makeBridge20Pool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='rhy'?15:mode==='lang'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='mulc'?20:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='rhy'?15:mode==='lang'?15:mode==='logic'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='mulc'?20:mode||5;}

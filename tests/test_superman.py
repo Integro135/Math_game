@@ -11,7 +11,7 @@ class TestCoinMul:
     def _enter_cm(self, page, target=20):
         # coin_mul rides the Superman pool, so build it then force a TCM problem
         enter_mode(page, 'sup')
-        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
         page.evaluate(f"problems[0] = {{t: TCM, a: {target}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         page.wait_for_timeout(150)
@@ -45,7 +45,7 @@ class TestCoinMul:
         assert res["bad"] is None, f"invalid coin_mul problem: {res['bad']}"
         assert res["saw"]["2"] and res["saw"]["5"] and res["saw"]["10"], \
             f"each coin value (₪2/₪5/₪10) must appear every session: {res['saw']}"
-        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
         assert page.evaluate("[...problems].some(p => p.t === TCM)"), \
             "the Superman session must contain coin-multiplication problems"
 
@@ -53,7 +53,7 @@ class TestCoinMul:
         """A ₪2 problem (6 → 3 coins of ₪2): the answer is a/b = 3 (not a/5), the
         title shows the ₪2 coin, and entering 3 solves it."""
         enter_mode(page, 'sup')
-        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 6, b: 2}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("report[0].correct") == 3, "6 ÷ ₪2 must be 3 coins (not 6/5)"
@@ -69,7 +69,7 @@ class TestCoinMul:
         ₪10 coin, ＋ stays enabled at 9 (cap need+3, so the answer is never given
         away), and entering 9 solves it."""
         enter_mode(page, 'sup')
-        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 90, b: 10}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("report[0].correct") == 9, "90 ÷ ₪10 must be 9 coins"
@@ -90,7 +90,7 @@ class TestCoinMul:
         enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.coin_mul === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCM, a: 20}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         assert page.evaluate("ptype === TCM")
@@ -244,7 +244,7 @@ class TestBagelCost:
     def _enter_bagel(self, page, bagels=4):
         # bagel_cost rides the Superman pool, so build it then force a TBC problem
         enter_mode(page, 'sup')
-        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
         page.evaluate(f"problems[0] = {{t: TBC, a: {bagels}, b: 5}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colm-add", timeout=TIMEOUT)
         page.wait_for_timeout(150)
@@ -271,7 +271,7 @@ class TestBagelCost:
             return { bad };
         })()""")
         assert res["bad"] is None, f"invalid bagel_cost problem: {res['bad']}"
-        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
         assert page.evaluate("[...problems].some(p => p.t === TBC)"), \
             "the Superman session must contain bagel-cost problems"
 

@@ -33,7 +33,7 @@ class TestDynamicExercises:
         enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.column_add === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 17, b: 15}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
 
@@ -136,7 +136,7 @@ class TestDynamicExercises:
     def test_every_mode_builds_correct_pool_size(self, page):
         """Each mode's recipe produces its expected session length."""
         expected = {"5": 12, "10": 12, "20": 12, "'br'": 25, "'b20'": 15,
-                    "'mx'": 20, "'sup'": 20, "'big'": 12}
+                    "'mx'": 20, "'sup'": 22, "'big'": 12}   # sup: 20 + 2 הִגָּיוֹן cards
         for arg, size in expected.items():
             enter_mode(page, arg)
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)

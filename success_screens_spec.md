@@ -127,8 +127,12 @@ balloons, trophy, paint splash, music notes, pinwheel, fireflies, ribbons,
 phoenix rising, peacock fan, kaleidoscope bloom, birthday cake, carousel spin,
 treasure chest, sky lanterns, prism rainbow, enchanted tree, sandcastle,
 ice-cream tower, glowing jellyfish, hot-air balloon, kite festival,
-turtle lagoon, ferris wheel, moon swing, star train …).
-There are currently **45** rotation screens registered in `SUCCESS_FILES`
+turtle lagoon, ferris wheel, moon swing, star train, paper cranes, snow globe,
+crystal gem, love letter, daisy ring, ringed planet, baby dragon, pearl shell,
+domino cascade, owl wink, magic lamp, ladybug flight, heart lock,
+sunflower grow, kitten & yarn, star jar, honeycomb bee, UFO beam, penguin
+slide, rain cloud …).
+There are currently **65** rotation screens registered in `SUCCESS_FILES`
 (game/js/data.js), plus the **gift** reward screen in `SUCCESS_SPECIAL`.
 
 > **Bright-backdrop exception.** Three screens (`hot-air-balloon`,

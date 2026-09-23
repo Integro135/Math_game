@@ -25,7 +25,7 @@ class TestGameFlow:
         # 5 fresh Queen sessions — each must satisfy the rule
         for session in range(5):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 20", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
             n = page.evaluate("problems.length")
             assert n == 20, \
                 f"Session {session+1}: expected 20 mx problems, got {n}"

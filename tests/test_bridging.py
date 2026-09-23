@@ -443,10 +443,11 @@ class TestBridgingMode:
 # Bridging-20 mode (b20): a NEW category — crossing the SECOND ten, only by a little
 # ─────────────────────────────────────────────────────────
 class TestBridge20:
-    """'b20' (גָּשֵׁר 20) is its own game/category — FOUR fixed 15-problem sets served in
-    ROTATION (set 1 → 2 → 3 → 4 → 1 …). All cross 20 into the low-mid 20s (results 21–25).
+    """'b20' (גָּשֵׁר 20) is its own game/category — FIVE fixed 15-problem sets served in
+    ROTATION (set 1 → 2 → 3 → 4 → 5 → 1 …). All cross 20 into the low-mid 20s (results 21–25).
     Set 1 = medium jumps (anchors 18/17/16); set 2 = bigger jumps (16/15/14/13);
-    set 3 = the 19-ladder + gentlest bridges to 21; set 4 = doubles crossing 20."""
+    set 3 = the 19-ladder + gentlest bridges to 21; set 4 = doubles crossing 20;
+    set 5 = fact families (a+b, b+a, s−b, s−a)."""
 
     # SET 1 — medium jumps (anchors 18/17/16, results 22–24)
     B20_SEQ = [
@@ -472,6 +473,14 @@ class TestBridge20:
         ("TA", 11, 12), ("TA", 12, 11), ("TS", 23, 11), ("TS", 23, 12),
         ("TA", 11, 13), ("TA", 13, 11), ("TS", 24, 11), ("TS", 24, 13),
         ("TA", 12, 13), ("TA", 13, 12), ("TS", 25, 12),
+    ]
+
+    # SET 5 — fact families crossing 20: a+b, b+a, s−b, s−a (→21 / 25)
+    B20_SEQ_5 = [
+        ("TA", 15, 6), ("TA", 6, 15), ("TS", 21, 6), ("TS", 21, 15),
+        ("TA", 13, 8), ("TA", 8, 13), ("TS", 21, 8), ("TS", 21, 13),
+        ("TA", 18, 7), ("TA", 7, 18), ("TS", 25, 7), ("TS", 25, 18),
+        ("TA", 12, 9), ("TA", 9, 12), ("TS", 21, 9),
     ]
 
     def _switch(self, page):
@@ -523,43 +532,52 @@ class TestBridge20:
         assert page.locator("#lbb20.active").count() == 1
         assert page.locator("#lbbr.active").count() == 0
 
-    def test_b20_rotates_four_sets(self, page):
-        """Every rebuild advances the set: 1 → 2 → 3 → 4 → 1 (the shape-unknown type
+    def test_b20_rotates_five_sets(self, page):
+        """Every rebuild advances the set: 1 → 2 → 3 → 4 → 5 → 1 (the shape-unknown type
         is woven into EACH set, every 4th problem; normalised back to base types for
         the order check)."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         exps = [[[consts[t], a, b] for t, a, b in seq]
-                for seq in (self.B20_SEQ, self.B20_SEQ_2, self.B20_SEQ_3, self.B20_SEQ_4)]
+                for seq in (self.B20_SEQ, self.B20_SEQ_2, self.B20_SEQ_3, self.B20_SEQ_4, self.B20_SEQ_5)]
         NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch(page)
         got = [page.evaluate(NORM)]
-        for _ in range(4):
+        for _ in range(5):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             got.append(page.evaluate(NORM))
         assert got[0] == exps[0], f"build 1 must serve set 1\ngot={got[0]}"
         assert got[1] == exps[1], "restart → set 2"
         assert got[2] == exps[2], "restart → set 3"
         assert got[3] == exps[3], "restart → set 4"
-        assert got[4] == exps[0], "wraps back to set 1"
+        assert got[4] == exps[4], "restart → set 5 (fact families)"
+        assert got[5] == exps[0], "wraps back to set 1"
         # the unknown type is present, on 4th slots (checked on the last-built set)
         unk = page.evaluate("[...problems].map((p,i)=>({i,u:p.t===TVA||p.t===TVS})).filter(o=>o.u).map(o=>o.i)")
         assert unk and all((i + 1) % 4 == 0 for i in unk), \
             f"b20 must weave shape-unknowns onto 4th slots, got idx {unk}"
 
-    def test_b20_all_four_sets_cross_twenty(self, page):
+    def test_b20_all_five_sets_cross_twenty(self, page):
         """Every problem in ALL FOUR sets bridges 20 (sums/minuends 21–25), including
         the new set 3 (19-ladder) and set 4 (doubles)."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch(page)
-        for s in range(4):
+        for s in range(5):
             for t, a, b in page.evaluate(NORM):
                 if t == TA:
                     assert a < 20 and 20 < a + b <= 25, f"set{s+1}: {a}+{b} must cross 20 (sum 21–25)"
                 else:
                     assert 20 < a <= 25 and 0 < (a - b) < 20, f"set{s+1}: {a}-{b} must cross 20 (result <20)"
             page.evaluate("restart()"); page.wait_for_timeout(120)
+
+    def test_b20_set5_is_whole_fact_families(self, page):
+        """Every group of four in set 5 is ONE fact: a+b, b+a, s−b, s−a with s=a+b."""
+        seq = self.B20_SEQ_5
+        for g in range(0, 12, 4):
+            (_, a, b), (_, b2, a2), (_, s1, x), (_, s2, y) = seq[g:g + 4]
+            s = a + b
+            assert (b2, a2) == (b, a) and s1 == s2 == s and {s - x, s - y} == {a, b}, seq[g:g + 4]
 
     def test_b20_set2_exact_order_and_crosses_gently(self, page):
         """Set 2 (bigger jumps) serves its exact order; all 15 still cross 20 into the
