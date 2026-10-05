@@ -232,6 +232,7 @@
     ctx.fillStyle = C.coatD;
     ctx.beginPath(); ctx.ellipse(tip[0], tip[1], 2.6, 1.7, 0, 0, TAU); ctx.fill();
     ctx.restore();   // head
+    if (L.bowtie) SavRig.bowtie(ctx, L.bowtie, 15, -51, 1.3, 0.06);    // on the chest, below the tusks
 
     ctx.restore();
   }

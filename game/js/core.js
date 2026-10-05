@@ -5,7 +5,9 @@
    means NO prize for that game — no 🎁 badge on its picker button, no gift
    screen on completion. GIFT_GOALS holds ONLY the games that currently have a
    prize (a game with no prize is absent), so `GIFT_GOALS[mode]` is falsy then. */
-const DEFAULT_GIFT_GOALS={sup:800,mulc:700};   // ONLY Superman (800) + אַלּוּפָה (700) carry a prize; every other game absent → no prize
+// the five big games each carry a prize at grade 800 out of the box: Queen, Superman,
+// Language, Logic and אַלּוּפָה; every other game is absent → no prize (a parent can still set one)
+const DEFAULT_GIFT_GOALS={mx:800,sup:800,lang:800,logic:800,mulc:800};
 const GIFT_GOALS={};
 function _savedGiftGoals(){try{return JSON.parse(localStorage.getItem('giftGoals')||'{}')||{};}catch(e){return {};}}
 function _rebuildGiftGoals(){
@@ -26,7 +28,7 @@ function setGiftGoal(m,val){
   if(typeof renderModePicker==='function')renderModePicker();   // refresh the 🎁 badges
   if(typeof updateGiftIndicator==='function')updateGiftIndicator();
 }
-const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',b20:'גָּשֵׁר 20',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן',mulc:'אַלּוּפָה'};
+const GIFT_MODE_LABELS={br:'גָּשֵׁר 10',b20:'גָּשֵׁר 20',mx:'מַלְכָּה',sup:'סוּפֶּרְמֶן',lang:'שָׂפָה',logic:'הִגָּיוֹן',mulc:'אַלּוּפָה'};
 /* ── Prize COUNT per win ─────────────────────────────────────────────────────
    How many prizes a winning set awards for each game (default 1, but אַלּוּפָה
    gives ×2 out of the box — DEFAULT_GIFT_COUNTS). Parent-configurable from the

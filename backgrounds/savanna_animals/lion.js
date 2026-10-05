@@ -239,6 +239,7 @@
     ctx.scale(0.82, 0.82);
     drawHead(ctx, C, t, ph, roarK);
     ctx.restore();
+    if (L.bowtie) SavRig.bowtie(ctx, L.bowtie, 41, -55, 1.05, 0.12);   // at the bottom of the mane
 
     ctx.restore();
   }

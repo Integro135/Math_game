@@ -31,13 +31,13 @@ class TestGiftReward:
 
     def test_gift_thresholds_configured(self, page):
         """GIFT_GOALS holds numeric thresholds for the reward modes only. By
-        default ONLY Superman (sup=800) and אַלּוּפָה (mulc=700) carry a prize;
-        every other game (b20/mx/br + the basic 0/5/10/20/big) has no threshold
-        → never a gift."""
+        default the five big games — Queen (mx), Superman (sup), Language (lang),
+        Logic (logic) and אַלּוּפָה (mulc) — carry a prize at 800; every other game
+        (b20/br + the basic 0/5/10/20/big) has no threshold → never a gift."""
         goals = page.evaluate("GIFT_GOALS")
-        assert goals.get("sup") == 800, f"Superman prize must be 800, got {goals.get('sup')}"
-        assert goals.get("mulc") == 700, f"אַלּוּפָה prize must be 700, got {goals.get('mulc')}"
-        for m in ("b20", "mx", "br", "0", "5", "10", "20", "big"):
+        for m in ("mx", "sup", "lang", "logic", "mulc"):
+            assert goals.get(m) == 800, f"{m} prize must default to 800, got {goals.get(m)}"
+        for m in ("b20", "br", "0", "5", "10", "20", "big"):
             assert goals.get(m) is None, f"mode {m} must NOT have a gift threshold"
 
     def test_gift_screen_is_special_not_in_rotation(self, page):
@@ -101,11 +101,11 @@ class TestPrizeConfig:
         assert inputs == games and inputs >= 5, f"expected {games} goal inputs, got {inputs}"
 
     def test_default_thresholds_only_reward_games(self, page):
-        """Out of the box only Superman (sup=800) and אַלּוּפָה (mulc=700) carry a
-        prize; every other game (b20/mx/br + the basic ones) has none."""
+        """Out of the box Queen, Superman, Language, Logic and אַלּוּפָה carry a prize
+        at 800; every other game (b20/br + the basic ones) has none."""
         goals = page.evaluate("GIFT_GOALS")
-        assert goals.get("sup") == 800 and goals.get("mulc") == 700
-        for m in ("b20", "mx", "br", "0", "5", "10", "20"):
+        assert all(goals.get(m) == 800 for m in ("mx", "sup", "lang", "logic", "mulc")), goals
+        for m in ("b20", "br", "0", "5", "10", "20"):
             assert goals.get(m) is None, f"game {m} must start with no prize"
 
     def test_badge_shows_only_when_prize_set(self, page):

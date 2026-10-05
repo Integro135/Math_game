@@ -265,6 +265,10 @@
     ctx.translate(3, -9);
     drawHead(ctx, C, t, ph, k);
     ctx.restore();
+    if (L.bowtie){                                                     // high on the throat side of the neck
+      const q = S[Math.round(0.8 * (S.length - 1))];
+      SavRig.bowtie(ctx, L.bowtie, q.p[0] + q.nx * q.w * 0.42, q.p[1] + q.ny * q.w * 0.42, 1.2, Math.atan2(q.ny, q.nx));
+    }
 
     ctx.restore();
   }

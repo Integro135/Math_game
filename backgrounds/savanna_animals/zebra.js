@@ -297,6 +297,7 @@
     ctx.rotate(Math.sin(t * 0.6 + ph) * 0.03 + (moving ? Math.sin(wt * 2) * 0.03 : 0) - 0.42 * k);
     drawHead(ctx, C, t, ph, k);
     ctx.restore();
+    if (L.bowtie) SavRig.bowtie(ctx, L.bowtie, 51, -73, 1.0, 0.5);    // on the throat, across the neck
 
     ctx.restore();
   }

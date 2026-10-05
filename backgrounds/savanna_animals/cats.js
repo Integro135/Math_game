@@ -373,6 +373,7 @@
     ctx.scale(H.sc, H.sc);
     drawHead(ctx, C, sp, t, ph, k, { ribbon: !!L.ribbon });
     ctx.restore();
+    if (L.bowtie) SavRig.bowtie(ctx, L.bowtie, hx - 6, hy + 21, 0.9, nrot + Math.PI / 2 - 0.25);   // at the throat
 
     ctx.restore();
   }

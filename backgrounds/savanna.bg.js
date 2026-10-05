@@ -171,6 +171,16 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
     lioness:  { rig: 'LionessRig',  sc: 0.86, speed: 30,  acts: ['pose', 'jump', 'fart'],         jumpH: 22, vent: [46, 48] },
   };
   const ACT_DUR = { pose: 1.7, jump: 0.8, spin: 2.2, fart: 1.5 };
+  // BOW TIES — only SOME animals wear one (the rigs draw it at the throat when
+  // L.bowtie is set): each herd animal ~1 in 5, the lion and the big lioness
+  // ~1 in 3 per visit, never on an animal already wearing a hair ribbon.
+  const BOWTIE_HERD = 0.2, BOWTIE_PRIDE = 0.35;
+  const BOWTIE_COLS = ['#E53950', '#3D7BE0', '#8E44AD', '#FF6FA5', '#F5B800', '#2E9E5B', '#FF8A2A'];
+  const pickBowtie = chance => {
+    if (Math.random() >= chance) return null;
+    const col = BOWTIE_COLS[Math.floor(Math.random() * BOWTIE_COLS.length)];
+    return Math.random() < 0.35 ? { col, dots: true } : col;
+  };
   // the cliff's walkable top, left screen edge → overhanging tip (fractions)
   const RIDGE = [[0, 0.525], [0.08, 0.495], [0.18, 0.44], [0.29, 0.395], [0.37, 0.38]];
 
@@ -252,6 +262,7 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
           mk('cub',     'LionessRig', U * 0.46, 0.06, { speed: 16, acts: ['pose', 'jump', 'fart'], vent: [46, 48], jumpH: 14, lo: W * 0.02, hi: W * 0.25, pMin: 2, pMax: 5 }),
         ];
         PRIDE[2].L.ribbon = true; PRIDE[3].L.ribbon = true;
+        PRIDE[0].L.bowtie = pickBowtie(BOWTIE_PRIDE); PRIDE[1].L.bowtie = pickBowtie(BOWTIE_PRIDE);   // the cubs keep their ribbons
         PRIDE[3].L.dir = -1;
         for (const a of PRIDE) a.L.y = ridgeY(a.L.x);
         HERD = []; nextHerdAt = 1.5; lastKind = null;
@@ -429,9 +440,12 @@ window.BACKGROUNDS = window.BACKGROUNDS || {};
             L: { x: start + (Math.random() - 0.5) * W * 0.02, y: H * (0.80 + lane * 0.13), s, dir,
                  ph: Math.random() * TAU, wt: Math.random() * TAU, moving: true, pose: 0,
                  tint: 0.86 + Math.random() * 0.28, ribbon: kind === 'lioness' && sizeF < 1 && Math.random() < 0.7 },
+            // (bow tie assigned just below — never together with a ribbon)
             speed: baseSpeed * (0.92 + Math.random() * 0.18), acts: K.acts, jumpH: K.jumpH || 24, vent: K.vent,
             nextActAt: t + 3 + Math.random() * 9,
           });
+          const nb = HERD[HERD.length - 1];
+          if (!nb.L.ribbon) nb.L.bowtie = pickBowtie(BOWTIE_HERD);
         }
       }
       function startAct(a, type, t){

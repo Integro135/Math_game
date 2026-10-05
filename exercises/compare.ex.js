@@ -236,8 +236,11 @@ window.EXERCISES.types.compare=(()=>{
     // explanation; pointerdown reveals it there (and on desktop press), and the
     // hint clears the moment a real drag begins so it never fights the ghost.
     // > → big○ small○ ; < → small○ big○ ; = → equal○ equal○
+    // mounted on <body>, NOT inside the card: a skin that gives the card a
+    // transform/filter turns position:fixed into card-relative coordinates, and the
+    // tip then drifted far from the sign (seen on the savanna skin: ~450px off)
     const signTip=document.createElement('div');signTip.className='cp-sign-tip';
-    root.appendChild(signTip);
+    document.body.appendChild(signTip);
     const TIP={
       gt:'<span class="cp-c cp-big"></span><span class="cp-tip-op">&gt;</span><span class="cp-c cp-small"></span>',
       lt:'<span class="cp-c cp-small"></span><span class="cp-tip-op">&lt;</span><span class="cp-c cp-big"></span>',
@@ -293,6 +296,7 @@ window.EXERCISES.types.compare=(()=>{
       window.removeEventListener('pointerup',onUp);
       window.removeEventListener('pointercancel',onCancel);
       const g=document.querySelector('.cp-ghost');if(g)g.remove();
+      signTip.remove();                // lives on <body>, so root.innerHTML won't clear it
       root.innerHTML='';
     };
   }

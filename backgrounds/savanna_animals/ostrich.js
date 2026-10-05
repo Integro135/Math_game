@@ -183,6 +183,10 @@
     ctx.translate(3, -6.4);
     drawHead(ctx, C, t, ph);
     ctx.restore();
+    if (L.bowtie){                                                     // on the neck, above the collar
+      const a = bz(0.3), b = bz(0.36);
+      SavRig.bowtie(ctx, L.bowtie, a[0] + 2, a[1], 0.8, Math.atan2(b[1] - a[1], b[0] - a[0]) + Math.PI / 2);
+    }
     ctx.restore();   // clip
     // a feather collar where the neck leaves the body
     fluff(ctx, root[0], root[1] + 3, 9, 6.5, 7, C.body1, t, ph + 41, 0.3, 0);

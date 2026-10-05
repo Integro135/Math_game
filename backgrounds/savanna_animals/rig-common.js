@@ -17,7 +17,12 @@
    eyes, 2-segment round-jointed legs in a diagonal gait, a stride bob,
    breathing, a swishing tail.
 
-   window.SavRig = { TAU, psr, lg, rg, shade, fluff, leg, eye, blink } */
+   window.SavRig = { TAU, psr, lg, rg, shade, fluff, leg, eye, blink, bowtie }
+
+   BOW TIE (L.bowtie): any rig draws a little bow tie at its throat when
+   L.bowtie is set — a '#rrggbb' colour, or { col, dots } for a polka-dot one.
+   The scene decides WHO wears one (only some animals); the rig only knows
+   where its throat is. House style: soft gradients, no outlines. */
 (function(){
   const TAU = Math.PI * 2;
   const psr = i => Math.abs(Math.sin(i * 127.1) * 43758.545) % 1;   // stable pseudo-random 0..1
@@ -114,5 +119,35 @@
   // blink amount 0..1 — a fast snap on a slow rhythm (k sets the interval)
   const blink = (t, ph, k) => Math.pow(Math.max(0, Math.sin(t * (k || 0.45) + (ph || 0) * 2.3)), 200);
 
-  window.SavRig = { TAU, psr, lg, rg, shade, fluff, leg, eye, blink };
+  // ── a little bow tie centred on (x, y): two rounded wings + a knot. `bt` is
+  // L.bowtie — a '#rrggbb' colour or { col, dots }. rot turns it with the neck.
+  function bowtie(g, bt, x, y, sc, rot){
+    if (!bt) return;
+    const col = typeof bt === 'string' ? bt : (bt.col || '#E53950');
+    const dots = typeof bt === 'object' && bt.dots;
+    const dark = shade(col, 0.7), light = shade(col, 1.3);
+    g.save(); g.translate(x, y); g.rotate(rot || 0); g.scale(sc, sc);
+    [-1, 1].forEach(sd => {
+      g.fillStyle = lg(g, 0, 0, sd * 11, 0, [[0, dark], [0.35, col], [1, light]]);
+      g.beginPath(); g.moveTo(0, 0);
+      g.bezierCurveTo(sd * 3, -5.5, sd * 8.5, -7.5, sd * 10.5, -5.2);
+      g.quadraticCurveTo(sd * 12.2, 0, sd * 10.5, 5.2);
+      g.bezierCurveTo(sd * 8.5, 7.5, sd * 3, 5.5, 0, 0);
+      g.fill();
+      g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 0.9;            // the fold
+      g.beginPath(); g.moveTo(sd * 3.5, -2.2); g.quadraticCurveTo(sd * 6, 0, sd * 3.5, 2.2); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,.32)';                            // a soft shine
+      g.beginPath(); g.ellipse(sd * 7.2, -3.4, 2.4, 1.1, sd * 0.35, 0, TAU); g.fill();
+      if (dots){
+        g.fillStyle = 'rgba(255,255,255,.85)';
+        [[5.5, -2.5], [8.8, 1.8], [6, 3.2], [9.5, -2]].forEach(([dx, dy]) => { g.beginPath(); g.arc(sd * dx, dy, 0.95, 0, TAU); g.fill(); });
+      }
+    });
+    g.fillStyle = lg(g, 0, -3.5, 0, 3.5, [[0, col], [1, dark]]);       // the knot
+    g.beginPath(); g.ellipse(0, 0, 2.7, 3.4, 0, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.beginPath(); g.ellipse(-0.6, -1.4, 1, 0.8, 0, 0, TAU); g.fill();
+    g.restore();
+  }
+
+  window.SavRig = { TAU, psr, lg, rg, shade, fluff, leg, eye, blink, bowtie };
 })();

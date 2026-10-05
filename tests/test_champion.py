@@ -717,6 +717,40 @@ def _enter_compare_sub(page, a, b, side, op, k, base):
 
 
 class TestCompare:
+    @pytest.mark.parametrize("theme", ["girls", "savanna", "galaxy", "dinosaurs", "reef", "dubai", "frozen", "maldives"])
+    def test_sign_meaning_tip_sits_right_under_the_sign(self, page, theme):
+        """Hovering a < > = sign shows its meaning DIRECTLY under that sign on every
+        skin. Regression: the tip lived inside the card, and a skin whose card has a
+        transform/filter turned position:fixed card-relative, so on savanna the tip
+        drifted ~450px to the middle of the screen. It now mounts on <body>."""
+        page.evaluate(f"pickTheme('{theme}')")
+        page.wait_for_timeout(600)
+        _enter_compare(page, 7, 4)
+        for i in range(3):
+            c = page.evaluate(f"(()=>{{const r=document.querySelectorAll('.cp-tile')[{i}].getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];}})()")
+            page.mouse.move(c[0], c[1])
+            page.wait_for_timeout(150)
+            r = page.evaluate(f"""(()=>{{const t=document.querySelectorAll('.cp-tile')[{i}].getBoundingClientRect(),
+                s=document.querySelector('.cp-sign-tip').getBoundingClientRect();
+                return {{dx:Math.abs((s.left+s.width/2)-(t.left+t.width/2)), gap:s.top-t.bottom, w:s.width}};}})()""")
+            assert r["w"] > 0, f"{theme}: the tip must be showing"
+            assert r["dx"] <= 4, f"{theme} sign {i}: tip is {r['dx']:.0f}px off-centre from its sign"
+            assert 0 <= r["gap"] <= 30, f"{theme} sign {i}: tip should sit just below the sign, gap={r['gap']:.0f}px"
+
+    def test_sign_tip_is_removed_with_the_exercise(self, page):
+        """The tip lives on <body>, so the exercise's cleanup must remove it —
+        moving on to the next card may not leave a tip behind."""
+        _enter_compare(page, 7, 4)
+        assert page.evaluate("document.querySelectorAll('.cp-sign-tip').length") == 1
+        page.evaluate("problems=[{t:TCP,a:3,b:9},{t:TCP,a:5,b:5}];idx=0;loadProblem();")
+        page.wait_for_selector(".cp-tile", timeout=TIMEOUT)
+        page.evaluate("idx=1;loadProblem();")
+        page.wait_for_selector(".cp-tile", timeout=TIMEOUT)
+        assert page.evaluate("document.querySelectorAll('.cp-sign-tip').length") == 1,             "re-mounting must not pile up tips"
+        page.evaluate("problems=[{t:TA,a:2,b:3}];idx=0;loadProblem();")
+        page.wait_for_timeout(200)
+        assert page.evaluate("document.querySelectorAll('.cp-sign-tip').length") == 0,             "leaving the compare exercise must remove its tip"
+
     def test_compare_loads_and_mounts(self, page):
         """Forcing TCP mounts two numbers, an empty slot and three sign tiles; no
         host check button."""
