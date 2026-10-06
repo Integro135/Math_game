@@ -152,7 +152,7 @@ class TestLogicPlay:
 
 class TestLogicWeave:
     """Superman + אַלּוּפָה carry 2 logic cards per game at the 6th and 14th
-    question, ON TOP of the 20-card deck (reading stays at every 4th slot)."""
+    question, inside the 15-card deck (reading stays at every 4th slot)."""
     @pytest.mark.parametrize("mode", ["sup", "mulc"])
     def test_two_logic_cards_at_6th_and_14th(self, page, mode):
         enter_mode(page, mode)
@@ -163,14 +163,14 @@ class TestLogicWeave:
             return out;}""".replace("mode", repr(mode)))
         kinds = set()
         for r in res:
-            assert r["len"] == 22, r
+            assert r["len"] == 15, r
             assert r["at"] == [5, 13], f"logic must sit at the 6th + 14th question, got {r['at']}"
             kinds.update(r["k"])
         assert len(kinds) >= 6, f"the weave must rotate through the kinds, got {kinds}"
 
     def test_live_superman_game_mounts_a_logic_card(self, page):
         enter_mode(page, "sup")
-        page.wait_for_function("problems.length===22", timeout=TIMEOUT)
+        page.wait_for_function("problems.length===15", timeout=TIMEOUT)
         page.evaluate("idx=5;loadProblem();")
         page.wait_for_selector(".lg-opt", timeout=TIMEOUT)
         assert page.evaluate("ptype === TLG")

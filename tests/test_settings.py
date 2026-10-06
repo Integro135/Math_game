@@ -101,7 +101,7 @@ class TestModePersistence:
         page.reload()
         self._ready(page)
         assert page.evaluate("mode === 'sup'")
-        assert page.evaluate("problems.length === ((mode==='sup'||mode==='mulc')?22:20)")
+        assert page.evaluate("problems.length === 15")
 
     def test_default_is_mx_when_nothing_saved(self, page):
         """A fresh context (no saved game) boots into Queen (mx)."""

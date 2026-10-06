@@ -40,7 +40,7 @@ class TestTensProblems:
 
         # TT now lives in 'mx' (מלכה) instead.
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         ptypes = page.evaluate("[...problems].map(p => p.t)")
         assert sum(1 for t in ptypes if t == consts["TT"]) >= 1, \
             "Round-tens (TT) must now appear in the Queen (mx) game"
@@ -62,7 +62,7 @@ class TestTensProblems:
         # TT is wired only into 'mx' (data.js EXERCISE_INDEX), where tens.ex.js
         # make('mx') always emits exactly 2 TT problems -> _find_tt always hits.
         enter_mode(page, 'mx')
-        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 
@@ -86,7 +86,7 @@ class TestTensProblems:
         """TT problem: submitting the correct tens answer marks the problem done."""
         # TT lives only in 'mx'; tens.ex.js make('mx') always emits 2 TT problems.
         enter_mode(page, 'mx')
-        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         tt_idx = self._find_tt(page)
         assert tt_idx is not None, "Mode mx must contain a TT problem"
 

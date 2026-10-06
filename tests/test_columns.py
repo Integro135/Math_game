@@ -12,7 +12,7 @@ class TestSupermanColumnAdd:
         # the sup pool mixes column-add with big ±1/2 and coin-multiplication
         # problems, so wait for the pool to build, then force a TCA problem
         enter_mode(page, 'sup')
-        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCA, a: {a}, b: {b}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
@@ -83,7 +83,7 @@ class TestSupermanColumnAdd:
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(120)
         enter_mode(page, 'sup')
-        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCA, a: 13, b: 18}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(250)
@@ -250,7 +250,7 @@ class TestSupermanDigitPreview:
 
     def _enter(self, page, a, b):
         enter_mode(page, 'sup')
-        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate(f"problems[0]={{t:TCA,a:{a},b:{b}}}; idx=0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         page.wait_for_timeout(200)
@@ -339,7 +339,7 @@ class TestColumnSubtraction:
         # column subtraction now lives inside Superman — build that pool, then
         # force a TCS problem so the column UI mounts.
         enter_mode(page, 'sup')
-        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TCS, a: {a}, b: {b}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
@@ -352,7 +352,7 @@ class TestColumnSubtraction:
         enter_mode(page, 'sup')
         page.wait_for_function(
             "typeof EXERCISES.types.column_sub === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TCS, a: 25, b: 17}; idx = 0; loadProblem()")
         page.wait_for_selector("#colx-iU", timeout=TIMEOUT)
         assert page.evaluate("ptype === TCS")
@@ -604,7 +604,7 @@ class TestColumnSubtraction:
         seen_any = False
         for _ in range(6):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "mx must contain ≥1 column-subtraction problem"
@@ -624,7 +624,7 @@ class TestColumnSubtraction:
         seen_noborrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")
-            page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "Superman must contain ≥1 column-subtraction problem"
@@ -643,7 +643,7 @@ class TestColumnSubtraction:
         seen_borrow = False
         for _ in range(6):
             page.evaluate("setMode('sup'); restart()")
-            page.wait_for_function("problems.length === ((mode==='sup'||mode==='mulc')?22:20)", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             for p in tcs:

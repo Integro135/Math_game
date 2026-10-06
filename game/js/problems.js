@@ -72,8 +72,37 @@ function _withPolygons(pool,target,minKeep){
   return base;
 }
 
-// Queen (mx) & Superman (sup) always present EXACTLY this many exercises per run.
-const QUEEN_SUPER_COUNT=20;
+// Queen (mx), Superman (sup) and אַלּוּפָה (mulc) present EXACTLY this many exercises
+// per run (2026-10: cut from 20/22 to 15 — a shorter, calmer session). Reading and
+// logic cards live INSIDE the 15; when a game owns more exercise types than it has
+// math slots, the extra types take turns across games (_fitTypes).
+const QUEEN_SUPER_COUNT=15;
+
+// ── _fitTypes: fit a shuffled pool into n slots. If every type fits, this is just
+// the coverage-preserving _capPool. If there are MORE types than slots, the
+// `always` types are kept in every game and the remaining slots ROTATE through the
+// other types with a per-game cursor persisted in localStorage — so consecutive
+// games cover every type (nothing is starved) and a reload doesn't restart it.
+// minKeep (type → count) is honoured for every type that is kept.
+function _fitTypes(pool,n,key,minKeep,always){
+  minKeep=minKeep||{};always=always||[];
+  const types=[...new Set(pool.map(p=>p.t))];
+  const need=t=>Math.min(minKeep[t]||1,pool.filter(p=>p.t===t).length);
+  if(types.reduce((s,t)=>s+need(t),0)<=n)return _capPool(pool,n,minKeep);
+  const keep={};let used=0;
+  for(const t of always)if(types.includes(t)&&used+need(t)<=n){keep[t]=need(t);used+=need(t);}
+  const rest=types.filter(t=>!(t in keep)).map(String).sort();
+  const ck='typeCursor_'+key;
+  let c=0;try{c=(+localStorage.getItem(ck))||0;}catch(e){}
+  let taken=0;
+  for(let i=0;i<rest.length&&used<n;i++){
+    const t=rest[(c+i)%rest.length],k=need(t);
+    if(used+k<=n){keep[t]=k;used+=k;taken=i+1;}
+  }
+  try{localStorage.setItem(ck,String((c+taken)%Math.max(1,rest.length)));}catch(e){}
+  const cnt={};
+  return pool.filter(p=>{if(!(p.t in keep))return false;cnt[p.t]=(cnt[p.t]||0)+1;return cnt[p.t]<=keep[p.t];});
+}
 
 // ── the READING program (Superman + אַלּוּפָה): ONE reading card per 4 exercises.
 // The kinds — story_quiz (סיפור ושאלה), cloze (השלם את המילה), true_false (נכון
@@ -83,7 +112,7 @@ const QUEEN_SUPER_COUNT=20;
 // across games via _rkCursor — every kind gets its turn, and no single game is
 // crowded past the 1-per-4 cadence. Also the WHOLE set of the "שפה" game ('lang').
 const READING_KINDS=['story_quiz','cloze','true_false','word_match','sent_order','rhyme'];
-const READING_SLOTS=5;
+const READING_SLOTS=3;   // one per 4 exercises in a 15-card deck (4th/8th/12th question)
 let _rkCursor=0;
 function _readingCards(m){
   const avail=READING_KINDS.filter(k=>EX(k));
@@ -122,14 +151,13 @@ function _capPool(pool,n,minKeep){
   return out.length>n?out.slice(0,n):out;
 }
 
-// הִגָּיוֹן 🧠 cards in Superman + אַלּוּפָה: ADDED on top of the 20-card deck
-// (→ 22), so no arithmetic type and no reading slot is given up. They are
-// spliced into the arithmetic base at base index 4 and 10 BEFORE the reading
-// cards go in at every 4th slot — which lands them at the 6th and 14th question
-// (final index 5 and 13), between the reading cards: M M M R M L M R M M M R M L…
+// הִגָּיוֹן 🧠 cards in Superman + אַלּוּפָה: two per game, INSIDE the 15-card deck.
+// They are spliced into the arithmetic base at base index 4 and 10 BEFORE the
+// reading cards go in at every 4th slot — which lands them at the 6th and 14th
+// question (final index 5 and 13), between the reading cards:
+// M M M R M L M R M M M R M L M
 const LOGIC_BASE_AT=[4,10];
-function _weaveLogic(base,m){
-  const lg=EX('logic')?EX('logic').make(m):[];
+function _weaveLogic(base,lg){
   const out=base.slice();
   lg.forEach((c,i)=>out.splice(Math.min(LOGIC_BASE_AT[i],out.length),0,c));
   return out;
@@ -141,11 +169,16 @@ function makePool(m){
     // of 18, +2 woven extras). Cap the curated base to 18 (its floor, ≥2 round-tens),
     // then weave ONE polygon + ONE triple_sum (`__+__+__`) POST-cap — at mid-deck
     // slots, never slot 0 — so neither extra crowds a core type out of the cap.
-    const base=_capPool(makeMxPool(),QUEEN_SUPER_COUNT-2,{[TT]:2});   // 18
-    const extras=[];
-    if(EX('polygon')){const pg=shuffle(EX('polygon').make('poly'))[0];if(pg)extras.push(pg);}
-    if(EX('triple_sum')){const ts=EX('triple_sum').make('mx')[0];if(ts)extras.push(ts);}
-    let at=8;for(const ex of extras){base.splice(Math.min(at,base.length),0,ex);at+=8;}
+    // 15 cards: the CORE types every Queen game guarantees (13 slots, 2 round-tens)
+    // + the `__+__+__` card, and ONE rotating slot that takes turns through the
+    // extras (one-unknown, three-unknowns, hundreds, ×-chain, a shape).
+    const cand=makeMxPool();
+    if(EX('polygon')){const pg=shuffle(EX('polygon').make('poly'))[0];if(pg)cand.push(pg);}
+    const CORE=[TZ,TX,TW,TM,TS,TA,TDA,TDS,TT,TC,TBG,TCS];
+    const base=_fitTypes(cand,QUEEN_SUPER_COUNT-1,'mx',{[TT]:2},CORE);
+    const _noAns=p=>p.t===TCS||p.t===TMC||p.t===TPG||p.t===TTS;   // slot 0 must show a normal input
+    if(base.length&&_noAns(base[0]))for(let j=1;j<base.length;j++)if(!_noAns(base[j])){const t=base[0];base[0]=base[j];base[j]=t;break;}
+    if(EX('triple_sum')){const ts=EX('triple_sum').make('mx')[0];if(ts)base.splice(Math.min(8,base.length),0,ts);}
     return base;
   }
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
@@ -159,9 +192,9 @@ function makePool(m){
   // every 4th slot (positions 4/8/12/16/20 → index 3/7/11/15/19). Splice only
   // shifts the other cards right, so nothing "falls through the cracks".
   if(m==='sup'){
-    const rd=_readingCards(m);
-    let deck=_withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])]),QUEEN_SUPER_COUNT-rd.length);
-    deck=_weaveLogic(deck,m);
+    const rd=_readingCards(m), lg=EX('logic')?EX('logic').make(m):[];
+    let deck=_withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])]),QUEEN_SUPER_COUNT-rd.length-lg.length);
+    deck=_weaveLogic(deck,lg);
     rd.forEach((s,k)=>deck.splice(Math.min(3+k*4,deck.length),0,s));
     return deck;
   }
@@ -176,8 +209,8 @@ function makePool(m){
     // cap the arithmetic base 5 short (coverage-preserving — every arithmetic
     // type keeps ≥1, so none is missed), pin TMK at slot 0, then SPLICE (insert,
     // never overwrite) a reading card at every 4th slot (positions 4/8/12/16/20).
-    const rd=_readingCards(m);
-    const pool=_capPool(shuffle([
+    const rd=_readingCards(m), lg=EX('logic')?EX('logic').make(m):[];
+    const pool=_fitTypes(shuffle([
       ...(EX('mult_champ')?EX('mult_champ').make('mulc'):[]),
       ...(EX('perimeter')?EX('perimeter').make('mulc'):[]),
       ...(EX('column_sub')?EX('column_sub').make('mulc'):[]),
@@ -192,13 +225,13 @@ function makePool(m){
       ...(EX('bagel_cost')?EX('bagel_cost').make('mulc'):[]), // כמה עולים X בייגלה (×₪5) — ראשית הכפל בשקלים (מסופרמן)
       ...(EX('ice_cream')?EX('ice_cream').make('mulc'):[]),   // חנות הגלידה — יש לה ₪X, כל גלידה ₪2/5/10; כמה אפשר לקנות (חילוק כ"כמה קבוצות")
       ...(EX('mult_unknown')?EX('mult_unknown').make('mulc'):[]), // כפל בנעלם — 3×□=9; ישר קפיצות-של-a גלוי מההתחלה
-    ]),QUEEN_SUPER_COUNT-rd.length);
+    ]),QUEEN_SUPER_COUNT-rd.length-lg.length,'mulc',{},[TMK,TTS]);   // 14 types / 10 slots → the other 12 take turns
     // the אַלּוּפָה game OPENS on its flagship multiplication card (TMK): keep a
     // mult_champ problem at slot 0 (the rest — perimeter / column-sub / compare /
     // word-problems — stay mixed through the deck).
     const ti=pool.findIndex(p=>p.t===TMK);
     if(ti>0){const tp=pool.splice(ti,1)[0];pool.unshift(tp);}
-    const lpool=_weaveLogic(pool,m);
+    const lpool=_weaveLogic(pool,lg);
     rd.forEach((s,k)=>lpool.splice(Math.min(3+k*4,lpool.length),0,s));
     return lpool;
   }

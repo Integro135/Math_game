@@ -210,9 +210,9 @@ class TestChampMultiplication:
             "typeof problems!=='undefined' && problems.length>0"
             " && typeof EXERCISES.types.coin_mul==='object'"
             " && typeof EXERCISES.types.bagel_cost==='object'", timeout=TIMEOUT)
-        assert page.evaluate("problems.some(p=>p.t===TCM)"), \
+        assert page.evaluate("problems.some(p=>p.t===TCM)||makePool(mode).some(p=>p.t===TCM)||makePool(mode).some(p=>p.t===TCM)"), \
             "coin_mul (TCM) must appear in the אַלּוּפָה pool"
-        assert page.evaluate("problems.some(p=>p.t===TBC)"), \
+        assert page.evaluate("problems.some(p=>p.t===TBC)||makePool(mode).some(p=>p.t===TBC)||makePool(mode).some(p=>p.t===TBC)"), \
             "bagel_cost (TBC) must appear in the אַלּוּפָה pool"
         # coins.ex.js must load in mulc too, so the REAL coin (an <svg>) renders in
         # the tray — not the plain silver fallback (.colm-coin-fallback)
@@ -501,7 +501,7 @@ class TestMultUnknown:
         assert all(2 <= p["a"] <= 4 and 2 <= p["b"] <= 4 for p in pool), f"bad pool: {pool}"
         enter_mode(page, 'mulc')
         page.wait_for_function("problems.length>0", timeout=TIMEOUT)
-        assert page.evaluate("problems.some(p=>p.t===TMU)"), \
+        assert page.evaluate("problems.some(p=>p.t===TMU)||makePool(mode).some(p=>p.t===TMU)||makePool(mode).some(p=>p.t===TMU)"), \
             "mult_unknown (TMU) must appear in the אַלּוּפָה pool"
 
     def test_line_moves_with_arrow_and_space(self, page):
@@ -1507,7 +1507,7 @@ class TestIceCreamShop:
         enter_mode(page, 'mulc')
         page.wait_for_function(
             "typeof problems!=='undefined' && problems.length>0", timeout=TIMEOUT)
-        assert page.evaluate("problems.some(p=>p.t===TIC)"), \
+        assert page.evaluate("problems.some(p=>p.t===TIC)||makePool(mode).some(p=>p.t===TIC)||makePool(mode).some(p=>p.t===TIC)"), \
             "ice_cream (TIC) must appear in the אַלּוּפָה pool"
 
     def test_ice_cream_loads_and_mounts(self, page):
@@ -1812,7 +1812,7 @@ class TestWordChain:
         page.wait_for_function(
             "typeof problems!=='undefined' && problems.length>0"
             " && typeof EXERCISES.types.word_chain==='object'", timeout=TIMEOUT)
-        assert page.evaluate("problems.some(p=>p.t===TWC)"), \
+        assert page.evaluate("problems.some(p=>p.t===TWC)||makePool(mode).some(p=>p.t===TWC)||makePool(mode).some(p=>p.t===TWC)"), \
             "word_chain (TWC) must appear in the אַלּוּפָה pool"
 
 
@@ -1901,9 +1901,9 @@ class TestStoryQuiz:
         assert _has_niqqud(res["mountedStory"])
 
     def test_reading_cards_one_per_four_and_no_type_dropped(self, page):
-        """The built Superman AND אַלּוּפָה decks carry a READING card at EVERY 4th
-        slot (indexes 3/7/11/15/19 → positions 4/8/12/16/20) — exactly
-        READING_SLOTS=5 DISTINCT kinds per deck (20 cards + 2 logic cards = 22) (with 6 kinds registered
+        """The built Superman AND אַלּוּפָה decks (15 cards) carry a READING card at
+        EVERY 4th slot (indexes 3/7/11 → the 4th/8th/12th question) — exactly
+        READING_SLOTS=3 DISTINCT kinds per deck (with 6 kinds registered
         the kinds ROTATE across games, so the cadence never exceeds 1-per-4).
         Crucially, weaving the reading cards must NOT drop any arithmetic type —
         every base type still appears (splice inserts, the cap preserves
@@ -1932,10 +1932,14 @@ class TestStoryQuiz:
                     const at=d.map((p,i)=>R.includes(p.t)?i:-1).filter(i=>i>=0);
                     const kinds=new Set(d.filter(p=>R.includes(p.t)).map(p=>p.t));
                     kinds.forEach(k=>everKind.add(k));
-                    const nonReading=new Set(d.filter(p=>!R.includes(p.t)).map(p=>p.t));
+                    // a type must show up in THIS game or the next one: אַלּוּפָה has more
+                    // types than math slots, so they take turns (_fitTypes)
+                    const d2=makePool(mode);
+                    d2.filter(p=>R.includes(p.t)).forEach(p=>everKind.add(p.t));   // d2 also advances the kind rotation
+                    const nonReading=new Set(d.concat(d2).filter(p=>!R.includes(p.t)).map(p=>p.t));
                     const missing=expected.filter(t=>!nonReading.has(t));
-                    if(d.length!==22) bad={reason:'len',len:d.length};   // 20 + 2 הִגָּיוֹן cards (test_logic.py)
-                    else if(JSON.stringify(at)!=='[3,7,11,15,19]') bad={reason:'slots',at};
+                    if(d.length!==15) bad={reason:'len',len:d.length};   // 15-card deck: 3 reading + 2 logic inside
+                    else if(JSON.stringify(at)!=='[3,7,11]') bad={reason:'slots',at};
                     else if(kinds.size!==READING_SLOTS) bad={reason:'kinds',kinds:[...kinds]};
                     else if(missing.length) bad={reason:'dropped',missing};
                 }

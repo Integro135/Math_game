@@ -33,12 +33,14 @@ class TestVarOneUnknown:
         assert "fb-ok" not in page.locator("#fb").get_attribute("class"), "50 is wrong for 30−20"
 
     def test_queen_mixes_in_unknown(self, page):
-        """Queen (mx) mixes the unknown type into its curated pool."""
+        """Queen (mx) mixes the unknown type in. At 15 cards it rides Queen's ONE
+        rotating slot (one-unknown / three-unknowns / hundreds / ×-chain / shape),
+        so it must turn up within a full rotation of consecutive games."""
         enter_mode(page, 'mx')
         page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
         page.wait_for_timeout(120)
-        n = page.evaluate("[...problems].filter(p=>p.t===TVA||p.t===TVS).length")
-        assert n >= 1, f"Queen pool must include the ⃝-unknown type, got {n}"
+        n = page.evaluate("(()=>{let n=0;for(let g=0;g<6;g++)n+=makePool('mx').filter(p=>p.t===TVA||p.t===TVS).length;return n;})()")
+        assert n >= 1, f"Queen must include the ⃝-unknown type within 6 games, got {n}"
 
     # ── TWO-unknown variant: BOTH operands are shapes (symA + sym) ──
     def test_two_unknown_renders_both_operands_as_shapes(self, page):
