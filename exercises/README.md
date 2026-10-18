@@ -51,8 +51,13 @@ exercises/
 ├─ sent_order.ex.js   INTERACTIVE סַדֵּר אֶת הַמִּשְׁפָּט — a 4-5 word vowelled sentence served SCRAMBLED as pills; tap words in order (Duolingo-style; tap a placed word to send it back), ✓ submits; wrong keeps the words for fixing. 38-sentence bank, no-repeat rotation. Shares the reading slots.
 ├─ rhyme.ex.js        INTERACTIVE חָרוּז — PHONOLOGICAL awareness (the one language kind that is NOT reading-for-meaning): a cue word + picture, and 3 picture+word options of which EXACTLY ONE rhymes; select → ✓ submits. A mistake reveals the SOUND AID naming the ending ("כַּד נִגְמֶרֶת בַּצְּלִיל אַד"). 33-pair bank (either member may be the cue) + a separate 20-word distractor pool filtered by the normalized final PHONEME (ך and ח are one sound), so a distractor can never rhyme. Shares the reading slots.
 ├─ triple_sum.ex.js   INTERACTIVE __+__+__ = N — three CHOSEN addends; the target N VARIES 6..14; 0 and 10 are DISALLOWED (a 0/10 answer is praised, costs nothing, but must be re-tried with other numbers). Woven into Queen (mx) + Superman (sup) + אַלּוּפָה (mulc).
-├─ half.ex.js         INTERACTIVE "חִלּוּק שָׁווֶה בְּשָׁווֶה" — 2 OR 3 friends share items EQUALLY (totals up to 16: ÷2 evens 8..16, ÷3 multiples of three 6..15); tap the items → golden lines split them into k equal groups. First DIVISION intuition. Mixed into אַלּוּפָה (mulc).
+├─ half.ex.js         INTERACTIVE "חִלּוּק שָׁווֶה בְּשָׁווֶה" — 2 OR 3 friends share items EQUALLY (totals up to 16: ÷2 evens 8..16, ÷3 multiples of three 6..15); the picture is LOCKED until her first mistake (try-first); a wrong answer opens the split — golden lines part the items into k equal groups — and from then on a tap toggles it. First DIVISION intuition. Mixed into אַלּוּפָה (mulc).
 ├─ logic.ex.js        INTERACTIVE הִגָּיוֹן 🧠 — its own game (mode 'logic', medium tier), 15 cards over SEVEN kinds (115 questions), AND 2 cards per Superman/אַלּוּפָה game at the 6th + 14th question (added on top: those decks are 22, reading stays every 4th; problems.js _weaveLogic): מִי אֲנִי (clues → picture; every distractor ruled out by ONE clue, same grammatical gender), מִי לֹא שַׁיָּךְ, ordering (transitivity), patterns (periodic row + ❓), אִם-אָז (rule + fact / elimination), analogies, cause→effect. A wrong pick is CROSSED OUT and (מִי אֲנִי) its ruling-out clue lights up; after solving a `why` line explains. Tests: tests/test_logic.py.
+├─ deal.ex.js         INTERACTIVE חֲלֻקָּה בְּתוֹרוֹת 🃏 — 2-4 friends, a pile of ≤16; every tap DEALS one item to whoever's turn it is (a bouncing ⬇ marks the turn, round and round, first friend on the RIGHT), then she types how many EACH got. Count badges only after a mistake; a right answer before the pile is empty deals the rest itself. אַלּוּפָה (mulc) + Queen's division turn.
+├─ pack.ex.js         INTERACTIVE אֲרִיזָה 📦 — n items (≤20), b fit in each box (2..5): how many boxes? Try-first: loose items + ONE sample box with its b places; a mistake opens the PACKING (each tap brings a new box and fills it), no box is drawn ahead of her taps. אַלּוּפָה (mulc) + Queen's division turn.
+├─ fair.ex.js         INTERACTIVE זֶה הוֹגֵן? ⚖️ — 2-3 friends with UNEVEN plates; tap an item (it lifts), tap another plate (it glides there) until all are equal, ✓, then how many each. ✓ while uneven = a mistake + count badges. אַלּוּפָה (mulc) + Queen's division turn.
+├─ can_share.ex.js    INTERACTIVE אֶפְשָׁר לְחַלֵּק? 🤔 — yes/no: can 2-3 friends share n (5..14) with nothing left? Select → ✓; the verdict deals the row into equal groups with the leftover in a red ring. Balanced deck. אַלּוּפָה (mulc) + Queen's division turn.
+├─ balance.ex.js      INTERACTIVE מֹאזְנַיִם ⚖️ — equality as BALANCE, two kinds on one animated scale: TBE `__ + 15 = 12 + __` (two rows, ANY balancing pair, the 2nd must DIFFER — "יֵשׁ הַרְבֵּה תְּשׁוּבוֹת") and TSB four numbers tapped onto two pans so `__+__ = __+__`. Try-first: pans show "?" until ✓; a wrong ✓ tilts the beam toward the heavier pan with both sums, then the scale weighs LIVE. Queen (mx) 1 card/game (kinds alternate, deck 16) + אַלּוּפָה (mulc). See §4k.
 └─ plates.ex.js       INTERACTIVE "צַלָּחוֹת" — g plates × s items each (2..4 × 2..4, product ≤10), find the TOTAL from the WORDS; the picture is hidden until a mistake reveals it. The multiplication-story inverse of half. Mixed into אַלּוּפָה (mulc).
 ```
 
@@ -135,8 +140,13 @@ A registered type is an object of this exact shape:
 | `perimeter` | `{t:TPP, shape:'square'|'rect'|'tri', sides:[…], a}`  (rect also `w,h`; `a` = perimeter) | a to-scale shape with a length **1..4** by each side; type the SUM of the sides. Interactive |
 | `compare`   | `{t:TCP, a, b}`  (sign derived: `a<b`→‹ , `a>b`→› , `a===b`→=) | DRAG the correct comparison sign (`<`/`>`/`=`) into the empty slot between the two numbers. Interactive |
 | `triple_sum`| `{t:TTS, a}`  (`a` = the target sum, VARIES 6..14) | `__ + __ + __ = a` — pick THREE addends that sum to `a`; **0 and 10 are disallowed** (a 0/10 answer is praised, costs nothing, but must be re-tried). Interactive |
-| `half`      | `{t:THF, n, k, a, item, itemName, names:[…k]}`  (`n` = total ≤16, `k` = 2 or 3, `a` = n÷k) | a word problem: `k` friends share `n` items EQUALLY; tap the items → golden lines split them into `k` equal groups; type how many EACH gets. Interactive |
+| `half`      | `{t:THF, n, k, a, item, itemName, names:[…k]}`  (`n` = total ≤16, `k` = 2 or 3, `a` = n÷k) | a word problem: `k` friends share `n` items EQUALLY; after the first mistake golden lines split them into `k` equal groups; type how many EACH gets. Interactive |
 | `plates`    | `{t:TPL, g, s, a, item, itemName, name}`  (`g` = plates, `s` = per plate, both 2..4, product ≤10; `a` = g·s) | a word problem: `g` plates each holding `s` items; type the TOTAL from the words. Picture hidden until a mistake reveals it (then tap toggles plates ↔ row). Interactive |
+| `balance`   | `{t:TBE, a, b, pos:'front'|'back'}` / `{t:TSB, nums:[a,b,c,d], order, a}` | TBE: `x + a = b + y` (front) or `a + x = b + y` (back), two rows, any whole pair that balances, the second pair ≠ the first. TSB: a<b<c<d with a+d=b+c (the ONLY balancing split), kept sorted; `order` = the random permutation the row is SHOWN in (never sorted or mirrored); `a` = the pan sum. The solved arrangement is written to `p.sol` for the report. Interactive |
+| `deal`      | `{t:TDL, n, k, a, item, itemName, names}` (`k` 2..4, `a` = n÷k, n ≤ 16) | deal the pile one item at a time, in turns; type how many EACH got. Interactive |
+| `pack`      | `{t:TPK, n, b, a, it}` (`b` per box 2..5, `a` = n÷b boxes, n ≤ 20; `it` indexes `ITEMS`) | how many boxes? the packing opens after a mistake. Interactive |
+| `fair`      | `{t:TFR, k, start:[…], a, item, itemName, names}` (`start` uneven, sums to k·a) | move items until every plate is equal, then type the share. Interactive |
+| `can_share` | `{t:TCN, n, k, a:1 yes / 2 no, item, itemName}` | can it be shared with nothing left? yes/no, the verdict shows the leftover. Interactive |
 | `ice_cream` | `{t:TIC, a, b, name}`  (`a` = the budget ₪, `b` = price per ice cream 2/5/10, `name` = the shopper) | a shop story: she HAS `₪a` and every ice cream costs `₪b` — how many CAN she buy? ＋ buys one (lands in the tray WITH its price coin, so the spending is skip-countable); answer `a/b` (division as "how many groups fit"). Interactive |
 
 ptype constants (`game/js/data.js`):
@@ -144,7 +154,8 @@ ptype constants (`game/js/data.js`):
 `TW='twin_sub'`, `TDA='dbl_add'`, `TDS='dbl_sub'`, `TC='coins'`, `TT='tens'`,
 `TCA='col_add'`, `TCS='col_sub'`, `TBG='big_step'`, `TCM='coin_mul'`,
 `TMC='mult_chain'`, `TMK='mult_champ'`, `TPP='perimeter'`, `TCP='compare'`,
-`TTS='triple_sum'`, `THF='half'`, `TPL='plates'`, `TIC='ice_cream'`
+`TTS='triple_sum'`, `THF='half'`, `TPL='plates'`, `TIC='ice_cream'`,
+`TBE='bal_eq'`, `TSB='bal_scale'`, `TDL='deal'`, `TPK='pack'`, `TFR='fair'`, `TCN='can_share'`
 (+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TWP='word_prob'`, `TVA`/`TVS`/`TRA`/`TH`).
 
 ---
@@ -199,6 +210,7 @@ each and requires every probe item to turn up in both.
 | `rhyme.ex.js`    | `TRH`         | `'rhy','lang','sup','mulc'` | Interactive **rhyme** (חָרוּז) — **phonological awareness**, the only language kind that is not reading-for-meaning: a cue word + picture (`{t:TRH,cue:{e,w},sound,opts:[{e,w}×3],a}`, `a` = 1-based correct option → num1) and 3 picture+word options of which **exactly one rhymes**; select → ✓ submits. The **33-pair bank** serves either member as the cue (50% flip) over a no-repeat shuffled PAIR queue. Unambiguity is **mechanical**: distractors come from a separate **20-word pool** filtered by the *normalized final PHONEME* (ן→נ, ף→פ, ם→מ…, and ך/ח collapsed to one sound — they are the same phoneme in Israeli Hebrew, so a ח-word could otherwise be offered against מֶלֶך/דֶּרֶך) so a distractor can never rhyme, and the two distractors differ from each other; pair-words/emoji are disjoint from the distractor pool. A wrong answer reveals the **SOUND AID** naming the ending ("🔊 הַמִּלָּה כַּד נִגְמֶרֶת בַּצְּלִיל **אַד**" — spelled as a syllable, not bare niqqud) then allows a re-pick. `make('sup'/'mulc'/'lang')` → 1, `make('rhy')` → all 33. `aidsReveal:'always'`. |
 | `half.ex.js`     | `THF`         | `'hlf','mulc'`          | Interactive **share-equally among k friends** (first division), k = **2 or 3**, totals up to **16**. `make('mulc')` → **6** = a MIX of 3 ÷2 (evens 8..16) + 3 ÷3 (multiples of three 6..15); `make('hlf')` → 8. Rotating item emoji + girl names make each card a fresh mini word problem; a JS auto-fit shrinks the row to the card when many items. `aidsReveal:'always'` (the split-into-groups picture is the aid; a wrong answer auto-opens it). See §4i. |
 | `plates.ex.js`   | `TPL`         | `'plt','mulc'`          | Interactive **equal-groups→total** (the multiplication story, inverse of half). `make('mulc')` → **3** (`make('plt')` → 6), plates `g` and per-plate `s` both 2..4, **product ≤10** (the first facts). The picture is **hidden** — the child solves from the WORDS; the 1st mistake reveals the plates, the 2nd pours them into ONE countable row (once shown, tap toggles). `aidsReveal:'always'` (module drives its own reveal). See §4j. |
+| `balance.ex.js` | `[TBE,TSB]`   | `'bal','mx','mulc'`     | Interactive **equality as balance** (מֹאזְנַיִם). `make('mx')` → **1** card, the two kinds TAKE TURNS across games (localStorage `balanceKind`); TSB values ≤13, pan sum ≤18. `make('mulc')` → **2** (one of each; TSB ≤16, sum ≤20 — the workbook's 4 8 12 16). `make('bal')` → 6 (tester handle). TBE knowns are two different numbers 10..19, 1..5 apart. `aidsReveal:'always'` (no host aid — the scale is the module's own). See §4k. |
 | `ice_cream.ex.js`| `TIC`         | `'ice','mulc'`          | Interactive **shop / budget division** ("how many groups fit" — the quotative mirror of `half`'s sharing). `make('mulc')` → **3**, ONE of EACH price — ₪2 (budgets 4..20), ₪5 (10..35), ₪10 (20..90) — budget always divisible, 2..10 ice creams. ＋ BUYS an ice cream (it lands with its price COIN so the spending is skip-countable, 2-4-6…), − refunds; ＋ allows a +3 overshoot so it never reveals the answer; wrong-answer feedback is directional off the TYPED value ("not enough money" / "money left"). `aidsReveal:'always'` (the tray is the manipulative). See §4k. |
 
 Notes:
@@ -995,3 +1007,48 @@ boot / setMode(m) / restart()
 
 That's the whole surface: a self-registering file, one `EXERCISE_INDEX` entry,
 and one recipe wiring.
+
+---
+
+## 4k. `balance.ex.js` — מֹאזְנַיִם ⚖️ (TBE + TSB)
+
+From the 2nd-grade workbook (pp. 12-13): the `=` sign means *both sides are
+equal*, not *the answer comes next*. One file, two ptypes, one shared SVG scale
+(`buildScale` — a beam rotating on a pivot, two pans hanging upright from its
+ends, eased with a small overshoot; `tilt(L,R)` leans toward the heavier pan,
+max 13°, level when equal; `sums(L,R)` prints the pan weights or `?`).
+
+**TBE — `__ + 15 = 12 + __`.** Two rows with the same known numbers; the second
+row unlocks once the first balances and must hold a DIFFERENT pair (the same
+pair again costs nothing — a hint asks for another). Any whole pair is right,
+0 included (`0 + 15 = 12 + 3` is true). Enter moves to the other blank when it
+is empty, otherwise checks. A wrong pair → `api.wrong('x,y')`.
+
+**TSB — four numbers onto two pans.** Tap a number → it lands in the next free
+slot (the next slot glows); tap a placed number → it goes back. ✓ with a free
+slot only nudges. Generated as a<b<c<d, a+d=b+c, so {a,d}|{b,c} is the only
+balancing split (a+b<c+d and a+c<b+d always); either pan order and either order
+inside a pan is accepted. The row is SHOWN in a random `order` (never sorted
+or mirrored — shown as 5 6 7 8 the answer would always be 1st+4th / 2nd+3rd, a
+position trick instead of sums); `nums` itself stays sorted. A wrong split → `api.wrong('5+6 / 7+8')`, the numbers
+stay put for fixing.
+
+**Try-first.** Before the first ✓ the pans show `?` and the beam is level. The
+first wrong ✓ weighs (tilt + both sums) and from then on the scale is LIVE: it
+re-weighs on every keystroke (TBE) or as soon as a pan is full (TSB). Scoring
+is the host's `_tfPts` (100 / 67 / 0).
+
+**Report.** The module writes the solved arrangement to `p.sol` (TBE
+`[[x,y],[x2,y2]]`, TSB `[n,n,n,n]`); `_reportRows` prints it (`⚖️ 9 + 3 = 5 + 7`)
+with the expected answer as the canonical split / the two pairs found.
+
+**Recipes.** Queen (mx) weaves ONE card in post-cap at index 11, on top of the
+15 — Queen decks are 16. אַלּוּפָה puts one of each into its rotating `_fitTypes`
+pool (the deck stays 15). Tests: `tests/test_balance.py`.
+
+**Queen's division turn (2026-10).** מַלְכָּה gets ONE division card per game,
+the six division kinds taking turns (`problems.js _nextDivision`, cursor in
+localStorage `divKind`): `half` → `ice_cream` → `deal` → `pack` → `fair` →
+`can_share`. Each of those six files therefore also lists `'mx'` and answers
+`make('mx')` with a single card. Queen decks are 17. Tests:
+`tests/test_division.py::TestQueenDivision`.

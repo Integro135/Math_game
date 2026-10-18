@@ -5,12 +5,13 @@
 
    • The items are drawn on screen as ONE row, grouped into k equal groups; a row
      of k kid emojis sits above them.
-   • TAPPING the items toggles the SPLIT: golden lines drop between the groups and
-     each group parts + highlights — so the child literally SEES the equal k-way
-     share and can count one group.
-   • The split is a pure aid (tap to toggle). On a WRONG answer it opens by
-     itself (the same "aid appears on a mistake" convention as perimeter's
-     number line).
+   • TRY-FIRST: until her first mistake the picture is LOCKED — tapping the kids
+     or the items does nothing, and the row reads as one unbroken line, so she
+     has to work the share out herself (user request: the tap used to show the
+     split straight away and gave the answer away).
+   • A WRONG answer opens the SPLIT by itself: golden lines drop between the
+     groups and each group parts + highlights — she literally SEES the equal
+     k-way share and can count one group. From then on tapping toggles it.
 
    Totals reach up to 16 (user request): ÷2 uses EVEN totals 8..16, ÷3 uses the
    multiples of three 6..15 — every total divides EXACTLY by its k so the share
@@ -102,6 +103,10 @@ window.EXERCISES.types.half=(()=>{
   .hf-tip{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--skin-text,#fff);opacity:.75;
     display:flex;align-items:center;gap:6px;transition:opacity .3s}
   .hf-root.hf-split .hf-tip{opacity:0}
+  /* locked (before the first mistake): not a button, no tap tip */
+  .hf-root.hf-locked .hf-stage{cursor:default}
+  .hf-root.hf-locked .hf-stage:hover{background:none}
+  .hf-root.hf-locked .hf-tip{display:none}
   /* rtl: the host .equation forces ltr — rtl puts the Hebrew label RIGHT of the input */
   .hf-ans-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;direction:rtl}
   .hf-lbl{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--skin-text,#fff)}
@@ -156,10 +161,10 @@ window.EXERCISES.types.half=(()=>{
       if(g<k-1)groupsHtml+='<div class="hf-line" style="--ltx:'+lOff(g)+'px"></div>';
     }
     root.innerHTML=
-      '<div class="hf-root" id="hf-root-'+uid+'">'+
+      '<div class="hf-root hf-locked" id="hf-root-'+uid+'">'+
         '<div class="hf-q" id="hf-q-'+uid+'">'+namesStr(names)+' יֵשׁ <b>'+n+'</b> '+itemName+' '+item+
           ' — אֵיךְ הֵן יִתְחַלְּקוּ <b>שָׁווֶה בְּשָׁווֶה</b>?</div>'+
-        '<div class="hf-stage" id="hf-stage-'+uid+'" role="button" aria-label="חַלְּקִי שָׁווֶה בְּשָׁווֶה">'+
+        '<div class="hf-stage" id="hf-stage-'+uid+'" aria-label="חַלְּקִי שָׁווֶה בְּשָׁווֶה">'+
           '<div class="hf-kids">'+kidsHtml+'</div>'+
           '<div class="hf-items">'+groupsHtml+'</div>'+
         '</div>'+
@@ -174,7 +179,7 @@ window.EXERCISES.types.half=(()=>{
     const $=id=>root.querySelector('#'+id+'-'+uid);
     const rootEl=$('hf-root'),stage=$('hf-stage'),inp=$('hf-ans'),chk=$('hf-chk'),qEl=$('hf-q');
     const itemsEl=stage.querySelector('.hf-items');
-    hint('✂️ חַלְּקוּ שָׁווֶה בְּשָׁווֶה בֵּין כֻּלָּן — אֶפְשָׁר לִלְחֹץ עַל הַ'+itemName+'!');
+    hint('✂️ חַלְּקוּ שָׁווֶה בְּשָׁווֶה בֵּין כֻּלָּן — נַסִּי בָּרֹאשׁ 🏆');
 
     // AUTO-FIT: the items live in ONE non-wrapping row (the k groups must stay
     // side by side around the divider lines). With many items (up to 16) that row
@@ -210,7 +215,10 @@ window.EXERCISES.types.half=(()=>{
     window.addEventListener('resize',onResize);
 
     // tap the items → toggle the split (the groups part, dividers drop between them)
-    stage.addEventListener('click',()=>{if(!done)rootEl.classList.toggle('hf-split');});
+    // — only once a mistake has UNLOCKED the picture (try-first)
+    let locked=true;
+    function unlock(){if(!locked)return;locked=false;rootEl.classList.remove('hf-locked');stage.setAttribute('role','button');}
+    stage.addEventListener('click',()=>{if(!done&&!locked)rootEl.classList.toggle('hf-split');});
     function forceSplit(){rootEl.classList.add('hf-split');}
 
     function check(){
@@ -227,7 +235,7 @@ window.EXERCISES.types.half=(()=>{
       }else{
         inp.classList.remove('hf-ready');inp.classList.add('ans-err');
         api.wrong(v);
-        forceSplit();               // a mistake opens the split so she can COUNT one group
+        unlock();forceSplit();      // a mistake unlocks the picture and opens the split so she can COUNT one group
         hint(v>per?'יוֹתֵר מִדַּי — סִפְרִי רַק קְבוּצָה אַחַת 💗'
                    :'קְצָת יוֹתֵר — סִפְרִי רַק קְבוּצָה אַחַת 💗');
         later(()=>{if(!done){inp.value='';inp.classList.remove('ans-err');inp.focus();}},1000);
@@ -243,7 +251,7 @@ window.EXERCISES.types.half=(()=>{
 
   return{
     t:THF,
-    modes:['hlf','mulc'],
+    modes:['hlf','mx','mulc'],
     aidsReveal:'always',            // no number line — the split-into-groups picture IS the aid
     make(mode){
       // ÷2 uses even totals 8..16; ÷3 uses the multiples of three 6..15. mulc gets
@@ -252,6 +260,7 @@ window.EXERCISES.types.half=(()=>{
       const three=[6,9,12,15].map(n=>({n,k:3}));
       return mode==='mulc'?makePool(sh(two).slice(0,3).concat(sh(three).slice(0,3)))
             :mode==='hlf'?makePool(sh(two).slice(0,4).concat(sh(three).slice(0,4)))
+            :mode==='mx'?makePool(sh(two.concat(three)).slice(0,1))   // Queen: one card, when the division turn is this kind's
             :[];
     },
     mount,

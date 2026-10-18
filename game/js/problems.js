@@ -162,6 +162,16 @@ function _weaveLogic(base,lg){
   lg.forEach((c,i)=>out.splice(Math.min(LOGIC_BASE_AT[i],out.length),0,c));
   return out;
 }
+// Queen's division card: the next kind in DIV_KINDS whose file is loaded, the
+// cursor persisted in localStorage so consecutive games walk through all six
+const DIV_KINDS=['half','ice_cream','deal','pack','fair','can_share'];
+function _nextDivision(){
+  const avail=DIV_KINDS.filter(k=>EX(k));if(!avail.length)return null;
+  let c=0;try{c=(+localStorage.getItem('divKind'))||0;}catch(e){}
+  const k=avail[c%avail.length];
+  try{localStorage.setItem('divKind',String((c+1)%avail.length));}catch(e){}
+  return (EX(k).make('mx')||[])[0]||null;
+}
 function makePool(m){
   if(m===0)return EX('add').make(0);                 // the full 1+1 ladder
   if(m==='mx'){
@@ -179,6 +189,12 @@ function makePool(m){
     const _noAns=p=>p.t===TCS||p.t===TMC||p.t===TPG||p.t===TTS;   // slot 0 must show a normal input
     if(base.length&&_noAns(base[0]))for(let j=1;j<base.length;j++)if(!_noAns(base[j])){const t=base[0];base[0]=base[j];base[j]=t;break;}
     if(EX('triple_sum')){const ts=EX('triple_sum').make('mx')[0];if(ts)base.splice(Math.min(8,base.length),0,ts);}
+    // + ONE balance card (מֹאזְנַיִם: __+15=12+__ or four numbers onto two pans, the kinds take
+    // turns) on TOP of the 15 — a 16-card Queen, so no core type or extra loses its slot
+    if(EX('balance')){const bl=EX('balance').make('mx')[0];if(bl)base.splice(Math.min(11,base.length),0,bl);}
+    // + ONE division card (the 2026-10 request): the six division kinds TAKE TURNS
+    // across Queen games — a 17-card Queen
+    { const dv=_nextDivision();if(dv)base.splice(Math.min(5,base.length),0,dv); }
     return base;
   }
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
@@ -224,6 +240,11 @@ function makePool(m){
       ...(EX('coin_mul')?EX('coin_mul').make('mulc'):[]),     // כמה מטבעות (₪2/₪5/₪10) נכנסים ב-X — ראשית הכפל (מסופרמן)
       ...(EX('bagel_cost')?EX('bagel_cost').make('mulc'):[]), // כמה עולים X בייגלה (×₪5) — ראשית הכפל בשקלים (מסופרמן)
       ...(EX('ice_cream')?EX('ice_cream').make('mulc'):[]),   // חנות הגלידה — יש לה ₪X, כל גלידה ₪2/5/10; כמה אפשר לקנות (חילוק כ"כמה קבוצות")
+      ...(EX('balance')?EX('balance').make('mulc'):[]),       // מאזניים — __+15=12+__ וארבעה מספרים על שתי כפות (שוויון כאיזון)
+      ...(EX('deal')?EX('deal').make('mulc'):[]),             // חלוקה בתורות — אחת לכל אחת עד שנגמר
+      ...(EX('pack')?EX('pack').make('mulc'):[]),             // אריזה — כמה קופסאות צריכים
+      ...(EX('fair')?EX('fair').make('mulc'):[]),             // זה הוגן? — מעבירים עד שלכולן אותו מספר
+      ...(EX('can_share')?EX('can_share').make('mulc'):[]),   // אפשר לחלק? — כן/לא, עם השארית
       ...(EX('mult_unknown')?EX('mult_unknown').make('mulc'):[]), // כפל בנעלם — 3×□=9; ישר קפיצות-של-a גלוי מההתחלה
     ]),QUEEN_SUPER_COUNT-rd.length-lg.length,'mulc',{},[TMK,TTS]);   // 14 types / 10 slots → the other 12 take turns
     // the אַלּוּפָה game OPENS on its flagship multiplication card (TMK): keep a
@@ -257,6 +278,11 @@ function makePool(m){
   if(m==='logic')return EX('logic')?EX('logic').make('logic'):[];      // "הִגָּיוֹן 🧠" — the logic game: 15 cards over every logic kind
   if(m==='rhy')return EX('rhyme')?EX('rhyme').make('rhy'):[];           // rhyme-matching only (internal handle)
   if(m==='ice')return EX('ice_cream')?EX('ice_cream').make('ice'):[]; // ice-cream shop only (internal handle)
+  if(m==='deal')return EX('deal')?EX('deal').make('deal'):[];          // dealing in turns only (internal handle)
+  if(m==='pack')return EX('pack')?EX('pack').make('pack'):[];          // packing into boxes only (internal handle)
+  if(m==='fair')return EX('fair')?EX('fair').make('fair'):[];          // make-it-fair only (internal handle)
+  if(m==='cansh')return EX('can_share')?EX('can_share').make('cansh'):[]; // can-it-be-shared only (internal handle)
+  if(m==='bal')return EX('balance')?EX('balance').make('bal'):[];     // balance-scale equality only (internal handle)
   if(m==='mulu')return EX('mult_unknown')?EX('mult_unknown').make('mulu'):[]; // mult-with-unknown only (internal handle)
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
   // then the coins type seeds 1-2 coin problems
@@ -462,4 +488,4 @@ function makeBridge20Pool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='rhy'?15:mode==='lang'?15:mode==='logic'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='mulc'?20:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='rhy'?15:mode==='lang'?15:mode==='logic'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='bal'?15:mode==='deal'?15:mode==='pack'?15:mode==='fair'?15:mode==='cansh'?15:mode==='mulc'?20:mode||5;}

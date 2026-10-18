@@ -1214,7 +1214,27 @@ def _enter_half(page, n=8, k=2):
     page.wait_for_timeout(120)
 
 
+def _half_mistake(page, n, k=2):
+    """Make ONE wrong answer — the try-first unlock: it opens the split and lets
+    the picture be tapped from then on."""
+    _dispatch_enter(page, ".hf-inp", n // k + 1)
+    page.wait_for_function("tryFirst === 1 && !document.querySelector('.hf-root.hf-locked')", timeout=TIMEOUT)
+
+
 class TestHalfSplit:
+    def test_half_tap_before_a_mistake_reveals_nothing(self, page):
+        """Try-first: before her first mistake tapping the kids or the items must
+        NOT show the split (it used to, and gave the share away); no tap tip either."""
+        _enter_half(page, 8)
+        assert page.evaluate("!!document.querySelector('.hf-root.hf-locked')")
+        page.click(".hf-stage")
+        page.click(".hf-kid")
+        page.wait_for_timeout(300)
+        assert not page.evaluate("!!document.querySelector('.hf-root.hf-split')"), \
+            "a tap before any mistake must not open the split"
+        assert not page.locator(".hf-tip").is_visible(), "no 'tap to split' tip before a mistake"
+        assert page.evaluate("tryFirst") == 0
+
     def test_half_loads_and_mounts(self, page):
         """Forcing THF mounts the story + n items pre-grouped in two equal groups,
         split line hidden; no host check button, no number line."""
@@ -1242,7 +1262,7 @@ class TestHalfSplit:
         assert len(gaps) == 7
         assert max(gaps) - min(gaps) <= 3, \
             f"pre-split the row must look continuous (uniform gaps), got {gaps}"
-        page.click(".hf-stage")
+        _half_mistake(page, 8)                        # the mistake opens the split
         page.wait_for_function("!!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
         page.wait_for_timeout(700)                    # let the .45s split settle
         gaps = page.evaluate(gaps_js)
@@ -1255,7 +1275,7 @@ class TestHalfSplit:
         NEVER a layout property (width/margin/padding/left/top) — so it can't reflow
         the row every frame (that's what janked it over the heavy unicorn scene)."""
         _enter_half(page, 9, 3)
-        page.click(".hf-stage")
+        _half_mistake(page, 9, 3)
         page.wait_for_function("!!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
         props = page.evaluate("""() => {
             const line=document.querySelector('.hf-line'), grp=document.querySelector('.hf-grp');
@@ -1266,13 +1286,15 @@ class TestHalfSplit:
                 f"the split must NOT transition the layout property '{bad}' (got {props!r})"
 
     def test_half_tap_toggles_the_middle_split(self, page):
-        """Tapping the items shows the golden middle line (splits into 2 groups);
-        tapping again hides it."""
+        """After the first mistake has opened the split, tapping the items hides the
+        golden middle line, and tapping again shows it."""
         _enter_half(page, 6)
-        page.click(".hf-stage")
+        _half_mistake(page, 6)
         page.wait_for_function("!!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
         page.click(".hf-stage")
         page.wait_for_function("!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
+        page.click(".hf-stage")
+        page.wait_for_function("!!document.querySelector('.hf-root.hf-split')", timeout=TIMEOUT)
 
     def test_half_correct_scores_full(self, page):
         """Typing n/2 on the first try scores full 20 and reveals the split."""
@@ -1914,7 +1936,8 @@ class TestStoryQuiz:
                     'hundreds', 'mult_chain', 'triple_sum', 'polygon'],
             "mulc": ['mult_champ', 'perimeter', 'column_sub', 'column_add', 'compare',
                      'word_prob', 'word_chain', 'triple_sum', 'half', 'plates',
-                     'coin_mul', 'bagel_cost', 'ice_cream', 'mult_unknown'],
+                     'coin_mul', 'bagel_cost', 'ice_cream', 'mult_unknown', 'balance',
+                     'deal', 'pack', 'fair', 'can_share'],
         }
         for mode in ("sup", "mulc"):
             enter_mode(page, mode)
@@ -1925,18 +1948,18 @@ class TestStoryQuiz:
                 " && typeof EXERCISES.types.rhyme==='object'", timeout=TIMEOUT)
             res = page.evaluate("""(base)=>{
                 const R=[TSQ,TCZ,TTF,TWM,TSO,TRH];
-                const expected=base.map(k=>EXERCISES.types[k]&&EXERCISES.types[k].t).filter(Boolean);
+                const expected=base.flatMap(k=>{const t=EXERCISES.types[k]&&EXERCISES.types[k].t;return t?[].concat(t):[];});   // a family file (balance) serves several ptypes
                 let bad=null;const everKind=new Set();
                 for(let iter=0;iter<8 && !bad;iter++){
                     const d=makePool(mode);
                     const at=d.map((p,i)=>R.includes(p.t)?i:-1).filter(i=>i>=0);
                     const kinds=new Set(d.filter(p=>R.includes(p.t)).map(p=>p.t));
                     kinds.forEach(k=>everKind.add(k));
-                    // a type must show up in THIS game or the next one: אַלּוּפָה has more
-                    // types than math slots, so they take turns (_fitTypes)
-                    const d2=makePool(mode);
-                    d2.filter(p=>R.includes(p.t)).forEach(p=>everKind.add(p.t));   // d2 also advances the kind rotation
-                    const nonReading=new Set(d.concat(d2).filter(p=>!R.includes(p.t)).map(p=>p.t));
+                    // a type must show up within THREE consecutive games: אַלּוּפָה has more
+                    // types than math slots (18 rotating types, 8 slots), so they take turns (_fitTypes)
+                    const d2=makePool(mode), d3=makePool(mode);
+                    d2.concat(d3).filter(p=>R.includes(p.t)).forEach(p=>everKind.add(p.t));   // d2/d3 also advance the kind rotation
+                    const nonReading=new Set(d.concat(d2,d3).filter(p=>!R.includes(p.t)).map(p=>p.t));
                     const missing=expected.filter(t=>!nonReading.has(t));
                     if(d.length!==15) bad={reason:'len',len:d.length};   // 15-card deck: 3 reading + 2 logic inside
                     else if(JSON.stringify(at)!=='[3,7,11]') bad={reason:'slots',at};

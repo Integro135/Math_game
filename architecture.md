@@ -118,7 +118,7 @@ subtraction_game/
 │  │                                 Queen + Superman + אַלּוּפָה
 │  │                                 (interactive mount module, #colx-root)
 │  ├─ half.ex.js                   THF "כַּמָּה זֶה חֵצִי" — two friends share
-│  │                                 4/6/8/10/12/14 items EQUALLY; tap → a golden
+│  │                                 4/6/8/10/12/14 items EQUALLY; a MISTAKE → a golden
 │  │                                 middle line splits them in two (first division;
 │  │                                 a JS auto-fit shrinks the row to the card when
 │  │                                 many items). אַלּוּפָה (mount module, #colx-root)
@@ -250,7 +250,7 @@ window.SUCCESS.styles.push({
 Registered screens join the random rotation alongside the 5 built-ins
 (canvas fireworks / confetti / burst / hero / ripple); styles with
 `supportsSuper` also join the every-5th-answer super rotation. The host owns
-the root element, the Enter/Space/click skip, timing (1700 ms / 3500 ms super)
+the root element, the Enter/Space/click skip, timing (2700 ms / 4500 ms super)
 and cleanup. Full brief for authors: `success_screens_spec.md` (includes a
 standalone dev harness). Integration = add the file name to the
 `SUCCESS_FILES` manifest (data.js); bg-loader injects
@@ -372,7 +372,12 @@ Current recipes:
   (Queen keeps teen minuends, a≤19/b≤18 — narrower than Superman's 11–29). A
   guard re-seats slot 0 if it landed on a TCS column problem (the first card
   must show a normal `#ans` input, since the column module renders its own
-  staged UI).
+  staged UI). Since 2026-10 the deck is **16**: the 15-card base (core types +
+  `__+__+__` + one rotating extra) plus ONE balance card (`balance.make('mx')`,
+  the two מֹאזְנַיִם kinds take turns across games) woven in post-cap at index 11 —
+  and since the division request, **17**: + ONE division card at index 5
+  (`_nextDivision`, localStorage `divKind`) walking through the six division kinds
+  (`half`, `ice_cream`, `deal`, `pack`, `fair`, `can_share`), one per game.
 - **Superman (`sup`)** — a BALANCED equal share of every interactive type,
   shuffled: `column_add.make('sup')` (3 = 2-carry + 1 no-carry),
   `big_step.make('sup')` (3 big-number SUBTRACTIONS),
@@ -388,7 +393,12 @@ Current recipes:
   `compare.make('mulc')` (drag-the-sign), `word_prob.make('mulc')` (short nikud
   word problems), `word_chain.make('mulc')` (CHAIN nikud story → a op b op c, result
   0..12), `triple_sum.make('mulc')` (`__+__+__`, no 0/10) and
-  `half.make('mulc')` (share items equally among 2 or 3 — first division)
+  `half.make('mulc')` (share items equally among 2 or 3 — first division),
+  `balance.make('mulc')` (מֹאזְנַיִם — one `__+15=12+__` + one four-numbers-onto-two-pans card),
+  and four division-without-a-division-sign kinds (2026-10): `deal` (dealing in turns),
+  `pack` (how many boxes), `fair` (make uneven plates equal), `can_share` (yes/no, with
+  the leftover). אַלּוּפָה now rotates 18 types through 8 math slots — every type within
+  three games (`_fitTypes`)
   and `plates.make('mulc')` (g plates × s items → total, the multiplication story),
   plus the two basic-multiplication exercises borrowed from Superman —
   `coin_mul.make('mulc')` (how many ₪2/₪5/₪10 coins fit in X) and
@@ -432,7 +442,8 @@ window.EXERCISES.types.column_add = {
 `EXERCISE_OF_TYPE` (data.js) maps a ptype to its file —
 `{ [TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul', [TBC]:'bagel_cost',
 [TPG]:'polygon', [TMC]:'mult_chain', [TMK]:'mult_champ', [TPP]:'perimeter',
-[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half', [TPL]:'plates', [TIC]:'ice_cream' }`. `renderEq` emits a
+[TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half', [TPL]:'plates', [TIC]:'ice_cream',
+[TBE]:'balance', [TSB]:'balance', [TDL]:'deal', [TPK]:'pack', [TFR]:'fair', [TCN]:'can_share' }`. `renderEq` emits a
 single `<div id="colx-root">` for any of them and calls `_colxMount` (core.js).
 `_colxMount` injects `exercises/<name>.ex.js` on demand (bg-loader
 .loadExercise) and mounts it into that root. Its async load callback re-checks

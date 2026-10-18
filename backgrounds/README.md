@@ -1340,7 +1340,41 @@ charges), the school scatters within 220; tap → a charge. A PUFFER
 slower — every 1½–2½ min and on tap (`inflate`). Three CRABS (`CRABS`,
 `drawCrab`/`updateCrab`) scuttle sideways along the centre sand with stepping
 legs and raised claws; tap → a startled hop and a fast scuttle. Six SEA STARS
-(`STARS`) sit on the sand; tapping one summons RUMI. Giants: the blue whale
+(`STARS`) sit on the sand; tapping one summons RUMI.
+
+**The cleaning station (2026-10).** A bluestreak CLEANER WRASSE (`SPECIES.cleaner`,
+`updateCleaner`, z 0.03 so it draws over its client) keeps `STATION` — set by the
+layout over the left shelf (`onRock(L1, 0.42)` wide, `onRock(A, 0.3)` narrow),
+`side:1` so clients pose toward the open water, clear of the game card. It bobs
+its advertising dance (a pitch oscillation layered on after `integrate`, via
+`F.basePitch`), harder while a client approaches. `stationTick` turns one fish
+SPOTTY every 16–34 s (never more than two at once; `CLIENT_KINDS` = dory, the
+butterflyfish leader, the tangs, the grammas, the sharks, with 2–6 spots by kind).
+`makeSpots` places them in local fish coords, sized in DESIGN px (a gramma's spots
+are as visible as a shark's), inside the body outline (`insidePoly` on the species
+body / `SHARK_BODY`), clear of each other; `drawSpots` runs after any drawer in
+`drawFishFull`, following the tail flex. A spotty fish roams 6–12 s, then — when
+the station is free — goes (`cs:'going'`, `updateClient`, no fleeing), hangs at
+`posePoint` head-up, mouth open, facing the wrasse (`cs:'posing'`, it and the
+wrasse never startle the polyps or clams), while the wrasse puts its mouth on the
+nearest spot (`spotXY`), nibbles ~1 s (the spot shrinks as it fades, `CRUMBS`
+sink away) and moves on. Clean → two hearts, it swims off, the wrasse dances.
+Tap a spotty fish → it goes next; tap the wrasse → it dances. Hooks:
+`_reef2.station()` (incl. `sign:{x,y,w,h,lit}`), `_reef2.soil(kind)`.
+
+**The neon sign** (`SIGN`, `signBox`/`bakeSign`/`drawSign`): a dark panel on a post
+that stands on the station's rock, LEFT of the station (the client poses on the
+right), clamped on screen; scaled down on narrow layouts. "תַּחֲנַת נִקּוּי" in
+solid neon letters (filled glyphs, not outlines — stroked Hebrew read hollow), a
+pink border tube and three bubbles. Dark (unlit glass) between visits; when a
+client starts POSING it flickers on (`flick`, ~0.75 s), then blinks while the
+wrasse works — the lettering winks off ~0.2 s every 1.2 s, the border pulses, the
+bubbles chase — and flickers off when the client leaves. The glow is baked once
+per resize with `shadowBlur` into small sprites (base + text + border + 3
+bubbles) and re-baked when `document.fonts` settles; a frame is one base blit plus
+up to five small additive ones, drawn behind the near fish.
+
+Giants: the blue whale
 (2050 long, riding just under the surface at y 232–262; first 60–110 s, then
 every 220–340 s) and the orca (950 long; 18–45 s, then 90–160 s), never both,
 drawn BEHIND the reef band; fish flee when one passes close. RUMI

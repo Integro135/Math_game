@@ -63,11 +63,10 @@ fills at runtime.
 - **`DIFFICULTY_GROUPS`** — the difficulty picker config: two tiers (`easy`,
   `medium`) each holding mode descriptors `{id,label}`. Note ids mix **numbers**
   (`0,5,10,20`) and **strings** (`'big','br','mx','sup'`).
-- **`SUCCESS_FILES`** — manifest of per-answer celebration screen files (36 of
-  them) injected at boot. The newest four are `success-treasure-chest`,
-  `success-sky-lanterns`, `success-prism-rainbow`, `success-enchanted-tree`
-  (preceded by phoenix-rising / peacock-fan / kaleidoscope-bloom / birthday-cake
-  / carousel-spin) — all join the random rotation.
+- **`SUCCESS_FILES`** — manifest of per-answer celebration screen files (65 of
+  them, in order of addition) injected at boot. The newest ten (2026-10) are
+  `success-whale-spout` … `success-sticker-book`; they replaced the ten oldest
+  (supernova … aurora-glow) — all join the random rotation.
 - **`SUCCESS_SPECIAL`** — manifest of *special* milestone screens
   (`gift/success-gift-surprise`), not part of the rotation.
 

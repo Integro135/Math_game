@@ -34,16 +34,6 @@
 <div class="skins" id="skins"><span class="lbl">סקין:</span></div>
 <div class="bar" id="bar"></div>
 
-<script src="success-comet-shower.js"></script>
-<script src="success-constellation-heart.js"></script>
-<script src="success-unicorn-rainbow.js"></script>
-<script src="success-supernova.js"></script>
-<script src="success-lightning-storm.js"></script>
-<script src="success-electric-orb.js"></script>
-<script src="success-blooming-garden.js"></script>
-<script src="success-black-hole-stars.js"></script>
-<script src="success-star-race.js"></script>
-<script src="success-aurora-glow.js"></script>
 <script src="success-bubble-pop.js"></script>
 <script src="success-magic-wand.js"></script>
 <script src="success-rocket-launch.js"></script>
@@ -70,6 +60,45 @@
 <script src="success-treasure-chest.js"></script>
 <script src="success-prism-rainbow.js"></script>
 <script src="success-enchanted-tree.js"></script>
+<script src="success-sandcastle.js"></script>
+<script src="success-ice-cream-tower.js"></script>
+<script src="success-jellyfish-glow.js"></script>
+<script src="success-hot-air-balloon.js"></script>
+<script src="success-kite-festival.js"></script>
+<script src="success-turtle-lagoon.js"></script>
+<script src="success-ferris-wheel.js"></script>
+<script src="success-moon-swing.js"></script>
+<script src="success-star-train.js"></script>
+<script src="success-paper-cranes.js"></script>
+<script src="success-snow-globe.js"></script>
+<script src="success-crystal-gem.js"></script>
+<script src="success-love-letter.js"></script>
+<script src="success-daisy-ring.js"></script>
+<script src="success-ringed-planet.js"></script>
+<script src="success-baby-dragon.js"></script>
+<script src="success-pearl-shell.js"></script>
+<script src="success-domino-cascade.js"></script>
+<script src="success-owl-wink.js"></script>
+<script src="success-magic-lamp.js"></script>
+<script src="success-ladybug-flight.js"></script>
+<script src="success-heart-lock.js"></script>
+<script src="success-sunflower-grow.js"></script>
+<script src="success-kitten-yarn.js"></script>
+<script src="success-star-jar.js"></script>
+<script src="success-honeycomb-bee.js"></script>
+<script src="success-ufo-beam.js"></script>
+<script src="success-penguin-slide.js"></script>
+<script src="success-rain-cloud.js"></script>
+<script src="success-whale-spout.js"></script>
+<script src="success-lighthouse-beam.js"></script>
+<script src="success-cherry-blossom.js"></script>
+<script src="success-hedgehog-roll.js"></script>
+<script src="success-fox-wish.js"></script>
+<script src="success-snail-trail.js"></script>
+<script src="success-gingerbread-house.js"></script>
+<script src="success-koala-hug.js"></script>
+<script src="success-bubble-tea.js"></script>
+<script src="success-sticker-book.js"></script>
 <!-- special reward screen — NOT in the rotation; registers into SUCCESS.special.gift -->
 <script src="gift/success-gift-surprise.js"></script>
 <script>
@@ -128,7 +157,7 @@ function runScreen(style,isSuper,praise){
   bd.style.cssText='position:absolute;inset:0;opacity:0;transition:opacity .26s ease;background:'+randBackdrop(sk.palette);
   root.appendChild(bd);
   document.body.appendChild(root);
-  const dur=isSuper?3500:1700;
+  const dur=isSuper?4500:2700;   // mirrors success.js showFw
   requestAnimationFrame(()=>{bd.style.opacity='1';});
   bdTO=setTimeout(()=>{bd.style.transition='opacity .34s ease';bd.style.opacity='0';},Math.max(0,dur-300));
   const c=style.show({root,isSuper,durationMs:dur,points:20,palette:sk.palette,praise:praise||'כָּל הַכָּבוֹד!'});

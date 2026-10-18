@@ -604,7 +604,7 @@ class TestColumnSubtraction:
         seen_any = False
         for _ in range(6):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 15", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
             tcs = page.evaluate(
                 "[...problems].filter(p => p.t === TCS).map(p => ({a:p.a, b:p.b}))")
             assert len(tcs) >= 1, "mx must contain ≥1 column-subtraction problem"

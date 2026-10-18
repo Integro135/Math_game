@@ -224,9 +224,9 @@ window.EXERCISES.types.ice_cream=(()=>{
 
   return{
     t:TIC,
-    modes:['ice','mulc'],   // אַלּוּפָה + the internal tester handle
+    modes:['ice','mx','mulc'],   // אַלּוּפָה, Queen's division turn + the internal tester handle
     aidsReveal:'always',    // no number-line aid — the shop tray is the manipulative
-    make(mode){return (mode==='ice'||mode==='mulc')?makePool():[];},
+    make(mode){return (mode==='ice'||mode==='mulc')?makePool():mode==='mx'?sh(makePool()).slice(0,1):[];},
     mount,
   };
 })();

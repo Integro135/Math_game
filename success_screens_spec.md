@@ -60,7 +60,7 @@ Your file registers one (or more) styles:
      *                         Build everything inside it.
      * @param opts.isSuper     true on every 5th correct answer — bigger, longer.
      * @param opts.durationMs  how long the host will display you before
-     *                         auto-advancing (1700 normal / 3500 super).
+     *                         auto-advancing (2700 normal / 4500 super).
      *                         Plan the animation to feel COMPLETE by then.
      * @param opts.points      stars just earned (number) — optional to display.
      * @param opts.palette     colors that match the active background skin:
@@ -119,9 +119,7 @@ exactly and lets you switch skins.
 
 There are NO built-in screens any more — every celebration is an external file in
 `success_screens/`. Before adding one, skim that folder so you don't duplicate an
-existing idea (comet shower, constellation heart, unicorn rainbow, supernova,
-lightning storm, electric orb, blooming garden, black-hole stars, star race,
-aurora glow, bubble pop, magic wand, rocket launch, princess crown, butterfly
+existing idea (bubble pop, magic wand, rocket launch, princess crown, butterfly
 swarm, snow sparkle, dolphin splash, fireworks, confetti, shooting stars,
 balloons, trophy, paint splash, music notes, pinwheel, fireflies, ribbons,
 phoenix rising, peacock fan, kaleidoscope bloom, birthday cake, carousel spin,
@@ -131,7 +129,11 @@ turtle lagoon, ferris wheel, moon swing, star train, paper cranes, snow globe,
 crystal gem, love letter, daisy ring, ringed planet, baby dragon, pearl shell,
 domino cascade, owl wink, magic lamp, ladybug flight, heart lock,
 sunflower grow, kitten & yarn, star jar, honeycomb bee, UFO beam, penguin
-slide, rain cloud …).
+slide, rain cloud, whale spout, lighthouse beam, cherry blossom, hedgehog roll,
+fox wish, snail trail, gingerbread house, koala hug, bubble tea,
+sticker book …). The ten oldest screens (supernova, comet shower,
+constellation heart, electric orb, lightning storm, blooming garden, unicorn
+rainbow, black-hole stars, star race, aurora glow) were retired in 2026-10.
 There are currently **65** rotation screens registered in `SUCCESS_FILES`
 (game/js/data.js), plus the **gift** reward screen in `SUCCESS_SPECIAL`.
 
@@ -185,7 +187,7 @@ function run(isSuper){
   const root=document.createElement('div');
   root.style.cssText='position:fixed;inset:0;z-index:50;pointer-events:none';
   document.body.appendChild(root);
-  const dur=isSuper?3500:1700;
+  const dur=isSuper?4500:2700;
   const style=window.SUCCESS.styles[0];
   const c=style.show({root,isSuper,durationMs:dur,points:20,
     palette:{primary:'#C77DFF',accent:'#FFD27D',glow:'#7DC4FF',text:'#FFFFFF'},
@@ -210,7 +212,7 @@ needed, and remove them in cleanup).
 - [ ] Works from `file://`, zero external resources
 - [ ] `show()` returns a cleanup that removes ALL traces (DOM, rAF, timers, listeners)
 - [ ] Pressing skip mid-animation leaves no artifacts (test repeatedly, fast)
-- [ ] Normal variant reads complete in ≤1.7s; super in ≤3.5s
+- [ ] Normal variant reads complete in ≤2.7s; super in ≤4.5s
 - [ ] Uses `opts.palette`; looks great over the dark-space AND pink harness backgrounds
 - [ ] Hebrew praise: feminine, with niqqud
 - [ ] Smooth (no jank) with the harness; no console errors

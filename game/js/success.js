@@ -239,7 +239,7 @@ function _introVersion(){
    screen renders its praise via textContent on one DOM element, so we find that
    element and append a small version label as a CHILD — it then rides the
    title's own scale/opacity animation and always sits directly under it,
-   whichever of the 36 screens is playing. */
+   whichever of the 65 screens is playing. */
 function _introAddVersion(title){
   const ver=_introVersion();
   if(!ver||!_introRoot)return;

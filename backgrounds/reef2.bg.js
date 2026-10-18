@@ -29,6 +29,16 @@
      couple of minutes and on tap
    · CRABS scuttling sideways along the sand (tap → a startled hop), sea
      stars on the bottom (tap → summons RUMI)
+   · THE CLEANING STATION on the left shelf: a bluestreak CLEANER WRASSE
+     bobs its "dance" over a coral head; now and then a fish turns SPOTTY
+     (little parasites), roams a while, then swims over and hangs head-up
+     with its mouth open while the wrasse picks the spots off one by one
+     (a nibble, the spot shrinks away, crumbs sink) — clean, it leaves with
+     a heart. Dory, the butterflyfish, the tangs, the grammas and even the
+     sharks come in. Tap a spotty fish → it goes to the station now. A NEON
+     SIGN on a post beside it ("תַּחֲנַת נִקּוּי") stands dark between visits,
+     flickers on when a client starts posing and BLINKS while the wrasse
+     works (the text winks, three neon bubbles chase), then flickers off
    · THE CORALS THEMSELVES LIVE: every hard coral registers its polyps while
      it is baked, and those pulse per frame in a slow wave across the reef
      (a few batched paths) and PULL IN when a fish brushes past; christmas-
@@ -966,6 +976,7 @@
         p = onRock(L1, -0.55); still(p[1] + 8, g => paintBrain(g, { x: p[0], y: p[1] - 6, r: 62, sd: 101, z: 0.12, pal: 0 }));
         p = onRock(L1, 0.15); { const q = p; still(q[1] + 6, g => paintTable(g, { x: q[0], y: q[1], w: 150, sd: 102, z: 0.12, pal: 1 })); }
         p = onRock(L1, 0.72); { const q = p; still(q[1] + 4, g => paintStaghorn(g, { x: q[0], y: q[1], h: 120, sd: 103, z: 0.11, pal: 1 })); }
+        p = onRock(L1, 0.42); STATION = { x: p[0], y: p[1] - 40, side: 1, rock: L1, cleaner: null, client: null, nextDirty: null, served: 0 };   // the cleaning station: over the table coral, clients pose toward the open water
         p = onRock(L1, -0.95); { const q = p; still(q[1] + 4, g => paintTubes(g, { x: q[0] + 20, y: q[1] + 10, h: 90, sd: 104, z: 0.12, pal: 0 })); }
         p = onRock(L2, -0.5); { const q = p; still(q[1] + 4, g => paintBoulder(g, { x: q[0], y: q[1] - 4, r: 48, sd: 105, z: 0.10, pal: 0, worms: 3 })); }
         p = onRock(L2, 0.45); anemoneAt(p[0], p[1] + 2, 66, 106, 0.09, 0, 120, false);
@@ -1045,6 +1056,7 @@
         p = onRock(A, 0.05); { const q = p; still(q[1] + 4, g => paintStaghorn(g, { x: q[0], y: q[1], h: 96 * sz, sd: 103, z: 0.11, pal: 1 })); }
         p = onRock(A, -0.95); { const q = p; still(q[1] + 4, g => paintTubes(g, { x: q[0] + 12, y: q[1] + 8, h: 70 * sz, sd: 104, z: 0.11, pal: 0 })); }
         p = onRock(A, 0.6); anemoneAt(p[0], p[1] + 2, 54 * sz, 106, 0.09, 0, 100, false);
+        p = onRock(A, 0.3); STATION = { x: p[0], y: p[1] - 34 * sz, side: 1, rock: A, cleaner: null, client: null, nextDirty: null, served: 0 };   // the cleaning station over the staghorn
         p = onRock(A, 0.98); fanAt(p[0], p[1] + 6, 70 * sz, 108, 0.1, 0, false);
         // right shelf: lettuce, fingers, mushroom, the second anemone, soft coral, boulder with worms
         p = onRock(B, 0.45); { const q = p; still(q[1] + 3, g => paintLettuce(g, { x: q[0], y: q[1], w: 96 * sz, sd: 126, z: 0.10, pal: 1 })); }
@@ -1294,6 +1306,17 @@
             g.fillStyle = P.black; g.beginPath(); g.arc(-0.15, -0.16, 0.03, 0, TAU); g.fill();
           },
         },
+        cleaner: {   // bluestreak cleaner wrasse: slender, pale front, a black stripe widening to the tail, a blue rear
+          body: [[0.5, 0.0], [0.42, -0.06], [0.2, -0.12], [-0.1, -0.125], [-0.38, -0.085], [-0.5, -0.04], [-0.5, 0.04], [-0.38, 0.085], [-0.1, 0.12], [0.2, 0.11], [0.42, 0.06]],
+          tail: { kind: 'round', len: 0.18, h: 0.12 }, dorsal: [[0.22, -0.11], [0.08, -0.17], [-0.3, -0.165], [-0.43, -0.07]], anal: [[-0.02, 0.11], [-0.12, 0.165], [-0.35, 0.14], [-0.43, 0.07]],
+          pelvic: null, pect: [0.2, 0.03, 0.12], eye: [0.38, -0.015, 0.036, [150, 205, 255]],
+          col: { top: [232, 236, 226], bot: [252, 252, 248], fin: [120, 160, 240], edge: [20, 30, 60], tail: [40, 95, 230] },
+          pattern(g, P){
+            // the electric-blue wash over the rear, then the black stripe from the snout through the eye
+            g.fillStyle = P.tail; g.globalAlpha *= 0.8; g.beginPath(); smoothPath(g, [[-0.08, -0.14], [-0.3, -0.13], [-0.5, -0.07], [-0.5, 0.07], [-0.3, 0.13], [-0.1, 0.14], [-0.22, 0.0]], P.wp, true); g.fill(); g.globalAlpha /= 0.8;
+            g.fillStyle = P.black; g.beginPath(); smoothPath(g, [[0.5, -0.016], [0.3, -0.03], [0.0, -0.036], [-0.3, -0.05], [-0.5, -0.07], [-0.5, 0.07], [-0.3, 0.045], [0.0, 0.03], [0.3, 0.024], [0.5, 0.016]], P.wp, true); g.fill();
+          },
+        },
         chromis: {
           body: [[0.5, 0.0], [0.35, -0.12], [0.05, -0.2], [-0.3, -0.16], [-0.5, -0.05], [-0.5, 0.05], [-0.3, 0.16], [0.05, 0.2], [0.35, 0.12]],
           tail: { kind: 'fork', len: 0.3, h: 0.22 }, dorsal: [[0.2, -0.16], [0.0, -0.27], [-0.3, -0.24], [-0.4, -0.12]], anal: [[-0.05, 0.18], [-0.2, 0.27], [-0.4, 0.12]],
@@ -1442,7 +1465,7 @@
       }
       const ventOf = F => { const s = F.s * (1 - F.z * 0.55); return [F.x - F.face * s * 0.4, F.y + s * 0.12]; };
       const DRAWERS = { dolphin: (g, F, t) => drawDolphin(g, F, t), shark: (g, F, t) => drawShark(g, F, t), puffer: (g, F, t) => drawPuffer(g, F, t) };
-      const drawFishFull = (g, F, t, dt) => { (DRAWERS[F.kind] || drawFish)(g, F, t); const v = ventOf(F); updatePoop(g, F, t, dt, v[0], v[1], Math.min(3, Math.max(1, F.s * 0.03))); };
+      const drawFishFull = (g, F, t, dt) => { (DRAWERS[F.kind] || drawFish)(g, F, t); if (F.spots) drawSpots(g, F, t); const v = ventOf(F); updatePoop(g, F, t, dt, v[0], v[1], Math.min(3, Math.max(1, F.s * 0.03))); };
 
       // ── bubble puff + hearts ──
       function puff(x, y, n){ for (let i = 0; i < (n || 6); i++) BUBBLES.push({ x: x + (Math.random() - 0.5) * 16, y: y + (Math.random() - 0.5) * 10, r: 1.2 + Math.random() * 2.5, v: 30 + Math.random() * 40, ph: Math.random() * TAU, t0: lastT + Math.random() * 0.3 }); }
@@ -1620,6 +1643,7 @@
       }
 
       // ── SHARK: blacktip reef shark — heterocercal tail, black-tipped fins, gill slits ──
+      const SHARK_BODY = [[0.5, 0.02], [0.45, -0.035], [0.32, -0.08], [0.12, -0.1], [-0.1, -0.09], [-0.3, -0.06], [-0.45, -0.03], [-0.5, -0.015], [-0.5, 0.015], [-0.45, 0.035], [-0.3, 0.07], [-0.1, 0.1], [0.12, 0.1], [0.32, 0.085], [0.45, 0.05]];
       function drawShark(g, F, t){
         const s = F.s * (1 - F.z * 0.55), wag = Math.sin(F.ph) * F.wagAmp, wp = mkWarp(wag * 1.0);
         const P = pal(F, () => { const H = c => rgb(haze(c, F.y, F.z)); return { top: H([116, 114, 106]), mid: H([160, 158, 150]), belly: H([232, 230, 222]), black: H([24, 22, 24]), edge: rgb(haze([40, 40, 40], F.y, F.z), 0.45), gill: rgb(haze([60, 58, 54], F.y, F.z), 0.7) }; });
@@ -1634,7 +1658,7 @@
         // far pectoral
         g.fillStyle = P.mid; g.beginPath(); g.moveTo(0.2, 0.06); g.quadraticCurveTo(0.05, 0.14, -0.06, 0.2); g.quadraticCurveTo(0.06, 0.1, 0.12, 0.08); g.closePath(); g.fill();
         // body
-        const body = [[0.5, 0.02], [0.45, -0.035], [0.32, -0.08], [0.12, -0.1], [-0.1, -0.09], [-0.3, -0.06], [-0.45, -0.03], [-0.5, -0.015], [-0.5, 0.015], [-0.45, 0.035], [-0.3, 0.07], [-0.1, 0.1], [0.12, 0.1], [0.32, 0.085], [0.45, 0.05]];
+        const body = SHARK_BODY;
         g.beginPath(); smoothPath(g, body, wp, true);
         g.fillStyle = lg(g, 0, -0.1, 0, 0.1, [[0, P.top], [0.5, P.mid], [0.66, P.belly], [1, P.belly]]); g.fill();
         g.save(); g.clip();
@@ -1782,6 +1806,206 @@
       }
       function inflate(F, t){ if (F.puffT0 === undefined){ F.puffT0 = t; puff(F.x, F.y, 5); } }
 
+      // ── THE CLEANING STATION: the wrasse keeps a spot above a coral head on the
+      //    left shelf. A fish gets SPOTTY (2-6 parasites, by kind), roams for a few
+      //    seconds, then — when the station is free — swims to the POSE point beside
+      //    it, hangs there head-up with its mouth open, facing the wrasse, while the
+      //    wrasse nibbles each spot away. Clean → hearts, and it swims off. ──
+      let STATION = null;                                        // { x, y, side, cleaner, client, nextDirty, served } — set by the layout
+      const CRUMBS = [];                                         // nibbled-off bits sinking away
+      const CLIENT_KINDS = { dory: [3, 5], bfly: [3, 4], tang: [3, 5], gramma: [2, 3], shark: [4, 6] };   // spots per visit
+      const bodyOf = F => F.kind === 'shark' ? SHARK_BODY : SPECIES[F.kind].body;
+      function insidePoly(pts, x, y){
+        let c = false;
+        for (let i = 0, j = pts.length - 1; i < pts.length; j = i++){ const xi = pts[i][0], yi = pts[i][1], xj = pts[j][0], yj = pts[j][1]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; }
+        return c;
+      }
+      // spots in the fish's local coords (body length 1), sized in DESIGN px so a
+      // small gramma's spots are as visible as a shark's; each sits well inside the
+      // outline, clear of the eye and of the other spots
+      function makeSpots(F){
+        const body = bodyOf(F), [lo, hi] = CLIENT_KINDS[F.kind], n = lo + Math.floor(Math.random() * (hi - lo + 1));
+        const s = F.s * (1 - F.z * 0.55), out = [];
+        for (let tries = 0; out.length < n && tries < 300; tries++){
+          const u = -0.32 + Math.random() * 0.58, v = (Math.random() - 0.5) * 0.6, r = ((F.kind === 'shark' ? 4.2 : s < 40 ? 2.3 : 2.8) + Math.random() * 1.4) / s;
+          if (!insidePoly(body, u * 1.18, v * 1.18) || !insidePoly(body, u, v - r * 1.4) || !insidePoly(body, u, v + r * 1.4)) continue;
+          if (out.some(p => Math.hypot(p.u - u, p.v - v) * s < (p.r + r) * s + (s < 40 ? 1.2 : 3))) continue;
+          out.push({ u, v, r, a: 1, t0: 0 });
+        }
+        return out;
+      }
+      function soil(F, t){ F.spots = makeSpots(F); F.spots.forEach((p, i) => { p.t0 = t + i * 0.35; }); F.cs = 'dirty'; F.cleanAt = t + 6 + Math.random() * 6; }
+      // a spot's position on screen (design coords), following the fish's transform and tail flex
+      function spotXY(F, p){
+        const s = F.s * (1 - F.z * 0.55), lx = p.u * F.face * s, ly = warpY(Math.sin(F.ph) * F.wagAmp * 0.9, p.u, p.v) * s, c = Math.cos(F.pitch), sn = Math.sin(F.pitch);
+        return [F.x + lx * c - ly * sn, F.y + lx * sn + ly * c];
+      }
+      function drawSpots(g, F, t){
+        const s = F.s * (1 - F.z * 0.55), wag = Math.sin(F.ph) * F.wagAmp * 0.9;
+        g.save(); g.translate(F.x, F.y); g.rotate(F.pitch); g.scale(F.face * s, s);
+        const a0 = F.alpha === undefined ? 1 : F.alpha;
+        for (const p of F.spots){
+          const a = Math.max(0, Math.min(1, (t - p.t0) / 1.2)) * p.a; if (a <= 0.01) continue;
+          const x = p.u, y = warpY(wag, p.u, p.v), r = p.r * (0.45 + 0.55 * p.a);   // a nibbled spot shrinks as it fades
+          g.globalAlpha = a0 * a;
+          g.fillStyle = 'rgba(86,60,38,0.92)'; g.beginPath(); g.arc(x, y, r, 0, TAU); g.moveTo(x + r * 1.25, y + r * 0.3); g.arc(x + r * 0.6, y + r * 0.3, r * 0.65, 0, TAU); g.fill();
+          g.fillStyle = 'rgba(176,146,104,0.85)'; g.beginPath(); g.arc(x - r * 0.3, y - r * 0.35, r * 0.32, 0, TAU); g.fill();
+        }
+        g.restore();
+      }
+      function posePoint(F){ const s = F.s * (1 - F.z * 0.55); return [STATION.x + STATION.side * (14 + s * 0.42), STATION.y - 4 - s * 0.04]; }
+      function stationTick(t){
+        const ST = STATION; if (!ST || !ST.cleaner) return;
+        if (ST.nextDirty === null) ST.nextDirty = t + 8 + Math.random() * 8;
+        if (t > ST.nextDirty){                                   // a new client turns spotty (never more than two at once)
+          ST.nextDirty = t + 16 + Math.random() * 18;
+          if (FISH.filter(F => F.spots).length < 2){
+            const pool = FISH.filter(F => CLIENT_KINDS[F.kind] && !F.follow && !F.spots);
+            if (pool.length) soil(pool[Math.floor(Math.random() * pool.length)], t);
+          }
+        }
+        if (!ST.client){                                         // the station is free: the spotty fish that has waited longest goes next
+          let best = null;
+          for (const F of FISH) if (F.cs === 'dirty' && t > F.cleanAt && (!best || F.cleanAt < best.cleanAt)) best = F;
+          if (best){ ST.client = best; best.cs = 'going'; best.goT0 = t; best.lastD = 1e9; best.target = null; best.wait = 0; }
+        }
+      }
+      function updateClient(F, t, dt){
+        const pp = posePoint(F), px = pp[0], py = pp[1];
+        if (F.cs === 'going'){
+          const d = steer(F, px, py, F.spd * 1.3, dt, 2.4); integrate(F, dt, t);
+          if (d < 16 || (d < 90 && d > F.lastD + 0.25) || t - F.goT0 > 25){ F.cs = 'posing'; F.poseT0 = t; }
+          F.lastD = d; return;
+        }
+        // posing: hang still beside the station, head up, mouth open, facing the wrasse
+        const k = Math.min(1, dt * 2.2);
+        F.x += (px - F.x) * k; F.y += (py + Math.sin(t * 1.3) * 3 - F.y) * k;
+        F.vx *= 0.8; F.vy *= 0.8;
+        const want = -STATION.side; F.face += (want - F.face) * Math.min(1, dt * 3); if (Math.abs(F.face) < 0.05) F.face = want * 0.05;
+        F.pitch += (-0.24 * Math.sign(F.face) - F.pitch) * Math.min(1, dt * 2);
+        F.ph += dt * 2.2; F.wagAmp += (0.04 - F.wagAmp) * k;
+        F.mouth = 0.45 + 0.15 * Math.sin(t * 2.4);
+      }
+      function finishClient(C, t){
+        C.cs = null; C.spots = null; STATION.client = null; STATION.served++;
+        for (let i = 0; i < 2; i++) HEARTS.push({ x: C.x + (Math.random() - 0.5) * 20, y: C.y - C.s * 0.25, t0: t + i * 0.3, ph: Math.random() * TAU, s: 8 + Math.random() * 5 });
+        puff(C.x, C.y, 4);
+        if (C.home) newTarget(C, t, lerp(C.home[0], C.home[1], Math.random()), lerp(C.home[2], C.home[3], Math.random()));
+        C.wait = 0; C.mouth = 0; C.mouthAt = t + 4;
+        STATION.cleaner.danceUntil = t + 2.5;                    // a happy little dance
+      }
+      function updateCleaner(F, t, dt){
+        const ST = STATION, C = ST.client;
+        if (F.basePitch !== undefined) F.pitch = F.basePitch;    // drop last frame's dance bob before steering
+        const cs = F.s * (1 - F.z * 0.55);
+        let bob = 0;
+        if (C && C.cs === 'posing'){
+          if (!F.spot || !C.spots.includes(F.spot)){
+            // the next spot: the one nearest the wrasse, approached from the side it is on
+            let best = null, bd = 1e9;
+            for (const p of C.spots){ const q = spotXY(C, p), d = Math.hypot(q[0] - F.x, q[1] - F.y); if (d < bd){ bd = d; best = p; } }
+            F.spot = best; F.nibbling = false;
+            if (!best){ finishClient(C, t); F.basePitch = F.pitch; return; }
+            F.fc = spotXY(C, best)[0] >= F.x ? 1 : -1;
+          }
+          const q = spotXY(C, F.spot), tx = q[0] - F.fc * cs * 0.47, ty = q[1] + cs * 0.02, d = Math.hypot(tx - F.x, ty - F.y);
+          if (!F.nibbling){
+            steer(F, tx, ty, Math.min(70, 10 + d * 1.6), dt, 6); integrate(F, dt, t);
+            if (d < 4){ F.nibbling = true; F.nibT0 = t; }
+          } else {
+            // nibble: mouth on the spot, quick pecks, the spot shrinks away
+            F.x += (tx - F.x) * Math.min(1, dt * 10); F.y += (ty - F.y) * Math.min(1, dt * 10);
+            F.vx = F.fc * 2; F.vy = 0; F.face += (F.fc - F.face) * Math.min(1, dt * 6);
+            F.ph += dt * 6; F.mouth = 0.5 + 0.5 * Math.sin(t * 24); bob = Math.sin(t * 18) * 0.08;
+            F.spot.a -= dt / 1.1;
+            if (F.spot.a <= 0){
+              C.spots.splice(C.spots.indexOf(F.spot), 1);
+              for (let i = 0; i < 4; i++) CRUMBS.push({ x: q[0], y: q[1], vx: (Math.random() - 0.5) * 18, vy: 4 + Math.random() * 10, t0: t, r: 0.9 + Math.random() * 0.9 });
+              F.spot = null; F.nibbling = false;
+            }
+          }
+        } else {
+          F.spot = null; F.nibbling = false;
+          // the advertising DANCE over the station: the rear half bobs up and down, harder while a client approaches
+          const eager = (C && C.cs === 'going') || (F.danceUntil && t < F.danceUntil);
+          const hx = ST.x + Math.sin(t * 0.5 + F.ph0) * 16, hy = ST.y + Math.sin(t * 0.9) * 6;
+          steer(F, hx, hy, 12 + Math.hypot(hx - F.x, hy - F.y) * 1.2, dt, 3); integrate(F, dt, t);
+          bob = Math.sin(t * 7.5) * (eager ? 0.3 : 0.13);
+          F.wagAmp = eager ? 0.17 : F.wagAmp;
+        }
+        F.basePitch = F.pitch; F.pitch += bob;
+      }
+      function drawCrumbs(g, t, dt){
+        if (!CRUMBS.length) return;
+        g.fillStyle = 'rgba(96,70,44,0.85)';
+        for (let i = CRUMBS.length - 1; i >= 0; i--){ const p = CRUMBS[i]; if (t - p.t0 > 2.4){ CRUMBS.splice(i, 1); continue; } p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.96; }
+        g.beginPath(); for (const p of CRUMBS){ const r = p.r * (1 - (t - p.t0) / 2.4 * 0.6); g.moveTo(p.x + r, p.y); g.arc(p.x, p.y, r, 0, TAU); } g.fill();
+      }
+
+      // ── the station's NEON SIGN: a dark panel on a post beside the station, its
+      //    glass tubes unlit between visits. When a client starts POSING it
+      //    flickers on like real neon, then blinks while the wrasse works — the
+      //    lettering winks off for a beat every ~1.2 s, three neon bubbles chase
+      //    under it — and flickers off when the client leaves. The glow is BAKED
+      //    (shadowBlur once, per resize) into a few small sprites; a frame costs
+      //    one base blit plus up to five small additive ones. ──
+      const SIGN = { cv: null, lit: 0, onT: -99, offT: -99, was: false };
+      const SIGN_TXT = 'תַּחֲנַת נִקּוּי', SIGN_FONT = "bold 28px 'Arial Rounded MT Bold', Arial, 'Noto Sans Hebrew', sans-serif";
+      function signBox(){
+        // design-space rect: left of the station (the posing client is on its right), clamped on screen
+        const k = NARROW ? Math.max(0.62, Math.min(0.85, DW / 560)) : 1, w = 168 * k, h = 74 * k;
+        const ST = STATION, cx = Math.max(w / 2 + 6, Math.min(DW - w / 2 - 6, ST.x - ST.side * 34 * k));
+        const R = ST.rock, u = R ? Math.max(-1, Math.min(1, (cx - R.x) / (R.rx * 0.82))) : 0;
+        const foot = R ? R.y - R.ry * Math.sqrt(Math.max(0, 1 - u * u * 0.67)) * 0.92 + 10 : ST.y + 40;   // the post stands on the rock
+        return { x: cx - w / 2, y: ST.y - 96 * k - h, w, h, k, cx, foot };
+      }
+      function bakeSign(){
+        const B = signBox(), pad = 16, sc = Math.min(3, S * DPR), W_ = Math.ceil((B.w / B.k + pad * 2) * B.k * sc), H_ = Math.ceil((B.h / B.k + pad * 2) * B.k * sc);
+        const mk = () => { const cv = doc.createElement('canvas'); cv.width = W_; cv.height = H_; const g = cv.getContext('2d'); g.scale(B.k * sc, B.k * sc); g.translate(pad, pad); return { cv, g }; };
+        const w = B.w / B.k, h = B.h / B.k;
+        const rr = (g, x, y, ww, hh, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + ww, y, x + ww, y + hh, r); g.arcTo(x + ww, y + hh, x, y + hh, r); g.arcTo(x, y + hh, x, y, r); g.arcTo(x, y, x + ww, y, r); g.closePath(); };
+        const text = (g, col) => { g.font = SIGN_FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.direction = 'rtl'; g.fillStyle = col; g.fillText(SIGN_TXT, w / 2, h * 0.4); };   // solid letters: the tube IS the glyph
+        const border = (g, col, lw) => { g.strokeStyle = col; g.lineWidth = lw; rr(g, 6, 6, w - 12, h - 12, 10); g.stroke(); };
+        const bub = (g, i, col, lw) => { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); g.arc(w / 2 + (i - 1) * 22, h * 0.76, 4.2 + (i === 1 ? 1.2 : 0), 0, TAU); g.stroke(); };
+        // base: the panel and its UNLIT glass tubes
+        const base = mk(); let g = base.g;
+        g.fillStyle = 'rgba(8,18,40,0.78)'; rr(g, 0, 0, w, h, 14); g.fill();
+        g.strokeStyle = 'rgba(150,170,200,0.55)'; g.lineWidth = 2; rr(g, 0, 0, w, h, 14); g.stroke();
+        border(g, 'rgba(230,150,200,0.28)', 2.4); text(g, 'rgba(170,235,255,0.30)');
+        for (let i = 0; i < 3; i++) bub(g, i, 'rgba(255,230,160,0.28)', 2.2);
+        // lit tubes: a wide coloured halo baked with shadowBlur, then the near-white core
+        const lit = (draw, col) => { const L = mk(); const q = L.g; q.shadowColor = col; q.shadowBlur = 14; draw(q, col, 4.2); draw(q, col, 4.2); q.shadowBlur = 0; draw(q, 'rgba(255,255,255,0.92)', 1.5); return L.cv; };
+        SIGN.cv = base.cv;
+        SIGN.text = lit((q, c) => text(q, c === 'rgba(255,255,255,0.92)' ? 'rgba(225,252,255,0.97)' : c), 'rgba(80,230,255,1)');
+        SIGN.border = lit((q, c, lw) => border(q, c, lw), 'rgba(255,90,190,1)');
+        SIGN.bubs = [0, 1, 2].map(i => lit((q, c, lw) => bub(q, i, c, lw), 'rgba(255,215,90,1)'));
+        SIGN.pad = pad * B.k; SIGN.B = B;
+      }
+      // neon ignition / shutdown: a few hard flickers, then steady
+      const flick = e => e < 0 ? 0 : e > 0.75 ? 1 : (Math.sin(e * 61) > 0.2 || Math.sin(e * 23 + 1) > 0.6) ? Math.min(1, 0.4 + e) : 0.08;
+      function drawSign(g, t){
+        const ST = STATION; if (!ST || !ST.cleaner) return;
+        const on = !!(ST.client && ST.client.cs === 'posing');
+        if (on !== SIGN.was){ SIGN.was = on; if (on) SIGN.onT = t; else SIGN.offT = t; }
+        SIGN.lit = on ? flick(t - SIGN.onT) : Math.max(0, 1 - flick(t - SIGN.offT)) * (t - SIGN.offT < 0.75 ? 1 : 0);
+        if (!SIGN.cv) bakeSign();
+        const B = SIGN.B, pd = SIGN.pad;
+        // the post, then the panel
+        g.fillStyle = 'rgba(70,78,96,0.95)'; g.fillRect(B.cx - 2.5 * B.k, B.y + B.h - 4, 5 * B.k, Math.max(0, B.foot - (B.y + B.h - 4)));
+        g.fillStyle = 'rgba(160,170,190,0.5)'; g.fillRect(B.cx - 2.5 * B.k, B.y + B.h - 4, 1.4 * B.k, Math.max(0, B.foot - (B.y + B.h - 4)));
+        const x = B.x - pd, y = B.y - pd, w = B.w + pd * 2, h = B.h + pd * 2;
+        g.drawImage(SIGN.cv, x, y, w, h);
+        const L = SIGN.lit; if (L <= 0.01) return;
+        g.save(); g.globalCompositeOperation = 'lighter';
+        const e = t - SIGN.onT, steady = on && e > 0.75;
+        // the lettering winks off for a beat every ~1.2 s; the border holds a soft pulse; the bubbles chase
+        const blink = steady && ((e - 0.75) % 1.2) > 1.0 ? 0.12 : 1;
+        g.globalAlpha = L * blink; g.drawImage(SIGN.text, x, y, w, h);
+        g.globalAlpha = L * (steady ? 0.75 + 0.25 * Math.sin(t * 6) : 1); g.drawImage(SIGN.border, x, y, w, h);
+        for (let i = 0; i < 3; i++){ const a = steady ? (Math.floor(e * 3.2) % 3 === i ? 1 : 0.18) : 1; g.globalAlpha = L * a; g.drawImage(SIGN.bubs[i], x, y, w, h); }
+        g.restore();
+      }
+
       // ── rumi (backgrounds/rumi/chibi-walker.js) glides past in FLY mode every few
       //    minutes; a tapped sea star summons her early (as in the old reef) ──
       const rumiLayer = doc.createElement('div');
@@ -1838,6 +2062,8 @@
         SHARKS.push(makeFish({ kind: 'shark', x: f(0.81), y: 420, z: 0.22, s: 215 * kF, spd: 40, turn: 0.9, wagBase: 0.9, wagRate: 0.55, home: [-40, DW + 40, 250, 560] }));
         // the blowfish, pottering about the rocks
         makeFish({ kind: 'puffer', x: f(0.4), y: 640, z: 0.1, s: 62 * kF, spd: 18, turn: 1.4, wagBase: 0.8, wagRate: 2.2, home: [f(0.14), f(0.86), 470, 730], puff: 0 });
+        // the cleaner wrasse, keeping its station
+        if (STATION) STATION.cleaner = makeFish({ kind: 'cleaner', x: STATION.x, y: STATION.y, z: 0.03, s: 50 * Math.max(0.75, kF), spd: 34, turn: 4, wagBase: 1.3, wagRate: 1.7, isCleaner: true, ph0: Math.random() * TAU });
         // crabs on the sand of the centre channel
         for (let i = 0; i < CRAB_HOMES.length; i++){
           const dy = [14, 34, 52][i], home = CRAB_HOMES[i];
@@ -1861,7 +2087,10 @@
         return null;
       }
       function updateFish(t, dt){
+        stationTick(t);
         for (const F of FISH){
+          if (F.isCleaner){ updateCleaner(F, t, dt); continue; }
+          if (F.cs === 'going' || F.cs === 'posing'){ updateClient(F, t, dt); continue; }   // on its way / being cleaned: no fleeing
           if (!F.isClown && !F.schooling && !(F.dashUntil && t < F.dashUntil)){ const G = giantNear(F); if (G) fleeFrom(F, G.x, G.y - 40, t); }
           if (!F.isClown && !F.schooling && F.kind !== 'shark' && F.kind !== 'dolphin' && !(F.dashUntil && t < F.dashUntil))
             for (const Sh of SHARKS) if (Math.hypot(Sh.x - F.x, Sh.y - F.y) < (Sh.dashUntil && t < Sh.dashUntil ? 260 : 150)){ fleeFrom(F, Sh.x, Sh.y, t); break; }
@@ -1881,6 +2110,9 @@
       // actions (clicks + the scheduler share these)
       function actOn(F, t){
         const m = F.face > 0 ? F.x + F.s * 0.4 : F.x - F.s * 0.4; puff(m, F.y, 5);
+        if (F.isCleaner){ F.danceUntil = t + 2.5; return; }    // the wrasse just dances
+        if (F.cs === 'going' || F.cs === 'posing') return;        // a client holds its course / its pose
+        if (F.cs === 'dirty') F.cleanAt = t;                       // a tapped spotty fish heads for the station next
         if (F.kind === 'puffer'){ inflate(F, t); return; }
         if (F.kind === 'shark'){ F.dashUntil = t + 1.6; newTarget(F, t, lerp(F.home[0], F.home[1], Math.random()), lerp(F.home[2], F.home[3], Math.random())); F.wait = 0; return; }
         if (F.bfly){ for (let i = 0; i < 3; i++) HEARTS.push({ x: F.x + (Math.random() - 0.5) * 20, y: F.y - F.s * 0.3, t0: t + i * 0.25, ph: Math.random() * TAU, s: 8 + Math.random() * 6 }); F.dashUntil = t + 0.6; }
@@ -1905,7 +2137,7 @@
         if (updateGiant(WHALE, t, dt, ORCA)) drawWhale(g, WHALE, t);
         if (updateGiant(ORCA, t, dt, WHALE)) drawOrca(g, ORCA, t);
       }
-      const drawFishBand = (g, t, dt, far) => { for (const F of FISH) if (!F.isClown && (far ? F.z > 0.22 : F.z <= 0.22)) drawFishFull(g, F, t, dt); if (!far) for (const C of CRABS) drawCrab(g, C, t); };
+      const drawFishBand = (g, t, dt, far) => { for (const F of FISH) if (!F.isClown && (far ? F.z > 0.22 : F.z <= 0.22)) drawFishFull(g, F, t, dt); if (!far){ for (const C of CRABS) drawCrab(g, C, t); drawCrumbs(g, t, dt); } };
 
       // ── coral life, per frame ──
       function updateCorals(t, dt){
@@ -1914,12 +2146,12 @@
           for (const C of CORALS){
             if (C.ret > 0.9) continue;
             for (const F of FISH){
-              if (F.isClown) continue;
+              if (F.isClown || F.isCleaner || F.cs === 'posing') continue;
               const s = F.s * (1 - F.z * 0.55) * 0.5;
               if (Math.abs(F.x - C.x) < C.r * 0.9 + s && Math.abs(F.y - C.y) < C.r * 0.6 + s * 0.6){ startleCoral(C, t); break; }
             }
           }
-          for (const K of CLAMS){ if (K.open < 0.3) continue; for (const F of FISH){ if (F.isClown) continue; const s = F.s * (1 - F.z * 0.55) * 0.5; if (Math.hypot(F.x - K.x, F.y - K.y) < K.w * 0.8 + s){ snapClam(K, t); break; } } }
+          for (const K of CLAMS){ if (K.open < 0.3) continue; for (const F of FISH){ if (F.isClown || F.isCleaner || F.cs === 'posing') continue; const s = F.s * (1 - F.z * 0.55) * 0.5; if (Math.hypot(F.x - K.x, F.y - K.y) < K.w * 0.8 + s){ snapClam(K, t); break; } } }
         }
         for (const W of WORMS){ const want = CORALS[W.ci].ret > 0.5 ? 0 : 1; W.ext += (want - W.ext) * Math.min(1, dt * (want ? 1.4 : 9)); }
         for (const K of CLAMS){ const want = t < K.snapT + 3 ? 0.02 : 0.7 + 0.3 * Math.sin(t * 0.45 + K.ph); K.open += (want - K.open) * Math.min(1, dt * (want < 0.1 ? 14 : 0.8)); }
@@ -1983,8 +2215,8 @@
       }
       let layoutDW = -1;
       function rebuildLayout(){
-        for (const a of [STILL, LIVE, ROCKS, ANEMS, FANS, SOFTS, CLAMS, STARS, FISH, SHARKS, CRABS, HEARTS, EGGS, SPECKS, BUBBLES, SEEPS]) a.length = 0;
-        SCHOOL = null; nextAct = lastT + 6;
+        for (const a of [STILL, LIVE, ROCKS, ANEMS, FANS, SOFTS, CLAMS, STARS, FISH, SHARKS, CRABS, HEARTS, EGGS, SPECKS, BUBBLES, SEEPS, CRUMBS]) a.length = 0;
+        SCHOOL = null; STATION = null; nextAct = lastT + 6;
         buildReef(); buildFish();
       }
       function resize(){
@@ -2005,6 +2237,7 @@
         { const b = bgL.cx; b.save(); b.setTransform(1, 0, 0, 1, 0, 0); b.drawImage(waterL.cv, 0, 0); b.drawImage(reefL.cv, 0, 0); b.restore(); }
         raysL = makeLayer(W, H, DPR * 0.5); raysL.built = false;
         for (const A of ANEMS) A.L = null;                      // the crown caches are resolution-bound
+        SIGN.cv = null;                                         // so is the neon sign
         warmTs = 0;                                             // repainting every layer: don't judge these frames
         REEF_TOP = Math.max(0, Math.floor(OY + 300 * S));       // the reef band starts here (design y 300: above the tallest coral)
         FORE_TOP = Math.max(0, Math.floor(OY + 560 * S));       // the foreground band starts here (design y 560)
@@ -2034,6 +2267,7 @@
         for (const e of LIVE) if (!e.fore) e.draw(ctx, t, c);
         mark('live');
         drawCoralLife(ctx, t, false); mark('corals');
+        drawSign(ctx, t); mark('sign');
         drawFishBand(ctx, t, dt, false); mark('fish');
         ctx.restore();
         if (FORE_TOP < H){ const sy = FORE_TOP * foreL.dpr; ctx.drawImage(foreL.cv, 0, sy, foreL.cv.width, foreL.cv.height - sy, 0, FORE_TOP, W, H - FORE_TOP); }
@@ -2100,6 +2334,7 @@
       }
 
       buildCaustics();
+      if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(() => { SIGN.cv = null; });   // re-bake the sign's lettering in the settled font
       resize();                                                  // sizes the design to the window and builds the layout for it
       addEventListener('resize', resize);
       doc.addEventListener('click', onClick);
@@ -2123,6 +2358,12 @@
         crabs: () => CRABS.map(C => ({ x: Math.round(C.x), y: Math.round(C.y) })),
         rumi: () => { summonRumi(); return !!window.ChibiWalker; },
         orbit: () => ORBIT,
+        station: () => STATION && { x: Math.round(STATION.x), y: Math.round(STATION.y), side: STATION.side, served: STATION.served,
+          client: STATION.client ? { kind: STATION.client.kind, cs: STATION.client.cs, spots: STATION.client.spots ? STATION.client.spots.length : 0, x: Math.round(STATION.client.x), y: Math.round(STATION.client.y), face: +STATION.client.face.toFixed(2) } : null,
+          dirty: FISH.filter(F => F.spots).map(F => F.kind),
+          cleaner: STATION.cleaner ? { x: Math.round(STATION.cleaner.x), y: Math.round(STATION.cleaner.y), nibbling: !!STATION.cleaner.nibbling } : null,
+          sign: SIGN.B ? { x: Math.round(SIGN.B.x), y: Math.round(SIGN.B.y), w: Math.round(SIGN.B.w), h: Math.round(SIGN.B.h), lit: +SIGN.lit.toFixed(2) } : null },
+        soil: kind => { const F = FISH.find(f => (!kind || f.kind === kind) && CLIENT_KINDS[f.kind] && !f.follow && !f.spots); if (F){ soil(F, lastT); F.cleanAt = lastT; } return !!F; },
         corals: () => ({ corals: CORALS.length, polyps: LIFE.length, worms: WORMS.length, vents: VENTS.length, fringes: FRINGES.length, clams: CLAMS.length, eggs: EGGS.length }),
         startle: () => { CORALS.forEach(C => startleCoral(C, lastT)); CLAMS.forEach(K => snapClam(K, lastT)); },
         spawn: i => { const C = CORALS[i === undefined ? Math.floor(Math.random() * CORALS.length) : i]; if (C) spawnCoral(C, lastT); return !!C; },

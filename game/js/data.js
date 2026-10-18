@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order',TRH='rhyme',TLG='logic';
+const TM='missing',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order',TRH='rhyme',TLG='logic',TBE='bal_eq',TSB='bal_scale',TDL='deal',TPK='pack',TFR='fair',TCN='can_share';
 const gameLen=()=>problems.length;
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
@@ -50,13 +50,18 @@ const EXERCISE_INDEX=[
   {file:'logic',     modes:['logic','sup','mulc']},     // הִגָּיוֹן 🧠 (also 2 cards per Superman / אַלּוּפָה game, 6th + 14th question) — logic questions (מִי אֲנִי / מִי לֹא שַׁיָּךְ / ordering / patterns / אִם-אָז / analogies / cause→effect), multiple choice + ✓; a wrong pick is CROSSED OUT and (who) its ruling-out clue lights up. Its own game ('logic', medium tier).
   {file:'rhyme',     modes:['rhy','lang','sup','mulc']},    // אֵיזוֹ מִלָּה מִתְחָרֶזֶת — a picture+word CUE and 3 picture+word options, exactly one rhymes; select → ✓ submits, a mistake reveals the rhyme ending. PHONOLOGICAL awareness (not reading-for-meaning). Reading slots + "שפה". 'rhy' is an INTERNAL handle only.
   {file:'triple_sum',modes:['trip','mx','sup','mulc']},  // __+__+__ = N (target VARIES 6..12) — three CHOSEN addends; 0 and 10 are disallowed (a 0/10 answer is praised with NO penalty but must be re-tried with other numbers). Woven into Queen/Superman/אַלּוּפָה. 'trip' is an INTERNAL handle only.
-  {file:'half',      modes:['hlf','mulc']},      // "כַּמָּה זֶה חֵצִי" — share 4/6/8/10 items EQUALLY between two friends; tap the items → a golden middle line splits them in two. First DIVISION intuition, mixed into אַלּוּפָה. 'hlf' is an INTERNAL handle only.
+  {file:'half',      modes:['hlf','mx','mulc']},      // "כַּמָּה זֶה חֵצִי" — share 4/6/8/10 items EQUALLY between two friends; the split (golden lines) opens only after a MISTAKE — before that the picture is locked (try-first). First DIVISION intuition, mixed into אַלּוּפָה. 'hlf' is an INTERNAL handle only.
   {file:'plates',    modes:['plt','mulc']},      // "צַלָּחוֹת" — g plates × s items each (2..4×2..4), find the TOTAL; tap → the items POUR into one countable row. Multiplication-story inverse of half, mixed into אַלּוּפָה. 'plt' is an INTERNAL handle only.
-  {file:'ice_cream', modes:['ice','mulc']},      // "חֲנוּת הַגְּלִידָה" — she HAS ₪budget, each ice cream costs ₪2/₪5/₪10; BUY (＋) within the budget and type how many fit (budget÷price — division as "how many groups"). Mixed into אַלּוּפָה. 'ice' is an INTERNAL handle only.
+  {file:'ice_cream', modes:['ice','mx','mulc']},      // "חֲנוּת הַגְּלִידָה" — she HAS ₪budget, each ice cream costs ₪2/₪5/₪10; BUY (＋) within the budget and type how many fit (budget÷price — division as "how many groups"). Mixed into אַלּוּפָה. 'ice' is an INTERNAL handle only.
+  {file:'balance',   modes:['bal','mx','mulc']},  // מֹאזְנַיִם ⚖️ — equality as BALANCE: TBE __+15=12+__ (two rows, two DIFFERENT pairs) + TSB four numbers onto two pans (a+d=b+c). Queen: 1 card/game (kinds alternate), אַלּוּפָה: one of each. 'bal' = tester handle
+  {file:'deal',      modes:['deal','mx','mulc']},   // חֲלֻקָּה בְּתוֹרוֹת — tap the pile, each item goes to the next friend in turn (2-4 friends, ≤16); then how many EACH got. Counts only after a mistake
+  {file:'pack',      modes:['pack','mx','mulc']},   // אֲרִיזָה — n items, b per box: how many boxes? Loose items + one sample box; the packing (tap → a box fills) opens after a mistake
+  {file:'fair',      modes:['fair','mx','mulc']},   // זֶה הוֹגֵן? — uneven plates; move items until all are equal, ✓, then how many each. Count badges after a mistake
+  {file:'can_share', modes:['cansh','mx','mulc']},  // אֶפְשָׁר לְחַלֵּק? — yes/no: can k friends share n with nothing left? The verdict shows the groups + the leftover
   {file:'mult_unknown',modes:['mulu','mulc']},   // כֶּפֶל בְּנֶעְלָם — 3 × □ = 9, find the hidden factor; the SKIP-COUNTING number line (jumps of a) is shown from the START. Mixed into אַלּוּפָה. 'mulu' is an INTERNAL handle only.
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain',[TSQ]:'story_quiz',[TCZ]:'cloze',[TTF]:'true_false',[TWM]:'word_match',[TSO]:'sent_order',[TRH]:'rhyme',[TLG]:'logic'};
+const EXERCISE_OF_TYPE={[TDL]:'deal',[TPK]:'pack',[TFR]:'fair',[TCN]:'can_share',[TBE]:'balance',[TSB]:'balance',[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain',[TSQ]:'story_quiz',[TCZ]:'cloze',[TTF]:'true_false',[TWM]:'word_match',[TSO]:'sent_order',[TRH]:'rhyme',[TLG]:'logic'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config
@@ -94,16 +99,6 @@ const DIFFICULTY_GROUPS=[
    themselves into window.SUCCESS.styles — the per-answer celebration ROTATION
    (see success_screens_spec.md). */
 const SUCCESS_FILES=[
-  'success-supernova',
-  'success-comet-shower',
-  'success-constellation-heart',
-  'success-electric-orb',
-  'success-lightning-storm',
-  'success-blooming-garden',
-  'success-unicorn-rainbow',
-  'success-black-hole-stars',
-  'success-star-race',
-  'success-aurora-glow',
   'success-bubble-pop',
   'success-magic-wand',
   'success-rocket-launch',
@@ -159,6 +154,16 @@ const SUCCESS_FILES=[
   'success-ufo-beam',
   'success-penguin-slide',
   'success-rain-cloud',
+  'success-whale-spout',
+  'success-lighthouse-beam',
+  'success-cherry-blossom',
+  'success-hedgehog-roll',
+  'success-fox-wish',
+  'success-snail-trail',
+  'success-gingerbread-house',
+  'success-koala-hug',
+  'success-bubble-tea',
+  'success-sticker-book',
 ];
 
 /* ── Special reward screens (success_screens/<sub>/<name>.js) ────────────────
