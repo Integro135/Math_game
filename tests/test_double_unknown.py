@@ -268,9 +268,12 @@ class TestDoubleUnknown:
         page.evaluate("mode='mx'; problems=[{t:TRA,r:20}]; idx=0; done=false; report=[]; loadProblem()")
         page.wait_for_selector("#ans2", timeout=TIMEOUT)
         page.wait_for_timeout(120)
-        # empty box → no tooltip on hover
+        # empty box → no tooltip on hover. An EMPTY idle box BECKONS (form.css
+        # ansBeckon: a never-ending 4px bob), so it is never "stable" for
+        # Playwright's actionability check — hover with force (the pointer still
+        # lands on the box; only the wait-until-still is skipped).
         page.mouse.move(5, 5)
-        page.hover("#ans2"); page.wait_for_timeout(120)
+        page.hover("#ans2", force=True); page.wait_for_timeout(120)
         assert page.evaluate("getComputedStyle(document.getElementById('num-tt')).display") == "none", \
             "an empty addend box must not pop the splits tooltip"
         # type 9, LEAVE the box, then hover again so mouseenter re-fires → splits fan
