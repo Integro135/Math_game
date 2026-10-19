@@ -35,7 +35,9 @@
      with its mouth open while the wrasse picks the spots off one by one
      (a nibble, the spot shrinks away, crumbs sink) — clean, it leaves with
      a heart. Dory, the butterflyfish, the tangs, the grammas and even the
-     sharks come in. Tap a spotty fish → it goes to the station now. A NEON
+     sharks come in. Tap a spotty fish → it goes to the station now; tap the
+     STATION itself (or the wrasse, or the sign) → a fish turns spotty and
+     hurries over at once (bubbles, a dance, a flicker of the sign). A NEON
      SIGN on a post beside it ("תַּחֲנַת נִקּוּי") stands dark between visits,
      flickers on when a client starts posing and BLINKS while the wrasse
      works (the text winks, three neon bubbles chase), then flickers off
@@ -1873,8 +1875,8 @@
       function updateClient(F, t, dt){
         const pp = posePoint(F), px = pp[0], py = pp[1];
         if (F.cs === 'going'){
-          const d = steer(F, px, py, F.spd * 1.3, dt, 2.4); integrate(F, dt, t);
-          if (d < 16 || (d < 90 && d > F.lastD + 0.25) || t - F.goT0 > 25){ F.cs = 'posing'; F.poseT0 = t; }
+          const d = steer(F, px, py, F.spd * (F.hurry ? 2.6 : 1.3), dt, F.hurry ? 3.4 : 2.4); integrate(F, dt, t);
+          if (d < 16 || (d < 90 && d > F.lastD + 0.25) || t - F.goT0 > 25){ F.cs = 'posing'; F.poseT0 = t; F.hurry = false; }
           F.lastD = d; return;
         }
         // posing: hang still beside the station, head up, mouth open, facing the wrasse
@@ -1893,6 +1895,28 @@
         if (C.home) newTarget(C, t, lerp(C.home[0], C.home[1], Math.random()), lerp(C.home[2], C.home[3], Math.random()));
         C.wait = 0; C.mouth = 0; C.mouthAt = t + 4;
         STATION.cleaner.danceUntil = t + 2.5;                    // a happy little dance
+      }
+      // TAP the station (its coral head, the wrasse, or the neon sign) → the next
+      // client comes over RIGHT AWAY as the tap's answer: a fish already waiting
+      // spotty goes first, otherwise a fish turns spotty on the spot and HURRIES
+      // over (double speed); bubbles puff, the wrasse dances, the sign flickers.
+      // If the wrasse is busy, the newcomer queues as the next client.
+      function stationAt(dx, dy){
+        const ST = STATION; if (!ST) return false;
+        if (Math.hypot((dx - ST.x) / 80, (dy - (ST.y + 15)) / 60) < 1) return true;
+        const B = SIGN.B; return !!(B && dx > B.x - 6 && dx < B.x + B.w + 6 && dy > B.y - 6 && dy < B.foot);
+      }
+      function stationTap(t){
+        const ST = STATION; if (!ST || !ST.cleaner) return;
+        puff(ST.x, ST.y - 10, 8); ST.cleaner.danceUntil = t + 2.5; SIGN.tapT = t; ST.taps = (ST.taps || 0) + 1;
+        let F = FISH.find(f => f.cs === 'dirty');
+        if (!F){
+          if (FISH.filter(f => f.spots).length >= 3) return;      // enough customers already
+          const pool = FISH.filter(f => CLIENT_KINDS[f.kind] && !f.follow && !f.spots);
+          if (!pool.length) return;
+          F = pool[Math.floor(Math.random() * pool.length)]; soil(F, t);
+        }
+        F.cleanAt = t - 999; F.hurry = true;                    // first in the queue, and quick
       }
       function updateCleaner(F, t, dt){
         const ST = STATION, C = ST.client;
@@ -1988,6 +2012,8 @@
         const on = !!(ST.client && ST.client.cs === 'posing');
         if (on !== SIGN.was){ SIGN.was = on; if (on) SIGN.onT = t; else SIGN.offT = t; }
         SIGN.lit = on ? flick(t - SIGN.onT) : Math.max(0, 1 - flick(t - SIGN.offT)) * (t - SIGN.offT < 0.75 ? 1 : 0);
+        const tapE = t - (SIGN.tapT === undefined ? -99 : SIGN.tapT);
+        if (!on && tapE < 0.6) SIGN.lit = Math.max(SIGN.lit, Math.sin(tapE * 38) > 0 ? 0.75 : 0.1);   // a tap: a quick flicker
         if (!SIGN.cv) bakeSign();
         const B = SIGN.B, pd = SIGN.pad;
         // the post, then the panel
@@ -2110,7 +2136,7 @@
       // actions (clicks + the scheduler share these)
       function actOn(F, t){
         const m = F.face > 0 ? F.x + F.s * 0.4 : F.x - F.s * 0.4; puff(m, F.y, 5);
-        if (F.isCleaner){ F.danceUntil = t + 2.5; return; }    // the wrasse just dances
+        if (F.isCleaner){ stationTap(t); return; }             // tapping the wrasse = tapping its station
         if (F.cs === 'going' || F.cs === 'posing') return;        // a client holds its course / its pose
         if (F.cs === 'dirty') F.cleanAt = t;                       // a tapped spotty fish heads for the station next
         if (F.kind === 'puffer'){ inflate(F, t); return; }
@@ -2322,6 +2348,7 @@
         const dx = (e.clientX - OX) / S, dy = (e.clientY - OY) / S, t = lastT;
         const F = fishAt(dx, dy);
         if (F){ actOn(F, t); return; }
+        if (stationAt(dx, dy)){ stationTap(t); return; }
         const C = crabAt(dx, dy);
         if (C){ startleCrab(C, t); return; }
         for (const st of STARS) if (Math.hypot(dx - st.x, dy - st.y) < st.r * 1.6){ puff(st.x, st.y - 6, 5); summonRumi(); return; }
@@ -2358,11 +2385,12 @@
         crabs: () => CRABS.map(C => ({ x: Math.round(C.x), y: Math.round(C.y) })),
         rumi: () => { summonRumi(); return !!window.ChibiWalker; },
         orbit: () => ORBIT,
-        station: () => STATION && { x: Math.round(STATION.x), y: Math.round(STATION.y), side: STATION.side, served: STATION.served,
+        station: () => STATION && { x: Math.round(STATION.x), y: Math.round(STATION.y), side: STATION.side, served: STATION.served, taps: STATION.taps || 0,
           client: STATION.client ? { kind: STATION.client.kind, cs: STATION.client.cs, spots: STATION.client.spots ? STATION.client.spots.length : 0, x: Math.round(STATION.client.x), y: Math.round(STATION.client.y), face: +STATION.client.face.toFixed(2) } : null,
           dirty: FISH.filter(F => F.spots).map(F => F.kind),
           cleaner: STATION.cleaner ? { x: Math.round(STATION.cleaner.x), y: Math.round(STATION.cleaner.y), nibbling: !!STATION.cleaner.nibbling } : null,
           sign: SIGN.B ? { x: Math.round(SIGN.B.x), y: Math.round(SIGN.B.y), w: Math.round(SIGN.B.w), h: Math.round(SIGN.B.h), lit: +SIGN.lit.toFixed(2) } : null },
+        stationXY: () => STATION && { x: Math.round(OX + STATION.x * S), y: Math.round(OY + (STATION.y + 15) * S) },   // screen px, for a real tap
         soil: kind => { const F = FISH.find(f => (!kind || f.kind === kind) && CLIENT_KINDS[f.kind] && !f.follow && !f.spots); if (F){ soil(F, lastT); F.cleanAt = lastT; } return !!F; },
         corals: () => ({ corals: CORALS.length, polyps: LIFE.length, worms: WORMS.length, vents: VENTS.length, fringes: FRINGES.length, clams: CLAMS.length, eggs: EGGS.length }),
         startle: () => { CORALS.forEach(C => startleCoral(C, lastT)); CLAMS.forEach(K => snapClam(K, lastT)); },

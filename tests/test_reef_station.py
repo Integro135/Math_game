@@ -45,3 +45,20 @@ def test_a_spotty_fish_is_cleaned_and_leaves(page):
     # already be swimming over — the sign only lights while one is POSING)
     page.wait_for_function("_reef2.station().sign.lit === 0", timeout=3_000)
     assert errs == []
+
+
+def test_tapping_the_station_brings_a_fish_right_away(page):
+    """A real tap on the station: bubbles + the wrasse dances, a fish turns
+    spotty on the spot and HURRIES over (well before the 8-16 s the scheduler
+    would take), then poses to be cleaned."""
+    errs = _open(page)
+    page.wait_for_timeout(500)
+    st = page.evaluate("_reef2.station()")
+    assert st["dirty"] == [] and st["client"] is None
+    xy = page.evaluate("_reef2.stationXY()")
+    page.mouse.click(xy["x"], xy["y"])
+    page.wait_for_function("_reef2.station().taps === 1", timeout=2_000)
+    page.wait_for_function("_reef2.station().dirty.length === 1", timeout=2_000)
+    page.wait_for_function("(()=>{const c=_reef2.station().client;return c&&c.cs==='going';})()", timeout=2_000)
+    page.wait_for_function("_reef2.station().client.cs === 'posing'", timeout=15_000)
+    assert errs == []

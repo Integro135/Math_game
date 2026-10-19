@@ -14,7 +14,8 @@
          Tap a number → it lands in the next free slot (tap a placed one to send
          it back); ✓ weighs the pans. The row is SHOWN in a random order
          (`order`, never sorted or mirrored), so the answer isn't always the
-         1st+4th / 2nd+3rd positions. Generated as a<b<c<d with a+d = b+c, so
+         1st+4th / 2nd+3rd positions. Generated as a<b<c<d with a+d = b+c —
+         UNEVENLY spaced, often with a 0 (8 7 15 0, never 5 6 7 8) — so
          {a,d} | {b,c} is the ONLY balancing split (a+b<c+d and a+c<b+d always) —
          either pan order and either order inside a pan is accepted.
          Problem: { t:TSB, nums:[a,b,c,d] (sorted), order:[shown permutation], a:pan sum }
@@ -40,11 +41,17 @@ window.EXERCISES.types.balance=(()=>{
     let a,b;do{a=rnd(10,19);b=rnd(10,19);}while(a===b||Math.abs(a-b)>5);
     return{t:TBE,a,b,pos:pos||(Math.random()<.5?'front':'back')};
   }
-  // TSB: a<b<c<d, d=b+c−a ≤ maxV, pan sum a+d ≤ maxS (workbook: 4 8 12 16 → 20)
+  // TSB: a<b<c<d with a+d = b+c, so the gaps run g · h · g (b=a+g, c=b+h, d=c+g).
+  // NEVER evenly spaced (h ≠ g): a run like 5 6 7 8 or 4 8 12 16 gives the pairing
+  // away at a glance — the numbers must be UNEVEN so she has to try combinations
+  // (the user's example: 8, 7, 15, 0 → 8+7 = 15+0). At least one gap of 3+, and a
+  // 0 in about a third of the cards. d ≤ maxV, pan sum a+d ≤ maxS.
   function makeScale(maxV,maxS){
+    const zero=Math.random()<0.33;               // decided ONCE — a 0-start fits more often, so a per-try coin would favour it
     for(;;){
-      const a=rnd(1,maxV-3),b=rnd(a+1,maxV-2),c=rnd(b+1,maxV-1),d=b+c-a;
-      if(d<=maxV&&a+d<=maxS)return{t:TSB,nums:[a,b,c,d],order:showOrder(),a:a+d};
+      const a=zero?0:rnd(1,maxV-4),g=rnd(1,8),h=rnd(1,8);
+      const b=a+g,c=b+h,d=c+g;
+      if(h!==g&&Math.max(g,h)>=3&&d<=maxV&&a+d<=maxS)return{t:TSB,nums:[a,b,c,d],order:showOrder(),a:a+d};
     }
   }
   // the order the four numbers are SHOWN in — `nums` stays sorted (the generator's
@@ -337,9 +344,9 @@ window.EXERCISES.types.balance=(()=>{
     modes:['bal','mx','mulc'],
     aidsReveal:'always',            // no HOST aid — the scale is the module's own aid
     make(mode){
-      if(mode==='mx')return[nextKind()?makeScale(13,18):makeFill()];
-      if(mode==='mulc')return sh([makeFill(),makeScale(16,20)]);
-      if(mode==='bal')return[makeFill('front'),makeScale(16,20),makeFill('back'),makeScale(16,20),makeFill(),makeScale(13,18)];
+      if(mode==='mx')return[nextKind()?makeScale(15,18):makeFill()];
+      if(mode==='mulc')return sh([makeFill(),makeScale(18,20)]);
+      if(mode==='bal')return[makeFill('front'),makeScale(18,20),makeFill('back'),makeScale(18,20),makeFill(),makeScale(15,18)];
       return[];
     },
     mount,

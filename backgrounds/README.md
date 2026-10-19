@@ -1359,8 +1359,11 @@ the station is free — goes (`cs:'going'`, `updateClient`, no fleeing), hangs a
 wrasse never startle the polyps or clams), while the wrasse puts its mouth on the
 nearest spot (`spotXY`), nibbles ~1 s (the spot shrinks as it fades, `CRUMBS`
 sink away) and moves on. Clean → two hearts, it swims off, the wrasse dances.
-Tap a spotty fish → it goes next; tap the wrasse → it dances. Hooks:
-`_reef2.station()` (incl. `sign:{x,y,w,h,lit}`), `_reef2.soil(kind)`.
+Tap a spotty fish → it goes next. Tap the STATION (its coral head, the wrasse or the
+sign; `stationAt`/`stationTap`) → bubbles, the wrasse dances, the sign flickers, and a
+fish turns spotty on the spot and HURRIES over at 2× speed (a spotty fish already
+waiting goes first; at most three spotty at once). Hooks:
+`_reef2.station()` (incl. `sign:{x,y,w,h,lit}`, `taps`), `_reef2.soil(kind)`, `_reef2.stationXY()` (screen px, for a real tap).
 
 **The neon sign** (`SIGN`, `signBox`/`bakeSign`/`drawSign`): a dark panel on a post
 that stands on the station's rock, LEFT of the station (the client poses on the

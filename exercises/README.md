@@ -1028,7 +1028,9 @@ is empty, otherwise checks. A wrong pair → `api.wrong('x,y')`.
 slot (the next slot glows); tap a placed number → it goes back. ✓ with a free
 slot only nudges. Generated as a<b<c<d, a+d=b+c, so {a,d}|{b,c} is the only
 balancing split (a+b<c+d and a+c<b+d always); either pan order and either order
-inside a pan is accepted. The row is SHOWN in a random `order` (never sorted
+inside a pan is accepted. The numbers are UNEVENLY spaced — the gaps run g·h·g
+with h ≠ g and one gap of 3+, so never 5 6 7 8 or 4 8 12 16 — and a third of the cards
+include a 0 (8 7 15 0 → 8+7 = 15+0): she has to try combinations. The row is SHOWN in a random `order` (never sorted
 or mirrored — shown as 5 6 7 8 the answer would always be 1st+4th / 2nd+3rd, a
 position trick instead of sums); `nums` itself stays sorted. A wrong split → `api.wrong('5+6 / 7+8')`, the numbers
 stay put for fixing.

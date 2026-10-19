@@ -110,11 +110,31 @@ class TestBalanceScale:
             for(let i=0;i<2000;i++){
               for(const m of ['mx','mulc']){
                 const p=B.make(m).find(q=>q.t===TSB);if(!p)continue;
-                const [a,b,c,d]=p.nums,max=m==='mx'?13:16,cap=m==='mx'?18:20;
-                if(!(a>=1&&a<b&&b<c&&c<d&&d<=max&&a+d===b+c&&a+d<=cap&&p.a===a+d))bad.push(p.nums);
+                const [a,b,c,d]=p.nums,max=m==='mx'?15:18,cap=m==='mx'?18:20;
+                if(!(a>=0&&a<b&&b<c&&c<d&&d<=max&&a+d===b+c&&a+d<=cap&&p.a===a+d))bad.push(p.nums);
               }}
             return bad.slice(0,5);})()""")
         assert bad == []
+
+    def test_numbers_are_uneven_and_sometimes_zero(self, page):
+        """Never an evenly spaced set (5 6 7 8, 4 8 12 16 — the pairing would be
+        obvious): the gaps are uneven with at least one of 3+, so she has to try
+        combinations; about a third of the cards include a 0 (like 8 7 15 0)."""
+        _force(page, "{t:TSB,nums:[0,7,8,15],a:15}")
+        assert sorted(page.evaluate("[...document.querySelectorAll('.bl-tok')].map(b=>+b.textContent)")) == [0, 7, 8, 15]
+        res = page.evaluate("""(()=>{const B=EXERCISES.types.balance;let even=0,small=0,zero=0,n=0;
+            for(let i=0;i<1500;i++)for(const m of ['mx','mulc']){const p=B.make(m).find(q=>q.t===TSB);if(!p)continue;n++;
+              const [a,b,c,d]=p.nums,g=b-a,h=c-b;if(g===h)even++;if(Math.max(g,h)<3)small++;if(a===0)zero++;}
+            return {even,small,zero:zero/n};})()""")
+        assert res["even"] == 0 and res["small"] == 0, res
+        assert 0.2 < res["zero"] < 0.5, res
+
+    def test_a_zero_card_solves(self, page):
+        _force(page, "{t:TSB,nums:[0,7,8,15],a:15}")
+        _tap(page, 8, 7, 15, 0)
+        page.click(".bl-btn")
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("problems[0].sol") == [8, 7, 15, 0]
 
 
 class TestBalanceFill:
