@@ -219,3 +219,63 @@ class TestBalanceRecipes:
             return _reportRows();})()""")
         assert rows[0]["eq"] == "⚖️ 9 + 3 = 5 + 7" and rows[0]["correct"] == "3+9 = 5+7"
         assert rows[1]["eq"] == "⚖️ 14 + 4 = 16 + 2" and rows[1]["correct"] == "4,2 · 5,3"
+
+
+def _new_game(page, mode):
+    """Start a REAL new game of `mode` (the same path as the restart button) and
+    wait until its deck is built and the first card is on screen."""
+    page.evaluate(f"mode={mode!r};restart()")
+    page.wait_for_function("window.POOL_PENDING!==true && problems.length>0", timeout=TIMEOUT)
+
+
+def _goto_and_check_rendered(page, i):
+    """Jump the live game to question i+1 the way the game itself loads a card,
+    and check the balance card is really DRAWN on screen (not just in the deck)."""
+    page.evaluate(f"idx={i};done=false;tryFirst=0;loadProblem();")
+    page.wait_for_selector(".bl-root", state="visible", timeout=TIMEOUT)
+    t = page.evaluate("ptype")
+    if t == page.evaluate("TSB"):
+        assert page.locator(".bl-tok").count() == 4
+        assert page.locator(".bl-slot").count() == 4
+        assert page.locator(".bl-scale").is_visible(), "the scale drawing must be visible"
+        assert all(page.locator(".bl-tok").nth(k).is_visible() for k in range(4))
+    else:
+        assert page.locator(".bl-row").count() == 2
+        assert page.locator(".bl-row").nth(0).locator("input").nth(0).is_visible()
+    box = page.locator(".bl-root").bounding_box()
+    vw = page.viewport_size
+    assert box and box["width"] > 100 and box["x"] >= 0 and box["x"] + box["width"] <= vw["width"] + 1, \
+        f"the balance card must sit on screen, got {box}"
+    return t
+
+
+class TestBalanceAppearsInRealGames:
+    """The deck tests above check makePool; these play REAL games and make sure the
+    balance card actually appears where it should and is drawn on screen."""
+
+    def test_queen_question_13_is_the_balance_card_both_kinds(self, page):
+        enter_mode(page, 'mx')
+        page.wait_for_function("typeof EXERCISES.types.balance==='object'", timeout=TIMEOUT)
+        kinds = []
+        for _ in range(2):                                   # two games in a row: the kinds alternate
+            _new_game(page, 'mx')
+            assert page.evaluate("problems.length") == 17
+            assert page.evaluate("problems[12].t") in (page.evaluate("TBE"), page.evaluate("TSB")), \
+                "Queen's question 13 must be the balance card"
+            kinds.append(_goto_and_check_rendered(page, 12))
+            prog = page.inner_text("#prog-txt")
+            assert "13" in prog and "17" in prog, f"progress must read question 13 of 17, got {prog!r}"
+        assert set(kinds) == {page.evaluate("TBE"), page.evaluate("TSB")}, \
+            f"over two Queen games both balance kinds (the scale pans too) must appear, got {kinds}"
+
+    def test_champion_scale_card_appears_within_a_few_games(self, page):
+        enter_mode(page, 'mulc')
+        page.wait_for_function("typeof EXERCISES.types.balance==='object'", timeout=TIMEOUT)
+        for game in range(6):                                # 18 types rotate through 8 slots: every type within 3 games
+            _new_game(page, 'mulc')
+            i = page.evaluate("problems.findIndex(p=>p.t===TSB)")
+            if i >= 0:
+                assert i != 0, "question 1 of אַלּוּפָה stays the multiplication card"
+                assert _goto_and_check_rendered(page, i) == page.evaluate("TSB")
+                return
+        raise AssertionError("the scale-pans card did not appear in 6 real אַלּוּפָה games")
