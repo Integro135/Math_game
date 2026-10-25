@@ -1757,11 +1757,25 @@ touch) ringing the ground and puddles, the puddles fill, the leaves and crowns
 go grey — then it fades and a RAINBOW stands over the hills opposite the sun
 for ~10 s. `_aut.rain(len)`, `rainAt(k, phase)`, `rainbow(k)` for the stills.
 
+**Bare trees** (`BARE`, `buildTwigs`, `drawBare`): every time the scene
+starts, one tree each side has already let go of its leaves — picked from
+where a bare tree reads (the big edge tree or the small one beside the
+clearing: seeds 11/37 left, 41/67 right; the narrow grove maps 37→23,
+41→53). Its lobes are not baked (they stay as the tap/leaf-release area);
+instead two levels of twigs fan out of every bough and limb, drawn LIVE as
+two batched strokes so they sway with the wind and the tree's own tap, with
+a few last leaves (`T.cling`) dangling at the tips. Those are all it still
+drops — now and then in the trickle, three at a tap — and the ground under
+it has a thicker carpet and only a faint shadow. `_aut.trees()` reports
+`bare / twigs / cling`.
+
 **Taps shake one thing only**: a tapped tree or squill gets its own
 `kickT` and shakes on `kickOf(o, t)` (a decaying swing, ~3 s). The global
 `wind()` is the weather alone; `gustAt` only nudges the leaves already
 falling within ~110 px of the tap. (The first cut raised the global wind on
-a tap, which made every tree and squill in the grove jump.) `_aut.kicks()`.
+a tap, which made every tree and squill in the grove jump. The kick term is
+guarded with `kick ? … : 0` — an untapped tree has no `kickT`, and 0 × NaN
+made every untapped crown silently vanish; `_aut.crownsDrawn()` guards it.) `_aut.kicks()`.
 
 **Clicks** (`onClick`, UI filter `UI_SEL`): sun / moon → tween to the next
 key; a bunny → a startled spring + new coat; a snail → tuck in; the hedgehog → curl; a squill → petals + bees; a tree

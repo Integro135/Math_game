@@ -46,13 +46,43 @@ class TestGrove:
     def test_tapping_a_tree_shakes_a_burst_of_leaves_loose(self, page):
         _open(page)
         before = page.evaluate("_aut.leaves().released")
-        xy = page.evaluate("_aut.treeXY(0)")
+        i = page.evaluate("_aut.trees().findIndex(T => !T.bare)")     # a leafy one
+        xy = page.evaluate(f"_aut.treeXY({i})")
         page.mouse.click(xy["x"], xy["y"])
         page.wait_for_function(f"_aut.leaves().released >= {before} + 15", timeout=3_000)
         assert page.evaluate("_aut.taps().tree") == 1
         k = page.evaluate("_aut.kicks()")
         assert sum(1 for v in k["trees"] if v > 0.3) == 1, f"only the tapped tree shakes: {k}"
         assert all(v == 0 for v in k["squills"]), "the squills stay still"
+
+    def test_some_trees_stand_bare_and_every_leafy_crown_is_drawn(self, page):
+        errs = _open(page)
+        trees = page.evaluate("_aut.trees()")
+        bare = [T for T in trees if T["bare"]]
+        mid = page.evaluate("_aut.layout().DW") / 2
+        assert len(bare) == 2, trees
+        assert sum(T["x"] < mid for T in bare) == 1, "one bare tree on each side"
+        assert all(T["twigs"] > 30 and T["cling"] > 0 for T in bare)
+        # every leafy crown lands on the canvas (an untapped tree once drew NaN = nothing)
+        page.wait_for_timeout(300)
+        cd = page.evaluate("_aut.crownsDrawn()")
+        assert cd["lobes"] > 0 and cd["drawn"] == cd["lobes"], cd
+        before = cd
+        # a bare tree, tapped: its crown grows back, and only that tree moves
+        i = page.evaluate("_aut.trees().findIndex(T => T.bare)")
+        page.evaluate(f"_aut.gust({i})")                  # the tap's own path (a back tree may sit behind a crown)
+        page.wait_for_function(f"!_aut.trees()[{i}].bare", timeout=2_000)
+        k = page.evaluate("_aut.kicks()")
+        assert sum(1 for v in k["trees"] if v > 0) == 1 and k["trees"][i] > 0.3, k
+        page.wait_for_timeout(2_200)                       # the crown has swelled in
+        cd = page.evaluate("_aut.crownsDrawn()")
+        assert cd["drawn"] == cd["lobes"] and cd["lobes"] > before["lobes"], (cd, before)
+        assert sum(T["bare"] for T in page.evaluate("_aut.trees()")) == 1
+        # it stays leafy when the grove is re-planted for another width
+        page.set_viewport_size({"width": 1100, "height": 800})
+        page.wait_for_function("_aut.layout().DW !== 1440", timeout=5_000)
+        assert sum(T["bare"] for T in page.evaluate("_aut.trees()")) == 1
+        assert errs == []
 
     def test_the_day_cycle_and_the_rain(self, page):
         _open(page)

@@ -17,7 +17,9 @@
      trunks with bark grooves, boughs forking into twigs, and CROWNS built
      from hundreds of small leaf clusters in yellow → orange → red, baked
      once into sprites; every crown breathes with the wind as a whole and
-     its LEAVES LET GO one at a time — more in a gust
+     its LEAVES LET GO one at a time — more in a gust; and every time the scene starts,
+     one tree on each side stands BARE already — live swaying twigs with a
+     few last leaves clinging, a thick carpet of its leaves beneath
    · the GROUND — a meadow going straw-gold, a dirt path, a wooden fence on
      the right, a leaf carpet that THICKENS where leaves land, mushrooms
      under the trees, acorns and pine cones, puddles after the rain
@@ -410,6 +412,14 @@
         { x: 1430, base: 852, h: 580, spread: 245, pal: 'mixed', seed: 67, lean: -0.02 },
       ];
       const TREES = [];
+      // BARE TREES: every time the scene starts, one tree on each side of the
+      // clearing has already let go of its leaves (bare twigs, a few last leaves
+      // clinging, a thick carpet beneath); the rest keep their full crowns
+      // (picked where a bare tree READS: the big front one at the edge, or the
+      // small one beside the clearing — the middle pair hides behind the front
+      // crowns. The narrow grove's back pair, seeds 23/53, stands in for 37/41.)
+      const BARE = new Set([pick([11, 37]), pick([41, 67])]);
+      const BARE_NARROW = new Set([...BARE].map(sd => ({ 37: 23, 41: 53 })[sd] || sd));
       function layoutGrove(){
         TREES.length = 0; narrow = DW < 1000;
         if (!narrow){ for (const T of TREES_WIDE) TREES.push(Object.assign({}, T, { x: AX(T.x) })); }
@@ -421,7 +431,7 @@
           TREES.push({ x: DW * 0.90, base: 856, h: 540 * s, spread: 215 * s, pal: 'flame', seed: 67, lean: -0.02 });
         }
         TREES.sort((a, b) => a.base - b.base);   // far → near
-        for (const T of TREES) buildTree(T);
+        for (const T of TREES){ T.bare = (narrow ? BARE_NARROW : BARE).has(T.seed); buildTree(T); }
       }
       // the skeleton: trunk, boughs, limbs; lobes (the leaf masses) at the limb ends
       function buildTree(T){
@@ -446,7 +456,83 @@
         lobes.push({ x: topX, y: topY - T.spread * 0.35, r: T.spread * 0.55, ph: r() * TAU });
         T.branches = br; T.lobes = lobes;
         T.top = Math.min(...lobes.map(l => l.y - l.r)) - 20;
-        for (const Lb of lobes) bakeLobe(T, Lb, r);
+        T.twigs = []; T.cling = [];
+        if (T.bare) buildTwigs(T, br);
+        else for (const Lb of lobes) bakeLobe(T, Lb, r);
+      }
+      // a bare tree's fine wood: from every limb, twigs fan out (two levels),
+      // reaching up and out; a few last leaves cling to the tips
+      function buildTwigs(T, br){
+        const r = makeRng(T.seed * 13 + 5), up = -Math.PI / 2, w0 = T.w0;
+        const hfOf = y => clamp01((T.base - y) / Math.max(1, T.h));
+        const add = (x0, y0, a, len, w, lv, parent) => {
+          const x1 = x0 + Math.cos(a) * len, y1 = y0 + Math.sin(a) * len;
+          const tw = { x0, y0, x1, y1, w, lv, parent, ph: r() * TAU, hf: hfOf(y1), dx: 0 };
+          T.twigs.push(tw); return tw;
+        };
+        for (const B of br){
+          const a = Math.atan2(B.y1 - B.y0, B.x1 - B.x0), l = Math.hypot(B.x1 - B.x0, B.y1 - B.y0), limb = B.w1 < w0 * 0.1;
+          const n = limb ? 3 + Math.floor(r() * 2) : 2;
+          for (let i = 0; i < n; i++){
+            const f = limb ? (i === n - 1 ? 1 : 0.45 + r() * 0.5) : 0.6 + r() * 0.35;
+            const x0 = lerp(B.x0, B.x1, f), y0 = lerp(B.y0, B.y1, f);
+            let a1 = a + (r() - 0.5) * 1.5; a1 = lerp(a1, up, 0.25);                 // they reach for the light
+            const len1 = (limb ? l * 0.42 : l * 0.3) * (0.7 + r() * 0.5);
+            const t1 = add(x0, y0, a1, len1, Math.max(1.4, w0 * 0.06), 1, null);
+            const m = 2 + Math.floor(r() * 2);
+            for (let j = 0; j < m; j++){
+              const a2 = lerp(a1 + (j / (m - 1) - 0.5) * 1.2 + (r() - 0.5) * 0.3, up, 0.15);
+              const t2 = add(t1.x1, t1.y1, a2, len1 * (0.45 + r() * 0.3), Math.max(0.8, w0 * 0.028), 2, t1);
+              if (r() < 0.16) T.cling.push({ tw: t2, ci: pick(PALS[T.pal]), a: (r() - 0.5) * 0.8, s: 5 + r() * 2.5 });
+            }
+          }
+        }
+        T.twigs.sort((p, q) => p.lv - q.lv);   // parents first, so a child reads its parent's sway
+      }
+      // a bare tree, live: twigs sway with the wind (and its own tap), clinging leaves dangle
+      function drawBare(g, t, T){
+        const w = wind(t), kick = kickOf(T, t, 0.9);
+        const sw = (hf, ph) => w * (3 + 5 * hf) + Math.sin(t * 1.1 + ph) * (1 + 1.5 * w) + (kick ? kick * (7 + 15 * hf) * Math.sin((t - T.kickT) * 4.6 - hf * 1.1) : 0);
+        const bark = barkCol();
+        g.save(); g.translate(OX, OY); g.scale(S, S); g.lineCap = 'round';
+        for (let lv = 1; lv <= 2; lv++){
+          g.strokeStyle = rgb(mixc(bark, [10, 6, 4], lv === 1 ? 0.25 : 0.1), lv === 1 ? 1 : 0.9);
+          let lw = -1;
+          g.beginPath();
+          for (const tw of T.twigs){
+            if (tw.lv !== lv) continue;
+            const d0 = tw.parent ? tw.parent.dx : 0;
+            tw.dx = sw(tw.hf, tw.ph) * (lv === 1 ? 0.55 : 1);
+            if (tw.w !== lw){ if (lw !== -1){ g.stroke(); g.beginPath(); } lw = tw.w; g.lineWidth = tw.w; }
+            g.moveTo(tw.x0 + d0, tw.y0); g.quadraticCurveTo((tw.x0 + tw.x1) / 2 + (d0 + tw.dx) * 0.5, (tw.y0 + tw.y1) / 2 - 2, tw.x1 + tw.dx, tw.y1);
+          }
+          g.stroke();
+        }
+        for (const C of T.cling){
+          const x = C.tw.x1 + C.tw.dx, y = C.tw.y1, a = Math.PI / 2 + C.a + Math.sin(t * 2.3 + C.tw.ph) * 0.35 * (0.5 + w);
+          g.fillStyle = rgb(hourCol(LEAF_COLS[C.ci])); g.beginPath();
+          leafPath(g, x + Math.cos(a) * C.s, y + Math.sin(a) * C.s, C.s, a); g.fill();
+        }
+        g.restore();
+      }
+      // LEAF-UP: a tap on a bare tree brings its crown back — the lobes are baked
+      // now (once), and over ~1.8 s they swell in one after another while the
+      // bare twigs fade; from then on it is a leafy tree like the others (and it
+      // stays leafy through a re-layout)
+      const GROW_SEC = 1.8;
+      function leafUp(T, t){
+        const r = makeRng(T.seed * 31 + 7);
+        for (const Lb of T.lobes){ bakeLobe(T, Lb, r); Lb.cvT = doc.createElement('canvas'); Lb.cvT.width = Lb.cvT.height = Lb.d; tintSprite(Lb.cv, Lb.cvT); }
+        T.bare = false; T.growT = t;
+        const twin = { 37: 23, 23: 37, 41: 53, 53: 41 }[T.seed];
+        BARE.delete(T.seed); BARE_NARROW.delete(T.seed); if (twin){ BARE.delete(twin); BARE_NARROW.delete(twin); }
+        lookKey = -1;                                   // the ground repaints: a full crown's shadow
+      }
+      // one clinging leaf lets go (null when the tree has none left)
+      function clingPoint(T){
+        if (!T.cling.length) return null;
+        const C = T.cling.splice(Math.floor(Math.random() * T.cling.length), 1)[0];
+        return { x: C.tw.x1 + C.tw.dx, y: C.tw.y1 + 4 };
       }
       // one leaf: a pointed oval along its own axis (the crown's leaves are small; shape reads as mass, not outline)
       function leafPath(g, x, y, s, a){
@@ -495,7 +581,7 @@
         return dst;
       }
       function tintCrowns(){
-        for (const T of TREES) for (const Lb of T.lobes){
+        for (const T of TREES) if (!T.bare) for (const Lb of T.lobes){
           if (!Lb.cvT){ Lb.cvT = doc.createElement('canvas'); Lb.cvT.width = Lb.cvT.height = Lb.d; }
           tintSprite(Lb.cv, Lb.cvT);
         }
@@ -548,15 +634,30 @@
         for (const T of TREES) paintTrunk(g, T);
       }
       // the crowns, live: every lobe is its tinted sprite, translated by the wind (never sheared)
+      let crownsDrawn = 0;
       function drawCrowns(g, t){
-        const w = wind(t);
+        const w = wind(t); crownsDrawn = 0;
         for (const T of TREES){
-          const hk = 1 / Math.max(1, T.h), kick = kickOf(T, t, 0.9);
+          if (T.bare){ drawBare(g, t, T); continue; }
+          const grow = T.growT == null ? 1 : clamp01((t - T.growT) / GROW_SEC);
+          if (grow < 1){ g.globalAlpha = 1 - smooth(grow); drawBare(g, t, T); g.globalAlpha = 1; }
+          const hk = 1 / Math.max(1, T.h), kick = kickOf(T, t, 0.9), nL = T.lobes.length;
+          let li = 0;
           for (const Lb of T.lobes){
             const hf = clamp01((T.base - Lb.y) * hk);                        // higher lobes swing more
-            const ox = w * (4 + 6 * hf) + Math.sin(t * 1.1 + Lb.ph) * (1 + 1.5 * w) + kick * (7 + 15 * hf) * Math.sin((t - T.kickT) * 4.6 - hf * 1.1),
-                  oy = Math.sin(t * 0.8 + Lb.ph) * 1.2 * w + kick * 2.5 * hf * Math.sin((t - T.kickT) * 6.1 + Lb.ph);
+            // (an untapped tree has no kickT — guard it, or 0 × NaN hides the crown)
+            const ox = w * (4 + 6 * hf) + Math.sin(t * 1.1 + Lb.ph) * (1 + 1.5 * w) + (kick ? kick * (7 + 15 * hf) * Math.sin((t - T.kickT) * 4.6 - hf * 1.1) : 0),
+                  oy = Math.sin(t * 0.8 + Lb.ph) * 1.2 * w + (kick ? kick * 2.5 * hf * Math.sin((t - T.kickT) * 6.1 + Lb.ph) : 0);
+            if (grow < 1){
+              // lobes swell in staggered, inner (lower in the list = boughs first) to the heart
+              const k = smooth(clamp01(grow * 1.6 - (li++ / nL) * 0.6)); if (k <= 0.01) continue;
+              const sc = 0.35 + 0.65 * k, sd = Lb.d * S * sc;
+              g.globalAlpha = k;
+              g.drawImage(Lb.cvT || Lb.cv, OX + (Lb.x + ox) * S - sd / 2, OY + (Lb.y + oy) * S - sd / 2, sd, sd);
+              g.globalAlpha = 1; crownsDrawn++; continue;
+            }
             const sx = OX + (Lb.x - Lb.d / 2 + ox) * S, sy = OY + (Lb.y - Lb.d / 2 + oy) * S, sd = Lb.d * S;
+            if (sx === sx && sy === sy) crownsDrawn++;
             g.drawImage(Lb.cvT || Lb.cv, Math.round(sx * DPR) / DPR, Math.round(sy * DPR) / DPR, sd, sd);
           }
         }
@@ -610,7 +711,7 @@
             const kr = r(); SHROOMS.push({ x: T.x + side * (T.w0 * 1.4 + r() * T.spread * 0.45), y: T.base + 4 + r() * 22, s: 0.6 + r() * 0.45, kind: kr < 0.4 ? 'agaric' : kr < 0.7 ? 'bolete' : 'fairy', k: 1, born: -9 });
           }
           // the carpet already lying under each crown
-          const n2 = narrow ? 80 : 150;
+          const n2 = Math.round((narrow ? 80 : 150) * (T.bare ? 1.8 : 1));
           for (let i = 0; i < n2; i++){
             const a = r() * TAU, rr = Math.sqrt(r()) * T.spread * 0.9;
             CARPET0.push({ x: T.x + Math.cos(a) * rr, y: T.base + 2 + Math.sin(a) * rr * 0.22 + r() * 14, s: 5 + r() * 4, a: r() * TAU, c: pick(PALS[T.pal]) });
@@ -724,7 +825,7 @@
         const sp = sunPos(tod);
         for (const T of TREES){
           const lit = sp.up && L.sunA > 0.1 ? (sp.x < T.x ? 1 : -1) : 0;
-          g.fillStyle = rg(g, 0, 0, 0, 1, [[0, rgb([30, 20, 10], 0.22 * L.daylight)], [1, 'rgba(30,20,10,0)']]);
+          g.fillStyle = rg(g, 0, 0, 0, 1, [[0, rgb([30, 20, 10], (T.bare ? 0.07 : 0.22) * L.daylight)], [1, 'rgba(30,20,10,0)']]);
           g.save(); g.translate(T.x + lit * T.spread * (0.3 + 0.5 * L.warm), T.base + 10); g.scale(T.spread * 1.1, T.spread * 0.2); g.beginPath(); g.arc(0, 0, 1, 0, TAU); g.fill(); g.restore();
         }
         // the carpet that was already there
@@ -830,7 +931,11 @@
         const w = wind(t);
         // a steady trickle, more in the wind, from every crown by its size
         leafAcc += dt * (0.35 + 1.6 * w) * (narrow ? 0.6 : 1);
-        while (leafAcc > 1){ leafAcc -= 1; const T = pick(TREES); if (T) releaseLeaf(T); }
+        while (leafAcc > 1){
+          leafAcc -= 1; const T = pick(TREES); if (!T) continue;
+          if (!T.bare) releaseLeaf(T);
+          else if (Math.random() < 0.08){ const pt = clingPoint(T); if (pt) releaseLeaf(T, pt); }
+        }
         for (let i = LEAVES.length - 1; i >= 0; i--){
           const lf = LEAVES[i];
           const flutter = Math.sin(t * lf.f + lf.ph);
@@ -1399,7 +1504,12 @@
       function nextKeyFrom(v){ for (const K of KEYS) if (K.at > v + 0.01) return K.at; return KEYS[0].at + 1; }
       function tweenTo(to){ todTween = { from: tod, to, t0: lastT, dur: 2.2 }; }
       const taps = { tree: 0, snail: 0, hog: 0, bunny: 0, squill: 0, ground: 0, sky: 0, cloud: 0 };
-      function gust(T, t){ T.kickT = t; gustAt(T.x, t, 1); const n = narrow ? 14 : 22; for (let i = 0; i < n; i++) releaseLeaf(T, null, true); taps.tree++; }
+      function gust(T, t){
+        T.kickT = t; gustAt(T.x, t, 1);
+        if (T.bare){ leafUp(T, t); taps.leafUp = (taps.leafUp || 0) + 1; }
+        else { const n = narrow ? 14 : 22; for (let i = 0; i < n; i++) releaseLeaf(T, null, true); }
+        taps.tree++;
+      }
       function onClick(e){
         if (e.target.closest(UI_SEL)) return;
         const dx = (e.clientX - OX) / S, dy = (e.clientY - OY) / S, t = lastT;
@@ -1434,7 +1544,7 @@
         rainState: () => ({ phase: RAIN.phase, k: +RAIN.k.toFixed(2), rainbow: +RAIN.rainbow.toFixed(2), drops: DROPS.length, wet: +wet.toFixed(2), nextAt: +RAIN.nextAt.toFixed(1), count: RAIN.count }),
         wind: () => wind(lastT), gust: i => { const T = TREES[i == null ? Math.floor(Math.random() * TREES.length) : i]; if (T) gust(T, lastT); },
         sun: () => sunPos(tod), moon: () => moonPos(tod),
-        trees: () => TREES.map(T => ({ x: Math.round(T.x), base: T.base, h: T.h, spread: T.spread, pal: T.pal, lobes: T.lobes.length, top: Math.round(T.top) })),
+        trees: () => TREES.map(T => ({ x: Math.round(T.x), base: T.base, h: T.h, spread: T.spread, pal: T.pal, lobes: T.lobes.length, top: Math.round(T.top), bare: !!T.bare, twigs: T.twigs.length, cling: T.cling.length })),
         leaves: () => ({ falling: LEAVES.length, released, landed, max: MAX_LEAVES }),
         snails: () => SNAILS.map(Sn => { const P = snailPos(Sn, lastT); return { kind: Sn.kind, x: Math.round(P.x), y: Math.round(P.y), dir: Sn.dir, hide: +Sn.hide.toFixed(2), k: Sn.k == null ? null : +Sn.k.toFixed(3), trail: Sn.trail.length }; }),
         snailXY: i => { const Sn = SNAILS[i]; if (!Sn) return null; const P = snailPos(Sn, lastT); return { x: OX + P.x * S, y: OY + (P.y - 8 * Sn.s) * S }; },
@@ -1450,6 +1560,7 @@
         groundXY: () => ({ x: OX + DW * 0.5 * S, y: OY + 780 * S }),
         skyXY: () => ({ x: OX + DW * 0.5 * S, y: OY + 120 * S }),
         taps: () => Object.assign({}, taps),
+        crownsDrawn: () => ({ drawn: crownsDrawn, lobes: TREES.reduce((n, T) => n + (T.bare ? 0 : T.lobes.length), 0) }),
         kicks: () => ({ trees: TREES.map(T => +kickOf(T, lastT, 0.9).toFixed(3)), squills: SQUILLS.map(Sq => +kickOf(Sq, lastT, 1.3).toFixed(3)) }),
         bunnies: () => BUNNIES.map(b => { const r = b.el.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.bottom), w: Math.round(r.width), coat: b._coat || 'lavender', active: !!b.active, filter: b.el.style.filter }; }),
         bunnyXY: i => { const b = BUNNIES[i]; if (!b) return null; const r = b.el.getBoundingClientRect(); return { x: r.left + r.width * 0.5, y: r.top + r.height * 0.6 }; },
