@@ -79,7 +79,7 @@ class TestSupermanColumnAdd:
         first mistake must reveal the line with its NUMBERS visible (not CSS-hidden
         by a stale lock) and the ± buttons enabled — no page refresh needed."""
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(120)
         enter_mode(page, 'sup')
@@ -230,7 +230,7 @@ class TestSupermanColumnAdd:
         """Leaving Superman removes the column DOM and restores the check button."""
         self._enter_sup(page)
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.wait_for_timeout(200)
         assert page.locator("#colx-root").count() == 0
         assert page.evaluate(
@@ -657,7 +657,7 @@ class TestColumnSubtraction:
         check button."""
         self._enter_sub(page)
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.wait_for_timeout(200)
         assert page.locator("#colx-root").count() == 0
         assert page.evaluate(

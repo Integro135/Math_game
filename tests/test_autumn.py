@@ -118,6 +118,28 @@ class TestCreatures:
         page.evaluate("_aut.setTod(0.9)")
         page.wait_for_function("_aut.bees().every(b => b.away > 0.9)", timeout=5_000)
 
+    def test_the_unicorn_valley_bunnies_hop_and_spring_when_tapped(self, page):
+        _open(page)
+        page.wait_for_function("_aut.bunnies().length === 3", timeout=TIMEOUT)
+        b0 = page.evaluate("_aut.bunnies()")
+        assert [b["coat"] for b in b0] == ["honey", "lavender", "pink"]
+        H = page.evaluate("innerHeight")
+        assert all(H * 0.93 < b["y"] < H * 1.0 for b in b0), "they hop the foreground band"
+        page.wait_for_timeout(1500)
+        assert [b["x"] for b in page.evaluate("_aut.bunnies()")] != [b["x"] for b in b0], "they hop along"
+        for _ in range(4):                       # a moving target: aim, tap, check
+            i = page.evaluate("_aut.bunnies().findIndex(b => b.active && b.x > 40 && b.x < innerWidth - 40)")
+            if i < 0:
+                page.wait_for_timeout(500); continue
+            xy = page.evaluate(f"_aut.bunnyXY({i})")
+            page.mouse.click(xy["x"], xy["y"])
+            if page.evaluate("_aut.taps().bunny") > 0: break
+        page.wait_for_function("_aut.taps().bunny >= 1", timeout=2_000)
+        page.wait_for_timeout(500)
+        assert [b["coat"] for b in page.evaluate("_aut.bunnies()")] != ["honey", "lavender", "pink"], "a new coat mid-spring"
+        page.evaluate("_aut.setTod(0.9)")
+        page.wait_for_function("_aut.bunnies().every(b => b.filter.includes('brightness(0.5'))", timeout=3_000)
+
     def test_storks_cross_the_sky_and_a_mushroom_pops_on_the_ground(self, page):
         _open(page)
         xy = page.evaluate("_aut.skyXY()")
@@ -141,9 +163,11 @@ class TestFitAndLifecycle:
         assert all(0 <= T["x"] <= lay["DW"] for T in trees)
         sn = page.evaluate("_aut.snails()")
         assert [s["kind"] for s in sn].count("tree") == 1
+        page.wait_for_function("_aut.bunnies().length === 2", timeout=TIMEOUT)
         # back to a wide window: the grove is re-planted
         page.set_viewport_size({"width": 1280, "height": 800})
         page.wait_for_function("!_aut.layout().narrow && _aut.trees().length === 6", timeout=5_000)
+        page.wait_for_function("_aut.bunnies().length === 3", timeout=5_000)
         assert errs == []
 
     def test_restart_leaves_one_canvas_and_no_errors(self, page):
@@ -178,6 +202,7 @@ class TestInGame:
         assert info["body"] and info["skin"] and info["stage"] == "block" and info["canvases"] == 1
         assert info["toggle"] == "🍂" and info["active"] == ["pickTheme('autumn')"] and info["rider"] == "🦔"
         assert info["stored"] == "autumn"
+        page.wait_for_function("_aut.bunnies().length === 3", timeout=TIMEOUT)   # the unicorn valley's guests
         # the theme toggle cycles through autumn and on to the first theme
         page.evaluate("toggleTheme()")
         page.wait_for_function("document.body.classList.contains('theme-girls')", timeout=TIMEOUT)

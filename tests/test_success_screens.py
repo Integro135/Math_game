@@ -45,7 +45,7 @@ class TestPraiseText:
         deterministic (the screen calls _praise() exactly once)."""
         page.evaluate("setPlayerName('נֹעָה')")
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TA, a: 2, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(150)
         # install a probe screen as the only style so it is guaranteed picked,
@@ -86,7 +86,7 @@ class TestSuccessDuration:
     def _measure(self, page, super_run):
         """Trigger one celebration and return how long _fwOn stays true (ms)."""
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TA, a: 2, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(150)
         # install a no-op probe as the ONLY style → always picked, host-timed;
@@ -121,7 +121,7 @@ class TestSuccessDuration:
         with the desktop Enter/Space skip) and advances to the next problem. A real
         touch fires the same document `pointerdown`, so this also covers mobile."""
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TA, a: 2, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(150)
         page.evaluate("""

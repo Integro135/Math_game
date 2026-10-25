@@ -10,7 +10,7 @@ from helpers import *
 class TestJarStageDisplay:
     def _open_jar(self, page, a=4):
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate(
             f"problems[0] = {{t: TA, a: {a}, b: 3}}; idx = 0; loadProblem()")
         page.wait_for_timeout(200)
@@ -68,7 +68,7 @@ class TestJarStageDisplay:
 class TestAidToggleIcons:
     def _open_menu(self, page):
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(200)
         reveal_aids(page)

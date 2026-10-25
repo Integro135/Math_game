@@ -1733,6 +1733,18 @@ a dark coat, a pale pointed snout, black nose, big eye, round ear, four
 stepping legs. A tap CURLS it into a ball (the spine fan closes over, the
 face fades) that rolls on a little, then it unrolls. It hurries in the rain.
 
+**The bunnies** (`BUNNIES`, guests from the unicorn valley): the valley's CSS
+rabbit rig `unicorns/bunny.item.js` is loaded by the scene itself (`needBunny`,
+also in `preload`, sharing the unicorn scene's `data-uni3dep="Bunny"` script
+tag) and three of them (two on a narrow layout) — honey, lavender and pink —
+hop the hedgehog's foreground band (bottom 1.4–4.2 %) on `roam()`, coming and
+going off the edges. They live in a DOM layer over the canvas; the hour
+darkens each rabbit with its own `filter` (brightness/saturate + a little
+sepia in the golden hour, re-set only when the look's key changes — never a
+full-layer filter). A tap → `startle()`: a big sparkly spring and the next
+coat. They are re-planted when the layout flips narrow ↔ wide.
+`_aut.bunnies()`, `bunnyXY(i)`.
+
 **The storks** (`SKEINS`, `drawStork`): every 55–105 s by day a skein of 7–13
 crosses high up in a wavering V — seen from BELOW (body along the flight
 line, two wings spread sideways that fold on the beat, black primaries, a red
@@ -1746,7 +1758,7 @@ go grey — then it fades and a RAINBOW stands over the hills opposite the sun
 for ~10 s. `_aut.rain(len)`, `rainAt(k, phase)`, `rainbow(k)` for the stills.
 
 **Clicks** (`onClick`, UI filter `UI_SEL`): sun / moon → tween to the next
-key; a snail → tuck in; the hedgehog → curl; a squill → petals + bees; a tree
+key; a bunny → a startled spring + new coat; a snail → tuck in; the hedgehog → curl; a squill → petals + bees; a tree
 (crown or trunk) → gust; a cloud → rain; the upper sky → storks; the ground →
 a mushroom. Counted in `_aut.taps()`.
 

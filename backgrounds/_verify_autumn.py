@@ -85,6 +85,7 @@ with sync_playwright() as pw:
     pmax = page.evaluate("window._aut.pmax()")
     lay = page.evaluate("window._aut.layout()")
     leaves = page.evaluate("window._aut.leaves()")
+    bunnies = page.evaluate("window._aut.bunnies()")
     if STANDALONE:
         page.evaluate("document.getElementById('restart').click()")
         page.wait_for_timeout(800)
@@ -97,6 +98,7 @@ with sync_playwright() as pw:
     print(VIEW, "pmax:", {k: round(v, 1) for k, v in pmax.items()})
     print(VIEW, "layout:", lay)
     print(VIEW, "leaves:", leaves)
+    print(VIEW, "bunnies:", bunnies)
     page.context.close()
   browser.close()
 print("shots:", list(shots.values()))

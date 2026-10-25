@@ -55,10 +55,13 @@ class TestDoubleUnknown:
         used throughout this file); mode-10 TD *generation* is covered by the
         slot-placement tests, so no random session-hunting is needed here."""
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         r = 8
         page.evaluate(f"problems[0] = {{t: TDA, r: {r}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#ans1:not([disabled])", timeout=TIMEOUT)
+        # loadProblem focuses #ans1 60 ms later — let that land first, or it can
+        # steal focus mid-fill and the second number is typed into the first box
+        page.wait_for_function("document.activeElement && document.activeElement.id === 'ans1'", timeout=TIMEOUT)
         v1 = max(1, r // 2)           # non-trivial split
         v2 = r - v1
         page.fill("#ans1", str(v1))
@@ -72,10 +75,13 @@ class TestDoubleUnknown:
         The TDS problem is forced deterministically; mode-10 TD *generation* is
         covered by the slot-placement tests, so no random session-hunting here."""
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         r = 8
         page.evaluate(f"problems[0] = {{t: TDS, r: {r}}}; idx = 0; loadProblem()")
         page.wait_for_selector("#ans1:not([disabled])", timeout=TIMEOUT)
+        # loadProblem focuses #ans1 60 ms later — let that land first, or it can
+        # steal focus mid-fill and the second number is typed into the first box
+        page.wait_for_function("document.activeElement && document.activeElement.id === 'ans1'", timeout=TIMEOUT)
         v1 = r + 3                     # r+3 − 3 = r
         v2 = 3
         page.fill("#ans1", str(v1))

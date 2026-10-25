@@ -19,7 +19,7 @@ class TestAnswerBorders:
 
     def test_wrong_red_then_typing_clears(self, page):
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(200)
         page.fill("#ans", "9")
@@ -37,7 +37,7 @@ class TestAnswerBorders:
         page.evaluate("applyTheme('galaxy')")
         page.wait_for_timeout(1800)
         page.evaluate("setMode(10)")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")
         page.wait_for_timeout(200)
         page.fill("#ans", "5")

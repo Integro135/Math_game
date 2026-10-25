@@ -23,7 +23,7 @@ class TestDynamicExercises:
         enter_mode(page, 'big')
         page.wait_for_function(
             "typeof EXERCISES.types.big_step === 'object'", timeout=TIMEOUT)
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         assert page.evaluate("[...problems].every(p => p.t === TBG)")
 
     def test_column_add_loads_on_demand(self, page):

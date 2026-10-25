@@ -46,7 +46,9 @@
 
    CLICKS (document listener filtered by UI_SEL): a tree → a GUST, a burst
    of leaves lets go from that crown; a snail → it tucks in and peeks out;
-   the hedgehog → it curls up; a sea squill → a puff of bees and petals;
+   the hedgehog → it curls up; a BUNNY (the unicorn valley's hopping
+   rabbits, unicorns/bunny.item.js, visiting the foreground) → a sparkly
+   spring and a new coat; a sea squill → a puff of bees and petals;
    the ground → a mushroom pops up where you tapped (or a leaf pile
    scatters); the sky → a skein of storks; a cloud → a shower.
 
@@ -67,6 +69,19 @@
   const rnd = (a, b) => a + Math.random() * (b - a);
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const IS_TOUCH = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+  // the unicorn valley's hopping CSS rabbits (backgrounds/unicorns/bunny.item.js),
+  // borrowed as guests — loaded once, shared with the unicorn scene
+  const BASE = (function(){ const sc = doc.currentScript; return sc && sc.src ? sc.src.replace(/[^/]*$/, '') : 'backgrounds/'; })();
+  function needBunny(cb){
+    if (window.Bunny){ cb(); return; }
+    let ex = doc.querySelector('script[data-uni3dep="Bunny"]');
+    if (!ex){
+      ex = doc.createElement('script');
+      ex.src = BASE + 'unicorns/bunny.item.js'; ex.setAttribute('data-uni3dep', 'Bunny');
+      doc.head.appendChild(ex);
+    }
+    ex.addEventListener('load', cb); ex.addEventListener('error', cb);
+  }
 
   function hexc(c){
     if (Array.isArray(c)) return c;
@@ -131,6 +146,7 @@
   window.BACKGROUNDS.autumn = {
     skin: 'autumn',
     aids: 'autumn',
+    preload(){ needBunny(function(){}); },
     init({ stage }){
       let stopped = false, rafId = 0, t0 = null, lastT = 0;
       stage.innerHTML = ''; stage.style.overflow = 'hidden';
@@ -1248,7 +1264,9 @@
         AXK = Math.min(1, DW / DW0);
         S = H / DH; OX = (W - DW * S) / 2; OY = 0;
         if (DW !== layoutDW){
+          const wasNarrow = narrow;
           layoutDW = DW; layoutGrove(); layoutGround(); layoutSquills(); layoutSnails(); buildParticles(); buildClouds();
+          if (BUNNIES.length && wasNarrow !== narrow){ for (const b of BUNNIES) b.remove(); BUNNIES.length = 0; if (bunLayer) bunLayer.remove(); bunLayer = null; setupBunnies(); }
           LEAVES.length = 0; PETALS.length = 0;
         }
         skyL = makeLayer(W, H, DPR); farL = makeLayer(W, H, DPR); groundL = makeLayer(W, H, DPR); groveL = makeLayer(W, H, DPR); frontL = makeLayer(W, H, DPR);
@@ -1270,6 +1288,7 @@
           if (k >= 1){ tod = todTween.to % 1; todTween = null; }
         } else tod = (tod + dt / DAY_SEC * todSpeed) % 1;
         updateRain(t, dt);
+        if (BUNNIES.length) tintBunnies();
         repaintIfNeeded();
         updateLeaves(t, dt); updateSnails(t, dt); updateHog(t, dt); updateBees(t, dt);
         if (t > nextSkeinAt && L.daylight > 0.5){ launchSkein(); nextSkeinAt = t + 55 + Math.random() * 50; }
@@ -1330,10 +1349,52 @@
         }
       }
 
+      // ── the bunnies: guests from the unicorn valley — its CSS rabbits hop the
+      //    foreground band (the hedgehog's, in front of every trunk), darkened
+      //    with the hour per rabbit (never a full-layer filter); a tap startles
+      //    one into a big sparkly spring and a new coat
+      const BUNNIES = [];
+      let bunLayer = null, bunTintKey = null;
+      function setupBunnies(){
+        if (stopped || !window.Bunny || BUNNIES.length) return;
+        bunLayer = doc.createElement('div');
+        bunLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden';
+        stage.appendChild(bunLayer);
+        const sz = f => Math.max(5, Math.round(f * Math.min(1.15, S)));
+        const specs = [
+          { size: 9, coat: 'honey', band: [1.6, 3.2], hop: 2.2 },
+          { size: 7, coat: undefined, band: [2.4, 4.2], hop: 1.9 },
+          { size: 8, coat: 'pink', band: [1.4, 3.6], hop: 2.0 },
+        ].slice(0, narrow ? 2 : 3);
+        for (const sp of specs){
+          const b = window.Bunny.place(bunLayer, { size: sz(sp.size), z: 4 });
+          if (sp.coat) b.setCoat(sp.coat);
+          b.roam({ bandMinPct: sp.band[0], bandMaxPct: sp.band[1], hopPct: narrow ? sp.hop * 1.8 : sp.hop, hopSec: 0.5,
+                   restMinSec: 0.2, restMaxSec: 1.4, waitMinSec: 2, waitMaxSec: 7, startOnScreen: true });
+          BUNNIES.push(b);
+        }
+        bunTintKey = null;
+      }
+      function tintBunnies(){
+        const key = Math.round(L.daylight * 40) * 100 + Math.round(L.warm * 20);
+        if (key === bunTintKey) return;
+        bunTintKey = key;
+        const f = 'brightness(' + (0.5 + 0.5 * L.daylight).toFixed(3) + ') saturate(' + (0.75 + 0.25 * L.daylight).toFixed(3) + ')' +
+                  (L.warm > 0.05 ? ' sepia(' + (0.22 * L.warm).toFixed(3) + ')' : '');
+        for (const b of BUNNIES) b.el.style.filter = f;
+      }
+      function bunnyAt(x, y){
+        for (const b of BUNNIES){
+          const r = b.el.getBoundingClientRect();
+          if (r.width > 0 && x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8) return b;
+        }
+        return null;
+      }
+
       // ── clicks ──
       function nextKeyFrom(v){ for (const K of KEYS) if (K.at > v + 0.01) return K.at; return KEYS[0].at + 1; }
       function tweenTo(to){ todTween = { from: tod, to, t0: lastT, dur: 2.2 }; }
-      const taps = { tree: 0, snail: 0, hog: 0, squill: 0, ground: 0, sky: 0, cloud: 0 };
+      const taps = { tree: 0, snail: 0, hog: 0, bunny: 0, squill: 0, ground: 0, sky: 0, cloud: 0 };
       function gust(T, t){ gustAt(T.x, t, 1); const n = narrow ? 14 : 22; for (let i = 0; i < n; i++) releaseLeaf(T, null, true); taps.tree++; }
       function onClick(e){
         if (e.target.closest(UI_SEL)) return;
@@ -1341,6 +1402,7 @@
         const sp = sunPos(tod), mp = moonPos(tod);
         if (sp.up && L.sunA > 0.18 && Math.hypot(dx - sp.x, dy - sp.y) < 90){ tweenTo(nextKeyFrom(tod)); return; }
         if (mp.up && L.moon > 0.1 && Math.hypot(dx - mp.x, dy - mp.y) < 70){ tweenTo(nextKeyFrom(tod)); return; }
+        const bn = bunnyAt(e.clientX, e.clientY); if (bn){ bn.startle(); taps.bunny++; return; }
         const Sn = snailAt(dx, dy); if (Sn){ Sn.hideT = t; Sn.pause = 3; taps.snail++; return; }
         if (hogAt(dx, dy)){ HOG.curlT = t; taps.hog++; return; }
         const Sq = squillAt(dx, dy); if (Sq){ squillTap(Sq, t); taps.squill++; return; }
@@ -1354,6 +1416,7 @@
       addEventListener('resize', resize);
       doc.addEventListener('click', onClick);
       rafId = requestAnimationFrame(frame);
+      needBunny(setupBunnies);
 
       window._aut = BACKGROUNDS.autumn._test = {
         tod: () => tod,
@@ -1383,6 +1446,8 @@
         groundXY: () => ({ x: OX + DW * 0.5 * S, y: OY + 780 * S }),
         skyXY: () => ({ x: OX + DW * 0.5 * S, y: OY + 120 * S }),
         taps: () => Object.assign({}, taps),
+        bunnies: () => BUNNIES.map(b => { const r = b.el.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.bottom), w: Math.round(r.width), coat: b._coat || 'lavender', active: !!b.active, filter: b.el.style.filter }; }),
+        bunnyXY: i => { const b = BUNNIES[i]; if (!b) return null; const r = b.el.getBoundingClientRect(); return { x: r.left + r.width * 0.5, y: r.top + r.height * 0.6 }; },
         layout: () => ({ DW, k: +AXK.toFixed(3), narrow, trees: TREES.map(T => Math.round(T.x)), squills: SQUILLS.map(Sq => Math.round(Sq.x)), fence: FENCE ? Math.round(FENCE.x0) : null }),
         perf: () => ({ dpr: +DPR.toFixed(2), DW, halfRate: perf.halfRate, gapEma: +perf.gapEma.toFixed(1), costEma: +perf.costEma.toFixed(2), frames: perf.frames, drawn: perf.drawn, S: +S.toFixed(3) }),
         pmax: () => PMAX,
@@ -1395,6 +1460,7 @@
         if (rafId) cancelAnimationFrame(rafId);
         removeEventListener('resize', resize);
         doc.removeEventListener('click', onClick);
+        for (const b of BUNNIES) b.remove(); BUNNIES.length = 0;
         if (window._aut === BACKGROUNDS.autumn._test) delete window._aut;
         stage.innerHTML = '';
       };

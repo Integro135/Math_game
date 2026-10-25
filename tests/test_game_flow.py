@@ -68,7 +68,7 @@ class TestGameFlow:
         default Queen/mx pool can place a column-sub or two-unknown problem (no
         single #ans) at an early slot, which would make solve_one() non-deterministic."""
         page.evaluate("setMode(10); restart()")
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         def width():
             style = page.locator("#prog-bar").get_attribute("style") or ""
             return float(style.split("width:")[1].split("%")[0].strip()) if "width:" in style else 0.0

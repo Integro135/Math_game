@@ -10,7 +10,7 @@ from helpers import *
 class TestBigStepMode:
     def _enter_big(self, page):
         enter_mode(page, 'big')
-        page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+        page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.wait_for_timeout(150)
 
     def test_big_pool_is_valid_and_mixed(self, page):
@@ -40,7 +40,7 @@ class TestBigStepMode:
                 ops.add(p["op"])
             assert ops == {"sub", "add"}, f"each session mixes sub & add, got {ops}"
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 12", timeout=TIMEOUT)
+            page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         assert saw_sub and saw_add
         assert max(sub_steps) >= 5, \
             f"subtraction must now step beyond the old 4-cap (up to 6), got {sorted(sub_steps)}"
