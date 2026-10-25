@@ -4,8 +4,8 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef2.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives2.bg.js` | Loaded by the game at runtime (`reef.bg.js` and `maldives.bg.js` are the legacy reef / beach scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `dinosaurs3.html`, `maldives2.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef2.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives2.bg.js`, `autumn.bg.js` | Loaded by the game at runtime (`reef.bg.js` and `maldives.bg.js` are the legacy reef / beach scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `dinosaurs3.html`, `maldives2.html`, `autumn.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
 | **Unicorn valley** | `unicorns3.bg.js` + `unicorns/*.item.js` | `girls` → **`unicorns3`**: v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
 | **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
@@ -46,8 +46,9 @@ rebuilds its layout in `resize()` when DW changes (an orientation flip), and
 reports it through `_reef2.layout()` / `_dubai3.layout()` / `_mv2.layout()`.
 
 `dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef2` (the 2026-09 rebuild; `reef.bg.js` is the legacy scene, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`,
-`maldives→maldives2` (the 2026-09 canvas rebuild with the day cycle, storms and the pokemon walkers; `maldives.bg.js` is the legacy SVG scene, unloaded)
-(🏙️, 🦁, 🦕 and 🏝️ are their own themes in the menu). Canvas-scene themes spawn no
+`maldives→maldives2` (the 2026-09 canvas rebuild with the day cycle, storms and the pokemon walkers; `maldives.bg.js` is the legacy SVG scene, unloaded),
+`autumn→autumn` (the 🍂 golden grove, 2026-10 — its own section at the end of this file)
+(🏙️, 🦁, 🦕, 🏝️ and 🍂 are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
 #stars-layer {display:block}` rule in themes.css, or the stage stays hidden.
 
@@ -1632,3 +1633,131 @@ walkers, `auto(false)` stops the scheduler (a probe that spawns its own
 walkers must turn it off, or the scheduler slips one in between two calls),
 `clear()` removes them all. The harness / verify script use `setSpeed(0)` to
 hold the clock for stills.
+
+---
+
+## autumn.bg.js — the golden grove (the 🍂 theme, 2026-10)
+
+Theme `autumn` → `autumn` (`_BG_THEMES`). Harness `autumn.html` (Dawn …
+Night, Pause, Fast ×20, Rain, Gust, Storks, Hedgehog, Restart); stills with
+`_verify_autumn.py` (nine looks at desktop + the first two at phone / portrait
+tablet / landscape tablet, crops of a tree, a squill, the hedgehog, the storks).
+Skin `game/skins/autumn.skin.css` ("Golden Grove" — warm-brown near-transparent
+panels, amber accents, no blur except the equation island, a solid amber
+play-again button); aids `aids/autumn.aids.js` (a hedgehog rides the number
+line with a 🍂 trail, the jar is a wicker basket of acorns, the chain garden
+grows autumn saplings). Built from zero, nothing shared with the other scenes.
+Tests: `tests/test_autumn.py` (the harness + one in-game class).
+
+**Stage.** Design height 900, horizon `HZ = 560`; the design WIDTH follows the
+window's aspect (the responsive recipe above) with `AX()` anchoring: trees keep
+their 1600-space x and hold to their edge. Below DW 1000 `layoutGrove()`
+re-plants a NARROW grove (one big tree each side at 10 % / 90 %, two smaller
+behind at 30 % / 70 %, everything scaled by `DW/1000`), with 3 squills, 2 ground
+snails + 1 climber. The game card sits top-centre, so the middle of the picture
+is the low clearing and the path; the heroes stand at the sides.
+
+**The hour** (`KEYS`, `lookAt`, `DAY_SEC 300`): dawn (violet-peach, mist lying
+in the clearing — `drawMist`), morning, noon, GOLDEN HOUR (the boot look: long
+warm light, the crowns lit from behind, `paintFrontL` bakes six additive sun
+shafts), sunset, dusk, night (moon, 150 twinkling stars, fireflies). A shorter
+sun arc (`arcPos`: ±0.4·DW) keeps the golden-hour sun in the gap between the
+groves instead of behind the right trees. `rainify(L, k)` cools the WHOLE look
+during a shower (never per layer). Still layers — `skyL`, `farL` (three rolling
+ranges, `hillY` with a FIXED 190-px wavelength so a phone shows one gentle rise
+rather than peaks, plus a hazed fringe of far crowns), `groundL`, `groveL`
+(trunks + boughs), `frontL` (rays + vignette) — repaint per look step (24 per
+transition); everything baked once is re-TINTED per look instead
+(`tintSprite`: `source-atop` washes — warm at the golden hour, grey in rain,
+blue at night — over the crown lobes, the squill spikes, the clouds, the leaf
+sheet and the carpet).
+
+**The trees** (`TREES_WIDE`, `buildTree`, `bakeLobe`, `paintTrunk`,
+`drawCrowns`). Each tree is a seeded skeleton: a tapered trunk with a root
+flare, lit on the sun side, bark grooves, 3–4 boughs forking into 2–3 limbs,
+and a LOBE (a leaf mass) at every limb end + one over the trunk top. Each lobe
+is baked ONCE into a sprite: a dark heart, then `R²·0.075` small pointed-oval
+leaves placed by √-radius, coloured from the tree's run of `LEAF_COLS`
+(`PALS`: gold / amber / flame / ruby / mixed) and shaded by height (lit tops,
+dark undersides), sorted so the lit ones land on top, batched into one fill per
+colour key. Per frame each lobe sprite is drawn TRANSLATED (never sheared) by
+the wind — higher lobes swing more, a tapped tree's gust (`gustAt`, decaying
+`exp(−0.6 t)`, localised by distance) swings its crown hardest. The six crowns
+cost ~0.45 ms a frame.
+
+**Leaves** (`LEAVES`, `bakeLeafSheet`, `updateLeaves`, `stampLeaf`). A sprite
+sheet of 4 shapes (maple, oak, ovate, round) × 12 colours, with midrib, veins
+and stem. A steady trickle lets go from random crowns (`0.35 + 1.6·wind` per
+second); a tap on a tree bursts 22 loose with an upward kick. Each leaf tumbles
+on its own flutter phase (horizontal rocking, slower fall on the up-flutter,
+spin), rides the wind + gust, and lands at a `landY` near its tree's foot where
+it is STAMPED flattened into `carpetL` (design-space, neutral colours) — so the
+carpet thickens over the session; `carpetT` is the per-look tint of it, redone
+when leaves land. Cap 120 (70 on touch). Also on the ground: a pre-scattered
+carpet, acorns and pine cones, MUSHROOMS under the trees — fly agarics (a
+domed red cap with a sheen, soft white warts, a gill band, a skirted stem),
+boletes (chestnut cap over ochre pores) and 'fairy' clusters of three tiny
+honey-coloured cones; `drawMushroom` works in a unit space where a cap is ~28 px
+wide at s = 1 and the scatter uses s 0.6–1.05, i.e. about HALF a snail — the
+first cut was twice that and Eran called them out of proportion (a tap on the
+open ground pops a new one, which grows then settles into the baked layer),
+puddles that only show once it has rained (`wet`), the fence on the right with a
+dew-strung web in its corner (brightest in the morning), golden dust in the low
+sun, seed fluff on the wind.
+
+**The sea squills** (`SQUILLS`, `bakeSpike`, `squillPose`) — חצב, the flower
+of the Israeli autumn: a tall bare stalk (no leaves — just last year's dry
+ones at the foot) carrying a SPIKE of small white six-point stars on short
+pedicels, open at the foot and still buds at the tip, a yellow dot in each. The
+spike is baked per plant and drawn ROTATED at the tip of a live quadratic
+stalk that bends with the wind (and the gust), so the whole thing sways from
+the root. Bees (`BEES`) hop flower to flower by day and leave at night / in
+rain; a tap sends them up with a puff of petals and a gust.
+
+**The snails** (`SNAILS`, `drawSnail`): big round eyes on stalks with a glint,
+a glossy stretched foot that ripples as it crawls, a smile and a blush, a
+striped spiral shell with a highlight. Four crawl the ground (turning at the
+edges AND at a trunk — `trunkBlock(x, y)` says whether a point is on a trunk
+above its root flare, and a ground snail is never spawned on one), two climb
+the tallest trunks (`snailPos` runs them
+along the trunk's own lean, k 0..1 from foot to top, on one side of the bark,
+rotated 90°). A fading silver slime trail with sparkles follows each one. A tap
+tucks the snail into its shell (foot and eye stalks retract, the shell
+wobbles) for ~2.5 s, then it peeks out with a ♥.
+
+**The hedgehog** (`HOG`): every 60–130 s one trundles across the FOREGROUND
+band (y 866–888, in front of every root flare — the first cut walked at
+800–860 and crossed the trunk feet, which read as "walking on the trees")
+with a leaf on its back — a dome of three staggered rows of short spines over
+a dark coat, a pale pointed snout, black nose, big eye, round ear, four
+stepping legs. A tap CURLS it into a ball (the spine fan closes over, the
+face fades) that rolls on a little, then it unrolls. It hurries in the rain.
+
+**The storks** (`SKEINS`, `drawStork`): every 55–105 s by day a skein of 7–13
+crosses high up in a wavering V — seen from BELOW (body along the flight
+line, two wings spread sideways that fold on the beat, black primaries, a red
+bill ahead and red legs trailing), each bird on its own flap phase. A tap on
+the open sky calls one.
+
+**The rain** (`RAIN`, יורה): every 2.5–4 min by day (or a tap on a cloud) a
+shower comes — the look greys over 5 s, 170 slanted streaks fall (90 on
+touch) ringing the ground and puddles, the puddles fill, the leaves and crowns
+go grey — then it fades and a RAINBOW stands over the hills opposite the sun
+for ~10 s. `_aut.rain(len)`, `rainAt(k, phase)`, `rainbow(k)` for the stills.
+
+**Clicks** (`onClick`, UI filter `UI_SEL`): sun / moon → tween to the next
+key; a snail → tuck in; the hedgehog → curl; a squill → petals + bees; a tree
+(crown or trunk) → gust; a cloud → rain; the upper sky → storks; the ground →
+a mushroom. Counted in `_aut.taps()`.
+
+**Performance** (house rules): backing store `pickDPR` (1.5× / 2.4 MP); five
+still layers + carpet; the loop paces itself (every 2nd display frame while
+frames run long, back after 6 calm seconds, the first 1.2 s excluded). Measured
+on the harness: ~1.5 ms of draw per frame at 1280×800 (`life` 0.7, `grove`
+0.45, `sky` 0.2), ~0.8 ms on a phone. `_aut.perf()`, `prof()`, `pmax()`.
+
+**Test hooks** `window._aut = BACKGROUNDS.autumn._test = { tod, setTod,
+setSpeed, phase, look, seek, rain, rainAt, rainbow, rainState, wind, gust(i),
+sun, moon, trees, leaves, snails, snailXY(i), squills, squillXY(i), bees, hog,
+hogStart(xFrac?), hogXY, storks, skein(xFrac?), shrooms, pop(x, y), treeXY(i),
+groundXY, skyXY, taps, layout, perf, pmax, prof, profReset }`.

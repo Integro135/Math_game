@@ -58,7 +58,10 @@ class TestChampMultiplication:
                 finalExp:+document.querySelector('#mk-row .mk-final').getAttribute('data-exp')};
         }""")
         assert res["shown"], "a wrong product must reveal the chain"
-        assert res["terms"] == [res["a"]] * res["b"], \
+        # the pool deals two "×0" cards per game: a×0 has nothing to repeat, so the
+        # chain is the single term 0 (mult_champ.ex.js, times===0) — not a×b terms
+        exp = [0] if res["b"] == 0 else [res["a"]] * res["b"]
+        assert res["terms"] == exp, \
             f"default chain must be {res['a']} repeated {res['b']} times, got {res['terms']}"
         assert res["finalExp"] == res["product"], "the final box must expect the product"
 
@@ -717,7 +720,7 @@ def _enter_compare_sub(page, a, b, side, op, k, base):
 
 
 class TestCompare:
-    @pytest.mark.parametrize("theme", ["girls", "savanna", "galaxy", "dinosaurs", "reef", "dubai", "frozen", "maldives"])
+    @pytest.mark.parametrize("theme", ["girls", "savanna", "galaxy", "dinosaurs", "reef", "dubai", "frozen", "maldives", "autumn"])
     def test_sign_meaning_tip_sits_right_under_the_sign(self, page, theme):
         """Hovering a < > = sign shows its meaning DIRECTLY under that sign on every
         skin. Regression: the tip lived inside the card, and a skin whose card has a

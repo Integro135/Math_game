@@ -149,3 +149,12 @@ body.theme-maldives #game-numpad{
   --np-ok:linear-gradient(135deg,#FFC94D,#E8A02A);--np-ok-ink:#3A2600;
   --np-ok-hi:linear-gradient(135deg,#FFD873,#F0B440);
 }
+
+/* autumn — warm wood glass → amber ✔ (dark ink), leaf-red ⌫ */
+body.theme-autumn #game-numpad{
+  --np-panel:rgba(50,24,8,.86);--np-border:rgba(255,193,77,.5);
+  --np-key:rgba(255,210,140,.18);--np-key-hi:rgba(255,210,140,.38);
+  --np-del:rgba(255,120,100,.32);
+  --np-ok:linear-gradient(135deg,#FFC14D,#E8862A);--np-ok-ink:#3A1A00;
+  --np-ok-hi:linear-gradient(135deg,#FFD873,#F0A040);
+}

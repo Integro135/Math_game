@@ -46,7 +46,8 @@ subtraction_game/
 │  │  ├─ space.skin.css              mission HUD (no blur, ghost outlines)
 │  │  ├─ unicorns.skin.css           candy valley (rose frosted glass)
 │  │  ├─ dubai.skin.css              golden hour (navy glass, gold hairlines)
-│  │  └─ reef.skin.css               sunlit lagoon (aqua glass, bubble buttons)
+│  │  ├─ reef.skin.css               sunlit lagoon (aqua glass, bubble buttons)
+│  │  └─ autumn.skin.css             golden grove (warm-brown glass, amber, ghost acorns)
 │  └─ js/                          loaded in this order:
 │     ├─ data.js                   constants: TC_MAP coin art, pools config,
 │     │                            DIFFICULTY_GROUPS
@@ -146,6 +147,8 @@ subtraction_game/
 │  ├─ aurora.bg.js + princess/ + olaf/   (aurora serves the ❄️ theme;
 │  │                                     it replaced frozen.bg.js)
 │  ├─ maldives2.bg.js + pokemons/    the 🏝️ beach: day cycle + storms (canvas) + pokemon walkers
+│  ├─ autumn.bg.js                 the 🍂 golden grove: leaf crowns, falling leaves, sea squills,
+│  │                               snails, a hedgehog, storks, the first rain (canvas, day cycle)
 │  ├─ reef.bg.js / maldives.bg.js    legacy scenes, kept but unloaded
 │  ├─ rumi/                        the roaming character (savanna/dino/reef)
 │  ├─ whales.bg.js                 playground, not game-integrated
@@ -155,7 +158,7 @@ subtraction_game/
 │  ├─ unicorns3.html                 open directly in a browser to iterate
 │  ├─ dubai3.html                  on a scene in isolation
 │  ├─ savanna.html / dinosaurs3.html
-│  ├─ aurora.html / maldives2.html / reef2.html
+│  ├─ aurora.html / maldives2.html / reef2.html / autumn.html
 │  ├─ underwater_happy_reef.html
 │  └─ _verify*.py                  per-scene marker/render checks
 │

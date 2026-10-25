@@ -13,6 +13,7 @@ body.theme-savanna #stars-layer{display:block}
 body.theme-dinosaurs #stars-layer{display:block}
 body.theme-frozen  #stars-layer{display:block}
 body.theme-maldives #stars-layer{display:block}
+body.theme-autumn  #stars-layer{display:block}
 
 /* ── Savanna (Pride Rock) — warm load-flash fallback behind the canvas ── */
 body.theme-savanna #bg{
@@ -62,5 +63,11 @@ body.theme-dubai #bg{
 /* ── Maldives (lagoon day) — matches the scene sky→sea so any pre-load flash blends ── */
 body.theme-maldives #bg{
   background:linear-gradient(180deg,#8fd4ef 0%,#bfe9f2 34%,#2fc4c9 55%,#1f9bbe 74%,#1d6fa8 100%);
+  animation:none;
+}
+
+/* ── Autumn (golden grove) — matches the scene's golden-hour sky→meadow so any pre-load flash blends ── */
+body.theme-autumn #bg{
+  background:linear-gradient(180deg,#8fa9d6 0%,#f2c98e 40%,#ffd58a 60%,#c4ac70 62%,#967a3e 100%);
   animation:none;
 }

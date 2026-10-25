@@ -4,7 +4,7 @@ let _specialPtc=[];
 /* themes served by a canvas background module (backgrounds/<bg>.bg.js);
    these get their scene, skin and aid art from the dynamic loader, and no
    floating emoji particles (the scenes carry their own life) */
-const _BG_THEMES={galaxy:'space2',girls:'unicorns3',reef:'reef2',dubai:'dubai3',savanna:'savanna',dinosaurs:'dinosaurs3',frozen:'aurora',maldives:'maldives2'};
+const _BG_THEMES={galaxy:'space2',girls:'unicorns3',reef:'reef2',dubai:'dubai3',savanna:'savanna',dinosaurs:'dinosaurs3',frozen:'aurora',maldives:'maldives2',autumn:'autumn'};
 const THEMES={
   girls:{
     titleEmoji:'',uniL:'',uniR:'',toggleIcon:'👦',
@@ -46,6 +46,11 @@ const THEMES={
     particles:['🏝️','🌴','🐬','🐚','☀️','🌊'],
     specialEm:'🐬',
   },
+  autumn:{
+    titleEmoji:'',uniL:'',uniR:'',toggleIcon:'🍂',
+    particles:['🍂','🍁','🌰','🍄','🐌','🦔'],
+    specialEm:'🍂',
+  },
 };
 
 
@@ -57,7 +62,7 @@ function applyTheme(t){
   if(!THEMES[theme])theme='girls';   // stale localStorage from a removed theme
   // body.className wipes every class — keep the number-line lock state intact
   const _tfLocked=document.body.classList.contains('tf-locked-nl');
-  document.body.className=theme==='galaxy'?'theme-galaxy':theme==='reef'?'theme-reef':theme==='dubai'?'theme-dubai':theme==='savanna'?'theme-savanna':theme==='dinosaurs'?'theme-dinosaurs':theme==='frozen'?'theme-frozen':theme==='maldives'?'theme-maldives':'theme-girls';
+  document.body.className=theme==='galaxy'?'theme-galaxy':theme==='reef'?'theme-reef':theme==='dubai'?'theme-dubai':theme==='savanna'?'theme-savanna':theme==='dinosaurs'?'theme-dinosaurs':theme==='frozen'?'theme-frozen':theme==='maldives'?'theme-maldives':theme==='autumn'?'theme-autumn':'theme-girls';
   if(_tfLocked)document.body.classList.add('tf-locked-nl');
   const _bg=_BG_THEMES[theme];
   if(_bg)loadBackground(_bg);
@@ -74,7 +79,7 @@ function applyTheme(t){
   if(ur)ur.textContent=T.uniR;
   const _ew=e=>`<span style="-webkit-text-fill-color:initial">${e}</span>`;
   if(tt)tt.innerHTML=`${_ew(T.titleEmoji)} מִשְׂחֲקֵי חֶשְׁבּוֹן ${_ew(T.titleEmoji)}`;
-  const _themeIcons={girls:'🦄',galaxy:'🌌',reef:'🐠',dubai:'🏙️',savanna:'🦁',dinosaurs:'🦕',frozen:'❄️',maldives:'🏝️'};
+  const _themeIcons={girls:'🦄',galaxy:'🌌',reef:'🐠',dubai:'🏙️',savanna:'🦁',dinosaurs:'🦕',frozen:'❄️',maldives:'🏝️',autumn:'🍂'};
   if(tb)tb.textContent=_themeIcons[theme]||'🎨';
   // Mark active theme in menu
   document.querySelectorAll('.tm-item').forEach(el=>{
@@ -101,7 +106,7 @@ function pickTheme(t){
 
 /* toggleTheme — cycles themes, persists the choice */
 function toggleTheme(){
-  const cycle={girls:'galaxy',galaxy:'reef',reef:'dubai',dubai:'savanna',savanna:'dinosaurs',dinosaurs:'frozen',frozen:'maldives',maldives:'girls'};
+  const cycle={girls:'galaxy',galaxy:'reef',reef:'dubai',dubai:'savanna',savanna:'dinosaurs',dinosaurs:'frozen',frozen:'maldives',maldives:'autumn',autumn:'girls'};
   applyTheme(cycle[theme]||'girls');
   spawnParticles();
   localStorage.setItem('gameTheme',theme);

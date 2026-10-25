@@ -1,0 +1,325 @@
+/* ── Autumn skin — "Golden Grove" ───────────────────────────────────────────
+   The game floats over the grove like a sheet of warm glass — it should
+   OCCLUDE AS LITTLE OF THE TREES AS POSSIBLE. Panels are near-transparent,
+   warm-brown, with NO blur; the ONLY blurred element is the equation island
+   (a small amber pane behind the exercise), so the leaves keep falling sharp
+   everywhere else. Buttons are ghost acorns; amber marks active states.
+
+   A skin owns four families:  1. palette (CSS vars, also fed to success
+   screens)   2. fonts/type   3. glass transparency   4. position on screen.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root{
+  --skin-primary: #D9772B;   /* pumpkin orange  */
+  --skin-accent:  #FFC14D;   /* amber gold      */
+  --skin-glow:    #FFD98A;   /* candle glow     */
+  --skin-text:    #FFF6E8;   /* parchment white */
+}
+
+/* ── 4. POSITION — top-centre, in the clearing between the two groves ── */
+body.theme-autumn .wrap{max-width:720px;padding-top:6px}
+
+/* ── 3. GLASS — a warm pane, NO blur: the grove shows through ── */
+body.theme-autumn .glass{
+  background:rgba(58,28,10,.26);
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border:1px solid rgba(255,193,77,.26);
+  box-shadow:0 0 0 1px rgba(40,18,4,.16),0 14px 44px rgba(30,12,2,.28);
+}
+
+/* ════ HEADER — a thin amber strip ════ */
+body.theme-autumn .header{
+  background:linear-gradient(180deg,rgba(58,28,10,.32),rgba(58,28,10,.06));
+  border:none;box-shadow:none;border-radius:18px 18px 12px 12px;
+  padding:10px 18px 10px;margin-bottom:10px;position:relative;
+}
+body.theme-autumn .header::after{
+  content:'';position:absolute;left:8%;right:8%;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,217,138,.7) 30%,
+             rgba(217,119,43,.65) 70%,transparent);
+  box-shadow:0 0 8px rgba(255,193,77,.5);
+}
+body.theme-autumn .uni{display:none}
+body.theme-autumn .hdr-top{gap:0}
+
+/* title — parchment-to-amber, wide tracking, no shimmer, no emojis */
+body.theme-autumn .title{
+  font-family:'Fredoka One',cursive;font-size:1.55rem;letter-spacing:.14em;
+  animation:none;
+  background:linear-gradient(180deg,#FFFFFF 0%,#FFE2A8 50%,#F2A33A 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 12px rgba(255,193,77,.42));
+}
+
+/* stats — small warm readouts */
+body.theme-autumn .hdr-stats{
+  margin-top:4px;gap:26px;font-size:.84rem;font-weight:800;
+  color:#F4DDB8;letter-spacing:.05em;text-shadow:0 1px 4px rgba(40,18,4,.6);
+}
+body.theme-autumn .hdr-stats strong{color:#FFC14D;text-shadow:0 0 10px rgba(255,190,80,.45)}
+body.theme-autumn .mode-ind{color:#F4DDB8;letter-spacing:.04em;text-shadow:0 1px 4px rgba(40,18,4,.6)}
+body.theme-autumn .mode-ind .mi-cur{color:#FFC14D;text-shadow:0 0 8px rgba(255,190,80,.45)}
+
+/* progress — a 3px ember line */
+body.theme-autumn .prog-wrap{
+  height:3px;max-width:320px;margin-top:8px;border-radius:2px;
+  background:rgba(255,193,77,.14);
+}
+body.theme-autumn .prog-bar{
+  background:linear-gradient(90deg,#FFD98A,#D9772B 55%,#C9402A);
+  box-shadow:0 0 10px rgba(255,180,80,.85),0 0 3px #fff;
+}
+
+/* ════ SETTINGS MODAL (a dialog — stays readable and mostly opaque) ════ */
+body.theme-autumn #settings-ov,
+body.theme-autumn #parent-ov{background:rgba(30,12,2,.7)}
+body.theme-autumn .settings-box{
+  background:linear-gradient(170deg,rgba(74,36,12,.97),rgba(52,24,8,.97));
+  border:1px solid rgba(255,193,77,.35);
+  box-shadow:0 0 50px rgba(217,119,43,.25),0 22px 60px rgba(20,8,0,.8);
+}
+body.theme-autumn .settings-title,
+body.theme-autumn .settings-hdr .settings-title{
+  background:linear-gradient(90deg,#FFF6E8,#FFD98A 50%,#F2A33A);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-autumn .set-sec-lbl{color:#F4DDB8}
+body.theme-autumn .tier-tab{
+  background:transparent;border:1px solid rgba(255,193,77,.28);color:#E8C898;
+}
+body.theme-autumn .tier-tab:hover{background:rgba(255,193,77,.10)}
+body.theme-autumn .tier-tab.active{
+  background:rgba(217,119,43,.18);border-color:rgba(255,193,77,.6);color:#FFF6E8;
+  box-shadow:0 0 12px rgba(255,180,80,.3);
+}
+body.theme-autumn .lvl-btn{
+  background:transparent;border:1px solid rgba(255,193,77,.26);color:#F4DDB8;box-shadow:none;
+}
+body.theme-autumn .lvl-btn:hover{
+  background:rgba(255,193,77,.10);border-color:rgba(255,217,138,.5);
+  box-shadow:0 0 14px rgba(255,180,80,.3);
+}
+body.theme-autumn .lvl-btn.active{
+  background:rgba(255,193,77,.12);
+  border:1px solid rgba(255,193,77,.85);color:#FFC14D;font-weight:900;
+  box-shadow:0 0 14px rgba(255,190,80,.4),inset 0 0 12px rgba(255,190,80,.10);
+  text-shadow:0 0 8px rgba(255,193,77,.5);transform:scale(1.06);
+}
+body.theme-autumn .lvl-btn.active:hover{transform:scale(1.08)}
+
+/* ════ THE CARD — an open frame; the grove flows through it ════ */
+body.theme-autumn .card{
+  background:radial-gradient(120% 90% at 50% 30%,rgba(58,28,10,.26),rgba(58,28,10,.06) 70%);
+  border:1px solid rgba(255,193,77,.22);border-radius:12px 12px 20px 20px;
+  box-shadow:none;padding:18px 18px 14px;
+}
+/* corner glints — a candle and an ember */
+body.theme-autumn .card::before,
+body.theme-autumn .card::after{
+  content:'';position:absolute;width:7px;height:7px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#FFFFFF 0%,rgba(255,217,138,.7) 45%,transparent 72%);
+  pointer-events:none;
+}
+body.theme-autumn .card::before{top:-3px;right:-3px;box-shadow:0 0 10px rgba(255,217,138,.8)}
+body.theme-autumn .card::after {bottom:-3px;left:-3px;box-shadow:0 0 10px rgba(217,119,43,.8);
+  background:radial-gradient(circle at 35% 30%,#FFE9C8 0%,rgba(217,119,43,.7) 45%,transparent 72%)}
+
+/* ════ THE EQUATION ISLAND — the ONLY blurred pane in the scene ════ */
+body.theme-autumn .eq-row{
+  background:rgba(66,30,10,.36);
+  backdrop-filter:blur(9px) saturate(1.1);-webkit-backdrop-filter:blur(9px) saturate(1.1);
+  border:1px solid rgba(255,193,77,.26);border-radius:18px;
+}
+body.theme-autumn .eq-n,body.theme-autumn .eq-res{
+  color:#FFF8EC;
+  text-shadow:0 0 16px rgba(255,193,77,.55),0 0 4px rgba(255,240,214,.9),0 2px 8px rgba(30,12,2,.6);
+}
+body.theme-autumn .eq-op{text-shadow:0 0 12px rgba(255,190,80,.55),0 2px 6px rgba(30,12,2,.55)}
+body.theme-autumn .op-m,body.theme-autumn .op-p,body.theme-autumn .op-e{color:#FFC14D}
+body.theme-autumn .eq-res{color:#FFD98A;text-shadow:0 0 18px rgba(255,190,80,.65),0 2px 8px rgba(30,12,2,.55)}
+
+body.theme-autumn .ans-inp,body.theme-autumn .tx-sub-inp{
+  background:rgba(44,20,6,.5);border:2px solid rgba(255,193,77,.45);color:#FFF8EC;
+  box-shadow:0 0 10px rgba(217,119,43,.2),inset 0 0 12px rgba(90,40,10,.3);
+}
+body.theme-autumn .ans-inp:focus,body.theme-autumn .tx-sub-inp:focus{
+  border-color:#FFD98A;background:rgba(54,24,8,.6);
+  box-shadow:0 0 22px rgba(255,193,77,.55),0 0 5px rgba(255,240,214,.9),inset 0 0 12px rgba(110,50,12,.35);
+}
+
+/* the check button — a ring acorn */
+body.theme-autumn .chk-btn{
+  background:rgba(50,22,6,.4);border:2px solid rgba(255,217,138,.55);color:#FFEBC8;
+  box-shadow:0 0 14px rgba(255,180,80,.4),inset 0 0 12px rgba(217,119,43,.2);
+}
+body.theme-autumn .chk-btn::after{background:none}
+body.theme-autumn .chk-btn:hover{
+  border-color:#FFE9C8;color:#fff;box-shadow:0 0 24px rgba(255,200,100,.7),inset 0 0 16px rgba(217,119,43,.3);
+}
+
+/* hint + divider + feedback */
+body.theme-autumn .hint{color:#F0D7B0;text-shadow:0 1px 6px rgba(30,12,2,.65);letter-spacing:.02em}
+body.theme-autumn .div{background:linear-gradient(90deg,transparent,rgba(255,193,77,.32),transparent)}
+body.theme-autumn .fb-ok{color:#B6FF9A;text-shadow:0 0 16px rgba(120,255,120,.55)}
+body.theme-autumn .fb-err{color:#FF9A8A;text-shadow:0 0 16px rgba(255,100,80,.5)}
+body.theme-autumn #tf-msg{color:#FFD98A;text-shadow:0 0 10px rgba(255,190,80,.6)}
+body.theme-autumn #tf-nl-note{color:#FFC14D;text-shadow:0 0 8px rgba(255,190,80,.4)}
+
+/* ════ ACTION BUTTONS — ghost acorns ════ */
+body.theme-autumn .btn{
+  background:rgba(50,22,6,.36);text-shadow:none;
+  border:1.5px solid rgba(255,193,77,.4);color:#FFEBC8;
+  box-shadow:0 0 10px rgba(217,119,43,.18);font-weight:800;letter-spacing:.03em;
+}
+body.theme-autumn .btn::after{background:none}
+body.theme-autumn .btn:hover{box-shadow:0 0 20px rgba(255,180,80,.4)}
+body.theme-autumn .b-chk{border-color:rgba(217,119,43,.65);color:#FFE2A8}
+body.theme-autumn .b-chk:hover,body.theme-autumn .b-chk:active{
+  background:rgba(217,119,43,.18);box-shadow:0 0 22px rgba(255,160,60,.5)}
+body.theme-autumn .b-try,body.theme-autumn .b-nxt{border-color:rgba(255,193,77,.55);color:#FFEBC8}
+body.theme-autumn .b-try:hover,body.theme-autumn .b-try:active,
+body.theme-autumn .b-nxt:hover,body.theme-autumn .b-nxt:active{
+  background:rgba(255,193,77,.16);box-shadow:0 0 22px rgba(255,180,80,.5)}
+/* play-again / continue is the terminal call-to-action — a SOLID amber button
+   (not a ghost) so it stays legible over the bright sky, the crowns and the
+   snails behind the near-transparent end card */
+body.theme-autumn .b-rpl{
+  background:linear-gradient(150deg,#FFE9B8,#FFC14D 55%,#E8701A);
+  border:1.5px solid rgba(255,244,214,.92);color:#4A2000;
+  text-shadow:0 1px 0 rgba(255,255,255,.45);font-weight:900;
+  box-shadow:0 6px 0 #A34A00,0 10px 28px rgba(255,140,30,.55),inset 0 1px 0 rgba(255,255,255,.55)}
+body.theme-autumn .b-rpl:hover{
+  box-shadow:0 8px 0 #A34A00,0 14px 34px rgba(255,140,30,.7),inset 0 1px 0 rgba(255,255,255,.6)}
+body.theme-autumn .b-rpl:active{
+  box-shadow:0 2px 0 #A34A00,0 4px 16px rgba(255,140,30,.5),inset 0 1px 0 rgba(255,255,255,.5)!important}
+
+/* utility buttons — faint acorns */
+body.theme-autumn .games-drop-btn,body.theme-autumn .theme-toggle-btn{
+  background:rgba(50,22,6,.4);border:1px solid rgba(255,193,77,.3);
+  box-shadow:0 0 10px rgba(217,119,43,.2);
+}
+body.theme-autumn .tt-hint-icon{
+  background:rgba(50,22,6,.4);border-color:rgba(255,193,77,.5);color:#FFC14D;
+  box-shadow:0 0 8px rgba(255,190,80,.25);
+}
+body.theme-autumn .gift-indicator{
+  background:transparent;border:1px solid rgba(255,193,77,.35);box-shadow:0 0 10px rgba(255,190,80,.18);
+}
+body.theme-autumn #score-star{filter:drop-shadow(0 0 7px rgba(255,205,0,.8))}
+
+/* coin stage — an open wooden tray */
+body.theme-autumn .coins-stage{background:rgba(58,28,10,.22);border:1px solid rgba(255,193,77,.16)}
+body.theme-autumn .coin-lbl{color:#F0D7B0}
+body.theme-autumn .tc-eq-lbl,body.theme-autumn .tc-hint-top{color:#F4DDB8}
+
+/* ════ THE AUTUMN NUMBER LINE — a twig strung with leaves ════
+   Track = a glowing amber twig. Ticks = little leaves, golden acorns on the
+   fives. ± controls are round acorns (green / brown). */
+body.theme-autumn #nl-panel{background:transparent;border:none;box-shadow:none}
+body.theme-autumn #nl-panel .nl-bar-track{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(255,193,77,.08),
+             rgba(255,217,138,.6) 18%,rgba(217,119,43,.6) 82%,rgba(217,119,43,.08));
+  box-shadow:0 0 10px rgba(255,180,80,.45);
+}
+body.theme-autumn #nl-panel .tick{
+  width:5px;height:5px;border-radius:50% 0 50% 0;top:calc(100% + 5px);
+  background:rgba(255,200,120,.7);box-shadow:0 0 6px rgba(255,190,100,.6);
+}
+body.theme-autumn #nl-panel .tick.major{
+  width:8px;height:8px;border-radius:50%;top:calc(100% + 3px);
+  background:radial-gradient(circle at 35% 30%,#FFF,#FFC14D);
+  box-shadow:0 0 10px rgba(255,193,77,.85);
+}
+body.theme-autumn #nl-panel .nl-num{color:rgba(244,221,184,.8)}
+body.theme-autumn #nl-panel .nl-num.major{color:#FFC14D;text-shadow:0 0 10px rgba(255,190,80,.55)}
+body.theme-autumn #nl-panel .nl-dot::after{background:rgba(255,217,138,.85);box-shadow:0 0 6px rgba(255,217,138,.9)}
+body.theme-autumn #nl-panel .kang{
+  filter:drop-shadow(0 2px 5px rgba(30,12,2,.6)) drop-shadow(0 0 10px rgba(255,193,77,.6));
+}
+body.theme-autumn #nl-panel .arc-add{stroke:rgba(255,193,77,.9)}
+body.theme-autumn #nl-panel .arc-sub{stroke:rgba(255,138,101,.9)}
+body.theme-autumn #nl-panel .side-btn{border-radius:50%}
+body.theme-autumn #nl-panel .btn-plus{
+  background:radial-gradient(circle at 34% 30%,#B6DE86,#5E9A3A 75%);color:#153008;
+  border:2px solid rgba(236,250,220,.6);
+  box-shadow:0 0 14px rgba(120,190,80,.45),inset 0 1px 0 rgba(255,255,255,.4);
+}
+body.theme-autumn #nl-panel .btn-minus{
+  background:radial-gradient(circle at 34% 30%,#D9A06A,#7A4A22 75%);color:#FFF0DC;
+  border:2px solid rgba(255,236,214,.55);
+  box-shadow:0 0 14px rgba(190,120,60,.45),inset 0 1px 0 rgba(255,255,255,.35);
+}
+body.theme-autumn #nl-panel .btn-reset{
+  background:rgba(255,193,77,.12);border:1.5px solid rgba(255,193,77,.7);color:#FFC14D;
+  box-shadow:0 0 12px rgba(255,190,80,.3);
+}
+body.theme-autumn #nl-panel .btn-reset:hover{background:rgba(255,193,77,.2)}
+body.theme-autumn #nl-panel .btn-undo{
+  background:transparent;border:1.5px solid rgba(255,193,77,.4);color:#F4DDB8;
+}
+body.theme-autumn #nl-panel .btn-undo:hover{background:rgba(255,193,77,.12)}
+
+/* ════ CHAIN MODE — mirrored twig ════ */
+body.theme-autumn .pgm-bar{
+  height:4px;border:none;border-radius:2px;
+  background:linear-gradient(90deg,rgba(255,193,77,.08),
+             rgba(255,217,138,.55) 18%,rgba(217,119,43,.55) 82%,rgba(217,119,43,.08));
+  box-shadow:0 0 8px rgba(255,180,80,.4);
+}
+body.theme-autumn .pgm-dot{
+  background:radial-gradient(circle at 35% 30%,#FFF,#FFD98A);
+  border-color:rgba(255,244,214,.85);box-shadow:0 0 12px rgba(255,217,138,.95);
+}
+body.theme-autumn .pgm-nl-num{color:rgba(244,221,184,.7)}
+body.theme-autumn .pgm-nl-num5{color:#FFC14D;text-shadow:0 0 8px rgba(255,190,80,.5)}
+body.theme-autumn .pgm-arc-add{stroke:rgba(255,193,77,.9)}
+body.theme-autumn .pgm-arc-sub{stroke:rgba(255,138,101,.9)}
+body.theme-autumn .pgm-side{border-radius:50%;font-size:2.1rem}
+body.theme-autumn .pgm-side::after{background:none}
+body.theme-autumn .pgm-plus{
+  background:radial-gradient(circle at 34% 30%,#B6DE86,#5E9A3A 75%);color:#153008;
+  border:2px solid rgba(236,250,220,.6);
+  box-shadow:0 0 14px rgba(120,190,80,.45),inset 0 1px 0 rgba(255,255,255,.4);
+}
+body.theme-autumn .pgm-minus{
+  background:radial-gradient(circle at 34% 30%,#D9A06A,#7A4A22 75%);color:#FFF0DC;
+  border:2px solid rgba(255,236,214,.55);
+  box-shadow:0 0 14px rgba(190,120,60,.45),inset 0 1px 0 rgba(255,255,255,.35);
+}
+body.theme-autumn .pgm-jar-btm{background:rgba(44,20,6,.55);border-color:rgba(255,193,77,.45)}
+
+/* number-hover tooltip — a warm wooden pane (objects come from the autumn aid
+   variant: acorns) */
+body.theme-autumn #num-tt{
+  --ntt-accent:#FFC14D;
+  background:rgba(66,30,10,.97);
+  border:1px solid rgba(255,193,77,.45);
+  box-shadow:0 6px 24px rgba(20,8,0,.7),0 0 18px rgba(217,119,43,.25);
+}
+body.theme-autumn #num-tt .ntt-lbl{color:#FFC14D;text-shadow:0 0 10px rgba(255,190,80,.4)}
+
+/* ════ END SCREEN ════ */
+body.theme-autumn .end-ttl{
+  background:linear-gradient(135deg,#FFFFFF,#FFD98A 40%,#E8701A);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.theme-autumn .end-sc{color:#F4DDB8}
+body.theme-autumn .end-grade-num{
+  background:linear-gradient(135deg,#FFC14D,#D9772B,#FFD98A);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(255,193,77,.5));
+}
+body.theme-autumn .end-grade-max{color:rgba(244,221,184,.7)}
+body.theme-autumn .end-grade-msg{color:#F4DDB8}
+
+@media(max-width:480px){
+  body.theme-autumn .title{font-size:1.2rem;letter-spacing:.1em}
+}
+
+/* the skip pill (language cards, appears after 2 mistakes) — a COOL periwinkle
+   ghost, deliberately distinct from the warm try/next accents; the pop-in +
+   shine-sweep animations come from base.css */
+body.theme-autumn .b-skip{border-color:rgba(150,170,255,.55);color:#D9E2FF;background:rgba(150,170,255,.10);box-shadow:0 0 12px rgba(150,170,255,.28)}
+body.theme-autumn .b-skip:hover,body.theme-autumn .b-skip:active{
+  background:rgba(150,170,255,.14);box-shadow:0 0 20px rgba(150,170,255,.45)}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autumn — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the AUTUMN background module. The scene
+     lives in autumn.bg.js — the SAME file the game loads (single source of
+     truth). The buttons poke window._aut: the hour keys, Pause / Fast ×20,
+     Rain (a shower now), Gust (a burst of leaves from a tree), Storks (a
+     skein), Hedgehog (it comes out), Restart.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #c98a3a; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  #bar { position: fixed; bottom: 18px; right: 18px; z-index: 10; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 70vw; direction: ltr; }
+  #bar button {
+    padding: 7px 14px;
+    background: rgba(70, 30, 10, 0.45); color: rgba(255, 240, 220, 0.92);
+    border: 1px solid rgba(255, 200, 120, 0.35); border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; box-shadow: 0 4px 18px rgba(40, 20, 0, 0.45); transition: background .2s;
+  }
+  #bar button:hover { background: rgba(140, 70, 20, 0.6); }
+  #bar button.on { background: rgba(255, 194, 77, 0.35); border-color: rgba(255, 220, 140, 0.7); }
+  #clock { position: fixed; top: 14px; right: 18px; z-index: 10; color: rgba(255,255,255,.85); font: 12px/1.4 Georgia, serif; letter-spacing: .12em; text-shadow: 0 1px 4px rgba(0,0,0,.6); text-align: right; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="clock"></div>
+<div id="bar">
+  <button class="hbtn" data-tod="0.04">Dawn</button>
+  <button class="hbtn" data-tod="0.18">Morning</button>
+  <button class="hbtn" data-tod="0.36">Noon</button>
+  <button class="hbtn" data-tod="0.55">Golden</button>
+  <button class="hbtn" data-tod="0.67">Sunset</button>
+  <button class="hbtn" data-tod="0.77">Dusk</button>
+  <button class="hbtn" data-tod="0.90">Night</button>
+  <button id="pause">Pause</button>
+  <button id="fast">Fast</button>
+  <button id="rain">Rain</button>
+  <button id="gust">Gust</button>
+  <button id="storks">Storks</button>
+  <button id="hog">Hedgehog</button>
+  <button id="restart">Restart</button>
+</div>
+<script src="autumn.bg.js"></script>
+<script>
+let cleanup = null, paused = false, fast = false;
+function start(){ if (cleanup) cleanup(); cleanup = window.BACKGROUNDS.autumn.init({ stage: document.getElementById('stage') }); }
+document.querySelectorAll('[data-tod]').forEach(b => b.onclick = e => { e.stopPropagation(); window._aut && window._aut.setTod(+b.dataset.tod); });
+document.getElementById('pause').onclick = e => { e.stopPropagation(); paused = !paused; e.target.classList.toggle('on', paused); window._aut.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+document.getElementById('fast').onclick = e => { e.stopPropagation(); fast = !fast; e.target.classList.toggle('on', fast); window._aut.setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+document.getElementById('rain').onclick = e => { e.stopPropagation(); window._aut.rain(); };
+document.getElementById('gust').onclick = e => { e.stopPropagation(); window._aut.gust(); };
+document.getElementById('storks').onclick = e => { e.stopPropagation(); window._aut.skein(); };
+document.getElementById('hog').onclick = e => { e.stopPropagation(); window._aut.hogStart(); };
+document.getElementById('restart').addEventListener('click', e => { e.stopPropagation(); start(); });
+setInterval(() => {
+  if (!window._aut) return;
+  const t = window._aut.tod(), r = window._aut.rainState(), p = window._aut.perf(), lv = window._aut.leaves();
+  const h = (5 + t * 24) % 24;
+  document.getElementById('clock').textContent =
+    window._aut.phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0') +
+    '  |  rain ' + r.phase + ' ' + r.k + '  |  leaves ' + lv.falling + '  |  ' + (p.halfRate ? '½ rate' : 'full') + ' ' + p.costEma + ' ms';
+}, 250);
+start();
+</script>
+</body>
+</html>
