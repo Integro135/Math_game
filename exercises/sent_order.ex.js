@@ -9,7 +9,7 @@
    reading. The scramble is guaranteed ≠ the correct order.
 
    Problem: { t:TSO, words:[…correct order], scr:[…scrambled], a:word count }
-   (a → num1). Bank of 37 sentences via a NO-REPEAT shuffled-queue rotation.
+   (a → num1). Bank of 48 sentences via a NO-REPEAT shuffled-queue rotation.
    Interactive: core.js _colxMount into #colx-root; aidsReveal 'always'. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.sent_order=(()=>{
@@ -65,6 +65,17 @@ window.EXERCISES.types.sent_order=(()=>{
     'מִיכַל מְנַגֶּנֶת בַּפְּסַנְתֵּר הֶחָדָשׁ',
     'הַכַּדּוּר מִתְגַּלְגֵּל עַל הָרִצְפָּה',
     'אוּרִי מְנַפֵּחַ בַּלּוֹן אָדֹם',
+    // 2026-10 +10
+    'הַדְּבוֹרָה עָפָה אֶל הַפֶּרַח',
+    'הַיַּלְדָּה מְלַטֶּפֶת חֲתַלְתּוּל רַךְ',
+    'אַבָּא שׁוֹטֵף אֶת הַכֵּלִים',
+    'הַסּוּס אוֹכֵל גֶּזֶר כָּתֹם',
+    'הַקִּפּוֹד אוֹכֵל תּוֹלַעַת קְטַנָּה',
+    'הַשַּׁבְּלוּל זוֹחֵל עַל הֶעָלֶה',
+    'רוֹנִית שׁוֹתָה שׁוֹקוֹ חַם',
+    'הַטַּיָּס מַטִּיס אֶת הַמָּטוֹס',
+    'הַיְּלָדִים מְשַׂחֲקִים בְּכַדּוּר אָדֹם',
+    'אִמָּא קוֹנָה לֶחֶם טָרִי',
   ];
 
   let _q=null,_last=-1;

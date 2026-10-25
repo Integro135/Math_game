@@ -9,7 +9,7 @@
    mistake (api.wrong). All three matched → api.solved(). First sight-reading.
 
    Problem: { t:TWM, pairs:[{e,w}×3], a:3 } (a = pair count → num1, the report's
-   "correct"). Pairs come from a 30-pair bank via a NO-REPEAT shuffled-queue
+   "correct"). Pairs come from a 52-pair bank via a NO-REPEAT shuffled-queue
    rotation (3 popped per card — no pair repeats until the bank cycles).
    Interactive: core.js _colxMount into #colx-root; aidsReveal 'always'. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
@@ -39,6 +39,10 @@ window.EXERCISES.types.word_match=(()=>{
     {e:'🥚',w:'בֵּיצָה'},
     {e:'⚽',w:'כַּדּוּר'},
     {e:'✏️',w:'עִפָּרוֹן'},
+    // 2026-10 +10
+    {e:'🐌',w:'שַׁבְּלוּל'},{e:'🍄',w:'פִּטְרִיָּה'},{e:'🦔',w:'קִפּוֹד'},{e:'🐰',w:'אַרְנָב'},
+    {e:'🌈',w:'קֶשֶׁת'},{e:'🍂',w:'עָלֶה'},{e:'🐑',w:'כֶּבֶשׂ'},{e:'🎂',w:'עוּגָה'},
+    {e:'🦒',w:'גִּ׳ירָפָה'},{e:'👓',w:'מִשְׁקָפַיִם'},
   ];
 
   // NO-REPEAT rotation: pop 3 pairs per card; the queue reshuffles when short

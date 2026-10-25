@@ -2678,11 +2678,12 @@ class TestRhyme:
 
 class TestReadingBankSize:
     """The reading banks only ever GROW. Each floor is the size shipped after the
-    2026-09 expansion (+62 items); a change that shrinks a bank — a bad merge, a
-    dropped block — fails here instead of quietly serving the same few cards."""
+    2026-10 expansion (+10 per kind, +12 stories, on top of 2026-09's +62); a
+    change that shrinks a bank — a bad merge, a dropped block — fails here
+    instead of quietly serving the same few cards."""
 
-    FLOORS = {"story_quiz": 48, "cloze": 36, "true_false": 36,
-              "sent_order": 38, "rhyme": 33}
+    FLOORS = {"story_quiz": 60, "cloze": 46, "true_false": 46,
+              "sent_order": 48, "rhyme": 43}
 
     def test_every_reading_bank_meets_its_floor(self, page):
         enter_mode(page, 'mulc')
@@ -2705,8 +2706,8 @@ class TestReadingBankSize:
         }""")
         short = {k: (got[k], f) for k, f in self.FLOORS.items() if got[k] < f}
         assert not short, f"reading banks below their floor (got, floor): {short}"
-        assert got["word_match"] >= 42, \
-            f"the word-match pair bank must hold >=42 pairs, got {got['word_match']}"
+        assert got["word_match"] >= 52, \
+            f"the word-match pair bank must hold >=52 pairs, got {got['word_match']}"
 
     def test_new_reading_items_reach_superman_and_champion(self, page):
         """The banks are shared: ONE bank per module feeds the שפה game, Superman

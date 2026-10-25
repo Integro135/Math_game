@@ -164,6 +164,17 @@ const SUCCESS_FILES=[
   'success-koala-hug',
   'success-bubble-tea',
   'success-sticker-book',
+  // 2026-10-25: ten more (added, none retired)
+  'success-squirrel-leaves',
+  'success-bunny-carrot',
+  'success-panda-bamboo',
+  'success-magic-storybook',
+  'success-crayon-drawing',
+  'success-flamingo-dance',
+  'success-octopus-juggle',
+  'success-frog-lilypad',
+  'success-dandelion-wish',
+  'success-music-box',
 ];
 
 /* ── Special reward screens (success_screens/<sub>/<name>.js) ────────────────

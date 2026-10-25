@@ -7,7 +7,7 @@
    + api.solved(); wrong → api.wrong(pick) + re-pick. Trains reading-in-context.
 
    Problem: { t:TCZ, pre, post, opts:[3], a:1-based correct } (a → num1).
-   Bank of 24 sentences served by a NO-REPEAT shuffled-queue rotation (like
+   Bank of 46 sentences served by a NO-REPEAT shuffled-queue rotation (like
    story_quiz — the child must not memorise answers); options shuffled per card.
    Interactive: mounted by core.js _colxMount into #colx-root; aidsReveal 'always'. */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
@@ -57,6 +57,17 @@ window.EXERCISES.types.cloze=(()=>{
     {pre:'עַל הָעוּגָה הִדְלַקְנוּ',post:'קְטַנִּים.',opts:['נֵרוֹת','בַּלּוֹנִים','מַגָּפַיִם']},
     {pre:'לְיַד הַיָּם בָּנִינוּ אַרְמוֹן מִן',post:'.',opts:['הַחוֹל','הָרוּחַ','הֶחָלָב']},
     {pre:'בַּמַּכֹּלֶת קָנִינוּ',post:'טָרִי.',opts:['לֶחֶם','שָׁטִיחַ','טֶלֶפוֹן']},
+    // 2026-10 +10
+    {pre:'הַשַּׁבְּלוּל נִכְנַס לְתוֹךְ',post:'שֶׁלּוֹ.',opts:['הַקּוֹנְכִיָּה','הַמְּקָרֵר','הַמִּכְנָסַיִם']},
+    {pre:'בַּסְּתָו נוֹשְׁרִים',post:'מִן הָעֵצִים.',opts:['הֶעָלִים','הַדָּגִים','הַכִּסְאוֹת']},
+    {pre:'הַקּוֹף אָכַל',post:'צְהֻבָּה.',opts:['בָּנָנָה','מִטְרִיָּה','חֻלְצָה']},
+    {pre:'כְּשֶׁיּוֹרֵד גֶּשֶׁם פּוֹתְחִים',post:'.',opts:['מִטְרִיָּה','מַזְלֵג','גֶּזֶר']},
+    {pre:'הַתַּרְנְגֹלֶת הֵטִילָה',post:'.',opts:['בֵּיצָה','כַּדּוּר','נַעַל']},
+    {pre:'שָׁמַעְנוּ אֶת הַכֶּלֶב',post:'בֶּחָצֵר.',opts:['נוֹבֵחַ','טָס','כּוֹתֵב']},
+    {pre:'כְּדֵי לִרְאוֹת בַּחֹשֶׁךְ הִדְלַקְנוּ',post:'.',opts:['פָּנָס','כַּפִּית','שְׂמִיכָה']},
+    {pre:'הַגַּנָּן הִשְׁקָה אֶת',post:'בַּגִּנָּה.',opts:['הָעֵצִים','הַסְּפָרִים','הַנַּעֲלַיִם']},
+    {pre:'הַפִּיל שׁוֹתֶה מַיִם עִם',post:'הָאָרֹךְ.',opts:['הַחֵדֶק','הַזָּנָב','הַכּוֹבַע']},
+    {pre:'בַּחֲנֻכָּה מַדְלִיקִים',post:'בַּחֲנֻכִּיָּה.',opts:['נֵרוֹת','עֲנָנִים','מִסְפָּרַיִם']},
   ];
 
   // NO-REPEAT rotation over the bank (shuffled queue; a fresh cycle never opens

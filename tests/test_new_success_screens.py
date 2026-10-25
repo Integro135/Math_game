@@ -18,12 +18,16 @@ BATCH = ['paper-cranes', 'snow-globe', 'crystal-gem', 'love-letter', 'daisy-ring
 BATCH_OCT = ['whale-spout', 'lighthouse-beam', 'cherry-blossom', 'hedgehog-roll', 'fox-wish',
              'snail-trail', 'gingerbread-house', 'koala-hug', 'bubble-tea', 'sticker-book']
 
+# 2026-10-25: ten MORE, appended after BATCH_OCT (added — nothing retired)
+BATCH_NOV = ['squirrel-leaves', 'bunny-carrot', 'panda-bamboo', 'magic-storybook', 'crayon-drawing',
+             'flamingo-dance', 'octopus-juggle', 'frog-lilypad', 'dandelion-wish', 'music-box']
+
 # ...which replaced the ten OLDEST screens (the first 10 manifest entries)
 RETIRED = ['supernova', 'comet-shower', 'constellation-heart', 'electric-orb', 'lightning-storm',
            'blooming-garden', 'unicorn-rainbow', 'black-hole-stars', 'star-race', 'aurora-glow']
 
 
-@pytest.mark.parametrize("name", BATCH + BATCH_OCT)
+@pytest.mark.parametrize("name", BATCH + BATCH_OCT + BATCH_NOV)
 def test_screen_renders_and_cleans_up(page, name):
     page.wait_for_function(f"window.SUCCESS && SUCCESS.styles.some(s=>s.name==='{name}')", timeout=TIMEOUT)
     errs = []
@@ -58,7 +62,7 @@ def test_batch_is_listed_in_success_files(page):
         assert f"success-{n}" in files
 
 
-@pytest.mark.parametrize("name", BATCH_OCT)
+@pytest.mark.parametrize("name", BATCH_OCT + BATCH_NOV)
 def test_new_screen_stops_all_frames_and_listeners_on_cleanup(page, name):
     """After a mid-animation skip, the screen schedules NO further animation
     frames or timeouts and has removed its resize listener."""
@@ -107,7 +111,8 @@ def test_new_screen_stops_all_frames_and_listeners_on_cleanup(page, name):
 
 def test_october_batch_is_appended_newest_last(page):
     files = page.evaluate("SUCCESS_FILES")
-    assert files[-len(BATCH_OCT):] == [f"success-{n}" for n in BATCH_OCT]
+    tail = BATCH_OCT + BATCH_NOV
+    assert files[-len(tail):] == [f"success-{n}" for n in tail]
 
 
 def test_retired_screens_are_gone(page):
@@ -119,5 +124,5 @@ def test_retired_screens_are_gone(page):
         assert f"success-{n}" not in files, f"{n} still in SUCCESS_FILES"
         assert n not in names, f"{n} still registered"
         assert not (Path(GAME_URL_DIR) / "success_screens" / f"success-{n}.js").exists(), f"{n}.js still on disk"
-    assert len(files) == 65, f"expected 65 rotation screens, got {len(files)}"
+    assert len(files) == 75, f"expected 75 rotation screens, got {len(files)}"
     assert len(set(files)) == len(files), "duplicate SUCCESS_FILES entries"

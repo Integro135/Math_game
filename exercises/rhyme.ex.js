@@ -10,7 +10,7 @@
    reading-for-meaning (so it complements story_quiz/cloze/true_false).
 
    Problem: { t:TRH, cue:{e,w}, sound, opts:[{e,w}×3], a:1-based correct } (a →
-   num1, the report's "correct"). 24 rhyme PAIRS; either member may be the cue
+   num1, the report's "correct"). 43 rhyme PAIRS; either member may be the cue
    and the other is then the answer, so a pair never looks the same twice.
    Served by a NO-REPEAT shuffled-queue rotation over the pairs.
 
@@ -63,6 +63,17 @@ window.EXERCISES.types.rhyme=(()=>{
     {a:{e:'🦅',w:'נֶשֶׁר'},     b:{e:'🌉',w:'גֶּשֶׁר'},       sound:'אֶשֶׁר',end:'ר'},
     {a:{e:'🔨',w:'פַּטִּישׁ'},    b:{e:'🕷️',w:'עַכָּבִישׁ'},     sound:'אִישׁ',end:'ש'},
     {a:{e:'🦷',w:'שֵׁן'},      b:{e:'🛡️',w:'מָגֵן'},       sound:'אֵן', end:'נ'},
+    // 2026-10 +10
+    {a:{e:'☂️',w:'מִטְרִיָּה'},  b:{e:'🍄',w:'פִּטְרִיָּה'},   sound:'טְרִיָּה',end:'ה'},
+    {a:{e:'🍬',w:'סֻכָּרִיָּה'},  b:{e:'📚',w:'סִפְרִיָּה'},    sound:'רִיָּה', end:'ה'},
+    {a:{e:'🌈',w:'קֶשֶׁת'},     b:{e:'🥅',w:'רֶשֶׁת'},       sound:'אֶשֶׁת', end:'ת'},
+    {a:{e:'🦊',w:'שׁוּעָל'},    b:{e:'👞',w:'נַעַל'},        sound:'עַל',   end:'ל'},
+    {a:{e:'🍼',w:'בַּקְבּוּק'},   b:{e:'🤗',w:'חִבּוּק'},      sound:'בּוּק',  end:'ק'},
+    {a:{e:'🐆',w:'נָמֵר'},     b:{e:'💂',w:'שׁוֹמֵר'},      sound:'מֵר',   end:'ר'},
+    {a:{e:'🦏',w:'קַרְנַף'},    b:{e:'🌿',w:'עָנָף'},        sound:'נַף',   end:'פ'},
+    {a:{e:'🚲',w:'אוֹפַנַּיִם'},  b:{e:'✂️',w:'מִסְפָּרַיִם'},   sound:'אַיִם',  end:'מ'},
+    {a:{e:'🦆',w:'בַּרְוָז'},    b:{e:'📦',w:'אַרְגָּז'},      sound:'אָז',   end:'ז'},
+    {a:{e:'🦉',w:'יַנְשׁוּף'},   b:{e:'😊',w:'פַּרְצוּף'},     sound:'וּף',   end:'פ'},
   ];
 
   /* THE DISTRACTOR POOL — familiar picturable words, NONE of them a bank word

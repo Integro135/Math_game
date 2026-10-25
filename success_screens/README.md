@@ -94,7 +94,7 @@ The host lives in `game/js/success.js`.
 
 ## 4. Screen inventory
 
-There are **65** rotation screens in `SUCCESS_FILES`; all register
+There are **75** rotation screens in `SUCCESS_FILES`; all register
 `supportsSuper: true`. The manifest is in order of addition (newest last). In
 2026-10 the ten oldest (supernova, comet-shower, constellation-heart,
 electric-orb, lightning-storm, blooming-garden, unicorn-rainbow,
@@ -151,6 +151,20 @@ listed in `SUCCESS_FILES` and pinned by `tests/test_new_success_screens.py`.
 | `success-fox-wish.js` | A front-view orange fox on a grassy hill follows shooting stars with her head, then a smiling golden star drifts into her paws; she hugs it and it bursts into a ring of little stars. Super: a meteor shower and a radial heart/star burst with falling glitter. |
 | `success-snail-trail.js` | A cute snail glides along a big green leaf leaving a shimmering 6-band rainbow trail; it looks back proudly and flowers and stars pop up along the trail. Super: the trail lifts into a full rainbow arch, a sparkle shower, and a baby snail follows. |
 | `success-koala-hug.js` | A eucalyptus branch swings in, a grey koala slides down a vine and hugs it with happy closed eyes while hearts pop out, then lets go with one paw to wave. Super: a baby koala peeks over her shoulder, a bigger heart burst, falling leaves. |
+
+### The 2026-10-25 batch (ten more, added — nothing retired)
+| File | Effect |
+|---|---|
+| `success-squirrel-leaves.js` | A side-view red squirrel picks up a glowing acorn and dives into a pile of autumn leaves that bursts into a swirling column; she pops out hugging the acorn. Super: two squirrels from both sides, the leaves swirl into a glowing heart, acorns rain. |
+| `success-bunny-carrot.js` | A front-view bunny tugs carrot leaves three times (squash/stretch, effort face) until a huge glowing gold carrot pops out; it lands in her arms and she hugs it. Super: two bunnies, two carrots, a turning ring of stars. |
+| `success-panda-bamboo.js` | A baby panda munches bamboo (puffed cheeks), does a backward roll and claps while leaves, hearts and stars burst. Super: a second panda with a bow tumbles in, a cheek-to-cheek hug, glowing shoots sprout, leaf confetti. |
+| `success-magic-storybook.js` | A storybook drops in and opens right-to-left, pages turn by themselves and glowing letters א–י spiral out into an arc; the praise is written in gold. Super: 14 letters, a pop-up rainbow and castle, a big star burst. |
+| `success-crayon-drawing.js` | A wax crayon draws a heart outline, four crayons scribble-fill it, it pops with glitter while little crayons doodle a sun, a flower and a smiley. Super: a crayon rainbow arch, a second heart, more doodles, a sparkle ring. |
+| `success-flamingo-dance.js` | A side-view flamingo dances on one leg in a moonlit pond — head bob, a wing fan, a twirl — with ripples, droplets and opening lotuses. Super: three flamingos in sync, a ring of droplets, hearts. |
+| `success-octopus-juggle.js` | A baby octopus juggles a star, a heart and a bubble in a true cascade, tosses them into a sparkle fountain and waves a tentacle. Super: five items faster, rainbow bubbles, a ring of stars. |
+| `success-frog-lilypad.js` | A side-view frog hops pad to pad across a dark pond, boops a firefly with her tongue (it flies off happily) and a pink lotus blooms behind her. Super: two baby frogs, more lotuses, fireflies swirl into a heart. |
+| `success-dandelion-wish.js` | A glowing dandelion clock is blown by wind ribbons; its seeds lift off one by one, spiral up and turn into twinkling stars. Super: two dandelions whose seeds trace a big star constellation. |
+| `success-music-box.js` | An ornate music box opens (mirror lid, turning key) and a ballerina rises and pirouettes as glowing notes spiral out. Super: a leap and arabesque, an orbiting ring of notes and stars, a petal shower. |
 
 ### Special / reward (not in the rotation)
 | File | Effect |

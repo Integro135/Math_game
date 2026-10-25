@@ -131,10 +131,12 @@ domino cascade, owl wink, magic lamp, ladybug flight, heart lock,
 sunflower grow, kitten & yarn, star jar, honeycomb bee, UFO beam, penguin
 slide, rain cloud, whale spout, lighthouse beam, cherry blossom, hedgehog roll,
 fox wish, snail trail, gingerbread house, koala hug, bubble tea,
-sticker book …). The ten oldest screens (supernova, comet shower,
+sticker book, squirrel leaves, bunny carrot, panda bamboo, magic
+storybook, crayon drawing, flamingo dance, octopus juggle, frog lilypad,
+dandelion wish, music box …). The ten oldest screens (supernova, comet shower,
 constellation heart, electric orb, lightning storm, blooming garden, unicorn
 rainbow, black-hole stars, star race, aurora glow) were retired in 2026-10.
-There are currently **65** rotation screens registered in `SUCCESS_FILES`
+There are currently **75** rotation screens registered in `SUCCESS_FILES`
 (game/js/data.js), plus the **gift** reward screen in `SUCCESS_SPECIAL`.
 
 > **Bright-backdrop exception.** Three screens (`hot-air-balloon`,
