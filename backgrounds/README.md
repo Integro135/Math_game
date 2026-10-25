@@ -1757,6 +1757,12 @@ touch) ringing the ground and puddles, the puddles fill, the leaves and crowns
 go grey — then it fades and a RAINBOW stands over the hills opposite the sun
 for ~10 s. `_aut.rain(len)`, `rainAt(k, phase)`, `rainbow(k)` for the stills.
 
+**Taps shake one thing only**: a tapped tree or squill gets its own
+`kickT` and shakes on `kickOf(o, t)` (a decaying swing, ~3 s). The global
+`wind()` is the weather alone; `gustAt` only nudges the leaves already
+falling within ~110 px of the tap. (The first cut raised the global wind on
+a tap, which made every tree and squill in the grove jump.) `_aut.kicks()`.
+
 **Clicks** (`onClick`, UI filter `UI_SEL`): sun / moon → tween to the next
 key; a bunny → a startled spring + new coat; a snail → tuck in; the hedgehog → curl; a squill → petals + bees; a tree
 (crown or trunk) → gust; a cloud → rain; the upper sky → storks; the ground →

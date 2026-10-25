@@ -50,7 +50,9 @@ class TestGrove:
         page.mouse.click(xy["x"], xy["y"])
         page.wait_for_function(f"_aut.leaves().released >= {before} + 15", timeout=3_000)
         assert page.evaluate("_aut.taps().tree") == 1
-        assert page.evaluate("_aut.wind()") > 0.6, "the gust is in the wind"
+        k = page.evaluate("_aut.kicks()")
+        assert sum(1 for v in k["trees"] if v > 0.3) == 1, f"only the tapped tree shakes: {k}"
+        assert all(v == 0 for v in k["squills"]), "the squills stay still"
 
     def test_the_day_cycle_and_the_rain(self, page):
         _open(page)
@@ -115,6 +117,9 @@ class TestCreatures:
         xy = page.evaluate("_aut.squillXY(3)")
         page.mouse.click(xy["x"], xy["y"])
         page.wait_for_function("_aut.taps().squill === 1", timeout=2_000)
+        k = page.evaluate("_aut.kicks()")
+        assert k["squills"][3] > 0.3 and all(v == 0 for i, v in enumerate(k["squills"]) if i != 3), f"only that squill sways: {k}"
+        assert all(v == 0 for v in k["trees"]), "the trees stay still"
         page.evaluate("_aut.setTod(0.9)")
         page.wait_for_function("_aut.bees().every(b => b.away > 0.9)", timeout=5_000)
 

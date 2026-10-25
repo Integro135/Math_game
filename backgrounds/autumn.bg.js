@@ -197,8 +197,12 @@
 
       // ── the wind: one slow gust value every element leans to, plus a live gust ──
       let gustAmp = 0, gustT0 = -99, gustX = 0;
-      function wind(t){ const base = 0.25 + 0.55 * noise1(t * 0.13) + 0.2 * noise1(t * 0.61 + 7); const g = gustAmp * Math.exp(-(t - gustT0) * 0.6); return base + g; }
+      function wind(t){ return 0.25 + 0.55 * noise1(t * 0.13) + 0.2 * noise1(t * 0.61 + 7); }
+      // a tap's puff: it only pushes the leaves already falling right next to it;
+      // the shake itself belongs to the ONE tree / squill that was tapped (kickOf)
       function gustAt(x, t, amp){ gustAmp = amp; gustT0 = t; gustX = x; }
+      // how hard a tapped thing is still shaking: 1 at the tap, dying out in ~3 s
+      function kickOf(o, t, rate){ return o.kickT == null ? 0 : Math.exp(-(t - o.kickT) * rate); }
 
       // ══════════════════════════════════════════════════════════════════════
       // THE SKY — sun, moon, stars, clouds, the storks, the far hills
@@ -547,11 +551,11 @@
       function drawCrowns(g, t){
         const w = wind(t);
         for (const T of TREES){
-          const hk = 1 / Math.max(1, T.h);
+          const hk = 1 / Math.max(1, T.h), kick = kickOf(T, t, 0.9);
           for (const Lb of T.lobes){
             const hf = clamp01((T.base - Lb.y) * hk);                        // higher lobes swing more
-            const gk = 1 + 2.2 * Math.exp(-Math.abs(T.x - gustX) / 260) * clamp01(gustAmp) * Math.exp(-(t - gustT0) * 0.6);
-            const ox = (w * (4 + 6 * hf) + Math.sin(t * 1.1 + Lb.ph) * (1 + 1.5 * w)) * gk, oy = Math.sin(t * 0.8 + Lb.ph) * 1.2 * w;
+            const ox = w * (4 + 6 * hf) + Math.sin(t * 1.1 + Lb.ph) * (1 + 1.5 * w) + kick * (7 + 15 * hf) * Math.sin((t - T.kickT) * 4.6 - hf * 1.1),
+                  oy = Math.sin(t * 0.8 + Lb.ph) * 1.2 * w + kick * 2.5 * hf * Math.sin((t - T.kickT) * 6.1 + Lb.ph);
             const sx = OX + (Lb.x - Lb.d / 2 + ox) * S, sy = OY + (Lb.y - Lb.d / 2 + oy) * S, sd = Lb.d * S;
             g.drawImage(Lb.cvT || Lb.cv, Math.round(sx * DPR) / DPR, Math.round(sy * DPR) / DPR, sd, sd);
           }
@@ -830,7 +834,7 @@
         for (let i = LEAVES.length - 1; i >= 0; i--){
           const lf = LEAVES[i];
           const flutter = Math.sin(t * lf.f + lf.ph);
-          const gk = 1 + 3 * Math.exp(-Math.abs(lf.x - gustX) / 300) * clamp01(gustAmp) * Math.exp(-(t - gustT0) * 0.6);
+          const gk = 1 + 3 * Math.exp(-Math.abs(lf.x - gustX) / 110) * clamp01(gustAmp) * Math.exp(-(t - gustT0) * 0.8);
           lf.vx += ((28 + 70 * w) * lf.drift * gk + flutter * 60 - lf.vx) * dt * 1.6;
           lf.vy += (34 + Math.abs(flutter) * 30 - lf.vy) * dt * 1.4;          // terminal fall, rocking slower on the up-flutter
           lf.x += lf.vx * dt; lf.y += lf.vy * dt; lf.rot += (lf.rv + flutter * 2.5) * dt;
@@ -956,8 +960,8 @@
       function tintSquills(){ for (const Sq of SQUILLS) tintSprite(Sq.spike, Sq.spikeT); }
       // the pose of a squill at time t: the stalk bends with the wind, the tip lags
       function squillPose(Sq, t){
-        const w = wind(t), gk = 1 + 1.8 * Math.exp(-Math.abs(Sq.x - gustX) / 240) * clamp01(gustAmp) * Math.exp(-(t - gustT0) * 0.7);
-        const bend = (Sq.lean + w * 0.16 * gk + Math.sin(t * 1.3 + Sq.ph) * 0.03 * (0.5 + w)) ;
+        const w = wind(t), kick = kickOf(Sq, t, 1.3);
+        const bend = Sq.lean + w * 0.16 + Math.sin(t * 1.3 + Sq.ph) * 0.03 * (0.5 + w) + (kick ? kick * 0.22 * Math.sin((t - Sq.kickT) * 7) : 0);
         const h0 = Sq.h - Sq.sh, tipX = Sq.x + Math.sin(bend) * h0, tipY = Sq.y - Math.cos(bend) * h0;
         return { bend, tipX, tipY, cpx: Sq.x + Math.sin(bend) * h0 * 0.25, cpy: Sq.y - h0 * 0.55 };
       }
@@ -1014,7 +1018,7 @@
         for (const B of BEES) if (B.sq === SQUILLS.indexOf(Sq)){ B.t0 = t; B.hold = 0.01; }
         const P = Sq.pose || squillPose(Sq, t);
         for (let i = 0; i < 14; i++) PETALS.push({ x: lerp(Sq.x, P.tipX, 0.8) + (Math.random() - 0.5) * 30, y: P.tipY - Math.random() * Sq.sh, vx: (Math.random() - 0.5) * 90, vy: -40 - Math.random() * 60, t0: t, life: 1.2 + Math.random() * 0.8, r: Math.random() * TAU });
-        gustAt(Sq.x, t, 0.5);
+        Sq.kickT = t;
       }
       function drawPetals(g, t){
         for (let i = PETALS.length - 1; i >= 0; i--){
@@ -1395,7 +1399,7 @@
       function nextKeyFrom(v){ for (const K of KEYS) if (K.at > v + 0.01) return K.at; return KEYS[0].at + 1; }
       function tweenTo(to){ todTween = { from: tod, to, t0: lastT, dur: 2.2 }; }
       const taps = { tree: 0, snail: 0, hog: 0, bunny: 0, squill: 0, ground: 0, sky: 0, cloud: 0 };
-      function gust(T, t){ gustAt(T.x, t, 1); const n = narrow ? 14 : 22; for (let i = 0; i < n; i++) releaseLeaf(T, null, true); taps.tree++; }
+      function gust(T, t){ T.kickT = t; gustAt(T.x, t, 1); const n = narrow ? 14 : 22; for (let i = 0; i < n; i++) releaseLeaf(T, null, true); taps.tree++; }
       function onClick(e){
         if (e.target.closest(UI_SEL)) return;
         const dx = (e.clientX - OX) / S, dy = (e.clientY - OY) / S, t = lastT;
@@ -1446,6 +1450,7 @@
         groundXY: () => ({ x: OX + DW * 0.5 * S, y: OY + 780 * S }),
         skyXY: () => ({ x: OX + DW * 0.5 * S, y: OY + 120 * S }),
         taps: () => Object.assign({}, taps),
+        kicks: () => ({ trees: TREES.map(T => +kickOf(T, lastT, 0.9).toFixed(3)), squills: SQUILLS.map(Sq => +kickOf(Sq, lastT, 1.3).toFixed(3)) }),
         bunnies: () => BUNNIES.map(b => { const r = b.el.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.bottom), w: Math.round(r.width), coat: b._coat || 'lavender', active: !!b.active, filter: b.el.style.filter }; }),
         bunnyXY: i => { const b = BUNNIES[i]; if (!b) return null; const r = b.el.getBoundingClientRect(); return { x: r.left + r.width * 0.5, y: r.top + r.height * 0.6 }; },
         layout: () => ({ DW, k: +AXK.toFixed(3), narrow, trees: TREES.map(T => Math.round(T.x)), squills: SQUILLS.map(Sq => Math.round(Sq.x)), fence: FENCE ? Math.round(FENCE.x0) : null }),
