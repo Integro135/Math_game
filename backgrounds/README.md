@@ -1765,8 +1765,12 @@ clearing: seeds 11/37 left, 41/67 right; the narrow grove maps 37→23,
 instead two levels of twigs fan out of every bough and limb, drawn LIVE as
 two batched strokes so they sway with the wind and the tree's own tap, with
 a few last leaves (`T.cling`) dangling at the tips. Those are all it still
-drops — now and then in the trickle, three at a tap — and the ground under
-it has a thicker carpet and only a faint shadow. `_aut.trees()` reports
+drops, now and then in the trickle, and the ground under it has a thicker
+carpet and only a faint shadow. **A tap LEAFS IT UP** (`leafUp`): the lobes
+are baked then and swell in one after another over `GROW_SEC` (1.8 s) while
+the twigs fade; from then on it is a leafy tree (a later tap gusts it), and
+it stays leafy through a narrow ↔ wide re-layout (its seed and its narrow
+twin leave `BARE`). `_aut.trees()` reports
 `bare / twigs / cling`.
 
 **Taps shake one thing only**: a tapped tree or squill gets its own
