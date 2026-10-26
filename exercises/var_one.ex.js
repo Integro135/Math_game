@@ -35,10 +35,10 @@ window.EXERCISES.types.var_one=(()=>{
         A(7,5),S(13,5),A(8,6),S(14,6),A(9,4),S(15,7),A(6,7),S(12,4),
         A(8,5),S(16,8),A(9,6),S(13,7),A(7,8),S(14,9),A(9,9),
       ];
-      // bridge-20: every sum / minuend crosses 20 (sums/minuends 21-23)
+      // bridge-20: BIG crossings (units make 13+), most over 20 (results up to 28)
       if(mode==='b20')return[
-        A(19,3),S(21,3),A(18,4),S(22,4),A(17,5),S(23,5),A(16,6),S(21,6),
-        A(19,4),S(22,7),A(18,5),S(23,8),A(15,7),S(22,9),A(14,8),
+        A(18,9),S(27,9),A(8,7),S(25,7),A(19,8),S(26,8),A(17,9),S(24,9),
+        A(9,9),S(23,8),A(18,8),S(16,9),A(17,7),S(28,9),A(16,9),
       ];
       // Queen (mx): one addition + one subtraction, ≤20 (so the aid line fits).
       // ONE of the two is a TWO-unknown (both operands shapes) and the other a

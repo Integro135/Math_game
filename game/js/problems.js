@@ -413,67 +413,67 @@ function makeBridgePool(){
 
 // ── bridging-20 ("גָּשֵׁר 20") — FIVE fixed pedagogical sets of 15, served in
 //    ROTATION (set 1 → 2 → 3 → 4 → 5 → 1 …), like גָּשֵׁר 10. The turn is PERSISTED so the
-//    rotation survives refreshes. All cross 20 into the LOW-MID 20s (results 21–25);
-//    the order INSIDE each set is the curriculum and must NEVER change; fresh
+//    rotation survives refreshes. 2026-10-26: made HARDER — every problem is a BIG
+//    crossing of a ten (the units alone make 13 or more: 8+7, 9+9, 18+9, 27−9 …), and
+//    most cross 20 (results up to 28). The single-digit fact (8+7) sits next to its
+//    "one ten higher" twin (18+7), so the child carries the same split up a ten.
+//    The order INSIDE each set is the curriculum and must NEVER change; fresh
 //    objects each build.
-//    SET 1 — MEDIUM jumps: anchors 18/17/16, results 22–24 (make-20 split 2/3/4).
-//    SET 2 — BIG jumps: lower anchors 16/15/14/13 and bigger addends, results 22–25
-//            (16+9 → 4|5, 13+9 → 7|2) — a wider decomposition, a notch harder.
-//    SET 3 — the 19-LADDER + gentlest bridges: the full 19+2..6 climb (→21–25) with
-//            inverses, then the three smallest crossings to 21 (18+3, 17+4, 16+5).
-//    SET 4 — DOUBLES & near-doubles that cross 20: 11+11, 12+12, 11+12, 11+13, 12+13
-//            … (→22–25) with inverses — a fresh angle (both operands in the low teens).
-//    SET 5 — FACT FAMILIES: 15+6, 6+15, 21−6, 21−15 … — one fact four ways (→21/25).
+//    SET 1 — TWINS: 8+7 → 18+7, 9+8 → 19+8, 8+9 → 18+9, 7+6 → 17+6, with inverses.
+//    SET 2 — the BIG +9: 9+6..8 warm-up, then 19+9 … 14+9 (→23–28) and −9 count-backs.
+//    SET 3 — +8 and +7: 8+7, 8+8, 7+7, then 18+8 … 16+7 (→23–26) and inverses.
+//    SET 4 — COUNT-BACK twins: 17−9 → 27−9, 16−8 → 26−8, 15−7 → 25−7 … (all borrow).
+//    SET 5 — FACT FAMILIES: 18+9, 9+18, 27−9, 27−18 … — one big fact four ways.
 let _b20Turn=0;
 try{const _s=localStorage.getItem('b20Turn');if(_s!=null)_b20Turn=(+_s)||0;}catch(e){}
 function _bridge20Set1(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(18,4),A(18,5),A(18,6),S(22,4),S(23,5),S(24,6),   // 18-family (cross to 22–24) + inverses
-    A(17,5),A(17,6),A(17,7),S(22,5),S(23,6),S(24,7),   // 17-family + inverses
-    A(16,6),A(16,7),A(16,8),                            // 16-family (additions to finish → 22–24)
+    A(8,7),A(18,7),S(15,7),S(25,7),                    // 8+7=15 → 18+7=25 + inverses
+    A(9,8),A(19,8),S(17,8),S(27,8),                    // 9+8=17 → 19+8=27
+    A(8,9),A(18,9),S(17,9),S(27,9),                    // 8+9=17 → 18+9=27
+    A(7,6),A(17,6),S(23,6),                            // 7+6=13 → 17+6=23 (three to finish)
   ];
 }
 function _bridge20Set2(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(16,7),A(16,8),A(16,9),S(23,7),S(24,8),S(25,9),   // 16-family (big jumps → 23–25) + inverses
-    A(15,7),A(15,8),A(15,9),S(22,7),S(23,8),S(24,9),   // 15-family + inverses
-    A(14,8),A(14,9),A(13,9),                            // 14/13-family (additions to finish → 22–23)
+    A(9,6),A(9,7),A(9,8),S(16,9),                      // +9 warm-up below 20
+    A(19,9),A(18,9),A(17,9),A(16,9),                   // the +9 ladder over 20 (→28–25)
+    A(15,9),A(14,9),S(28,9),S(27,9),                   // (→24, 23) + −9 count-backs
+    S(26,9),S(25,9),S(24,9),                           // −9 back below 20
   ];
 }
-// SET 3 — the 19-LADDER (add just below 20) + the gentlest bridges to 21.
 function _bridge20Set3(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(19,2),A(19,3),A(19,4),A(19,5),A(19,6),           // 19 + 2..6 = 21..25 (the full 19-ladder)
-    S(21,2),S(22,3),S(23,4),S(24,5),S(25,6),           // inverses (back down to 19)
-    A(18,3),A(17,4),A(16,5),                            // the three smallest crossings to 21 (cross by 1)
-    S(21,3),S(21,4),                                    // inverses (21−3=18, 21−4=17)
+    A(8,7),A(8,8),A(7,7),S(15,8),                      // the hard single-digit bridges
+    A(18,8),A(17,8),A(16,8),S(26,8),                   // +8 over 20 (→26–24)
+    S(25,8),A(19,7),A(17,7),S(14,7),                   // +7 over 20 (→26, 24)
+    A(16,7),S(26,7),S(24,7),                           // (→23) + −7 count-backs
   ];
 }
-// SET 4 — DOUBLES & near-doubles that cross 20 (both operands in the low teens).
+// SET 4 — COUNT-BACK twins: the single-digit borrow, then the same one a ten higher.
 function _bridge20Set4(){
-  const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
+  const S=(a,b)=>({t:TS,a,b});
   return[
-    A(11,11),S(22,11),                                 // 11+11=22 (double) + inverse
-    A(12,12),S(24,12),                                 // 12+12=24 (double) + inverse
-    A(11,12),A(12,11),S(23,11),S(23,12),               // near-doubles → 23 + inverses
-    A(11,13),A(13,11),S(24,11),S(24,13),               // 11 & 13 → 24 + inverses
-    A(12,13),A(13,12),S(25,12),                        // 12 & 13 → 25 (+ one inverse to finish)
+    S(17,9),S(27,9),S(16,8),S(26,8),                   // 17−9 → 27−9, 16−8 → 26−8
+    S(15,7),S(25,7),S(14,9),S(24,9),                   // 15−7 → 25−7, 14−9 → 24−9
+    S(13,8),S(23,8),S(18,9),S(28,9),                   // 13−8 → 23−8, 18−9 → 28−9
+    S(15,8),S(25,8),S(26,9),                           // 15−8 → 25−8, then 26−9
   ];
 }
-// SET 5 — FACT FAMILIES (מִשְׁפְּחוֹת מִסְפָּרִים) that cross 20: the same three numbers
+// SET 5 — FACT FAMILIES (מִשְׁפְּחוֹת מִסְפָּרִים) with BIG crossings: the same three numbers
 // four ways — a+b, b+a (turn it around: start from the big one), s−b, s−a — so the
-// child sees that adding and subtracting are one fact. Fresh pairs the other sets
-// don't use (15|6, 13|8 → 21; 18|7 → 25), finished by the 12|9 → 21 family.
+// child sees that adding and subtracting are one fact. 18|9|27, 17|8|25, 19|7|26,
+// finished by the single-digit 9|8|17 family.
 function _bridge20Set5(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(15,6),A(6,15),S(21,6),S(21,15),                  // 15 | 6 | 21
-    A(13,8),A(8,13),S(21,8),S(21,13),                  // 13 | 8 | 21
-    A(18,7),A(7,18),S(25,7),S(25,18),                  // 18 | 7 | 25
-    A(12,9),A(9,12),S(21,9),                           // 12 | 9 | 21 (three to finish)
+    A(18,9),A(9,18),S(27,9),S(27,18),                  // 18 | 9 | 27
+    A(17,8),A(8,17),S(25,8),S(25,17),                  // 17 | 8 | 25
+    A(19,7),A(7,19),S(26,7),S(26,19),                  // 19 | 7 | 26
+    A(9,8),A(8,9),S(17,9),                             // 9 | 8 | 17 (three to finish)
   ];
 }
 // the one-unknown type is woven into EVERY set by _sprinkleUnknowns (~1 in 4),

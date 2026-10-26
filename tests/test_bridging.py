@@ -444,44 +444,51 @@ class TestBridgingMode:
 # ─────────────────────────────────────────────────────────
 class TestBridge20:
     """'b20' (גָּשֵׁר 20) is its own game/category — FIVE fixed 15-problem sets served in
-    ROTATION (set 1 → 2 → 3 → 4 → 5 → 1 …). All cross 20 into the low-mid 20s (results 21–25).
-    Set 1 = medium jumps (anchors 18/17/16); set 2 = bigger jumps (16/15/14/13);
-    set 3 = the 19-ladder + gentlest bridges to 21; set 4 = doubles crossing 20;
-    set 5 = fact families (a+b, b+a, s−b, s−a)."""
+    ROTATION (set 1 → 2 → 3 → 4 → 5 → 1 …). Since 2026-10-26 every problem is a BIG
+    crossing of a ten (the units alone make 13+: 8+7, 18+9, 27−9 …), most over 20.
+    Set 1 = twins (8+7 → 18+7); set 2 = the big +9; set 3 = +8 / +7;
+    set 4 = count-back twins (17−9 → 27−9); set 5 = fact families (a+b, b+a, s−b, s−a)."""
 
-    # SET 1 — medium jumps (anchors 18/17/16, results 22–24)
     B20_SEQ = [
-        ("TA", 18, 4), ("TA", 18, 5), ("TA", 18, 6), ("TS", 22, 4), ("TS", 23, 5), ("TS", 24, 6),
-        ("TA", 17, 5), ("TA", 17, 6), ("TA", 17, 7), ("TS", 22, 5), ("TS", 23, 6), ("TS", 24, 7),
-        ("TA", 16, 6), ("TA", 16, 7), ("TA", 16, 8),
+        ("TA", 8, 7), ("TA", 18, 7), ("TS", 15, 7), ("TS", 25, 7),
+        ("TA", 9, 8), ("TA", 19, 8), ("TS", 17, 8), ("TS", 27, 8),
+        ("TA", 8, 9), ("TA", 18, 9), ("TS", 17, 9), ("TS", 27, 9),
+        ("TA", 7, 6), ("TA", 17, 6), ("TS", 23, 6),
     ]
-    # SET 2 — bigger jumps (anchors 16/15/14/13, results 22–25)
     B20_SEQ_2 = [
-        ("TA", 16, 7), ("TA", 16, 8), ("TA", 16, 9), ("TS", 23, 7), ("TS", 24, 8), ("TS", 25, 9),
-        ("TA", 15, 7), ("TA", 15, 8), ("TA", 15, 9), ("TS", 22, 7), ("TS", 23, 8), ("TS", 24, 9),
-        ("TA", 14, 8), ("TA", 14, 9), ("TA", 13, 9),
+        ("TA", 9, 6), ("TA", 9, 7), ("TA", 9, 8), ("TS", 16, 9),
+        ("TA", 19, 9), ("TA", 18, 9), ("TA", 17, 9), ("TA", 16, 9),
+        ("TA", 15, 9), ("TA", 14, 9), ("TS", 28, 9), ("TS", 27, 9),
+        ("TS", 26, 9), ("TS", 25, 9), ("TS", 24, 9),
     ]
-    # SET 3 — the 19-ladder (→21–25) + the three smallest bridges to 21
     B20_SEQ_3 = [
-        ("TA", 19, 2), ("TA", 19, 3), ("TA", 19, 4), ("TA", 19, 5), ("TA", 19, 6),
-        ("TS", 21, 2), ("TS", 22, 3), ("TS", 23, 4), ("TS", 24, 5), ("TS", 25, 6),
-        ("TA", 18, 3), ("TA", 17, 4), ("TA", 16, 5), ("TS", 21, 3), ("TS", 21, 4),
+        ("TA", 8, 7), ("TA", 8, 8), ("TA", 7, 7), ("TS", 15, 8),
+        ("TA", 18, 8), ("TA", 17, 8), ("TA", 16, 8), ("TS", 26, 8),
+        ("TS", 25, 8), ("TA", 19, 7), ("TA", 17, 7), ("TS", 14, 7),
+        ("TA", 16, 7), ("TS", 26, 7), ("TS", 24, 7),
     ]
-    # SET 4 — doubles & near-doubles crossing 20 (both operands in the low teens)
     B20_SEQ_4 = [
-        ("TA", 11, 11), ("TS", 22, 11), ("TA", 12, 12), ("TS", 24, 12),
-        ("TA", 11, 12), ("TA", 12, 11), ("TS", 23, 11), ("TS", 23, 12),
-        ("TA", 11, 13), ("TA", 13, 11), ("TS", 24, 11), ("TS", 24, 13),
-        ("TA", 12, 13), ("TA", 13, 12), ("TS", 25, 12),
+        ("TS", 17, 9), ("TS", 27, 9), ("TS", 16, 8), ("TS", 26, 8),
+        ("TS", 15, 7), ("TS", 25, 7), ("TS", 14, 9), ("TS", 24, 9),
+        ("TS", 13, 8), ("TS", 23, 8), ("TS", 18, 9), ("TS", 28, 9),
+        ("TS", 15, 8), ("TS", 25, 8), ("TS", 26, 9),
+    ]
+    B20_SEQ_5 = [
+        ("TA", 18, 9), ("TA", 9, 18), ("TS", 27, 9), ("TS", 27, 18),
+        ("TA", 17, 8), ("TA", 8, 17), ("TS", 25, 8), ("TS", 25, 17),
+        ("TA", 19, 7), ("TA", 7, 19), ("TS", 26, 7), ("TS", 26, 19),
+        ("TA", 9, 8), ("TA", 8, 9), ("TS", 17, 9),
     ]
 
-    # SET 5 — fact families crossing 20: a+b, b+a, s−b, s−a (→21 / 25)
-    B20_SEQ_5 = [
-        ("TA", 15, 6), ("TA", 6, 15), ("TS", 21, 6), ("TS", 21, 15),
-        ("TA", 13, 8), ("TA", 8, 13), ("TS", 21, 8), ("TS", 21, 13),
-        ("TA", 18, 7), ("TA", 7, 18), ("TS", 25, 7), ("TS", 25, 18),
-        ("TA", 12, 9), ("TA", 9, 12), ("TS", 21, 9),
-    ]
+    @staticmethod
+    def _hard(TA, a, b, t):
+        """A BIG crossing: the units alone make 13+ (8+7, 18+9; 27−9 ↔ 18+9), the
+        result stays ≤ 28, and a subtraction always borrows."""
+        if t == TA:
+            s = a + b
+            return (a % 10) + (b % 10) >= 13 and s <= 28
+        r = a - b
+        return 0 < r and a <= 28 and (a % 10) < (b % 10) and (r % 10) + (b % 10) >= 13
 
     def _switch(self, page):
         enter_mode(page, 'b20')
@@ -506,19 +513,15 @@ class TestBridge20:
         expected = [[consts[t], a, b] for t, a, b in self.B20_SEQ]
         assert probs == expected, f"b20 order deviated.\nexpected={expected}\ngot={probs}"
 
-    def test_b20_crosses_twenty_only_gently(self, page):
-        """Every b20 problem bridges 20 into the low-mid 20s — additions have a sum
-        21–25 (anchor < 20), subtractions have a minuend 21–25 and a result below 20."""
+    def test_b20_every_problem_is_a_big_crossing(self, page):
+        """Every b20 problem is a hard bridge — the units alone make 13+ (8+7, 18+9,
+        27−9) — and most of each set crosses 20."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
-        TA, TS = consts["TA"], consts["TS"]
+        TA = consts["TA"]
         self._switch(page)
-        for t, a, b in page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"):
-            if t == TA:
-                assert a < 20 and 20 < a + b <= 25, \
-                    f"addition {a}+{b} must cross 20 (sum 21–25)"
-            else:
-                assert 20 < a <= 25 and 0 < (a - b) < 20, \
-                    f"subtraction {a}-{b} must cross 20 from a low-20s minuend (result <20)"
+        probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        for t, a, b in probs:
+            assert self._hard(TA, a, b, t), f"{a}{'+' if t == TA else '-'}{b} is not a big crossing"
 
     def test_b20_pts_and_prize(self, page):
         """b20 scores 15 per answer and, by default, carries NO prize (only
@@ -556,19 +559,19 @@ class TestBridge20:
         assert unk and all((i + 1) % 4 == 0 for i in unk), \
             f"b20 must weave shape-unknowns onto 4th slots, got idx {unk}"
 
-    def test_b20_all_five_sets_cross_twenty(self, page):
-        """Every problem in ALL FOUR sets bridges 20 (sums/minuends 21–25), including
-        the new set 3 (19-ladder) and set 4 (doubles)."""
+    def test_b20_all_five_sets_are_hard(self, page):
+        """ALL FIVE sets: every problem is a big crossing (units 13+), and at least
+        half of each set crosses 20 (sum / minuend over 20)."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
-        TA, TS = consts["TA"], consts["TS"]
+        TA = consts["TA"]
         NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
         self._switch(page)
         for s in range(5):
-            for t, a, b in page.evaluate(NORM):
-                if t == TA:
-                    assert a < 20 and 20 < a + b <= 25, f"set{s+1}: {a}+{b} must cross 20 (sum 21–25)"
-                else:
-                    assert 20 < a <= 25 and 0 < (a - b) < 20, f"set{s+1}: {a}-{b} must cross 20 (result <20)"
+            probs = page.evaluate(NORM)
+            for t, a, b in probs:
+                assert self._hard(TA, a, b, t), f"set{s+1}: {a},{b} is not a big crossing"
+            over20 = sum(1 for t, a, b in probs if (a + b if t == TA else a) > 20)
+            assert over20 >= 8, f"set{s+1}: only {over20}/15 cross 20"
             page.evaluate("restart()"); page.wait_for_timeout(120)
 
     def test_b20_set5_is_whole_fact_families(self, page):
@@ -579,9 +582,8 @@ class TestBridge20:
             s = a + b
             assert (b2, a2) == (b, a) and s1 == s2 == s and {s - x, s - y} == {a, b}, seq[g:g + 4]
 
-    def test_b20_set2_exact_order_and_crosses_gently(self, page):
-        """Set 2 (bigger jumps) serves its exact order; all 15 still cross 20 into the
-        low-mid 20s (sums/minuends 21–25) — only the decomposition is larger."""
+    def test_b20_set2_exact_order_and_is_hard(self, page):
+        """Set 2 (the big +9) serves its exact order; every problem is a big crossing."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch(page)                          # set 1
@@ -590,9 +592,4 @@ class TestBridge20:
         expected = [[consts[t], a, b] for t, a, b in self.B20_SEQ_2]
         assert probs == expected, f"b20 set 2 order deviated.\nexpected={expected}\ngot={probs}"
         for t, a, b in probs:
-            if t == TA:
-                assert a < 20 and 20 < a + b <= 25, \
-                    f"addition {a}+{b} must cross 20 (sum 21–25)"
-            else:
-                assert 20 < a <= 25 and (a - b) < 20, \
-                    f"subtraction {a}-{b} must cross 20 from a low-20s minuend"
+            assert self._hard(TA, a, b, t), f"{a},{b} is not a big crossing"
