@@ -133,8 +133,14 @@ class TestCreatures:
         assert h0["on"] and h0["curl"] == 0
         page.wait_for_timeout(800)
         assert page.evaluate("_aut.hog().x") != h0["x"], "it trundles along"
-        xy = page.evaluate("_aut.hogXY()")
-        page.mouse.click(xy["x"], xy["y"])
+        # a bunny hopping across the hedgehog takes the tap (it sits in front), so
+        # aim again if one got in the way
+        for _ in range(5):
+            xy = page.evaluate("_aut.hogXY()")
+            page.mouse.click(xy["x"], xy["y"])
+            if page.evaluate("_aut.taps().hog") >= 1:
+                break
+            page.wait_for_timeout(400)
         page.wait_for_function("_aut.taps().hog === 1 && _aut.hog().curl > 0.9", timeout=2_000)
         page.wait_for_function("_aut.hog().curl < 0.2", timeout=8_000)
 
