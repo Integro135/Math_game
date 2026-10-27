@@ -269,6 +269,39 @@ function checkParentGate(){
 }
 
 /* ── Problem ── */
+/* Size the kangaroo line for the current problem and return where the rider
+   starts. Used by loadProblem AND by toggleAidMode — switching jar → kangaroo
+   used to show the line at the PREVIOUS problem's size (19+9=28 ran off a 0..27
+   line). Types that size their own line (TC/TT/TCA/TCS/TMU/TBG/TH) skip it. */
+function _kangFit(){
+  // kangaroo line spans 0..20 by default. The biggest value that must sit ON the
+  // line is the MINUEND for subtraction and the SUM for addition — so the answer /
+  // last hop is never off the end. גָּשֵׁר 20 bridges reach 25 (e.g. 19+6, 25−9): a
+  // fixed 0..24 line put such an answer AT or PAST the right edge, giving it away.
+  const _isAddT=ptype===TA||ptype===TVA;
+  const _nlHi=Math.max(20,(ptype===TM||ptype===TS||ptype===TVS)?num1:0,_isAddT?num1+num2:0);
+  // in the bridge games (גֶּשֶׁר 10 / 20) keep the answer OFF the very edge — extend
+  // a couple past the top value, like the framed windows the other exercises use.
+  const _nlMax=(mode==='br'||mode==='b20')?_nlHi+2:_nlHi;
+  // TZ (a+b+c): chain sums reach 25 (chain.ex.js), past a 0..20 line — 5+7+9=21
+  // fell off the end. The line is a WINDOW that STARTS at the SMALLEST addend
+  // and runs 20 past it (5+7+9 → 5..25), and the rider is parked ON that
+  // smallest number, so the child hops the other two addends from there. The
+  // generator keeps the other two addends at ≤ 18 together, so the sum always
+  // lands inside the window, never on its edge. (user request)
+  const _tzLo=ptype===TZ?Math.min(num1,num2,num3,num4>0?num4:Infinity):0;
+  if(ptype===TZ){NL.configure(_tzLo+20,1,_tzLo);return _tzLo;}
+  // a line much longer than 0..20 crowds its labels into an unreadable smear (a
+  // 0..30 line on a phone). Past 22, show a ~20-wide WINDOW ending at the top
+  // value instead, starting low enough that both operands AND the answer sit on
+  // it (19+9 → 9..30, 27−18 → 9..29); the rider is parked on its left edge.
+  if(_nlMax>22){
+    const _res=_isAddT?num1+num2:num1-num2;
+    const _lo=Math.max(0,Math.min(_nlMax-20,num1,num2,_res));
+    NL.configure(_nlMax,1,_lo);return _lo;
+  }
+  NL.configure(_nlMax,1);return 0;
+}
 function loadProblem(){
   if(idx>=problems.length){endGame();return}
   ({t:ptype,a:num1,b:num2,c:num3,d:num4}=problems[idx]);num3=num3||0;num4=num4||0;
@@ -407,24 +440,8 @@ function loadProblem(){
   const useKang=aidMode==='kang';
   const ct=document.getElementById('chain-tools');if(ct)ct.style.display=useNL?'block':'none';
   const nlp=document.getElementById('nl-panel');
-  // kangaroo line spans 0..20 by default. The biggest value that must sit ON the
-  // line is the MINUEND for subtraction and the SUM for addition — so the answer /
-  // last hop is never off the end. גָּשֵׁר 20 bridges reach 25 (e.g. 19+6, 25−9): a
-  // fixed 0..24 line put such an answer AT or PAST the right edge, giving it away.
-  const _isAddT=ptype===TA||ptype===TVA;
-  const _nlHi=Math.max(20,(ptype===TM||ptype===TS||ptype===TVS)?num1:0,_isAddT?num1+num2:0);
-  // in the bridge games (גֶּשֶׁר 10 / 20) keep the answer OFF the very edge — extend
-  // a couple past the top value, like the framed windows the other exercises use.
-  const _nlMax=(mode==='br'||mode==='b20')?_nlHi+2:_nlHi;
-  // TZ (a+b+c): chain sums reach 25 (chain.ex.js), past a 0..20 line — 5+7+9=21
-  // fell off the end. The line is a WINDOW that STARTS at the SMALLEST addend
-  // and runs 20 past it (5+7+9 → 5..25), and the rider is parked ON that
-  // smallest number, so the child hops the other two addends from there. The
-  // generator keeps the other two addends at ≤ 18 together, so the sum always
-  // lands inside the window, never on its edge. (user request)
-  const _tzLo=ptype===TZ?Math.min(num1,num2,num3,num4>0?num4:Infinity):0;
   if(nlp){nlp.style.display=useKang?'':'none';
-    if(useKang){if(ptype===TZ){NL.configure(_tzLo+20,1,_tzLo);NL.init(_tzLo);}else{NL.configure(_nlMax,1);NL.init(0);}}}
+    if(useKang)NL.init(_kangFit());}
   if(useNL){
     pgmTensMode=false;chainGnMode=false;
     const _cv=isTD?((ptype===TDA||ptype===TRA)?0:num1):num1;

@@ -304,7 +304,16 @@ document.getElementById('games-menu')?.addEventListener('click',e=>e.stopPropaga
    container, the counted items, the garden upgrade items, icons and hint
    texts) comes from the active aid VARIANT — a dynamically-loaded file in
    aids/<name>.aids.js, chosen by the active background (see bg-loader.js). */
-const PGM_NL=25;   // chain running-total line spans 0-25 (chain results reach up to 25)
+// chain running-total line spans 0-25 (chain results reach up to 25) — but it GROWS
+// to fit the current problem: the sum (add) / minuend (sub) must sit ON the line, a
+// couple past it in the bridge games (19+9=28 ran off a fixed 0-25 line). Recomputed
+// by pgmBuildNL(), which every jar/line rebuild goes through.
+let PGM_NL=25;
+function _pgmSpan(){
+  const add=ptype===TA||ptype===TVA,sub=ptype===TS||ptype===TVS||ptype===TM;
+  const top=add?num1+num2:sub?num1:0;
+  return Math.max(25,(mode==='br'||mode==='b20')?top+2:top);
+}
 function aidCfg(){return (window.AIDS&&(AIDS.current||AIDS.variants.classic))||{};}
 /* hint line for the active variant; falls back to the classic kangaroo/cookies */
 function aidHint(kind,dir){
@@ -397,6 +406,7 @@ function pgmBuildNL(){
       sp.style.left=(i/100*100)+'%';sp.textContent=i;el.appendChild(sp);}
     return;
   }
+  PGM_NL=_pgmSpan();
   for(let i=0;i<=PGM_NL;i++){
     const sp=document.createElement('span');
     sp.className='pgm-nl-num'+(i%5===0?' pgm-nl-num5':'');
@@ -477,7 +487,8 @@ function toggleAidMode(targetMode){
     pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
   }else{
     if(ct)ct.style.display='none';
-    if(nlp){nlp.style.display='';NL.init(0);}
+    // re-size the line for THIS problem (it may have loaded with the jar)
+    if(nlp){nlp.style.display='';NL.init([TC,TT,TCA,TCS,TMU,TBG,TH].includes(ptype)?0:_kangFit());}
   }
   buildGamesMenu();
   {const hEl=document.getElementById('hint');if(!hEl)return;

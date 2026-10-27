@@ -13,60 +13,76 @@ class TestBridgingMode:
        reload (set 1 → 2 → 3 → 4 → 5 → 6 → set 1 …); a fresh start serves set 1.
        The order INSIDE each set is the curriculum and must never change."""
 
-    # SET 1 — the original prescribed order: (type, a, b)
+    # Since 2026-10-27 every set is HARD: the two digits make 13–18 (9+8, 7+6),
+    # every subtraction counts back from 13–18 with a borrow (17−9, 13−6).
+    # SET 1 — the +9 / +8 ladders with count-backs (25)
     EXPECTED_SEQ = [
-        ("TA", 9, 2), ("TA", 9, 3), ("TA", 9, 4),
-        ("TS", 13, 4), ("TS", 13, 3), ("TS", 13, 2),
-        ("TA", 8, 2), ("TA", 8, 3), ("TA", 8, 4),
-        ("TS", 12, 4), ("TS", 12, 3), ("TS", 12, 2),
-        ("TA", 8, 5), ("TS", 13, 5),
-        ("TA", 7, 3), ("TA", 7, 4), ("TA", 7, 5),
-        ("TS", 12, 5), ("TS", 12, 4), ("TS", 12, 3),
-        ("TA", 6, 4), ("TA", 6, 5), ("TA", 6, 6),
-        ("TS", 15, 5), ("TS", 15, 6),
+        ("TA", 9, 4), ("TA", 9, 5), ("TA", 9, 6), ("TA", 9, 7), ("TA", 9, 8), ("TA", 9, 9),
+        ("TS", 13, 9), ("TS", 14, 9), ("TS", 15, 9), ("TS", 16, 9), ("TS", 17, 9), ("TS", 18, 9),
+        ("TA", 8, 5), ("TA", 8, 6), ("TA", 8, 7), ("TA", 8, 8), ("TA", 8, 9),
+        ("TS", 13, 8), ("TS", 14, 8), ("TS", 15, 8), ("TS", 16, 8), ("TS", 17, 8),
+        ("TA", 4, 9), ("TA", 5, 8), ("TA", 6, 9),
     ]
-
-    # SET 2 — the second prescribed order: subtractions from 11/12/13 counting
-    # down, with the bridging additions 7+4 and 8+4 closing the 11- and 12-groups
+    # SET 2 — count-backs from 13 … 18, two additions to finish (18)
     EXPECTED_SEQ_2 = [
-        ("TS", 11, 0), ("TS", 11, 1), ("TS", 11, 2), ("TS", 11, 3), ("TS", 11, 4), ("TA", 7, 4),
-        ("TS", 12, 0), ("TS", 12, 1), ("TS", 12, 2), ("TS", 12, 3), ("TS", 12, 4), ("TA", 8, 4),
-        ("TS", 13, 0), ("TS", 13, 1), ("TS", 13, 2), ("TS", 13, 3), ("TS", 13, 4), ("TS", 13, 5),
+        ("TS", 13, 4), ("TS", 13, 5), ("TS", 13, 6), ("TS", 13, 7),
+        ("TS", 14, 5), ("TS", 14, 6), ("TS", 14, 7), ("TS", 14, 8),
+        ("TS", 15, 6), ("TS", 15, 7), ("TS", 15, 8),
+        ("TS", 16, 7), ("TS", 16, 9), ("TS", 17, 8), ("TS", 17, 9), ("TS", 18, 9),
+        ("TA", 7, 6), ("TA", 9, 5),
     ]
-
-    # SET 3 — "גְּשָׁרִים גְּדוֹלִים": doubles & near-doubles bridging into the high teens
-    # (results up to 18), each addition paired with its inverse subtraction; 15 problems
+    # SET 3 — doubles & near-doubles with inverses (15)
     EXPECTED_SEQ_3 = [
-        ("TA", 6, 6), ("TS", 12, 6), ("TA", 7, 7), ("TS", 14, 7),
-        ("TA", 8, 8), ("TS", 16, 8), ("TA", 9, 9), ("TS", 18, 9),
-        ("TA", 6, 7), ("TS", 13, 7), ("TA", 7, 8), ("TS", 15, 8),
-        ("TA", 8, 9), ("TS", 17, 9),
-        ("TA", 9, 6),
+        ("TA", 7, 7), ("TS", 14, 7), ("TA", 8, 8), ("TS", 16, 8), ("TA", 9, 9), ("TS", 18, 9),
+        ("TA", 7, 8), ("TA", 8, 7), ("TS", 15, 8), ("TS", 15, 7),
+        ("TA", 8, 9), ("TA", 9, 8), ("TS", 17, 9), ("TS", 17, 8),
+        ("TA", 6, 7),
     ]
-
-    # SET 4 — "גְּשָׁרִים קְטַנִּים": the GENTLEST crossings — every sum/minuend stays in 11–13
-    # (10 crossed by only 1/2/3), grouped cross-by-1 → 2 → 3, additions with inverse subs; 15
+    # SET 4 — +7 and +6 with inverses (15)
     EXPECTED_SEQ_4 = [
-        ("TA", 5, 6), ("TS", 11, 5), ("TA", 4, 7), ("TS", 11, 7), ("TA", 3, 8), ("TS", 11, 8), ("TA", 2, 9),
-        ("TA", 5, 7), ("TS", 12, 7), ("TA", 4, 8), ("TS", 12, 8),
-        ("TA", 5, 8), ("TS", 13, 8), ("TA", 4, 9), ("TS", 13, 9),
+        ("TA", 7, 6), ("TA", 7, 8), ("TA", 7, 9), ("TS", 13, 7), ("TS", 14, 7), ("TS", 16, 7),
+        ("TA", 6, 7), ("TA", 6, 8), ("TA", 6, 9), ("TS", 13, 6), ("TS", 14, 6), ("TS", 15, 6),
+        ("TA", 4, 9), ("TA", 5, 9), ("TS", 14, 5),
     ]
-
-    # SET 5 — the +9 shortcut: 2+9 … 9+9 (→11–18) with −9 count-backs; 15 problems
+    # SET 5 — the +9 shortcut, high end (15)
     EXPECTED_SEQ_5 = [
-        ("TA", 2, 9), ("TA", 3, 9), ("TA", 4, 9), ("TA", 5, 9),
-        ("TS", 11, 9), ("TS", 12, 9), ("TS", 13, 9), ("TS", 14, 9),
-        ("TA", 6, 9), ("TA", 7, 9), ("TA", 8, 9),
-        ("TS", 15, 9), ("TS", 16, 9), ("TS", 17, 9),
-        ("TA", 9, 9),
+        ("TA", 5, 9), ("TA", 6, 9), ("TA", 7, 9), ("TA", 8, 9), ("TA", 9, 9),
+        ("TS", 14, 9), ("TS", 15, 9), ("TS", 16, 9), ("TS", 17, 9), ("TS", 18, 9),
+        ("TA", 9, 6), ("TA", 9, 7), ("TA", 9, 8), ("TS", 14, 5), ("TS", 16, 7),
+    ]
+    # SET 6 — fact families a+b, b+a, s−b, s−a (15)
+    EXPECTED_SEQ_6 = [
+        ("TA", 9, 8), ("TA", 8, 9), ("TS", 17, 8), ("TS", 17, 9),
+        ("TA", 8, 7), ("TA", 7, 8), ("TS", 15, 7), ("TS", 15, 8),
+        ("TA", 9, 6), ("TA", 6, 9), ("TS", 15, 6), ("TS", 15, 9),
+        ("TA", 9, 5), ("TA", 5, 9), ("TS", 14, 5),
     ]
 
-    # SET 6 — mid-teen count-backs (14 & 15 minus → 5-9) + the ways to build 14/15/16; 15
-    EXPECTED_SEQ_6 = [
-        ("TS", 14, 5), ("TS", 14, 6), ("TS", 14, 7), ("TS", 14, 8), ("TS", 14, 9),
-        ("TS", 15, 6), ("TS", 15, 7), ("TS", 15, 8), ("TS", 15, 9),
-        ("TA", 6, 8), ("TA", 7, 7), ("TA", 7, 8), ("TA", 8, 7), ("TA", 8, 8), ("TA", 9, 7),
-    ]
+    @staticmethod
+    def _hard_ok(TA, t, a, b):
+        """A HARD crossing of 10: single digits summing to 13–18, or a count-back
+        from 13–18 that borrows (minuend units < subtrahend) to a single digit."""
+        if t == TA:
+            return a < 10 and b < 10 and 13 <= a + b <= 18
+        return 13 <= a <= 18 and b < 10 and (a % 10) < b and 0 < (a - b) < 10
+
+    def test_br_every_set_is_hard(self, page):
+        """ALL SIX sets: every problem is a hard crossing (9+8, 7+6, 17−9 …) — no
+        gentle 9+2 / 11−1 left."""
+        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        TA = consts["TA"]
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        self._switch_br(page)
+        for s in range(6):
+            for t, a, b in page.evaluate(NORM):
+                assert self._hard_ok(TA, t, a, b), f"set{s+1}: {a},{b} is not a hard crossing"
+            page.evaluate("restart()"); page.wait_for_timeout(120)
+
+    def test_br_set6_is_whole_fact_families(self):
+        seq = self.EXPECTED_SEQ_6
+        for g in range(0, 12, 4):
+            (_, a, b), (_, b2, a2), (_, s1, x), (_, s2, y) = seq[g:g + 4]
+            assert (b2, a2) == (b, a) and s1 == s2 == a + b and {s1 - x, s2 - y} == {a, b}, seq[g:g + 4]
 
     def _switch_br(self, page):
         enter_mode(page, 'br')
@@ -278,10 +294,9 @@ class TestBridgingMode:
         assert len(probs) == 15
         for t, a, b in probs:
             if t == TA:
-                assert a < 10 and b < 10 and a + b > 10, f"addition {a}+{b} must cross 10"
+                assert self._hard_ok(TA, t, a, b), f"addition {a}+{b} must be a hard crossing (13–18)"
             else:  # TS
-                assert 10 < a <= 18 and (a % 10) < b and (a - b) < 10, \
-                    f"subtraction {a}-{b} must cross 10"
+                assert self._hard_ok(TA, t, a, b), f"subtraction {a}-{b} must be a hard count-back"
 
     def test_br_set4_has_15_problems(self, page):
         """The fourth bridging set (gentle crossings) serves exactly 15 problems."""
@@ -304,23 +319,19 @@ class TestBridgingMode:
             f"expected={expected}\ngot={probs}"
         )
 
-    def test_br_set4_crosses_ten_only_gently(self, page):
-        """Every set-4 problem bridges 10 BUT only by a little — each sum / minuend
-        stays in 11–13 (10 is crossed by at most 3)."""
+    def test_br_set4_is_plus7_and_plus6(self, page):
+        """Set 4 is the +7 / +6 set: every problem a hard crossing, nearly all using
+        a 6 or a 7 (plus the 4+9 / 5+9 / 14−5 finish)."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
-        TA, TS = consts["TA"], consts["TS"]
+        TA = consts["TA"]
         self._switch_br(page)
         for _ in range(3):
             self._reenter_br(page)       # set 4
         probs = page.evaluate("[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
         assert len(probs) == 15
         for t, a, b in probs:
-            if t == TA:
-                assert a < 10 and b < 10 and 11 <= a + b <= 13, \
-                    f"addition {a}+{b} must cross 10 by ≤3 (sum 11–13)"
-            else:  # TS
-                assert 11 <= a <= 13 and (a % 10) < b and (a - b) < 10, \
-                    f"subtraction {a}-{b} must cross 10 from a low teen (minuend 11–13)"
+            assert self._hard_ok(TA, t, a, b), f"{a},{b} must be a hard crossing"
+        assert sum(1 for t, a, b in probs if 6 in (a, b) or 7 in (a, b)) >= 12
 
     def _reach_set(self, page, n):
         """Rotate to set n (1-based): switch (set 1) then re-enter n-1 times."""
@@ -351,9 +362,9 @@ class TestBridgingMode:
         assert len(probs) == 15
         for t, a, b in probs:
             if t == TA:
-                assert a < 10 and b < 10 and a + b > 10, f"addition {a}+{b} must cross 10"
+                assert self._hard_ok(TA, t, a, b), f"addition {a}+{b} must be a hard crossing (13–18)"
             else:
-                assert 10 < a <= 18 and (a % 10) < b and (a - b) < 10, f"subtraction {a}-{b} must cross 10"
+                assert self._hard_ok(TA, t, a, b), f"subtraction {a}-{b} must be a hard count-back"
 
     def test_br_set6_has_15_problems(self, page):
         """The sixth bridging set (mid-teen count-backs) serves exactly 15 problems."""
@@ -378,9 +389,9 @@ class TestBridgingMode:
         assert len(probs) == 15
         for t, a, b in probs:
             if t == TA:
-                assert a < 10 and b < 10 and a + b > 10, f"addition {a}+{b} must cross 10"
+                assert self._hard_ok(TA, t, a, b), f"addition {a}+{b} must be a hard crossing (13–18)"
             else:
-                assert 10 < a <= 18 and (a % 10) < b and (a - b) < 10, f"subtraction {a}-{b} must cross 10"
+                assert self._hard_ok(TA, t, a, b), f"subtraction {a}-{b} must be a hard count-back"
 
     def test_br_alternates_sets_in_turns(self, page):
         """Each menu selection advances: set1 → 2 → 3 → 4 → 5 → 6 → set1 (unknowns

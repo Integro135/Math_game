@@ -156,6 +156,32 @@ class TestNumberLineVisibility:
         assert nums2 and 25 in nums2 and nums2[-1] > 25, \
             f"25−9: minuend 25 must be on the line and not the edge (ends {nums2[-1] if nums2 else None})"
 
+    def test_bridge20_19_plus_9_line_reaches_the_answer_even_after_a_jar_switch(self, page):
+        """19+9=28 (the hard bridge-20): the kangaroo line must run PAST 28, both when
+        the problem loads with the kangaroo AND when it loads with the cookie jar and
+        the child switches to the kangaroo (regression: the switch kept the PREVIOUS
+        problem's line, which stopped before 28). The line is a ~20-wide window
+        (not 0..30, whose labels smear together on a phone) that still holds both
+        operands and the answer."""
+        nums = "[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)"
+        unlock = "tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();"
+        page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TA,a:19,b:9}]; idx=0; loadProblem()")
+        page.wait_for_timeout(120); page.evaluate(unlock); page.wait_for_timeout(100)
+        n = page.evaluate(nums)
+        assert 28 in n and n[-1] > 28 and n[0] <= 9, f"19+9: line {n[0]}..{n[-1]}"
+        assert len(n) <= 23, f"a 20-ish window, not a crowded 0..30 ({len(n)} labels)"
+        # a short line from an earlier problem, then 19+9 loaded with the JAR, then switch
+        page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TA,a:8,b:7},{t:TA,a:19,b:9}]; idx=0; loadProblem()")
+        page.wait_for_timeout(120)
+        page.evaluate("aidMode='nl'; idx=1; loadProblem()")
+        page.wait_for_timeout(120); page.evaluate(unlock); page.wait_for_timeout(100)
+        page.evaluate("toggleAidMode('kang')"); page.wait_for_timeout(150)
+        n2 = page.evaluate(nums)
+        assert 28 in n2 and n2[-1] > 28, f"after jar → kangaroo the line must reach past 28, got {n2[0]}..{n2[-1]}"
+        # the jar's own counter isn't capped below the answer either
+        page.evaluate("toggleAidMode('nl')"); page.wait_for_timeout(100)
+        assert page.evaluate("PGM_NL") >= 28
+
     def test_cookie_jar_shows_only_the_box_no_number_line(self, page):
         """The cookie-jar aid must show ONLY the box — the old number line
         above it (.pgm-nl) is hidden on every background/skin."""

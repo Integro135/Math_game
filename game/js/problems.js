@@ -331,73 +331,76 @@ function makeMxPool(){
 // ── bridging-10 ("גָּשֵׁר 10") — SIX fixed pedagogical sets, served in ROTATION.
 //    EVERY time a bridge pool is built — choosing the game, "play again"
 //    (restart), or a reload — it advances to the next set (set 1 … set 6, set 1 …).
-//    The turn is PERSISTED in localStorage so the rotation survives refreshes
-//    instead of always replaying set 1 (9+2…). The order INSIDE each set is the
-//    curriculum and must NEVER change; each builder returns fresh objects.
-//    SETS 1–4: family/ladder, 11-13 count-downs, doubles-into-high-teens, gentlest.
-//    SET 5 — the +9 SHORTCUT (add/subtract 9 by crossing 10): 2+9…9+9 with inverses.
-//    SET 6 — MID-TEEN count-backs (14 & 15 minus, results 5-9) + the ways to build 14/15/16.
+//    The turn is PERSISTED in localStorage so the rotation survives refreshes.
+//    The order INSIDE each set is the curriculum and must NEVER change; each
+//    builder returns fresh objects.
+//    2026-10-27: made HARDER (like גָּשֵׁר 20) — every problem is a BIG crossing of
+//    10: the two single digits make 13–18 (9+8, 8+7, 7+6 …), and every subtraction
+//    counts back from 13–18 with a borrow (17−9, 15−8, 13−6 …). No more 9+2 / 11−1.
+//    SET 1 — the +9 and +8 ladders (9+4 … 9+9, 8+5 … 8+9) with −9 / −8 count-backs (25).
+//    SET 2 — COUNT-BACKS from 13 … 18 (13−4 … 18−9), two additions to finish (18).
+//    SET 3 — DOUBLES & near-doubles: 7+7, 8+8, 9+9, 7+8, 8+9 … with inverses.
+//    SET 4 — +7 and +6: 7+6 … 7+9, 6+7 … 6+9, 4+9, 5+9 with inverses.
+//    SET 5 — the +9 SHORTCUT: 5+9 … 9+9 (→14–18), −9 count-backs, then 9+6..8.
+//    SET 6 — FACT FAMILIES: 9|8|17, 8|7|15, 9|6|15 four ways (a+b, b+a, s−b, s−a).
 let _brTurn=0;
 try{const _s=localStorage.getItem('brTurn');if(_s!=null)_brTurn=(+_s)||0;}catch(e){}
 function _bridgeSet1(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(9,2),A(9,3),A(9,4),S(13,4),S(13,3),S(13,2),
-    A(8,2),A(8,3),A(8,4),S(12,4),S(12,3),S(12,2),
-    A(8,5),S(13,5),
-    A(7,3),A(7,4),A(7,5),S(12,5),S(12,4),S(12,3),
-    A(6,4),A(6,5),A(6,6),S(15,5),S(15,6),
+    A(9,4),A(9,5),A(9,6),A(9,7),A(9,8),A(9,9),         // the +9 ladder (→13–18)
+    S(13,9),S(14,9),S(15,9),S(16,9),S(17,9),S(18,9),   // −9 count-backs
+    A(8,5),A(8,6),A(8,7),A(8,8),A(8,9),                // the +8 ladder (→13–17)
+    S(13,8),S(14,8),S(15,8),S(16,8),S(17,8),           // −8 count-backs
+    A(4,9),A(5,8),A(6,9),                              // turned around (small + big)
   ];
 }
 function _bridgeSet2(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    S(11,0),S(11,1),S(11,2),S(11,3),S(11,4),A(7,4),
-    S(12,0),S(12,1),S(12,2),S(12,3),S(12,4),A(8,4),
-    S(13,0),S(13,1),S(13,2),S(13,3),S(13,4),S(13,5),
+    S(13,4),S(13,5),S(13,6),S(13,7),                   // from 13
+    S(14,5),S(14,6),S(14,7),S(14,8),                   // from 14
+    S(15,6),S(15,7),S(15,8),                           // from 15
+    S(16,7),S(16,9),S(17,8),S(17,9),S(18,9),           // from 16 / 17 / 18
+    A(7,6),A(9,5),                                     // two additions to finish
   ];
 }
-// SET 3 — "גְּשָׁרִים גְּדוֹלִים": doubles & near-doubles that bridge into the HIGH teens
-// (results up to 18) — the harder bridges sets 1–2 don't reach. Each crossing addition is
-// paired with its inverse subtraction; all 15 cross 10, taught via the same complete-to-10 split.
+// SET 3 — DOUBLES & near-doubles in the HIGH teens, each with its inverse.
 function _bridgeSet3(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(6,6),S(12,6),A(7,7),S(14,7),A(8,8),S(16,8),A(9,9),S(18,9),   // doubles + inverses
-    A(6,7),S(13,7),A(7,8),S(15,8),A(8,9),S(17,9),                  // near-doubles + inverses
-    A(9,6),                                                        // a bigger non-double bridge to finish
+    A(7,7),S(14,7),A(8,8),S(16,8),A(9,9),S(18,9),      // doubles + inverses
+    A(7,8),A(8,7),S(15,8),S(15,7),                     // 7 | 8 | 15
+    A(8,9),A(9,8),S(17,9),S(17,8),                     // 8 | 9 | 17
+    A(6,7),                                            // 6+7=13 to finish
   ];
 }
-// SET 4 — "גְּשָׁרִים קְטַנִּים": the GENTLEST crossings — every sum / minuend stays in 11–13
-// (10 is crossed by only 1, 2 or 3), the opposite end from set 3's high-teen bridges. Grouped
-// cross-by-1 → 2 → 3, additions with their inverse subtractions; all 15 cross 10. Fresh pairs
-// (5+6, 4+7, 5+7, 4+8, 5+8, 4+9 …) the family/ladder sets don't use.
+// SET 4 — +7 and +6 (their splits are less automatic than +9's).
 function _bridgeSet4(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(5,6),S(11,5),A(4,7),S(11,7),A(3,8),S(11,8),A(2,9),   // cross by 1 (sum / from 11)
-    A(5,7),S(12,7),A(4,8),S(12,8),                          // cross by 2 (sum / from 12)
-    A(5,8),S(13,8),A(4,9),S(13,9),                          // cross by 3 (sum / from 13)
+    A(7,6),A(7,8),A(7,9),S(13,7),S(14,7),S(16,7),      // +7 and −7
+    A(6,7),A(6,8),A(6,9),S(13,6),S(14,6),S(15,6),      // +6 and −6
+    A(4,9),A(5,9),S(14,5),                             // small + 9, and 14−5
   ];
 }
-// SET 5 — the +9 SHORTCUT: adding 9 (or its inverse −9) always crosses 10 by making
-// ten and stepping one more. The full 2+9 … 9+9 climb (→11–18) with −9 count-backs.
+// SET 5 — the +9 SHORTCUT (make ten and step one more), high end only.
 function _bridgeSet5(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(2,9),A(3,9),A(4,9),A(5,9),S(11,9),S(12,9),S(13,9),S(14,9),   // +9 → 11-14 + −9 inverses
-    A(6,9),A(7,9),A(8,9),S(15,9),S(16,9),S(17,9),                   // +9 → 15-17 + inverses
-    A(9,9),                                                         // 9+9=18 — the biggest +9
+    A(5,9),A(6,9),A(7,9),A(8,9),A(9,9),                // → 14–18
+    S(14,9),S(15,9),S(16,9),S(17,9),S(18,9),           // −9 count-backs
+    A(9,6),A(9,7),A(9,8),S(14,5),S(16,7),              // 9 first, then two count-backs
   ];
 }
-// SET 6 — MID-TEEN count-backs: the full 14- and 15-minus families (results 5-9,
-// the harder count-backs over 10), then the ways to BUILD 14/15/16 by adding.
+// SET 6 — FACT FAMILIES (מִשְׁפְּחוֹת מִסְפָּרִים): one fact four ways.
 function _bridgeSet6(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    S(14,5),S(14,6),S(14,7),S(14,8),S(14,9),   // 14 − 5..9 (→9,8,7,6,5)
-    S(15,6),S(15,7),S(15,8),S(15,9),           // 15 − 6..9 (→9,8,7,6)
-    A(6,8),A(7,7),A(7,8),A(8,7),A(8,8),A(9,7),  // make 14 / 15 / 16 (both operands over 5)
+    A(9,8),A(8,9),S(17,8),S(17,9),                     // 9 | 8 | 17
+    A(8,7),A(7,8),S(15,7),S(15,8),                     // 8 | 7 | 15
+    A(9,6),A(6,9),S(15,6),S(15,9),                     // 9 | 6 | 15
+    A(9,5),A(5,9),S(14,5),                             // 9 | 5 | 14 (three to finish)
   ];
 }
 // The one-unknown (נֶעְלָם) type is no longer a separate set — _sprinkleUnknowns
