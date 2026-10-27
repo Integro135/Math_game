@@ -14,7 +14,16 @@
 const NL=(()=>{
   let MAX=20,STEP=1,initVal=0,BASE=0;   // BASE = the line's left-edge value (origin)
   let cv=0,arcs=[],history=[],isDragging=false,dragStartCv=0;
-  let numEls={},jumpCount=0,flyId=null;
+  let numEls={},jumpCount=0,flyId=null,hovV=null;
+  // sparse line: a revealed in-between number (hovered / under the rider) would
+  // collide with a neighbouring five — fade the fives within 2 of it
+  function markNear(){
+    const shown=[cv,hovV].filter(v=>v!=null&&v%(STEP*5)!==0);
+    for(const k in numEls){
+      const el=numEls[k];
+      el.classList.toggle('nl-near',el.classList.contains('major')&&shown.some(v=>Math.abs(+k-v)<=2*STEP));
+    }
+  }
 
   function fxCfg(){
     const v=typeof aidCfg==='function'?aidCfg():{};
@@ -35,6 +44,10 @@ const NL=(()=>{
     const bar=document.getElementById('nl-bar');if(!bar)return;
     bar.querySelectorAll('.tick,.nl-num').forEach(el=>el.remove());
     numEls={};
+    // a line of MORE than 20 steps (19+9 → 0..30) crowds its labels into an
+    // unreadable smear: keep every TICK, but show only every 5th number; the
+    // others appear when hovered, and the one under the rider always shows.
+    bar.classList.toggle('nl-sparse',_span()/STEP>20);
     for(let i=BASE;i<=MAX;i+=STEP){
       const pct=_pct(i),isMaj=(i%(STEP*5)===0);
       const tick=document.createElement('div');tick.className='tick'+(isMaj?' major':'');tick.style.left=pct+'%';bar.appendChild(tick);
@@ -45,6 +58,8 @@ const NL=(()=>{
   function updateDot(moveDot=true){
     const dot=document.getElementById('nl-dot');if(!dot)return;
     if(moveDot)dot.style.left=_pct(cv)+'%';
+    for(const k in numEls)numEls[k].classList.toggle('nl-cur',+k===cv);
+    markNear();
     const bm=document.getElementById('nl-btn-minus'),bp=document.getElementById('nl-btn-plus');
     if(bm)bm.disabled=(cv<=BASE);if(bp)bp.disabled=(cv>=MAX);
   }
@@ -201,6 +216,14 @@ const NL=(()=>{
     const bar=document.getElementById('nl-bar');if(!bar)return;
     bar.addEventListener('mousedown',e=>{e.preventDefault();startDrag(e.clientX);});
     bar.addEventListener('touchstart',e=>{e.preventDefault();startDrag(e.touches[0].clientX);},{passive:false});
+    // hover → reveal the number under the pointer (only matters on a sparse line)
+    let hov=null;
+    const clearHov=()=>{if(hov){hov.classList.remove('nl-hover');hov=null;}hovV=null;markNear();};
+    bar.addEventListener('mousemove',e=>{
+      const v=getBarNum(e.clientX),el=numEls[v];
+      if(el!==hov){clearHov();if(el){el.classList.add('nl-hover');hov=el;hovV=v;markNear();}}
+    });
+    bar.addEventListener('mouseleave',clearHov);
   }
   function attachDocumentEvents(){
     document.addEventListener('mousemove',e=>duringDrag(e.clientX));

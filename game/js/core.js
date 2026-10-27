@@ -291,15 +291,8 @@ function _kangFit(){
   // lands inside the window, never on its edge. (user request)
   const _tzLo=ptype===TZ?Math.min(num1,num2,num3,num4>0?num4:Infinity):0;
   if(ptype===TZ){NL.configure(_tzLo+20,1,_tzLo);return _tzLo;}
-  // a line much longer than 0..20 crowds its labels into an unreadable smear (a
-  // 0..30 line on a phone). Past 22, show a ~20-wide WINDOW ending at the top
-  // value instead, starting low enough that both operands AND the answer sit on
-  // it (19+9 → 9..30, 27−18 → 9..29); the rider is parked on its left edge.
-  if(_nlMax>22){
-    const _res=_isAddT?num1+num2:num1-num2;
-    const _lo=Math.max(0,Math.min(_nlMax-20,num1,num2,_res));
-    NL.configure(_nlMax,1,_lo);return _lo;
-  }
+  // a line longer than 0..20 (19+9 → 0..30) keeps EVERY tick but shows only the
+  // fives' numbers; the rest appear on hover / under the rider (NL.buildNL, nl-sparse)
   NL.configure(_nlMax,1);return 0;
 }
 function loadProblem(){

@@ -160,16 +160,33 @@ class TestNumberLineVisibility:
         """19+9=28 (the hard bridge-20): the kangaroo line must run PAST 28, both when
         the problem loads with the kangaroo AND when it loads with the cookie jar and
         the child switches to the kangaroo (regression: the switch kept the PREVIOUS
-        problem's line, which stopped before 28). The line is a ~20-wide window
-        (not 0..30, whose labels smear together on a phone) that still holds both
-        operands and the answer."""
+        problem's line, which stopped before 28). The whole 0..30 line is drawn —
+        every tick — but only the fives' numbers show; any other number appears on
+        hover, and the one under the rider always shows."""
         nums = "[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)"
         unlock = "tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();"
         page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TA,a:19,b:9}]; idx=0; loadProblem()")
         page.wait_for_timeout(120); page.evaluate(unlock); page.wait_for_timeout(100)
         n = page.evaluate(nums)
-        assert 28 in n and n[-1] > 28 and n[0] <= 9, f"19+9: line {n[0]}..{n[-1]}"
-        assert len(n) <= 23, f"a 20-ish window, not a crowded 0..30 ({len(n)} labels)"
+        assert n[0] == 0 and 28 in n and n[-1] > 28, f"19+9: line {n[0]}..{n[-1]}"
+        assert page.evaluate("document.querySelectorAll('#nl-bar .tick').length") == len(n), "every tick drawn"
+        shown = "[...document.querySelectorAll('#nl-bar .nl-num')].filter(e=>getComputedStyle(e).opacity>0.5).map(e=>+e.textContent)"
+        page.wait_for_timeout(250)
+        assert page.evaluate(shown) == [0, 5, 10, 15, 20, 25, 30], \
+            f"only the fives (and the rider's 0) show, got {page.evaluate(shown)}"
+        # hover over 28 → 28 appears
+        box = page.evaluate("(()=>{const r=document.getElementById('nl-bar').getBoundingClientRect();return {x:r.left+r.width*28/30,y:r.top+r.height/2}})()")
+        page.mouse.move(box["x"], box["y"]); page.wait_for_timeout(250)
+        assert 28 in page.evaluate(shown), f"hovering 28 must show it, got {page.evaluate(shown)}"
+        page.mouse.move(5, 5); page.wait_for_timeout(250)
+        assert 28 not in page.evaluate(shown), "leaving the line hides it again"
+        # the rider's number shows: step to 19 with the arrow keys → 19 visible
+        page.evaluate("for(let i=0;i<19;i++)NL.step(1)"); page.wait_for_timeout(250)
+        assert 19 in page.evaluate(shown), f"the number under the rider shows, got {page.evaluate(shown)}"
+        # a plain 0..20 line keeps ALL its numbers
+        page.evaluate("aidMode='kang'; mode=20; problems=[{t:TA,a:8,b:7}]; idx=0; loadProblem()")
+        page.wait_for_timeout(120); page.evaluate(unlock); page.wait_for_timeout(250)
+        assert len(page.evaluate(shown)) == 21, "a 0..20 line shows every number"
         # a short line from an earlier problem, then 19+9 loaded with the JAR, then switch
         page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TA,a:8,b:7},{t:TA,a:19,b:9}]; idx=0; loadProblem()")
         page.wait_for_timeout(120)

@@ -144,6 +144,12 @@ body.theme-galaxy  #tf-msg{color:#d4a8ff;text-shadow:0 2px 10px rgba(180,120,255
 #nl-panel .tick.major{height:18px;background:rgba(255,255,255,.55)}
 #nl-panel .nl-num{position:absolute;top:calc(100% + 18px);transform:translateX(-50%);font-family:'Fredoka One',cursive;font-size:.88rem;color:rgba(255,255,255,.4);line-height:1;white-space:nowrap}
 #nl-panel .nl-num.major{font-size:1.1rem;color:rgba(255,255,255,.8)}
+/* a line of more than 20 steps: every tick, but only the fives' numbers — the
+   others show on hover (.nl-hover) or under the rider (.nl-cur) */
+#nl-panel .nl-sparse .nl-num{transition:opacity .15s}
+#nl-panel .nl-sparse .nl-num:not(.major):not(.nl-hover):not(.nl-cur){opacity:0}
+#nl-panel .nl-sparse .nl-num.major.nl-near:not(.nl-hover):not(.nl-cur){opacity:.12}
+#nl-panel .nl-sparse .nl-num.nl-hover,#nl-panel .nl-sparse .nl-num.nl-cur{z-index:2;font-size:1.1rem;color:#fff;text-shadow:0 0 6px rgba(0,0,0,.45)}
 #nl-panel .nl-dot{
   position:absolute;top:0;
   transform:translate(-50%,calc(-100% - 4px));
