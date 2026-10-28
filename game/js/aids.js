@@ -14,11 +14,11 @@
 const NL=(()=>{
   let MAX=20,STEP=1,initVal=0,BASE=0;   // BASE = the line's left-edge value (origin)
   let cv=0,arcs=[],history=[],isDragging=false,dragStartCv=0;
-  let numEls={},jumpCount=0,flyId=null,hovV=null;
-  // sparse line: a revealed in-between number (hovered / under the rider) would
-  // collide with a neighbouring five — fade the fives within 2 of it
+  let numEls={},jumpCount=0,flyId=null;
+  // sparse line: the in-between number under the rider would collide with a
+  // neighbouring five — fade the fives within 2 of it
   function markNear(){
-    const shown=[cv,hovV].filter(v=>v!=null&&v%(STEP*5)!==0);
+    const shown=[cv].filter(v=>v%(STEP*5)!==0);
     for(const k in numEls){
       const el=numEls[k];
       el.classList.toggle('nl-near',el.classList.contains('major')&&shown.some(v=>Math.abs(+k-v)<=2*STEP));
@@ -42,18 +42,38 @@ const NL=(()=>{
   const _pct=val=>((val-BASE)/_span())*100;       // value → % across the bar
   function buildNL(){
     const bar=document.getElementById('nl-bar');if(!bar)return;
-    bar.querySelectorAll('.tick,.nl-num').forEach(el=>el.remove());
+    bar.querySelectorAll('.tick,.nl-num,.nl-tip').forEach(el=>el.remove());
     numEls={};
-    // a line of MORE than 20 steps (19+9 → 0..30) crowds its labels into an
-    // unreadable smear: keep every TICK, but show only every 5th number; the
-    // others appear when hovered, and the one under the rider always shows.
-    bar.classList.toggle('nl-sparse',_span()/STEP>20);
     for(let i=BASE;i<=MAX;i+=STEP){
       const pct=_pct(i),isMaj=(i%(STEP*5)===0);
       const tick=document.createElement('div');tick.className='tick'+(isMaj?' major':'');tick.style.left=pct+'%';bar.appendChild(tick);
       const num=document.createElement('span');num.className='nl-num'+(isMaj?' major':'');num.textContent=i;num.style.left=pct+'%';bar.appendChild(num);
       numEls[i]=num;
     }
+    const tip=document.createElement('span');tip.className='nl-tip';bar.appendChild(tip);
+    fitLabels();
+  }
+  // ONLY a crowded line hides its in-between numbers: more than 20 steps AND the
+  // labels, as laid out, (nearly) touch — 0..30 on a phone. Then every TICK
+  // stays, only every 5th number shows, the one under the rider always shows,
+  // and a hovered one pops up in a bubble ABOVE the line (below, the mouse
+  // cursor covers it). A roomy line (any 0..20, or 0..30 on a wide screen)
+  // shows every number. Re-checked on resize (ResizeObserver, attachBarEvents).
+  function fitLabels(){
+    const bar=document.getElementById('nl-bar');if(!bar)return;
+    bar.classList.remove('nl-sparse');
+    const W=bar.clientWidth;if(!W||_span()/STEP<=20)return;
+    // centre = the label's position on the bar; width = its own (offsetWidth
+    // ignores the landing pop's transform)
+    const ks=Object.keys(numEls).map(Number).sort((a,b)=>a-b);
+    let crowded=false;
+    for(let j=0;j<ks.length-1&&!crowded;j++){
+      const a=numEls[ks[j]],b=numEls[ks[j+1]];
+      const gap=(_pct(ks[j+1])-_pct(ks[j]))/100*W-(a.offsetWidth+b.offsetWidth)/2;
+      crowded=gap<4;
+    }
+    bar.classList.toggle('nl-sparse',crowded);
+    markNear();
   }
   function updateDot(moveDot=true){
     const dot=document.getElementById('nl-dot');if(!dot)return;
@@ -216,14 +236,16 @@ const NL=(()=>{
     const bar=document.getElementById('nl-bar');if(!bar)return;
     bar.addEventListener('mousedown',e=>{e.preventDefault();startDrag(e.clientX);});
     bar.addEventListener('touchstart',e=>{e.preventDefault();startDrag(e.touches[0].clientX);},{passive:false});
-    // hover → reveal the number under the pointer (only matters on a sparse line)
-    let hov=null;
-    const clearHov=()=>{if(hov){hov.classList.remove('nl-hover');hov=null;}hovV=null;markNear();};
+    // hover → the number under the pointer in a bubble above the line (shown
+    // only on a crowded, .nl-sparse line — CSS)
+    const tipEl=()=>bar.querySelector('.nl-tip');
     bar.addEventListener('mousemove',e=>{
-      const v=getBarNum(e.clientX),el=numEls[v];
-      if(el!==hov){clearHov();if(el){el.classList.add('nl-hover');hov=el;hovV=v;markNear();}}
+      const t=tipEl(),v=getBarNum(e.clientX);if(!t)return;
+      if(v==null||!(v in numEls)){t.classList.remove('on');return;}
+      t.textContent=v;t.style.left=_pct(v)+'%';t.classList.add('on');
     });
-    bar.addEventListener('mouseleave',clearHov);
+    bar.addEventListener('mouseleave',()=>{const t=tipEl();if(t)t.classList.remove('on');});
+    if(window.ResizeObserver)new ResizeObserver(fitLabels).observe(bar);
   }
   function attachDocumentEvents(){
     document.addEventListener('mousemove',e=>duringDrag(e.clientX));

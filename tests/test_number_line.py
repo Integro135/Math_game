@@ -161,8 +161,10 @@ class TestNumberLineVisibility:
         the problem loads with the kangaroo AND when it loads with the cookie jar and
         the child switches to the kangaroo (regression: the switch kept the PREVIOUS
         problem's line, which stopped before 28). The whole 0..30 line is drawn —
-        every tick — but only the fives' numbers show; any other number appears on
-        hover, and the one under the rider always shows."""
+        every tick — and since its labels are CROWDED only the fives' numbers show;
+        a hovered number pops up in a bubble ABOVE the line (below, the cursor hides
+        it), and the one under the rider always shows. A line with room for its
+        numbers (0..22) shows them all."""
         nums = "[...document.querySelectorAll('#nl-bar .nl-num')].map(e=>+e.textContent)"
         unlock = "tryFirst=1; if(typeof _unlockAids==='function')_unlockAids();"
         page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TA,a:19,b:9}]; idx=0; loadProblem()")
@@ -174,12 +176,16 @@ class TestNumberLineVisibility:
         page.wait_for_timeout(250)
         assert page.evaluate(shown) == [0, 5, 10, 15, 20, 25, 30], \
             f"only the fives (and the rider's 0) show, got {page.evaluate(shown)}"
-        # hover over 28 → 28 appears
+        # hover over 28 → a bubble with 28 ABOVE the line
+        tip = ("(()=>{const t=document.querySelector('#nl-bar .nl-tip'),b=document.getElementById('nl-bar')"
+               ".getBoundingClientRect(),r=t.getBoundingClientRect();return {on:getComputedStyle(t).display!=='none',"
+               "txt:t.textContent,above:r.bottom<=b.top,dx:Math.abs((r.left+r.right)/2-(b.left+b.width*28/30))}})()")
         box = page.evaluate("(()=>{const r=document.getElementById('nl-bar').getBoundingClientRect();return {x:r.left+r.width*28/30,y:r.top+r.height/2}})()")
         page.mouse.move(box["x"], box["y"]); page.wait_for_timeout(250)
-        assert 28 in page.evaluate(shown), f"hovering 28 must show it, got {page.evaluate(shown)}"
+        t = page.evaluate(tip)
+        assert t["on"] and t["txt"] == "28" and t["above"] and t["dx"] < 3, f"hovering 28 → a 28 bubble above it, got {t}"
         page.mouse.move(5, 5); page.wait_for_timeout(250)
-        assert 28 not in page.evaluate(shown), "leaving the line hides it again"
+        assert not page.evaluate(tip)["on"], "leaving the line hides the bubble again"
         # the rider's number shows: step to 19 with the arrow keys → 19 visible
         page.evaluate("for(let i=0;i<19;i++)NL.step(1)"); page.wait_for_timeout(250)
         assert 19 in page.evaluate(shown), f"the number under the rider shows, got {page.evaluate(shown)}"
@@ -187,6 +193,13 @@ class TestNumberLineVisibility:
         page.evaluate("aidMode='kang'; mode=20; problems=[{t:TA,a:8,b:7}]; idx=0; loadProblem()")
         page.wait_for_timeout(120); page.evaluate(unlock); page.wait_for_timeout(250)
         assert len(page.evaluate(shown)) == 21, "a 0..20 line shows every number"
+        # more than 20 steps but NOT crowded (0..22 on this wide screen) → every number, no hover mode
+        page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TA,a:12,b:8}]; idx=0; loadProblem()")
+        page.wait_for_timeout(120); page.evaluate(unlock); page.wait_for_timeout(250)
+        n3 = page.evaluate(nums)
+        assert n3[-1] == 22 and len(page.evaluate(shown)) == len(n3), \
+            f"a roomy 0..22 line shows all its numbers, got {page.evaluate(shown)}"
+        assert not page.evaluate("document.getElementById('nl-bar').classList.contains('nl-sparse')")
         # a short line from an earlier problem, then 19+9 loaded with the JAR, then switch
         page.evaluate("aidMode='kang'; mode='b20'; problems=[{t:TA,a:8,b:7},{t:TA,a:19,b:9}]; idx=0; loadProblem()")
         page.wait_for_timeout(120)
