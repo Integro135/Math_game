@@ -157,7 +157,7 @@
           f.c = i % cols.length;
           f.L = ms(lerp(T.launch[0], T.launch[1], i / flow.length)) + rnd(-20, 20);
           f.A = ms(lerp(T.asm[0], T.asm[1], Math.random()));
-          f.lx = rnd(-0.32, 0.32); f.vxk = rnd(-1, 1); f.vyk = rnd(0.55, 0.88);
+          f.lx = rnd(-0.32, 0.32); f.vxk = rnd(-1, 1); f.vyk = rnd(0.36, 0.62);
           f.live = false; f.cap = false;
         });
       }
@@ -353,7 +353,7 @@
           var lq = clamp01((t - ms(T.lid[0])) / (ms(T.lid[1]) - ms(T.lid[0])));
           var lc = clamp01((t - ms(T.lidClose[0])) / (ms(T.lidClose[1]) - ms(T.lidClose[0])));
           var open = easeOutBack(lq) * (1 - easeInOut(lc));
-          lid = 0.42 * open; lidRot = -0.55 * open;
+          lid = 0.2 * open; lidRot = -0.5 * open;
           var hq = clamp01((t - ms(T.launch[0])) / (ms(T.launch[1]) - ms(T.launch[0])));
           hide = Math.floor(hq * topFirst.length * 0.55);
           alpha = 1 - 0.6 * easeInOut(clamp01((t - ms(T.dim[0])) / (ms(T.dim[1]) - ms(T.dim[0]))));

@@ -55,15 +55,15 @@
     BODY.push(SPINE[SPINE.length - 1].slice());
   })();
   var TAIL0 = SPINE[SPINE.length - 1];
-  var C_TIGHT = [0.1, 0.73], C_WRAP = [0.13, 0.8];
+  var C_TIGHT = [0.1, 0.73], C_WRAP = [0.16, 0.84];
   function tailPts(k) {         // k: 0 tight curl … 1 wrapped around the star
     var cx = lerp(C_TIGHT[0], C_WRAP[0], k), cy = lerp(C_TIGHT[1], C_WRAP[1], k);
     var dx = TAIL0[0] - cx, dy = TAIL0[1] - cy, r0 = Math.sqrt(dx * dx + dy * dy), a0 = Math.atan2(dy, dx);
-    var sweep = lerp(1.7, 1.9, k) * Math.PI, N = 40, out = [];
+    var sweep = lerp(1.7, 1.55, k) * Math.PI, N = 40, out = [];
     for (var i = 1; i <= N; i++) {
       var u = i / N;
       var rT = r0 * (1 - 0.8 * u);
-      var rW = lerp(r0, 0.2, clamp01(u * 3)) - 0.02 * u;
+      var rW = lerp(r0, 0.28, clamp01(u * 2.5)) - 0.03 * u;
       var r = lerp(rT, rW, k), a = a0 - u * sweep;
       out.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r, lerp(0.105, 0.03, Math.pow(u, 0.9))]);
     }
@@ -248,7 +248,7 @@
         ctx.beginPath(); ctx.ellipse(0.0, -0.9, 0.09, 0.035, -0.4, 0, TAU); ctx.fill();
         ctx.beginPath(); ctx.ellipse(-0.14, -0.3, 0.035, 0.12, 0.15, 0, TAU); ctx.fill();
         // little pectoral fin behind the head, fluttering fast
-        finFan(-0.04, -0.62, 0.02, -0.52, -0.55, 0.55, 0.11, 4, st.flap * 1.6 + 1, C, 0.95);
+        finFan(-0.05, -0.66, -0.01, -0.58, -0.75, 0.35, 0.085, 4, st.flap * 1.6 + 1, C, 0.6);
         // snout tip: a tiny closed mouth
         ctx.strokeStyle = C.dark; ctx.lineWidth = 0.02;
         ctx.beginPath(); ctx.arc(0.565, -0.64, 0.028, Math.PI * 0.5, Math.PI * 1.35); ctx.stroke();
@@ -285,7 +285,7 @@
       }
       function drawStar(x, y, r, t, a) {
         if (a <= 0) return;
-        glowDot(x, y, r * 3.4, 0.85 * a);
+        glowDot(x, y, r * 4, 0.95 * a);
         ctx.save(); ctx.globalAlpha = a;
         var g = ctx.createRadialGradient(x - r * 0.25, y - r * 0.3, r * 0.05, x, y, r);
         g.addColorStop(0, '#FFFBE0'); g.addColorStop(0.5, '#FFE066'); g.addColorStop(1, '#F5A623');
@@ -296,7 +296,7 @@
         ctx.restore();
       }
       function drawWeed(wd, t, a) {
-        var bx = wd.x * W, len = wd.h * H, n = 9, segL = len / n, ang = -Math.PI / 2, x0 = bx, y0 = H + 4;
+        var bx = wd.x * W, len = wd.h * Math.min(H, W * 0.9), n = 9, segL = len / n, ang = -Math.PI / 2, x0 = bx, y0 = H + 4;
         ctx.strokeStyle = hexA(wd.col, 0.85 * a); ctx.lineCap = 'round';
         for (var i = 0; i < n; i++) {
           var u = i / n;
@@ -339,7 +339,7 @@
         for (var lr = 0; lr < 4; lr++) {
           var lx = W * (0.2 + lr * 0.22) + Math.sin(t * 0.0006 + lr) * W * 0.03;
           var lg = ctx.createLinearGradient(0, 0, 0, H * 0.9);
-          lg.addColorStop(0, hexA(glow, 0.07 * appear)); lg.addColorStop(1, hexA(glow, 0));
+          lg.addColorStop(0, hexA(glow, 0.035 * appear)); lg.addColorStop(1, hexA(glow, 0));
           ctx.fillStyle = lg;
           ctx.beginPath(); ctx.moveTo(lx - W * 0.03, 0); ctx.lineTo(lx + W * 0.03, 0); ctx.lineTo(lx + W * 0.1, H * 0.9); ctx.lineTo(lx - W * 0.02, H * 0.9); ctx.closePath(); ctx.fill();
         }
@@ -373,7 +373,7 @@
         // the star: drifts in, then rides in the tail's curl
         var holdPt = toWorld(C_WRAP[0], C_WRAP[1], hx, hy, s, 1, rot);
         var qs = clamp01((t - ms(T.star[0])) / (ms(T.star[1]) - ms(T.star[0])));
-        var starX = null, starY = 0, starR = s * 0.14;
+        var starX = null, starY = 0, starR = s * 0.2;
         if (qs > 0) {
           var es = easeInOut(qs);
           var sx0 = W * 0.86, sy0 = H * 0.36;
@@ -382,24 +382,9 @@
           if (qs >= 1) { starX = holdPt.x; starY = holdPt.y; }
         }
 
-        // star behind the tail, tail wraps over it
-        if (starX !== null) drawStar(starX, starY, starR * (1 + 0.06 * Math.sin(t * 0.008)), t, clamp01(qs * 4));
         drawSeahorse(hx, hy, s, 1, rot, { tailK: tailK, flap: flap, happy: happy, blink: blink }, MOM);
-        // front strand of the tail over the star (so it is truly hugged)
-        if (starX !== null && tailK > 0.6) {
-          ctx.save(); ctx.translate(hx, hy); ctx.rotate(rot); ctx.scale(s, s);
-          var tp2 = tailPts(tailK), seg = tp2.slice(14, 26);
-          ctx.fillStyle = MOM.dark; ctx.beginPath();
-          seg.forEach(function (p) { circ(p[0], p[1], p[2] + 0.028); }); ctx.fill();
-          ctx.fillStyle = MOM.body; ctx.beginPath();
-          seg.forEach(function (p) { circ(p[0], p[1], p[2]); }); ctx.fill();
-          ctx.strokeStyle = hexA(MOM.dark, 0.32); ctx.lineWidth = 0.02;
-          for (var sgi = 1; sgi < seg.length - 1; sgi += 4) {
-            var p = seg[sgi], q = seg[sgi + 1], tx = q[0] - p[0], ty = q[1] - p[1], tl = Math.sqrt(tx * tx + ty * ty) || 1;
-            ctx.beginPath(); ctx.moveTo(p[0] + ty / tl * p[2] * 0.8, p[1] - tx / tl * p[2] * 0.8); ctx.lineTo(p[0] - ty / tl * p[2] * 0.8, p[1] + tx / tl * p[2] * 0.8); ctx.stroke();
-          }
-          ctx.restore();
-        }
+        // the star rides inside the tail's curl
+        if (starX !== null) drawStar(starX, starY, starR * (1 + 0.06 * Math.sin(t * 0.008)), t, clamp01(qs * 4));
         // hug flash
         var hq = (t - ms(T.wrap[1]) + 120) / 600;
         if (hq > 0 && hq < 1 && starX !== null) {
@@ -443,7 +428,7 @@
             if (pq > 0 && pq < 1) {
               var px0 = Bu.x * W + Math.sin(tPop * 0.003 * Bu.wob + Bu.ph) * 14 * unit;
               ctx.globalCompositeOperation = 'lighter';
-              ctx.strokeStyle = 'rgba(220,245,255,' + (0.7 * (1 - pq)).toFixed(3) + ')'; ctx.lineWidth = 1.5;
+              ctx.strokeStyle = 'rgba(220,245,255,' + (0.45 * (1 - pq) * (1 - pq)).toFixed(3) + ')'; ctx.lineWidth = 1.5;
               ctx.beginPath(); ctx.arc(px0, popY, br * (1 + pq * 0.8), 0, TAU); ctx.stroke();
               for (var pk = 0; pk < 6; pk++) {
                 var pa = pk / 6 * TAU + Bu.ph, pr = br * (0.8 + easeOut(pq) * 1.6);

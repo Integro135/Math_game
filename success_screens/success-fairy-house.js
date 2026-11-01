@@ -416,7 +416,7 @@
       }
       // fairy position at time t → {x, y, f, a, behind}
       function fairyAt(t) {
-        var s = G.s, cx = G.cx, gy = G.gy, hs = G.hs, f = s * (isSuper ? 0.42 : 0.34);
+        var s = G.s, cx = G.cx, gy = G.gy, hs = G.hs, f = s * (isSuper ? 0.46 : 0.42);
         var f0 = ms(T.fly[0]), f1 = ms(T.fly[1]);
         if (t < f0) return null;
         var doorX = cx, doorY = gy - 0.3 * s;
@@ -472,8 +472,8 @@
         ctx.lineJoin = 'round'; ctx.lineCap = 'round';
         geom();
         var s = G.s, cx = G.cx, gy = G.gy;
-        G.starR = Math.min(W * 0.2, s * 0.9, H * 0.11);
-        G.starX = cx; G.starY = Math.max(H * 0.24 + G.starR, gy - 2.4 * s);
+        G.starR = Math.min(W * 0.2, s * 0.9, H * 0.1);
+        G.starX = cx; G.starY = Math.max(H * 0.28 + G.starR, gy - 2.4 * s);
         var appear = clamp01(t / 260);
 
         // background twinkles
@@ -492,7 +492,7 @@
         ctx.strokeStyle = hexA('#9BE59A', 0.3 * appear); ctx.lineWidth = Math.max(1.5, 3 * unit);
         ctx.beginPath(); ctx.ellipse(cx, gy + mry * 0.2, mrx * 0.8, mry * 0.9, 0, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
         // back tufts
-        for (var tb = 0; tb < tufts.length; tb++) if (tufts[tb].x * 0 + tb % 2 === 0) {
+        for (var tb = 0; tb < tufts.length; tb++) if (tb % 2 === 0) {
           var tu = tufts[tb]; tuft(cx + tu.x * mrx * 0.85, gy - mry * 0.35 * Math.sqrt(1 - tu.x * tu.x), s * 0.22 * tu.h * appear, tu.ph, t, tu.fl);
         }
 

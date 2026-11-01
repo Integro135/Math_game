@@ -96,10 +96,10 @@
             arch: null, babyA: null, babyB: null, hearts: null };
       function ms(f) { return f * dur; }
       var r0 = ms(T.run[0]), r1 = ms(T.run[1]), l0 = ms(T.leap[0]), l1 = ms(T.leap[1]);
-      var TH_E = 0.3;                               // the rainbow ends 0.3 rad above the horizon
+      var TH_S = Math.PI * 0.86, TH_E = 0.3;                               // the rainbow ends 0.3 rad above the horizon
       function runTheta(t) {
         var q = clamp01((t - r0) / (r1 - r0)), p = (q + q * q) / 2;
-        return Math.PI - (Math.PI - TH_E) * p;
+        return TH_S - (TH_S - TH_E) * p;
       }
 
       // glitter dust shed from the rainbow while it is being drawn
@@ -158,9 +158,9 @@
       function drawLeg(hx, hy, a, b, C, far) {
         var p = legPts(hx, hy, a, b);
         var col = far ? C.shade : C.body;
-        ctx.strokeStyle = C.line; ctx.lineWidth = 0.15;
+        ctx.strokeStyle = C.line; ctx.lineWidth = 0.165;
         ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(p.kx, p.ky); ctx.lineTo(p.fx, p.fy); ctx.stroke();
-        ctx.strokeStyle = col; ctx.lineWidth = 0.115;
+        ctx.strokeStyle = col; ctx.lineWidth = 0.13;
         ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(p.kx, p.ky); ctx.lineTo(p.fx, p.fy); ctx.stroke();
         // hoof: a little rounded gold cup at the end of the leg
         ctx.save(); ctx.translate(p.fx, p.fy); ctx.rotate(-p.c);
@@ -199,7 +199,7 @@
       function legAngles(st, front, far, off) {
         var ph = st.phi + off;
         var ag = 0.6 * Math.sin(ph), bg = 1.0 * Math.max(0, Math.cos(ph)) + 0.15;
-        var as = front ? (far ? -0.05 : 0.08) : (far ? 0.06 : -0.07), bs = 0.05;
+        var as = front ? (far ? -0.16 : 0.08) : (far ? 0.18 : -0.07), bs = 0.05;
         var a = lerp(as, ag, st.gal), b = lerp(bs, bg, st.gal);
         var al = front ? 0.95 : -0.85, bl = front ? 1.7 : 0.25;
         a = lerp(a, al + (far ? 0.12 : 0), st.leap); b = lerp(b, bl, st.leap);
@@ -434,13 +434,13 @@
         if (t < l0) {
           ux = acx + R * Math.cos(th); uy = gy - R * Math.sin(th);
           ust.rot = Math.max(-0.6, Math.min(0.6, Math.atan2(Math.cos(th), Math.sin(th))));
-          ust.phi = (Math.PI - th) * R / stride * TAU;
+          ust.phi = (TH_S - th) * R / stride * TAU;
           ust.gal = clamp01((t - r0) / 120);
         } else if (t < l1) {
           var lq = (t - l0) / (l1 - l0);
           ux = lerp(ex, lx, lq); uy = lerp(ey, gy, lq) - R * 0.32 * 4 * lq * (1 - lq);
           ust.rot = lerp(-0.4, 0.3, lq);
-          ust.phi = (Math.PI - TH_E) * R / stride * TAU;
+          ust.phi = (TH_S - TH_E) * R / stride * TAU;
           ust.leap = lq < 0.8 ? clamp01(lq * 5) : (1 - lq) / 0.2;
           ust.gal = 1 - ust.leap;
         } else {

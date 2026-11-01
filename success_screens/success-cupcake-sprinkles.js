@@ -288,14 +288,6 @@
           var p = PATH[i];
           ctx.drawImage(spr, p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
         }
-        // a soft curl on the very top once finished
-        if (u >= 1) {
-          var F = FROST[c.frost], tp = PATH[PATH.length - 1];
-          ctx.fillStyle = F.base; ctx.strokeStyle = F.dark; ctx.lineWidth = 0.02;
-          ctx.beginPath(); ctx.moveTo(tp.x - 0.07, tp.y - 0.02);
-          ctx.quadraticCurveTo(tp.x - 0.02, tp.y - 0.2, tp.x + 0.08, tp.y - 0.17);
-          ctx.quadraticCurveTo(tp.x + 0.02, tp.y - 0.1, tp.x + 0.07, tp.y - 0.02); ctx.closePath(); ctx.fill(); ctx.stroke();
-        }
       }
       function drawBag(c, u, a, lift) {
         if (a <= 0) return;
@@ -315,7 +307,7 @@
         ctx.fillStyle = hexA(F.base, 0.75); ctx.fillRect(-0.4, -0.15 - 0.5 * (1 - u * 0.6), 0.8, 0.6);
         ctx.restore();
         ctx.strokeStyle = 'rgba(150,140,190,.9)'; ctx.lineWidth = 0.02; ctx.stroke();
-        // twist + a little hand? no — a cute bow at the top
+        // a cute bow at the top
         ctx.fillStyle = accent;
         ctx.beginPath(); ctx.ellipse(-0.08, -0.84, 0.08, 0.045, -0.4, 0, TAU); ctx.fill();
         ctx.beginPath(); ctx.ellipse(0.08, -0.84, 0.08, 0.045, 0.4, 0, TAU); ctx.fill();
@@ -403,7 +395,7 @@
         // soft table glow under the cupcakes
         var tg = ctx.createRadialGradient(W / 2, B, 0, W / 2, B, Math.max(s * 3.4, spacing * 2));
         tg.addColorStop(0, hexA(primary, 0.22)); tg.addColorStop(1, hexA(primary, 0));
-        ctx.fillStyle = tg; ctx.fillRect(0, B - s * 3.4, W, s * 6.8);
+        ctx.fillStyle = tg; ctx.fillRect(0, 0, W, H);
 
         var bursts = [];
         // draw side cakes first, middle last
@@ -484,7 +476,7 @@
             ctx.fillStyle = hexA(bk % 2 ? '#FFFFFF' : accent, 1 - bb.q);
             sparkPath(ctx, bb.x + Math.cos(ba) * br, bb.y + Math.sin(ba) * br * 0.8, bb.S * 0.07 * (1 - bb.q * 0.5)); ctx.fill();
           }
-          ctx.strokeStyle = hexA('#FFFFFF', 0.5 * (1 - bb.q)); ctx.lineWidth = 2 * unit;
+          ctx.strokeStyle = hexA('#FFFFFF', 0.3 * (1 - bb.q)); ctx.lineWidth = 2 * unit;
           ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.S * (0.1 + e * 0.55), 0, TAU); ctx.stroke();
         }
         ctx.globalCompositeOperation = 'source-over';

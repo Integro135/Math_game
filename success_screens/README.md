@@ -94,7 +94,7 @@ The host lives in `game/js/success.js`.
 
 ## 4. Screen inventory
 
-There are **75** rotation screens in `SUCCESS_FILES`; all register
+There are **85** rotation screens in `SUCCESS_FILES`; all register
 `supportsSuper: true`. The manifest is in order of addition (newest last). In
 2026-10 the ten oldest (supernova, comet-shower, constellation-heart,
 electric-orb, lightning-storm, blooming-garden, unicorn-rainbow,
@@ -165,6 +165,20 @@ listed in `SUCCESS_FILES` and pinned by `tests/test_new_success_screens.py`.
 | `success-frog-lilypad.js` | A side-view frog hops pad to pad across a dark pond, boops a firefly with her tongue (it flies off happily) and a pink lotus blooms behind her. Super: two baby frogs, more lotuses, fireflies swirl into a heart. |
 | `success-dandelion-wish.js` | A glowing dandelion clock is blown by wind ribbons; its seeds lift off one by one, spiral up and turn into twinkling stars. Super: two dandelions whose seeds trace a big star constellation. |
 | `success-music-box.js` | An ornate music box opens (mirror lid, turning key) and a ballerina rises and pirouettes as glowing notes spiral out. Super: a leap and arabesque, an orbiting ring of notes and stars, a petal shower. |
+
+### The 2026-10-28 batch (ten more, added — nothing retired)
+| File | Effect |
+|---|---|
+| `success-unicorn-gallop.js` | A side-view unicorn gallops along a rainbow arc it lays down under its hooves, leaps and lands in a burst of stars. Super: a full double rainbow, two foals trot in beside her, a shower of glittering hearts. |
+| `success-mermaid-wave.js` | A little mermaid leaps out of glowing waves, flicks her tail (droplets turn into sparkles), dives and surfaces waving. Super: a second leap, a clam rises and opens on a glowing pearl, a ring of sea sparkles. |
+| `success-cupcake-sprinkles.js` | A smiling cupcake drops onto a plate, frosting pipes itself on in a spiral, rainbow sprinkles bounce and stick, a cherry plops on top. Super: three cupcakes, a candle lit on the middle one, confetti everywhere. |
+| `success-puppy-fetch.js` | A side-view puppy chases a bouncing ball, catches it mid-leap, then sits wagging with the ball at its paws as hearts float up. Super: it fetches a gold star, a second puppy joins, a trail of glowing paw prints. |
+| `success-gumball-machine.js` | The crank of a gumball machine turns, a gumball rolls out of the chute, bounces and bursts into a star spray. Super: the lid pops and ~100 gumballs fountain out and hop into a big pulsing heart. |
+| `success-pinata-burst.js` | A star piñata swings on its rope, a magic glint boops it, it giggles and bursts into candies, ribbons and confetti. Super: a side-view rainbow donkey piñata, two boops, wrapped candies and long streamers. |
+| `success-fairy-house.js` | A mushroom house sprouts, its door opens and a little fairy loops out on a fairy-dust trail as the windows light up; she waves her wand. Super: six more houses in a ring, her dust gathers into a big glowing star. |
+| `success-pumpkin-carriage.js` | Magic sparkles turn a pumpkin into a gold-wheeled carriage that rolls to the centre on a glitter road and stops with a bounce. Super: a shining glass slipper, a starry canopy, a sparkle arc with fireworks. |
+| `success-magic-mirror.js` | A golden hand mirror floats in, a shine sweeps the glass and a crowned smiley pops up and winks as sparkles fly out. Super: the mirror spins, its gems light up in rainbow order, rings of stars burst. |
+| `success-seahorse-ride.js` | A side-view seahorse rises through bubbles, loops the loop and curls its tail around a glowing star. Super: two baby seahorses, swaying seaweed, every bubble pops into sparkles. |
 
 ### Special / reward (not in the rotation)
 | File | Effect |

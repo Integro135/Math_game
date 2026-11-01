@@ -1875,8 +1875,11 @@
       function updateClient(F, t, dt){
         const pp = posePoint(F), px = pp[0], py = pp[1];
         if (F.cs === 'going'){
-          const d = steer(F, px, py, F.spd * (F.hurry ? 2.6 : 1.3), dt, F.hurry ? 3.4 : 2.4); integrate(F, dt, t);
-          if (d < 16 || (d < 90 && d > F.lastD + 0.25) || t - F.goT0 > 25){ F.cs = 'posing'; F.poseT0 = t; F.hurry = false; }
+          // a tapped-for (hurrying) client arrives in ~4 s from wherever it was —
+          // 2.6× a slow fish's own speed could take ~15 s from across the reef
+          if (F.hurry && F.hurryV == null) F.hurryV = Math.max(F.spd * 2.6, Math.hypot(px - F.x, py - F.y) / 4);
+          const d = steer(F, px, py, F.hurry ? F.hurryV : F.spd * 1.3, dt, F.hurry ? 3.4 : 2.4); integrate(F, dt, t);
+          if (d < 16 || (d < 90 && d > F.lastD + 0.25) || t - F.goT0 > 25){ F.cs = 'posing'; F.poseT0 = t; F.hurry = false; F.hurryV = null; }
           F.lastD = d; return;
         }
         // posing: hang still beside the station, head up, mouth open, facing the wrasse

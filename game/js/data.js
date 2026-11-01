@@ -175,6 +175,17 @@ const SUCCESS_FILES=[
   'success-frog-lilypad',
   'success-dandelion-wish',
   'success-music-box',
+  // 2026-10-28: ten more (added, none retired)
+  'success-unicorn-gallop',
+  'success-mermaid-wave',
+  'success-cupcake-sprinkles',
+  'success-puppy-fetch',
+  'success-gumball-machine',
+  'success-pinata-burst',
+  'success-fairy-house',
+  'success-pumpkin-carriage',
+  'success-magic-mirror',
+  'success-seahorse-ride',
 ];
 
 /* ── Special reward screens (success_screens/<sub>/<name>.js) ────────────────
