@@ -340,8 +340,12 @@ function makeMxPool(){
 //    2026-11-01: ONLY THE HARDEST, at most 15 per set — the sum is 14–18 and both
 //    digits are 5 or more (9+5 … 9+9, 8+6, 7+7); every count-back starts from 14–18
 //    and takes away 5 or more (14−5 … 18−9). The 13s and the 4s (9+4, 13−4) are gone.
-//    SET 1 — the +9 and +8 ladders (9+5 … 9+9, 8+6 … 8+8) with −9 / −8 count-backs.
-//    SET 2 — COUNT-BACKS from 14 … 18 (14−5 … 18−9), two additions to finish.
+//    2026-11-01 (later): TWO BALANCE cards (מֹאזְנַיִם, TSB — four numbers onto two
+//    pans, every pan a crossing of 10: 4 9 | 5 8 → 13) are woven into every set at
+//    slots 6 and 12 (_withBridgeScales); the arithmetic was trimmed to 13 (set 6: 12)
+//    so a set still holds at most 15.
+//    SET 1 — the +9 and +8 ladders (9+6 … 9+9, 8+6 … 8+8) with −9 / −8 count-backs.
+//    SET 2 — COUNT-BACKS from 14 … 18 (14−7 … 18−9), two additions to finish.
 //    SET 3 — DOUBLES & near-doubles: 7+7, 8+8, 9+9, 7+8, 8+9 … with inverses.
 //    SET 4 — +7 and +6: 7+8, 7+9, 6+8, 6+9, turned around, with inverses.
 //    SET 5 — the +9 SHORTCUT: 5+9 … 9+9 (→14–18), −9 count-backs, then 9+6..8.
@@ -351,15 +355,15 @@ try{const _s=localStorage.getItem('brTurn');if(_s!=null)_brTurn=(+_s)||0;}catch(
 function _bridgeSet1(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(9,5),A(9,6),A(9,7),A(9,8),A(9,9),                // the +9 ladder (→14–18)
-    S(14,9),S(15,9),S(16,9),S(17,9),S(18,9),           // −9 count-backs
+    A(9,6),A(9,7),A(9,8),A(9,9),                       // the +9 ladder (→15–18)
+    S(15,9),S(16,9),S(17,9),S(18,9),                   // −9 count-backs
     A(8,6),A(8,7),A(8,8),S(16,8),S(17,8),              // the +8 ladder (→14–16), −8
   ];
 }
 function _bridgeSet2(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    S(14,5),S(14,6),S(14,7),S(14,8),                   // from 14
+    S(14,7),S(14,8),                                   // from 14
     S(15,6),S(15,7),S(15,8),                           // from 15
     S(16,7),S(16,8),S(16,9),                           // from 16
     S(17,8),S(17,9),S(18,9),                           // from 17 / 18
@@ -370,7 +374,7 @@ function _bridgeSet2(){
 function _bridgeSet3(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(7,7),S(14,7),A(8,8),S(16,8),A(9,9),S(18,9),      // doubles + inverses
+    A(8,8),S(16,8),A(9,9),S(18,9),                     // doubles + inverses
     A(7,8),A(8,7),S(15,8),S(15,7),                     // 7 | 8 | 15
     A(8,9),A(9,8),S(17,9),S(17,8),                     // 8 | 9 | 17
     A(6,8),                                            // 6+8=14 (near 7+7) to finish
@@ -383,7 +387,6 @@ function _bridgeSet4(){
     A(7,8),A(7,9),S(14,7),S(15,7),S(16,7),             // +7 and −7
     A(6,8),A(6,9),S(14,6),S(15,6),                     // +6 and −6
     A(8,7),A(9,7),A(8,6),A(9,6),                       // turned around (big + 7 / 6)
-    S(14,8),S(15,9),                                   // two count-backs to finish
   ];
 }
 // SET 5 — the +9 SHORTCUT (make ten and step one more), high end only.
@@ -392,7 +395,7 @@ function _bridgeSet5(){
   return[
     A(5,9),A(6,9),A(7,9),A(8,9),A(9,9),                // → 14–18
     S(14,9),S(15,9),S(16,9),S(17,9),S(18,9),           // −9 count-backs
-    A(9,6),A(9,7),A(9,8),S(14,5),S(16,7),              // 9 first, then two count-backs
+    A(9,6),A(9,7),A(9,8),                              // 9 first
   ];
 }
 // SET 6 — FACT FAMILIES (מִשְׁפְּחוֹת מִסְפָּרִים): one fact four ways.
@@ -402,15 +405,23 @@ function _bridgeSet6(){
     A(9,8),A(8,9),S(17,8),S(17,9),                     // 9 | 8 | 17
     A(8,7),A(7,8),S(15,7),S(15,8),                     // 8 | 7 | 15
     A(9,6),A(6,9),S(15,6),S(15,9),                     // 9 | 6 | 15
-    A(9,5),A(5,9),S(14,5),                             // 9 | 5 | 14 (three to finish)
   ];
 }
 // The one-unknown (נֶעְלָם) type is no longer a separate set — _sprinkleUnknowns
 // weaves it into EVERY set below (~1 in 4), so it recurs throughout the rotation.
 const _BRIDGE_SETS=[_bridgeSet1,_bridgeSet2,_bridgeSet3,_bridgeSet4,_bridgeSet5,_bridgeSet6];
 // serve the current set, then advance the turn (persisted) for the NEXT build
+// + TWO balance-scale cards (מֹאזְנַיִם) whose every pan crosses a ten (balance.ex.js
+// makeBridgeScale), INSERTED at slots 6 and 12 after the unknowns are woven — the
+// curriculum order around them is untouched
+function _withBridgeScales(set,mode){
+  const bl=EX('balance')?EX('balance').make(mode):[];
+  if(bl[0])set.splice(Math.min(5,set.length),0,bl[0]);
+  if(bl[1])set.splice(Math.min(11,set.length),0,bl[1]);
+  return set;
+}
 function makeBridgePool(){
-  const set=_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length]());
+  const set=_withBridgeScales(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length]()),'br');
   _brTurn=(_brTurn+1)%_BRIDGE_SETS.length;
   try{localStorage.setItem('brTurn',String(_brTurn));}catch(e){}
   return set;
@@ -485,7 +496,7 @@ function _bridge20Set5(){
 // instead of being a separate set — so it recurs throughout bridge-20 too.
 const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2,_bridge20Set3,_bridge20Set4,_bridge20Set5];
 function makeBridge20Pool(){
-  const set=_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length]());
+  const set=_withBridgeScales(_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length]()),'b20');   // 15 + 2 balance cards
   _b20Turn=(_b20Turn+1)%_BRIDGE20_SETS.length;
   try{localStorage.setItem('b20Turn',String(_b20Turn));}catch(e){}
   // NOTE: no polygon weaving here — the bridge-20 curriculum order MUST stay

@@ -54,6 +54,36 @@ window.EXERCISES.types.balance=(()=>{
       if(h!==g&&Math.max(g,h)>=3&&d<=maxV&&a+d<=maxS)return{t:TSB,nums:[a,b,c,d],order:showOrder(),a:a+d};
     }
   }
+  // TSB for the BRIDGE games: every pan is a CROSSING of ten — the two numbers on
+  // each pan add up past a ten (units sum 10+), so weighing them IS the bridge drill.
+  //   br  — four single digits, pan sum 11..14:        3 9 | 4 8 → 12, 4 9 | 5 8 → 13
+  //   b20 — two single digits + two teens, sum 21..28: 7 18 | 9 16 → 25 (7+8, 9+6 cross)
+  // Same a<b<c<d, a+d=b+c, uneven g·h·g contract as makeScale (so {a,d}|{b,c} is the
+  // ONLY balancing split); every valid row is enumerated once and one is drawn.
+  const _BRIDGE_ROWS={};
+  function bridgeRows(kind){
+    if(_BRIDGE_ROWS[kind])return _BRIDGE_ROWS[kind];
+    const out=[],cross=(x,y)=>(x%10)+(y%10)>=10;
+    for(let a=1;a<=9;a++)for(let b=a+1;b<=9;b++){
+      const g=b-a;
+      const cs=kind==='b20'?[11,12,13,14,15,16,17,18]:[];
+      if(kind!=='b20')for(let c=b+1;c<=9;c++)cs.push(c);
+      for(const c of cs){
+        const d=c+g,h=c-b,S=a+d;
+        // br has only single digits to play with: the 3+ gap rule would leave just two
+        // rows (3 4 8 9, 4 5 8 9), so there it's only 'never evenly spaced' (10 rows)
+        if(c<=b||h===g||(kind==='b20'&&Math.max(g,h)<3))continue;
+        if(kind==='b20'?(d>19||d%10===0||S<21||S>28):(d>9||S<11))continue;
+        if(!cross(a,d)||!cross(b,c))continue;
+        out.push([a,b,c,d]);
+      }
+    }
+    return(_BRIDGE_ROWS[kind]=out);
+  }
+  function makeBridgeScale(kind){
+    const rows=bridgeRows(kind),n=rows[(Math.random()*rows.length)|0].slice();
+    return{t:TSB,nums:n,order:showOrder(),a:n[0]+n[3]};
+  }
   // the order the four numbers are SHOWN in — `nums` stays sorted (the generator's
   // a<b<c<d contract, the report), `order` is a random permutation of 0..3 that is
   // never the sorted row or its mirror: shown as 5 6 7 8 the answer would ALWAYS be
@@ -341,11 +371,12 @@ window.EXERCISES.types.balance=(()=>{
 
   return{
     t:[TBE,TSB],
-    modes:['bal','mx','mulc'],
+    modes:['bal','mx','mulc','br','b20'],
     aidsReveal:'always',            // no HOST aid — the scale is the module's own aid
     make(mode){
       if(mode==='mx')return[nextKind()?makeScale(15,18):makeFill()];
       if(mode==='mulc')return sh([makeFill(),makeScale(18,20)]);
+      if(mode==='br'||mode==='b20')return[makeBridgeScale(mode),makeBridgeScale(mode)];   // woven into the bridge sets (problems.js)
       if(mode==='bal')return[makeFill('front'),makeScale(18,20),makeFill('back'),makeScale(18,20),makeFill(),makeScale(15,18)];
       return[];
     },
