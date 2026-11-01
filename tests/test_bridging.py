@@ -15,34 +15,35 @@ class TestBridgingMode:
 
     # Since 2026-10-27 every set is HARD: the two digits make 13–18 (9+8, 7+6),
     # every subtraction counts back from 13–18 with a borrow (17−9, 13−6).
-    # SET 1 — the +9 / +8 ladders with count-backs (25)
+    # Since 2026-11-01 ONLY THE HARDEST, 15 per set: sums 14–18 with both digits
+    # >= 5, count-backs from 14–18 taking away 5 or more. No 13s, no 4s.
+    # SET 1 — the +9 / +8 ladders with count-backs (15)
     EXPECTED_SEQ = [
-        ("TA", 9, 4), ("TA", 9, 5), ("TA", 9, 6), ("TA", 9, 7), ("TA", 9, 8), ("TA", 9, 9),
-        ("TS", 13, 9), ("TS", 14, 9), ("TS", 15, 9), ("TS", 16, 9), ("TS", 17, 9), ("TS", 18, 9),
-        ("TA", 8, 5), ("TA", 8, 6), ("TA", 8, 7), ("TA", 8, 8), ("TA", 8, 9),
-        ("TS", 13, 8), ("TS", 14, 8), ("TS", 15, 8), ("TS", 16, 8), ("TS", 17, 8),
-        ("TA", 4, 9), ("TA", 5, 8), ("TA", 6, 9),
+        ("TA", 9, 5), ("TA", 9, 6), ("TA", 9, 7), ("TA", 9, 8), ("TA", 9, 9),
+        ("TS", 14, 9), ("TS", 15, 9), ("TS", 16, 9), ("TS", 17, 9), ("TS", 18, 9),
+        ("TA", 8, 6), ("TA", 8, 7), ("TA", 8, 8), ("TS", 16, 8), ("TS", 17, 8),
     ]
-    # SET 2 — count-backs from 13 … 18, two additions to finish (18)
+    # SET 2 — count-backs from 14 … 18, two additions to finish (15)
     EXPECTED_SEQ_2 = [
-        ("TS", 13, 4), ("TS", 13, 5), ("TS", 13, 6), ("TS", 13, 7),
         ("TS", 14, 5), ("TS", 14, 6), ("TS", 14, 7), ("TS", 14, 8),
         ("TS", 15, 6), ("TS", 15, 7), ("TS", 15, 8),
-        ("TS", 16, 7), ("TS", 16, 9), ("TS", 17, 8), ("TS", 17, 9), ("TS", 18, 9),
-        ("TA", 7, 6), ("TA", 9, 5),
+        ("TS", 16, 7), ("TS", 16, 8), ("TS", 16, 9),
+        ("TS", 17, 8), ("TS", 17, 9), ("TS", 18, 9),
+        ("TA", 8, 7), ("TA", 9, 6),
     ]
     # SET 3 — doubles & near-doubles with inverses (15)
     EXPECTED_SEQ_3 = [
         ("TA", 7, 7), ("TS", 14, 7), ("TA", 8, 8), ("TS", 16, 8), ("TA", 9, 9), ("TS", 18, 9),
         ("TA", 7, 8), ("TA", 8, 7), ("TS", 15, 8), ("TS", 15, 7),
         ("TA", 8, 9), ("TA", 9, 8), ("TS", 17, 9), ("TS", 17, 8),
-        ("TA", 6, 7),
+        ("TA", 6, 8),
     ]
     # SET 4 — +7 and +6 with inverses (15)
     EXPECTED_SEQ_4 = [
-        ("TA", 7, 6), ("TA", 7, 8), ("TA", 7, 9), ("TS", 13, 7), ("TS", 14, 7), ("TS", 16, 7),
-        ("TA", 6, 7), ("TA", 6, 8), ("TA", 6, 9), ("TS", 13, 6), ("TS", 14, 6), ("TS", 15, 6),
-        ("TA", 4, 9), ("TA", 5, 9), ("TS", 14, 5),
+        ("TA", 7, 8), ("TA", 7, 9), ("TS", 14, 7), ("TS", 15, 7), ("TS", 16, 7),
+        ("TA", 6, 8), ("TA", 6, 9), ("TS", 14, 6), ("TS", 15, 6),
+        ("TA", 8, 7), ("TA", 9, 7), ("TA", 8, 6), ("TA", 9, 6),
+        ("TS", 14, 8), ("TS", 15, 9),
     ]
     # SET 5 — the +9 shortcut, high end (15)
     EXPECTED_SEQ_5 = [
@@ -60,11 +61,18 @@ class TestBridgingMode:
 
     @staticmethod
     def _hard_ok(TA, t, a, b):
-        """A HARD crossing of 10: single digits summing to 13–18, or a count-back
-        from 13–18 that borrows (minuend units < subtrahend) to a single digit."""
+        """The HARDEST crossings of 10: single digits, both 5 or more, summing to
+        14–18; or a count-back from 14–18 that takes away 5 or more and borrows
+        (minuend units < subtrahend) to a single digit."""
         if t == TA:
-            return a < 10 and b < 10 and 13 <= a + b <= 18
-        return 13 <= a <= 18 and b < 10 and (a % 10) < b and 0 < (a - b) < 10
+            return 5 <= a < 10 and 5 <= b < 10 and 14 <= a + b <= 18
+        return 14 <= a <= 18 and 5 <= b < 10 and (a % 10) < b and 0 < (a - b) < 10
+
+    def test_br_every_set_has_at_most_15(self):
+        for seq in (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3,
+                    self.EXPECTED_SEQ_4, self.EXPECTED_SEQ_5, self.EXPECTED_SEQ_6):
+            assert len(seq) <= 15, f"a bridge-10 set holds at most 15, got {len(seq)}"
+            assert len(set(seq)) == len(seq), f"duplicate problem in a set: {seq}"
 
     def test_br_every_set_is_hard(self, page):
         """ALL SIX sets: every problem is a hard crossing (9+8, 7+6, 17−9 …) — no
@@ -105,11 +113,11 @@ class TestBridgingMode:
         assert "גָּשֵׁר 10" in txt or "10" in txt, \
             f"Button text should contain 'גָּשֵׁר 10', got '{txt}'"
 
-    def test_br_mode_has_25_problems(self, page):
-        """Bridging mode serves exactly 25 problems per session."""
+    def test_br_mode_has_15_problems(self, page):
+        """Bridging mode serves exactly 15 problems per session."""
         self._switch_br(page)
-        assert page.evaluate("problems.length") == 25, \
-            f"Expected 25 br problems, got {page.evaluate('problems.length')}"
+        assert page.evaluate("problems.length") == 15, \
+            f"Expected 15 br problems, got {page.evaluate('problems.length')}"
 
     def test_br_mode_pts_is_15(self, page):
         """modePts() returns 15 in bridging mode."""
@@ -123,7 +131,7 @@ class TestBridgingMode:
         assert page.locator("#lbmx.active").count() == 0
 
     def test_br_fixed_sequence_in_exact_order(self, page):
-        """The br session equals the prescribed 25-problem list, in order. Every
+        """The br session equals the prescribed 15-problem list, in order. Every
         4th problem is re-rendered as its shape-unknown form (TVA/TVS); we
         normalise it back to its base add/sub type to verify the curriculum."""
         consts = page.evaluate("({TA, TS, TVA, TVS})")
@@ -245,12 +253,12 @@ class TestBridgingMode:
             f"br mode: after one wrong then correct, score should rise by 10 (67% of 15), got {after - before}"
 
     # ── two-set alternation ──────────────────────────────────────────────
-    def test_br_set2_has_18_problems(self, page):
-        """The second bridging set serves exactly 18 problems."""
+    def test_br_set2_has_15_problems(self, page):
+        """The second bridging set serves exactly 15 problems."""
         self._switch_br(page)            # 1st selection → set 1
         self._reenter_br(page)           # 2nd selection → set 2
-        assert page.evaluate("problems.length") == 18, \
-            f"Expected 18 problems in set 2, got {page.evaluate('problems.length')}"
+        assert page.evaluate("problems.length") == 15, \
+            f"Expected 15 problems in set 2, got {page.evaluate('problems.length')}"
 
     def test_br_set2_exact_order(self, page):
         """The second selection serves SET 2 in its exact prescribed order."""
@@ -411,26 +419,28 @@ class TestBridgingMode:
         assert seen[6] == exp[0], "the next selection wraps back to set 1"
 
     def test_br_restart_size_alternates(self, page):
-        """The six sets have lengths 25, 18, 15, 15, 15, 15; restarts cycle through
-        them (25 → 18 → 15 → 15 → 15 → 15 → 25). Weaving the unknowns in re-renders
-        problems but never adds/removes any, so the lengths are unchanged."""
+        """Every one of the six sets holds 15 (the cap since 2026-11-01), on every
+        restart. Weaving the unknowns in re-renders problems but never adds/removes
+        any, so the lengths are unchanged."""
         self._switch_br(page)
         lens = [page.evaluate("problems.length")]
         for _ in range(6):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             lens.append(page.evaluate("problems.length"))
-        assert lens == [25, 18, 15, 15, 15, 15, 25], f"sizes must cycle on restart, got {lens}"
+        assert lens == [15] * 7, f"every set holds 15, got {lens}"
 
     def test_br_reclick_while_active_rotates_set(self, page):
         """Re-selecting גָּשֵׁר 10 while ALREADY in it starts a fresh game with
         the next set (the no-op guard is lifted for br only)."""
-        self._switch_br(page)                        # set 1 (25 problems)
-        assert page.evaluate("problems.length") == 25
+        NORM = "[...problems].map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        consts = page.evaluate("({TA, TS})")
+        self._switch_br(page)                        # set 1
+        assert page.evaluate(NORM) == [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ]
         enter_mode(page, 'br')               # re-click while active
         page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
         page.wait_for_timeout(150)
-        assert page.evaluate("problems.length") == 18, \
-            "re-clicking גָּשֵׁר 10 must rotate to set 2 (18 problems)"
+        assert page.evaluate(NORM) == [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_2], \
+            "re-clicking גָּשֵׁר 10 must rotate to set 2"
 
     def test_br_boot_alternates_across_reloads(self, page):
         """Booting straight into br (the persisted mode) rotates the set each reload.

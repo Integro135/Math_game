@@ -337,10 +337,13 @@ function makeMxPool(){
 //    2026-10-27: made HARDER (like גָּשֵׁר 20) — every problem is a BIG crossing of
 //    10: the two single digits make 13–18 (9+8, 8+7, 7+6 …), and every subtraction
 //    counts back from 13–18 with a borrow (17−9, 15−8, 13−6 …). No more 9+2 / 11−1.
-//    SET 1 — the +9 and +8 ladders (9+4 … 9+9, 8+5 … 8+9) with −9 / −8 count-backs (25).
-//    SET 2 — COUNT-BACKS from 13 … 18 (13−4 … 18−9), two additions to finish (18).
+//    2026-11-01: ONLY THE HARDEST, at most 15 per set — the sum is 14–18 and both
+//    digits are 5 or more (9+5 … 9+9, 8+6, 7+7); every count-back starts from 14–18
+//    and takes away 5 or more (14−5 … 18−9). The 13s and the 4s (9+4, 13−4) are gone.
+//    SET 1 — the +9 and +8 ladders (9+5 … 9+9, 8+6 … 8+8) with −9 / −8 count-backs.
+//    SET 2 — COUNT-BACKS from 14 … 18 (14−5 … 18−9), two additions to finish.
 //    SET 3 — DOUBLES & near-doubles: 7+7, 8+8, 9+9, 7+8, 8+9 … with inverses.
-//    SET 4 — +7 and +6: 7+6 … 7+9, 6+7 … 6+9, 4+9, 5+9 with inverses.
+//    SET 4 — +7 and +6: 7+8, 7+9, 6+8, 6+9, turned around, with inverses.
 //    SET 5 — the +9 SHORTCUT: 5+9 … 9+9 (→14–18), −9 count-backs, then 9+6..8.
 //    SET 6 — FACT FAMILIES: 9|8|17, 8|7|15, 9|6|15 four ways (a+b, b+a, s−b, s−a).
 let _brTurn=0;
@@ -348,21 +351,19 @@ try{const _s=localStorage.getItem('brTurn');if(_s!=null)_brTurn=(+_s)||0;}catch(
 function _bridgeSet1(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(9,4),A(9,5),A(9,6),A(9,7),A(9,8),A(9,9),         // the +9 ladder (→13–18)
-    S(13,9),S(14,9),S(15,9),S(16,9),S(17,9),S(18,9),   // −9 count-backs
-    A(8,5),A(8,6),A(8,7),A(8,8),A(8,9),                // the +8 ladder (→13–17)
-    S(13,8),S(14,8),S(15,8),S(16,8),S(17,8),           // −8 count-backs
-    A(4,9),A(5,8),A(6,9),                              // turned around (small + big)
+    A(9,5),A(9,6),A(9,7),A(9,8),A(9,9),                // the +9 ladder (→14–18)
+    S(14,9),S(15,9),S(16,9),S(17,9),S(18,9),           // −9 count-backs
+    A(8,6),A(8,7),A(8,8),S(16,8),S(17,8),              // the +8 ladder (→14–16), −8
   ];
 }
 function _bridgeSet2(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    S(13,4),S(13,5),S(13,6),S(13,7),                   // from 13
     S(14,5),S(14,6),S(14,7),S(14,8),                   // from 14
     S(15,6),S(15,7),S(15,8),                           // from 15
-    S(16,7),S(16,9),S(17,8),S(17,9),S(18,9),           // from 16 / 17 / 18
-    A(7,6),A(9,5),                                     // two additions to finish
+    S(16,7),S(16,8),S(16,9),                           // from 16
+    S(17,8),S(17,9),S(18,9),                           // from 17 / 18
+    A(8,7),A(9,6),                                     // two additions to finish
   ];
 }
 // SET 3 — DOUBLES & near-doubles in the HIGH teens, each with its inverse.
@@ -372,16 +373,17 @@ function _bridgeSet3(){
     A(7,7),S(14,7),A(8,8),S(16,8),A(9,9),S(18,9),      // doubles + inverses
     A(7,8),A(8,7),S(15,8),S(15,7),                     // 7 | 8 | 15
     A(8,9),A(9,8),S(17,9),S(17,8),                     // 8 | 9 | 17
-    A(6,7),                                            // 6+7=13 to finish
+    A(6,8),                                            // 6+8=14 (near 7+7) to finish
   ];
 }
 // SET 4 — +7 and +6 (their splits are less automatic than +9's).
 function _bridgeSet4(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(7,6),A(7,8),A(7,9),S(13,7),S(14,7),S(16,7),      // +7 and −7
-    A(6,7),A(6,8),A(6,9),S(13,6),S(14,6),S(15,6),      // +6 and −6
-    A(4,9),A(5,9),S(14,5),                             // small + 9, and 14−5
+    A(7,8),A(7,9),S(14,7),S(15,7),S(16,7),             // +7 and −7
+    A(6,8),A(6,9),S(14,6),S(15,6),                     // +6 and −6
+    A(8,7),A(9,7),A(8,6),A(9,6),                       // turned around (big + 7 / 6)
+    S(14,8),S(15,9),                                   // two count-backs to finish
   ];
 }
 // SET 5 — the +9 SHORTCUT (make ten and step one more), high end only.
