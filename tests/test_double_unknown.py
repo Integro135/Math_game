@@ -211,61 +211,93 @@ class TestDoubleUnknown:
         assert real["done"] is True and real["got"] is True and real["score"] > 0, \
             f"a real pair (15 − 5) must be accepted for points: {real}"
 
-    def test_tri_unknown_three_boxes_sum_to_target(self, page):
-        """x+x+x=R (TRA): three boxes __+__+__ = R. A wrong triple (5+5+3) is a
-        mistake; a right one (5+5+5=15) is accepted and the report stores the three
-        addends; the type appears in the Queen pool."""
-        page.evaluate("mode='mx'; score=0; problems=[{t:TRA,r:15}]; idx=0; loadProblem()")
+    def test_tri_unknown_given_plus_two_boxes_sum_to_target(self, page):
+        """g+x+x=R (TRA, 2026-11-02): the game GIVES the first addend and the child
+        fills TWO boxes — 4 + __ + __ = 15. A wrong pair (5+5 → 14) is a mistake; a
+        right one (5+6) is accepted and the report stores g with the two addends
+        ("4 + 5 + 6 = 15"); Queen's pool serves the type WITH its given."""
+        page.evaluate("mode='mx'; score=0; problems=[{t:TRA,r:15,g:4}]; idx=0; loadProblem()")
         page.wait_for_selector("#ans1", timeout=TIMEOUT)
         page.wait_for_timeout(120)
-        for bid in ("ans1", "ans2", "ans3"):
-            assert page.locator("#" + bid).count() == 1, f"expected #{bid} box"
+        assert page.locator("#ans1").count() == 1 and page.locator("#ans2").count() == 1 and page.locator("#ans3").count() == 0, \
+            "two boxes for the child, the first addend is given"
+        assert page.evaluate("document.querySelector('#eq .eq-n[data-num=\"4\"]')?.textContent") == "4", "the given 4 is shown first"
+        assert page.evaluate("num1 === 15 && num2 === 4")
         wrong = page.evaluate("""(() => {
             document.getElementById('ans1').value='5';
-            document.getElementById('ans2').value='5';
-            document.getElementById('ans3').value='3'; checkAns();
-            return {done:done, tryFirst:tryFirst};})()""")
-        assert wrong["done"] is False and wrong["tryFirst"] == 1, f"5+5+3≠15 is a mistake: {wrong}"
+            document.getElementById('ans2').value='5'; checkAns();
+            return {done:done, tryFirst:tryFirst, wrongs:(report[0]||{}).wrongs};})()""")
+        assert wrong["done"] is False and wrong["tryFirst"] == 1 and wrong["wrongs"] == ["4+5+5"], f"4+5+5≠15 is a mistake: {wrong}"
         page.wait_for_timeout(250)
         right = page.evaluate("""(() => {
             document.getElementById('ans1').value='5';
-            document.getElementById('ans2').value='5';
-            document.getElementById('ans3').value='5'; checkAns();
-            return {done:done, score:score, pair:(report[0]||{}).userPair||null};})()""")
-        assert right["done"] is True and right["score"] > 0, f"5+5+5=15 must be accepted: {right}"
-        assert right["pair"] == [5, 5, 5], f"report must store the three addends: {right}"
+            document.getElementById('ans2').value='6'; checkAns();
+            return {done:done, score:score, pair:(report[0]||{}).userPair||null, row:_reportRows()[0].eq};})()""")
+        assert right["done"] is True and right["score"] > 0, f"4+5+6=15 must be accepted: {right}"
+        assert right["pair"] == [4, 5, 6] and right["row"] == "4 + 5 + 6 = 15", f"report: the given + the two addends: {right}"
+        # a card WITHOUT a given (an old forced object) derives one — never three boxes
+        page.evaluate("problems=[{t:TRA,r:15}]; idx=0; loadProblem()")
+        page.wait_for_timeout(120)
+        assert page.evaluate("num2") == 4 and page.locator("#ans3").count() == 0, "15 → the given is 4 (15 − 11)"
         enter_mode(page, 'mx')
         page.wait_for_function("mode==='mx' && problems.length>0", timeout=TIMEOUT)
-        inq = page.evaluate("(()=>{for(var k=0;k<10;k++){if(makeMxPool().some(p=>p.t===TRA))return true;}return false;})()")
-        assert inq, "the three-unknown (TRA) must appear in the Queen pool"
+        inq = page.evaluate("(()=>{for(var k=0;k<10;k++){const p=makeMxPool().find(p=>p.t===TRA);if(p&&p.g>=2&&p.r-p.g>=4)return true;}return false;})()")
+        assert inq, "the sum chain (TRA) with its given must appear in the Queen pool"
+
+    def test_tri_sub_chain_given_minus_two_boxes(self, page):
+        """g−x−x=R (TRS, 2026-11-02): a count-back chain with the first number given —
+        20 − __ − __ = 7: the child's two numbers must take away 13. A wrong pair
+        (5, 5 → 10) is a mistake; 6 and 7 are accepted and the report reads
+        "20 − 6 − 7 = 7"; a 0 is refused without penalty (the lazy shortcut)."""
+        page.evaluate("mode='b20'; score=0; problems=[{t:TRS,r:7,g:20}]; idx=0; loadProblem()")
+        page.wait_for_selector("#ans1", timeout=TIMEOUT)
+        page.wait_for_timeout(120)
+        assert page.evaluate("num1 === 7 && num2 === 20") and page.locator("#ans3").count() == 0
+        assert page.evaluate("document.querySelectorAll('#eq .eq-op.op-m').length") == 2, "two minus signs"
+        wrong = page.evaluate("""(() => {
+            document.getElementById('ans1').value='5';
+            document.getElementById('ans2').value='5'; checkAns();
+            return {done:done, tryFirst:tryFirst, wrongs:(report[0]||{}).wrongs};})()""")
+        assert wrong["done"] is False and wrong["tryFirst"] == 1 and wrong["wrongs"] == ["20-5-5"], f"20−5−5≠7 is a mistake: {wrong}"
+        page.wait_for_timeout(250)
+        zero = page.evaluate("""(() => {
+            document.getElementById('ans1').value='0';
+            document.getElementById('ans2').value='13'; checkAns();
+            return {done:done, tryFirst:tryFirst, fbErr:document.getElementById('fb').className.includes('fb-err'),
+                    cleared:document.getElementById('ans1').value===''};})()""")
+        assert zero["done"] is False and zero["tryFirst"] == 1 and zero["fbErr"] and zero["cleared"], f"a 0 is refused, no extra penalty: {zero}"
+        right = page.evaluate("""(() => {
+            document.getElementById('ans1').value='6';
+            document.getElementById('ans2').value='7'; checkAns();
+            return {done:done, score:score, pair:(report[0]||{}).userPair||null, row:_reportRows()[0].eq};})()""")
+        assert right["done"] is True and right["score"] > 0, f"20−6−7=7 must be accepted: {right}"
+        assert right["pair"] == [20, 6, 7] and right["row"] == "20 − 6 − 7 = 7", right
 
     def test_tri_unknown_rejects_zero_without_penalty(self, page):
-        """x+x+x=20 (TRA): a triple with a 0 in any box (e.g. 0+0+20) SUMS right but
+        """9+x+x=20 (TRA): a pair with a 0 in a box (e.g. 0+11) SUMS right but
         isn't real practice — it's accepted-as-correct-but-refused: the child is
-        told it's right and asked for a DIFFERENT triple. No penalty (tryFirst/score
-        unchanged), boxes cleared; a real triple (5+7+8=20) is then accepted for
-        full points. Mirrors the TDS 'no lazy shortcut' rule."""
-        page.evaluate("mode='mx'; score=0; problems=[{t:TRA,r:20}]; idx=0; loadProblem()")
+        told it's right and asked for a DIFFERENT pair. No penalty (tryFirst/score
+        unchanged), boxes cleared; a real pair (5+6) is then accepted for full
+        points. Mirrors the TDS 'no lazy shortcut' rule."""
+        page.evaluate("mode='mx'; score=0; problems=[{t:TRA,r:20,g:9}]; idx=0; loadProblem()")
         page.wait_for_selector("#ans1", timeout=TIMEOUT)
         page.wait_for_timeout(120)
         zero = page.evaluate("""(() => {
             document.getElementById('ans1').value='0';
-            document.getElementById('ans2').value='0';
-            document.getElementById('ans3').value='20'; checkAns();
+            document.getElementById('ans2').value='11'; checkAns();
             return {done:done, tryFirst:tryFirst, score:score,
                     fbErr:document.getElementById('fb').className.includes('fb-err'),
                     cleared:document.getElementById('ans1').value===''};})()""")
-        assert zero["done"] is False, f"a triple with a 0 must not be accepted: {zero}"
+        assert zero["done"] is False, f"a pair with a 0 must not be accepted: {zero}"
         assert zero["tryFirst"] == 0 and zero["score"] == 0, f"no penalty for the zero try: {zero}"
         assert zero["fbErr"] and zero["cleared"], f"'correct but give another' feedback + boxes cleared: {zero}"
-        # a real triple with NO zero is then accepted for FULL points
+        # a real pair with NO zero is then accepted for FULL points
         real = page.evaluate("""(() => {
             document.getElementById('ans1').value='5';
-            document.getElementById('ans2').value='7';
-            document.getElementById('ans3').value='8'; checkAns();
+            document.getElementById('ans2').value='6'; checkAns();
             return {done:done, score:score, got:(report[0]||{}).gotCorrect||false};})()""")
         assert real["done"] is True and real["got"] is True and real["score"] > 0, \
-            f"a real triple (5+7+8=20) must be accepted for points: {real}"
+            f"a real pair (9+5+6=20) must be accepted for points: {real}"
 
     def test_tri_unknown_hover_shows_splits(self, page):
         """x+x+x=20 (TRA): after typing a number in an addend box, HOVERING it shows
@@ -345,12 +377,15 @@ class TestDoubleUnknown:
                              "aet:(document.activeElement&&document.activeElement.type)||''})")
 
     def test_tri_unknown_space_hops_forward_not_back(self, page):
-        """x+x+x=20 (TRA) is an ADDITION built UP from 0, so the spacebar must hop the
-        kangaroo number line FORWARD (+1) — not backward like a subtraction. Regression:
-        TRA was missing from the space handler's add-list, so a press stepped −1
-        (the rider jumped the opposite way)."""
-        d = self._space_dir(page, "{t:TRA,r:20}")
-        assert d["dir"] == 1, f"space must hop the three-addend (TRA) line FORWARD (+1): {d}"
+        """g+x+x=20 (TRA) is an ADDITION built UP from the given g, so the spacebar must
+        hop the kangaroo number line FORWARD (+1) — not backward like a subtraction.
+        Regression: TRA was missing from the space handler's add-list, so a press
+        stepped −1 (the rider jumped the opposite way). The count-back chain
+        g−x−x (TRS) hops BACK (−1)."""
+        d = self._space_dir(page, "{t:TRA,r:20,g:9}")
+        assert d["dir"] == 1, f"space must hop the sum chain (TRA) line FORWARD (+1): {d}"
+        d = self._space_dir(page, "{t:TRS,r:7,g:20}")
+        assert d["dir"] == -1, f"space must hop the count-back chain (TRS) line BACK (−1): {d}"
 
     def test_double_unknown_add_hops_forward_sub_hops_back(self, page):
         """x+x=R (TDA) is an addition → space hops forward (+1); x−x=R (TDS) is a

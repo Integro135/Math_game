@@ -156,7 +156,7 @@ ptype constants (`game/js/data.js`):
 `TMC='mult_chain'`, `TMK='mult_champ'`, `TPP='perimeter'`, `TCP='compare'`,
 `TTS='triple_sum'`, `THF='half'`, `TPL='plates'`, `TIC='ice_cream'`,
 `TBE='bal_eq'`, `TSB='bal_scale'`, `TDL='deal'`, `TPK='pack'`, `TFR='fair'`, `TCN='can_share'`
-(+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TWP='word_prob'`, `TVA`/`TVS`/`TRA`/`TH`).
+(+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TWP='word_prob'`, `TVA`/`TVS`/`TRA`/`TRS`/`TH`).
 
 ---
 

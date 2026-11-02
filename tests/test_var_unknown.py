@@ -88,16 +88,21 @@ class TestVarOneUnknown:
         assert br, "the bridges must weave in the TWO-unknown variant (symA)"
 
     def test_bridges_weave_in_three_unknown(self, page):
-        """The three-unknown sum (TRA, __+__+__ = R) is woven into bridge-10 AND
-        bridge-20 as well (≈ once per set)."""
+        """The sum chain (TRA, g + __ + __ = r) AND the count-back chain (TRS,
+        g − __ − __ = r) are woven into bridge-10 and bridge-20 (one chain per set,
+        the kind alternating build by build)."""
         enter_mode(page, 'br')
         page.wait_for_function("problems.length>0", timeout=TIMEOUT)
         br = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridgePool().some(p=>p.t===TRA))return true;}return false;})()")
-        assert br, "bridge-10 must weave in the three-unknown (TRA)"
+        assert br, "bridge-10 must weave in the sum chain (TRA)"
+        assert page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridgePool().some(p=>p.t===TRS))return true;}return false;})()"), \
+            "bridge-10 must weave in the count-back chain (TRS)"
         enter_mode(page, 'b20')
         page.wait_for_function("problems.length>0", timeout=TIMEOUT)
         b20 = page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridge20Pool().some(p=>p.t===TRA))return true;}return false;})()")
-        assert b20, "bridge-20 must weave in the three-unknown (TRA)"
+        assert b20, "bridge-20 must weave in the sum chain (TRA)"
+        assert page.evaluate("(()=>{for(var k=0;k<8;k++){if(makeBridge20Pool().some(p=>p.t===TRS))return true;}return false;})()"), \
+            "bridge-20 must weave in the count-back chain (TRS)"
 
     def test_two_unknown_shapes_differ_when_values_differ(self, page):
         """Two unknowns with DIFFERENT values must be DIFFERENT shapes (a shape

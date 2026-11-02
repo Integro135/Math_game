@@ -44,7 +44,7 @@ def get_state(page) -> dict:
         ptype, num1, num2, num3, num4,
         idx, score, done, mode, ttOp, bgOp,
         TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TCS, TBG, TCM, TBC,
-        TH, TVA, TVS, TRA, TMA
+        TH, TVA, TVS, TRA, TRS, TMA
     })""")
 
 
@@ -105,11 +105,13 @@ def correct_answer(state: dict) -> tuple:
         return ("single", n1 - n2)    # single ⃝-unknown SUB
     if p == state.get("TMA"):
         return ("single", n2 - n1)    # the equation a + __ = c (num2 = the whole c)
-    if p == state.get("TRA"):
-        # __+__+__ = R (R stored in num1); any triple summing to R is accepted —
-        # return a balanced one (three boxes #ans1/#ans2/#ans3)
-        q = n1 // 3
-        return ("tri", q, q, n1 - 2 * q)
+    if p == state.get("TRA") or p == state.get("TRS"):
+        # the chains with a GIVEN number: g + __ + __ = r (TRA) / g − __ − __ = r
+        # (TRS), num1 = r and num2 = g; any two POSITIVE numbers making the
+        # difference are accepted — return a balanced pair (boxes #ans1/#ans2)
+        need = (n1 - n2) if p == state.get("TRA") else (n2 - n1)
+        q = max(1, need // 2)
+        return ("td", q, need - q)
     return ("single", n1 - n2)        # TM or TS
 
 
@@ -117,10 +119,6 @@ def submit_answer(page, ans: tuple) -> None:
     if ans[0] == "td":
         page.fill("#ans1", str(ans[1]))
         page.fill("#ans2", str(ans[2]))
-    elif ans[0] == "tri":
-        page.fill("#ans1", str(ans[1]))
-        page.fill("#ans2", str(ans[2]))
-        page.fill("#ans3", str(ans[3]))
     else:
         page.fill("#ans", str(ans[1]))
     page.click("#chk-btn")

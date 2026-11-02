@@ -279,7 +279,8 @@ function _kangFit(){
   // last hop is never off the end. גָּשֵׁר 20 bridges reach 25 (e.g. 19+6, 25−9): a
   // fixed 0..24 line put such an answer AT or PAST the right edge, giving it away.
   const _isAddT=ptype===TA||ptype===TVA;
-  const _nlHi=Math.max(20,(ptype===TM||ptype===TS||ptype===TVS)?num1:0,_isAddT?num1+num2:0,ptype===TMA?num2:0);
+  const _nlHi=Math.max(20,(ptype===TM||ptype===TS||ptype===TVS)?num1:0,_isAddT?num1+num2:0,ptype===TMA?num2:0,
+    (ptype===TRA||ptype===TDA||ptype===TDS)?num1:0,ptype===TRS?num2:0);   // the chains: r (sum) / g (count-back start)
   // in the bridge games (גֶּשֶׁר 10 / 20) keep the answer OFF the very edge — extend
   // a couple past the top value, like the framed windows the other exercises use.
   const _nlMax=(mode==='br'||mode==='b20')?_nlHi+2:_nlHi;
@@ -293,19 +294,22 @@ function _kangFit(){
   if(ptype===TZ){NL.configure(_tzLo+20,1,_tzLo);return _tzLo;}
   // a line longer than 0..20 (19+9 → 0..30) keeps EVERY tick but shows only the
   // fives' numbers; the rest appear on hover / under the rider (NL.buildNL, nl-sparse)
-  // a + __ = c (TMA): the rider parks ON a — she hops up to the whole c and counts the hops
-  NL.configure(_nlMax,1);return ptype===TMA?num1:0;
+  // a + __ = c (TMA): the rider parks ON a — she hops up to the whole c and counts the
+  // hops; the chains g + __ + __ / g − __ − __ park it on the GIVEN g
+  NL.configure(_nlMax,1);return ptype===TMA?num1:(ptype===TRA||ptype===TRS)?num2:0;
 }
 function loadProblem(){
   if(idx>=problems.length){endGame();return}
   ({t:ptype,a:num1,b:num2,c:num3,d:num4}=problems[idx]);num3=num3||0;num4=num4||0;
   if(ptype===TC){tcCoins=[...(problems[idx].coins||[])].sort((a,b)=>b-a);num1=problems[idx].correct||0;num2=0;num3=0;num4=0;}
-  if(ptype===TDA||ptype===TDS||ptype===TRA){num1=problems[idx].r||0;num2=0;}
+  if(ptype===TDA||ptype===TDS){num1=problems[idx].r||0;num2=0;}
+  // the chains g + __ + __ = r (TRA) / g − __ − __ = r (TRS): num1 = r, num2 = the GIVEN g
+  if(ptype===TRA||ptype===TRS){const _p=problems[idx];num1=_p.r||0;num2=_p.g!=null?_p.g:(ptype===TRA?_triGiven(num1):0);}
   if(ptype===TT){ttOp=problems[idx].op||'add';}
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
   if(ptype===TWP){wpOp=problems[idx].op||'sub';}
   if(ptype===TWC){wcOps=problems[idx].ops||['add','sub'];}
-  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TWC?_wc(num1,num2,num3,wcOps):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:ptype===TMA?num2-num1:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS||ptype===TRA||ptype===TRS?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TWC?_wc(num1,num2,num3,wcOps):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:ptype===TMA?num2-num1:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   {const _pwp=document.getElementById('pw-panel');if(_pwp)_pwp.style.display='none';}   // the part–whole board shows only via the aid branch below
@@ -346,7 +350,8 @@ function loadProblem(){
    :ptype===TC?'💰 כַּמָּה שָׁוִים הַמַּטְבְּעוֹת בְּסַךְ הַכֹּל?'
    :ptype===TDA?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁסְּכוּמָם שָׁווֶה לַתְּשׁוּבָה!'
    :ptype===TDS?'🔢 מְצָא שְׁנֵי מִסְפָּרִים שֶׁהַהֶפְרֵשׁ בֵּינֵיהֶם שָׁווֶה לַתְּשׁוּבָה!'
-   :ptype===TRA?'🔢 מְצָא שְׁלוֹשָׁה מִסְפָּרִים שֶׁסְּכוּמָם שָׁווֶה לַתְּשׁוּבָה!'
+   :ptype===TRA?'🔢 הַמִּסְפָּר הָרִאשׁוֹן נָתוּן — מִצְאִי שְׁנֵי מִסְפָּרִים שֶׁמַּשְׁלִימִים אוֹתוֹ לַתְּשׁוּבָה!'
+   :ptype===TRS?'🔢 מִצְאִי שְׁנֵי מִסְפָּרִים לְהוֹרִיד מֵהַמִּסְפָּר הָרִאשׁוֹן כְּדֵי לְהַגִּיעַ לַתְּשׁוּבָה!'
    :ptype===TVA||ptype===TVS?((problems[idx]||{}).symA
        ?'🔷 הַצּוּרוֹת שָׁווֹת לַמִּסְפָּרִים שֶׁלְּמַעְלָה — הַצִּיבִי וְחַשְּׁבִי!'
        :'🔷 הַצּוּרָה שָׁווָה לַמִּסְפָּר שֶׁלְּמַעְלָה — הַצִּיבִי אוֹתוֹ וְחַשְּׁבִי!')
@@ -433,7 +438,9 @@ function loadProblem(){
     chainGnMode=false;tdaJarMode=false;}
   // Aid display — kangaroo NL or the cookie jar, per aidMode
   if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TRH&&ptype!==TLG&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TBE&&ptype!==TSB&&ptype!==TDL&&ptype!==TPK&&ptype!==TFR&&ptype!==TCN&&ptype!==TMU&&ptype!==TBG&&ptype!==TH){
-  const isTD=ptype===TDA||ptype===TDS||ptype===TRA;
+  // the bridges pair the line with the part–whole board (no jar): a jar picked on a
+  // chain card becomes the board on the next card the board can split
+  if(aidMode==='nl'&&typeof PW!=='undefined'&&PW.applies())aidMode='pw';
   const useNL=aidMode==='nl';
   // the part–whole board (the bridges' third aid, aids.js PW) — a card it can't
   // split into whole + parts (the three-unknown sum) falls back to the line
@@ -446,7 +453,7 @@ function loadProblem(){
   if(usePW)PW.show();
   if(useNL){
     pgmTensMode=false;chainGnMode=false;
-    const _cv=isTD?((ptype===TDA||ptype===TRA)?0:num1):num1;
+    const _cv=_jarStart();   // (aids.js) empty for the open sums, the given g for the chains
     pgmCV=_cv;pgmCk=Array.from({length:_cv},(_,i)=>i%5);pgmArcs=[];
     const _jar=document.getElementById('pgm-ck-jar');if(_jar)_jar.style.display='';
     const _gnd=document.getElementById('pgm-gn-display');if(_gnd)_gnd.style.display='none';
@@ -455,7 +462,7 @@ function loadProblem(){
   tdaJarMode=false;}
   setTimeout(()=>{
     const first=(ptype===TX||ptype===TZ)?document.getElementById('tx-sub1')
-               :(ptype===TDA||ptype===TDS||ptype===TRA)?document.getElementById('ans1'):null;
+               :(ptype===TDA||ptype===TDS||ptype===TRA||ptype===TRS)?document.getElementById('ans1'):null;
     (first||document.getElementById('ans'))?.focus();
   },60);
   buildGamesMenu();
@@ -581,21 +588,23 @@ function renderEq(){
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
     h=mkI('ans1','ans2')+(ptype===TDA?op('+','op-p'):op('-','op-m'))+mkI('ans2',null)+op('=','op-e')+n(num1);
   }
-  else if(ptype===TRA){
-    // THREE unknowns: __ + __ + __ = num1 (the child fills three addends).
-    // Each box: hovering it AFTER typing a number shows that number's splits
+  else if(ptype===TRA||ptype===TRS){
+    // the CHAINS with a GIVEN first number: g + __ + __ = r (TRA) and
+    // g − __ − __ = r (TRS). The game shows g (num2); the child chooses the two
+    // numbers. Each box: hovering it AFTER typing shows that number's splits
     // (number-bonds) as emojis (_nttSplitsFromInput); ans1 also previews its
-    // plain count while typing (_nttInput).
-    const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" placeholder="?" min="0" max="20"`+
+    // plain count while typing (_nttInput) and feeds the jar (tdaJarSync).
+    const mkI=(id,nxt)=>`<input id="${id}" class="ans-inp" type="number" placeholder="?" min="0" max="30"`+
       ` oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,2)${id==='ans1'?';_nttInput(this);tdaJarSync(this)':''}"`+
       (id==='ans1'?` onblur="_nttHide()"`:'')+
       ` onmouseenter="_nttSplitsFromInput(this)" onmouseleave="_nttHide()"`+
       ` onkeydown="if(event.key==='Enter')${nxt?`document.getElementById('${nxt}')?.focus()`:'checkAns()'}">`;
+    const o=ptype===TRA?op('+','op-p'):op('-','op-m');
     // the RESULT carries a complete-to-ten split so hovering it shows the
-    // ten-and-ones bond (e.g. 20 → 10 | 10, 15 → 10 | 5) — helps the child
-    // pick three addends that build to the target.
+    // ten-and-ones bond (e.g. 20 → 10 | 10, 15 → 10 | 5); the given number is
+    // the first of two numbers, so the generic rule below suppresses its objects.
     const resTok=`<span class="eq-n" data-num="${num1}"${num1>10?` data-split="10,${num1-10}"`:''}>${num1}</span>`;
-    h=mkI('ans1','ans2')+op('+','op-p')+mkI('ans2','ans3')+op('+','op-p')+mkI('ans3',null)+op('=','op-e')+resTok;
+    h=n(num2)+o+mkI('ans1','ans2')+o+mkI('ans2',null)+op('=','op-e')+resTok;
   }
   else if(ptype===TVA||ptype===TVS){
     // UNKNOWN(S) as shapes. Each shape BEHAVES LIKE the number it stands for on
@@ -771,19 +780,16 @@ document.addEventListener('input',e=>{
 function checkAns(){
   if(done)return;
   if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TMU)return;   // the exercise module checks itself
-  // ── Multi-unknown problems: two (TDA/TDS) or three (TRA) empty boxes ──
-  if(ptype===TDA||ptype===TDS||ptype===TRA){
-    const i1=document.getElementById('ans1'),i2=document.getElementById('ans2'),
-          i3=ptype===TRA?document.getElementById('ans3'):null;
-    const v1=i1?parseInt(i1.value,10):NaN,v2=i2?parseInt(i2.value,10):NaN,
-          v3=i3?parseInt(i3.value,10):0;
-    const missing=isNaN(v1)||i1.value===''||isNaN(v2)||i2.value===''||(ptype===TRA&&(isNaN(v3)||i3.value===''));
-    if(missing){
-      setFb(ptype===TRA?'נָא לְהַזִּין מִסְפָּרִים בִּשְׁלוֹשֶׁת הָרִיבּוּעִים 💗'
-                       :'נָא לְהַזִּין מִסְפָּרִים בִּשְׁנֵי הָרִיבּוּעִים 💗','fb-err');return;
-    }
+  // ── Multi-unknown problems: TWO empty boxes — __+__ (TDA), __−__ (TDS), and the
+  //    chains with a GIVEN number g + __ + __ = r (TRA) / g − __ − __ = r (TRS) ──
+  if(ptype===TDA||ptype===TDS||ptype===TRA||ptype===TRS){
+    const i1=document.getElementById('ans1'),i2=document.getElementById('ans2');
+    const v1=i1?parseInt(i1.value,10):NaN,v2=i2?parseInt(i2.value,10):NaN;
+    const missing=isNaN(v1)||i1.value===''||isNaN(v2)||i2.value==='';
+    if(missing){setFb('נָא לְהַזִּין מִסְפָּרִים בִּשְׁנֵי הָרִיבּוּעִים 💗','fb-err');return;}
     const valid=ptype===TDA?v1+v2===num1
-               :ptype===TRA?(v1+v2+v3===num1&&v1>=0&&v2>=0&&v3>=0)
+               :ptype===TRA?(num2+v1+v2===num1&&v1>=0&&v2>=0)
+               :ptype===TRS?(num2-v1-v2===num1&&v1>=0&&v2>=0)
                :v1-v2===num1&&v1>=0&&v2>=0;
     // x−x: block the lazy shortcuts — starting from a MINUEND of 10 ("10 − …", the
     // rote pattern the child overuses) OR subtracting 0. The computation is right,
@@ -795,35 +801,34 @@ function checkAns(){
       setTimeout(()=>document.getElementById('ans1')?.focus(),150);
       return;
     }
-    // __+__+__: a 0 in any box is a trivial filler (e.g. 0+0+20). The sum is
-    // right, but it isn't real practice — ask for three real numbers, NO penalty
+    // the chains: a 0 in a box is a trivial filler (7+0+13, 20−0−13). The result is
+    // right, but it isn't real practice — ask for two real numbers, NO penalty
     // (mirrors the TDS "no lazy shortcut" rule above).
-    if(ptype===TRA&&valid&&(v1===0||v2===0||v3===0)){
+    if((ptype===TRA||ptype===TRS)&&valid&&(v1===0||v2===0)){
       setFb('נָכוֹן! אֲבָל בְּלִי אֶפֶס — תְּנִי מִסְפָּרִים אֲחֵרִים כְּדֵי לְתַרְגֵּל 💪','fb-err');
-      if(i1)i1.value='';if(i2)i2.value='';if(i3)i3.value='';
+      if(i1)i1.value='';if(i2)i2.value='';
       setTimeout(()=>document.getElementById('ans1')?.focus(),150);
       return;
     }
     done=true;
-    _markAns(i1,valid);_markAns(i2,valid);if(i3)_markAns(i3,valid);
-    if(i1)i1.disabled=true;if(i2)i2.disabled=true;if(i3)i3.disabled=true;
+    _markAns(i1,valid);_markAns(i2,valid);
+    if(i1)i1.disabled=true;if(i2)i2.disabled=true;
     document.getElementById('btns').innerHTML='';
     const _cb=document.getElementById('chk-btn');if(_cb)_cb.style.display='none';
     if(valid){
       addScore(_tfPts());
-      if(report[idx]){report[idx].gotCorrect=true;report[idx].userPair=ptype===TRA?[v1,v2,v3]:[v1,v2];}
+      if(report[idx]){report[idx].gotCorrect=true;report[idx].userPair=(ptype===TRA||ptype===TRS)?[num2,v1,v2]:[v1,v2];}   // the chains log the given g too
       const _ic=['🎉','⭐','🌟','💫','🦄','🌈','💗','✨','🎊','🍭','🎀','💜'];
       const _ico=_ic[0|Math.random()*_ic.length];
       setFb(`${_ico} כָּל הַכָּבוֹד! תְּשׁוּבָה נְכוֹנָה! ${_ico}`,'fb-ok');
       setTimeout(showFw,300);
     }else{
-      if(report[idx])report[idx].wrongs.push(ptype===TRA?`${v1}+${v2}+${v3}`:`${v1}${ptype===TDA?'+':'-'}${v2}`);
+      if(report[idx])report[idx].wrongs.push(ptype===TRA?`${num2}+${v1}+${v2}`:ptype===TRS?`${num2}-${v1}-${v2}`:`${v1}${ptype===TDA?'+':'-'}${v2}`);
       if(tryFirst===0)_unlockAids();tryFirst++;
       showSadModal();
       done=false;
       if(i1){i1.disabled=false;i1.value='';}
       if(i2){i2.disabled=false;i2.value='';}
-      if(i3){i3.disabled=false;i3.value='';}
       const _cb2=document.getElementById('chk-btn');if(_cb2)_cb2.style.display='flex';
       setTimeout(()=>document.getElementById('ans1')?.focus(),150);
     }
@@ -919,10 +924,11 @@ function tzSubJarSync(id){
    fill the cookie jar to that amount (only when the jar is the active aid —
    aidMode==='nl' → #chain-tools visible). Empty/invalid clears it back to 0. */
 function tdaJarSync(inp){
-  if(ptype!==TDA&&ptype!==TRA)return;
+  if(ptype!==TDA&&ptype!==TRA&&ptype!==TRS)return;
   if(document.getElementById('chain-tools')?.style.display==='none')return; // jar not the active aid
-  const raw=(inp&&inp.value!=='')?parseInt(inp.value,10):NaN;
-  const newCV=isNaN(raw)?0:Math.min(Math.max(0,raw),PGM_NL);
+  const raw=(inp&&inp.value!=='')?parseInt(inp.value,10):NaN,v=isNaN(raw)?0:raw;
+  // the chains count from their GIVEN number: g + v1 (TRA) / g − v1 (TRS)
+  const newCV=Math.min(Math.max(0,ptype===TRA?num2+v:ptype===TRS?num2-v:v),PGM_NL);
   pgmCV=newCV;pgmCk=Array.from({length:newCV},(_,i)=>i%5);pgmArcs=[];
   pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
 }
@@ -1009,6 +1015,17 @@ function _lockAids(){
   const msg=document.createElement('div');msg.id='tf-msg';
   msg.textContent='💪 נַסִּי לְבַד. אַתְּ אַלּוּפָה!';
   if(ct)ct.parentNode.insertBefore(msg,ct);
+  // the bridges' part–whole board is NOT gated (user: "available from the first
+  // moment"): once chosen it stays open on every card, mistake or not
+  if(aidMode==='pw'&&typeof PW!=='undefined'&&PW.applies())_pwOpenFree();
+}
+/* show the board while the other aids are still locked, and remember it as the
+   display the first-mistake unlock restores (the line stays hidden) */
+function _pwOpenFree(){
+  _aidHidden.pw='';_aidHidden.nl='none';_aidHidden.ct='none';
+  PW.show();
+  document.getElementById('tf-msg')?.remove();
+  const hint=document.getElementById('hint');if(hint){hint.style.visibility='';hint.textContent=PW.hint();}
 }
 function _unlockAids(){
   const gb=document.getElementById('games-drop-btn');
@@ -1039,7 +1056,7 @@ function resetCur(){
   if(ptype===TH){const _s=(num2%100===0)?100:10;NL.configure(num1+num2+_s,_s,num1);NL.init(num1);}
   setTimeout(()=>{
     const first=(ptype===TX||ptype===TZ)?document.getElementById('tx-sub1')
-               :(ptype===TDA||ptype===TDS||ptype===TRA)?document.getElementById('ans1'):null;
+               :(ptype===TDA||ptype===TDS||ptype===TRA||ptype===TRS)?document.getElementById('ans1'):null;
     (first||document.getElementById('ans'))?.focus();
   },60);
 }
@@ -1113,7 +1130,7 @@ function endGame(){
 
 function rebuildCard(){
   document.getElementById('card').innerHTML=`
-    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button id="digit-hint-btn" class="tt-hint-icon" style="display:none" data-hint="" onclick="showDigitHint(this)">?</button><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button></div></div></div>
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button id="digit-hint-btn" class="tt-hint-icon" style="display:none" data-hint="" onclick="showDigitHint(this)">?</button><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button><button class="games-drop-btn pw-btn" id="pw-btn" style="display:none" onclick="togglePartWhole()" title="שָׁלֵם–חֵלֶק: פַּסִּים וְעִגּוּלִים"></button></div></div></div>
     <div class="hint"     id="hint"></div>
     <div id="chain-tools" style="display:none">
       <div id="tf-nl-note">💪 נַסִּי לְבַד. אַתְּ אַלּוּפָה!</div>
@@ -1163,7 +1180,8 @@ function _reportRows(){
     else if(r.ptype===TW) eq=`${r.num1} − ${r.num2} − ${r.num3} = ${r.correct}`;
     else if(r.ptype===TZ) eq=r.num4>0?`${r.num1} + ${r.num2} + ${r.num3} + ${r.num4} = ${r.correct}`:`${r.num1} + ${r.num2} + ${r.num3} = ${r.correct}`;
     else if(r.ptype===TDA){const pr=r.userPair;eq=pr?`${pr[0]} + ${pr[1]} = ${r.correct}`:`___ + ___ = ${r.correct}`;}
-    else if(r.ptype===TRA){const pr=r.userPair;eq=pr?`${pr[0]} + ${pr[1]} + ${pr[2]} = ${r.correct}`:`___ + ___ + ___ = ${r.correct}`;}
+    else if(r.ptype===TRA){const pr=r.userPair;eq=pr?`${pr[0]} + ${pr[1]} + ${pr[2]} = ${r.correct}`:`${r.num2} + ___ + ___ = ${r.correct}`;}
+    else if(r.ptype===TRS){const pr=r.userPair;eq=pr?`${pr[0]} − ${pr[1]} − ${pr[2]} = ${r.correct}`:`${r.num2} − ___ − ___ = ${r.correct}`;}
     else if(r.ptype===TDS){const pr=r.userPair;eq=pr?`${pr[0]} − ${pr[1]} = ${r.correct}`:`___ − ___ = ${r.correct}`;}
     else if(r.ptype===TC) eq=`🪙 ${(p.coins||[]).join(' + ')} = ${r.correct}`;
     else if(r.ptype===TT) eq=`${r.num1} ${(r.num1+r.num2===r.correct)?'+':'−'} ${r.num2} = ${r.correct}`;

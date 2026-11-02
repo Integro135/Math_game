@@ -37,15 +37,28 @@ const _vshape=()=>_VSHAPES[(Math.random()*3)|0];
 // pick a shape distinct from `first` (used so two unknowns with DIFFERENT
 // values never share the same shape — a shape can't stand for two values)
 const _vshape2=(first,distinct)=>{if(!distinct)return _vshape();let s;do{s=_vshape();}while(s===first);return s;};
-function _sprinkleUnknowns(set){
+// `chain` picks the CHAIN slot's kind (the 3rd unknown, index 11): 'add' → a sum
+// chain g + __ + __ = r (TRA); 'sub' → a count-back chain g − __ − __ = r (TRS).
+// 2026-11-02: the game GIVES one number and the child chooses the other two
+// (user: "7 + X + X = 20 — the child fills only the two X's"); the bridges
+// alternate the two chains build by build. a/b are kept for the order-check.
+function _sprinkleUnknowns(set,chain){
   let c=0;
   for(let i=3;i<set.length;i+=4){
     const p=set[i];
     if(!(p.t===TA||p.t===TS)||p.b<1)continue;
     const kind=c%3;c++;
     if(kind===2){
-      const r=(p.t===TA)?p.a+p.b:p.a-p.b;   // the crossing result becomes the sum target
-      if(r>=6){p.r=r;p.t=TRA;continue;}      // __+__+__ = r (a,b kept for the order-check)
+      if(chain==='sub'){                                 // the two subtrahends make b
+        if(p.t===TA){p.g=p.a+p.b;p.r=p.a;}                // (a+b) − __ − __ = a
+        else{p.g=p.a;p.r=p.a-p.b;}                        // a − __ − __ = a−b
+        p.t=TRS;
+      }else{                                             // the two addends make r − g
+        if(p.t===TA){p.r=p.a+p.b;p.g=_triGiven(p.r);}     // g + __ + __ = a+b
+        else{p.r=p.a;p.g=p.b;}                            // b + __ + __ = a
+        p.t=TRA;
+      }
+      continue;
     }
     p.t=(p.t===TA)?TVA:TVS;
     if(kind===1){p.symA=_vshape();p.sym=_vshape2(p.symA,p.a!==p.b);}  // two-unknown: distinct shapes when values differ
@@ -92,6 +105,18 @@ function _withPolygons(pool,target,minKeep){
 // logic cards live INSIDE the 15; when a game owns more exercise types than it has
 // math slots, the extra types take turns across games (_fitTypes).
 const QUEEN_SUPER_COUNT=15;
+// Superman's deck keeps ONE column subtraction after the cap (_capPool keeps the
+// first of each type) — which one used to be a coin flip, so a run of games could
+// miss the no-borrow (or the borrow) kind entirely. Alternate it game by game:
+// move a TCS of this game's kind to the first TCS position of the shuffled deck.
+let _supCsTurn=0;
+function _supCsFirst(deck){
+  const borrow=(_supCsTurn++)%2===1;
+  const isK=p=>p.t===TCS&&(borrow?(p.a%10)<(p.b%10):(p.a%10)>(p.b%10));
+  const first=deck.findIndex(p=>p.t===TCS),want=deck.findIndex(isK);
+  if(first>=0&&want>first)[deck[first],deck[want]]=[deck[want],deck[first]];
+  return deck;
+}
 
 // ── _fitTypes: fit a shuffled pool into n slots. If every type fits, this is just
 // the coverage-preserving _capPool. If there are MORE types than slots, the
@@ -224,7 +249,7 @@ function makePool(m){
   // shifts the other cards right, so nothing "falls through the cracks".
   if(m==='sup'){
     const rd=_readingCards(m), lg=EX('logic')?EX('logic').make(m):[];
-    let deck=_withPolygons(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])]),QUEEN_SUPER_COUNT-rd.length-lg.length);
+    let deck=_withPolygons(_supCsFirst(shuffle([...EX('column_add').make('sup'),...EX('big_step').make('sup'),...EX('coin_mul').make('sup'),...EX('bagel_cost').make('sup'),...EX('column_sub').make('sup'),...(EX('hundreds')?EX('hundreds').make('sup'):[]),...(EX('mult_chain')?EX('mult_chain').make('sup'):[]),...(EX('triple_sum')?EX('triple_sum').make('sup'):[])])),QUEEN_SUPER_COUNT-rd.length-lg.length);
     deck=_weaveLogic(deck,lg);
     rd.forEach((s,k)=>deck.splice(Math.min(3+k*4,deck.length),0,s));
     return deck;
@@ -361,7 +386,9 @@ function makeMxPool(){
 //    so a set still holds at most 15.
 //    2026-11-02: EQUATIONS — the facts at arithmetic slots 2, 6, 10 are posed as
 //    6 + __ = 14 (TMA) / 16 − __ = 7 (TM), see _sprinkleEquations; the count and the
-//    order are unchanged. The part–whole board (שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) is
+//    order are unchanged. The CHAIN slot (the 3rd unknown, index 11) now gives ONE
+//    number and asks for two — a sum chain 5 + __ + __ = 16 (TRA) on one build, a
+//    count-back chain 16 − __ − __ = 8 (TRS) on the next (_sprinkleUnknowns `chain`). The part–whole board (שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) is
 //    the bridges' third aid for them (aids/part_whole.js).
 //    SET 1 — the +9 and +8 ladders (9+6 … 9+9, 8+6 … 8+8) with −9 / −8 count-backs.
 //    SET 2 — COUNT-BACKS from 14 … 18 (14−7 … 18−9), two additions to finish.
@@ -440,7 +467,7 @@ function _withBridgeScales(set,mode){
   return set;
 }
 function makeBridgePool(){
-  const set=_withBridgeScales(_sprinkleEquations(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length]())),'br');
+  const set=_withBridgeScales(_sprinkleEquations(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length](),_brTurn%2?'sub':'add')),'br');
   _brTurn=(_brTurn+1)%_BRIDGE_SETS.length;
   try{localStorage.setItem('brTurn',String(_brTurn));}catch(e){}
   return set;
@@ -515,7 +542,7 @@ function _bridge20Set5(){
 // instead of being a separate set — so it recurs throughout bridge-20 too.
 const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2,_bridge20Set3,_bridge20Set4,_bridge20Set5];
 function makeBridge20Pool(){
-  const set=_withBridgeScales(_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length]()),'b20');   // 15 + 2 balance cards
+  const set=_withBridgeScales(_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length](),_b20Turn%2?'sub':'add'),'b20');   // 15 + 2 balance cards
   _b20Turn=(_b20Turn+1)%_BRIDGE20_SETS.length;
   try{localStorage.setItem('b20Turn',String(_b20Turn));}catch(e){}
   // NOTE: no polygon weaving here — the bridge-20 curriculum order MUST stay

@@ -153,8 +153,9 @@ the variants: `window.PART_WHOLE.mount({root}) → handle` with
 `set({whole, parts:[a,b], missing:'whole'|'part', given, max})`, `reset()`,
 `state()`, `cleanup()`, `root`. Injected on demand by `bg-loader.loadPartWhole`
 into `#pw-panel` and driven by the `PW` driver in `game/js/aids.js`
-(`aidMode 'pw'`, offered in גֶּשֶׁר 10 / 20 only). It renders, after the workbook
-page on equations (6 + __ = 14):
+(`aidMode 'pw'`; in גֶּשֶׁר 10 / 20 it takes the cookie jar's place in the aids
+menu — the games button offers line + board on every card it can split). It
+renders, after the workbook page on equations (6 + __ = 14):
 
 - **the template** — the whole (שָׁלֵם) on top, two parts (חֵלֶק) below; every box
   judges itself against the truth it was handed (`.pw-ok` / `.pw-err`; a prefix

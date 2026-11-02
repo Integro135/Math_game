@@ -57,14 +57,14 @@ set HEADED=1 && set SLOW_MO=600 && py -m pytest tests
 | קובץ | # | מכסה (מחלקות) | נושא |
 |------|---|----------------|------|
 | `test_report.py`          | 5  | `TestReport` | דוח סוף־משחק (וי/איקס/דילוג, ציון) |
-| `test_double_unknown.py`  | 15 | `TestDoubleUnknown` | תרגילי X+X / X−X (שני נעלמים, מיקומים 4/8/12) |
+| `test_double_unknown.py`  | 18 | `TestDoubleUnknown` | תרגילי X+X / X−X (שני נעלמים, מיקומים 4/8/12) + השרשראות עם מספר נתון `g+X+X=r` / `g−X−X=r` |
 | `test_scoring.py`         | 19 | `TestScoreAndMode`, `TestTryFirstScoring` | ניקוד, בחירת רמה, וניקוד "נסה קודם" |
 | `test_game_flow.py`       | 7  | `TestGameFlow` | זרימת משחק כללית (12 שאלות, פס התקדמות, restart) |
 | `test_coins.py`           | 13 | `TestCoinProblems`, `TestChainAndCoinAids` | ספירת מטבעות + עזרי שרשרת/מטבעות |
 | `test_number_line.py`     | 9  | `TestNumberLineVisibility`, `TestNumberLineInteraction` | הופעת/אינטראקציית ישר המספרים (`#nl-panel`) |
 | `test_tens.py`            | 4  | `TestTensProblems` | תרגילי עשרות עגולות (TT) — מלך & מלכה |
 | `test_tooltips.py`        | 20 | `TestNumberHoverTooltip`, `TestBridgeSplitTooltip` | tooltips של אובייקטים + פיצול קשר־עשר בריחוף |
-| `test_bridging.py`        | 44 | `TestBridgingMode`, `TestBridge20` | גשר 10 🌈 וגשר 20 🌉 (סדרות, נעלמים, משוואות, מאזניים) |
+| `test_bridging.py`        | 45 | `TestBridgingMode`, `TestBridge20` | גשר 10 🌈 וגשר 20 🌉 (סדרות, נעלמים, משוואות, מאזניים) |
 | `test_part_whole.py`      | 13 | `TestEquationCard`, `TestBoardOffer`, `TestTemplate`, `TestBarsAndCircles`, `TestBoardAcrossCards`, `TestTesterPage` | תבנית שלם–חלק + פסים ועיגולים (העזר השלישי של הגשרים), משוואות `a + __ = c`, והטסטר `part_whole_dev.html` |
 | `test_var_unknown.py`     | 10 | `TestVarOneUnknown` | נעלם־צורה יחיד (⃝ = N, אח"כ a ± ⃝ = ?) |
 | `test_dynamic.py`         | 9  | `TestDynamicExercises` | טעינה דינמית של `exercises/*.ex.js` |

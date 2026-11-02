@@ -10,8 +10,12 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TMA='missing_add',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order',TRH='rhyme',TLG='logic',TBE='bal_eq',TSB='bal_scale',TDL='deal',TPK='pack',TFR='fair',TCN='can_share';
+const TM='missing',TMA='missing_add',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TRS='tri_sub',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order',TRH='rhyme',TLG='logic',TBE='bal_eq',TSB='bal_scale',TDL='deal',TPK='pack',TFR='fair',TCN='can_share';
 const gameLen=()=>problems.length;
+/* the GIVEN first number of a sum chain g + __ + __ = r (TRA, 2026-11-02: the game
+   fills one addend, the child chooses the other two): g stays 2..9 and leaves the
+   child's pair a crossing (r − g ≥ 11) whenever r allows it — 14 → 3, 18 → 7, 27 → 9 */
+const _triGiven=r=>Math.min(9,Math.max(2,r-11));
 
 /* ── Exercise-type modules — ONE FILE PER TYPE (exercises/<file>.ex.js) ─────
    Every exercise type lives in its own file and registers itself into

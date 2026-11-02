@@ -232,6 +232,10 @@ body.theme-galaxy  #tf-msg{color:#d4a8ff;text-shadow:0 2px 10px rgba(180,120,255
    classes styled by the module itself (aids/part_whole.js), skin-overridable. */
 #pw-panel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:16px;
   padding:12px 12px 10px;width:100%;margin-top:4px}
+/* the bridges' BOARD button beside the aids-menu button (#pw-btn shares the menu
+   button's themed look via .games-drop-btn); a white ring while the board is on */
+#pw-btn.on{box-shadow:0 0 0 3px rgba(255,255,255,.92),0 4px 18px rgba(74,222,128,.7)}
+#pw-btn.on .aid-ico{filter:drop-shadow(0 0 4px rgba(255,255,255,.9))}
 
 /* ── Chain garden eq-button ── */
 .pgm-gn-eq-btn{position:relative;flex-shrink:0;width:48px;height:48px;border-radius:50%;

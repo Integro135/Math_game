@@ -1,7 +1,9 @@
-/* ── Exercise type: THREE UNKNOWNS (TRA) — __ + __ + __ = r ─────────────────
-   The three-addend sibling of double.ex.js (TDA): the child fills THREE boxes
-   with numbers that add up to the shown result r (all r ≤ 20). Handled by
-   core.js exactly like the two-unknown add (num1 = r), with a third input.
+/* ── Exercise type: the SUM CHAIN (TRA) — g + __ + __ = r ───────────────────
+   The three-addend sibling of double.ex.js (TDA). 2026-11-02: the game GIVES
+   the first addend g (data.js _triGiven — 2..9, leaving the child's pair a
+   crossing when r allows) and the child fills TWO boxes with numbers that
+   complete it to the shown result r (all r ≤ 20). Handled by core.js like the
+   two-unknown add (num1 = r, num2 = g).
    Contract: EXERCISES.types.<name> = { t, modes, make(mode) }              */
 window.EXERCISES=window.EXERCISES||{};window.EXERCISES.types=window.EXERCISES.types||{};
 window.EXERCISES.types.tri_unknown=(()=>{
@@ -12,6 +14,6 @@ window.EXERCISES.types.tri_unknown=(()=>{
     t:TRA,
     modes:['mx'],
     // Queen (mx) mixes in ONE three-unknown problem per game.
-    make(mode){return mode==='mx'?pick(1).map(r=>({t:TRA,r})):[];},
+    make(mode){return mode==='mx'?pick(1).map(r=>({t:TRA,r,g:_triGiven(r)})):[];},
   };
 })();

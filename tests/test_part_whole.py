@@ -83,19 +83,24 @@ class TestEquationCard:
 
 
 class TestBoardOffer:
-    def test_third_toggle_only_in_the_bridges(self, page):
-        """The games menu offers the board (a third aid-toggle, the template icon)
-        on bridge cards only; every other game keeps its two toggles."""
-        for mode, prob, want in (('br', "{t: TA, a: 9, b: 6}", 3), ('b20', "{t: TS, a: 27, b: 9}", 3),
-                                 (20, "{t: TA, a: 7, b: 8}", 2), ('mx', "{t: TS, a: 15, b: 6}", 2)):
+    def test_board_takes_the_jars_place_in_the_bridges(self, page):
+        """The games button (where the cookie jar is picked everywhere else) offers
+        the BOARD in the bridges: two toggles, line + board (the template icon, 3
+        boxes), on every bridge card the board can split; the other games keep
+        line + jar (the box icon). A bridge chain card (g + __ + __) keeps the jar."""
+        PW_ICONS = "[...document.querySelectorAll('#games-menu .gm-item svg.aid-ico')].filter(s=>s.querySelectorAll('rect').length===3).length"
+        for mode, prob, want_pw in (('br', "{t: TA, a: 9, b: 6}", 1), ('b20', "{t: TS, a: 27, b: 9}", 1),
+                                    ('br', "{t: TMA, a: 6, b: 14}", 1), ('br', "{t: TRA, r: 16, g: 5, a: 9, b: 7}", 0),
+                                    (20, "{t: TA, a: 7, b: 8}", 0), ('mx', "{t: TS, a: 15, b: 6}", 0)):
             _force(page, mode, prob)
             _reveal(page)
             n = page.evaluate("buildGamesMenu(), document.querySelectorAll('#games-menu .gm-item svg.aid-ico').length")
-            assert n == want, f"{mode}: {want} aid toggles, got {n}"
+            assert n == 2, f"{mode} {prob}: two aid toggles, got {n}"
+            assert page.evaluate(PW_ICONS) == want_pw, f"{mode} {prob}: board toggle present={want_pw}"
 
     def test_hidden_until_the_first_mistake_then_toggled_in(self, page):
         _force(page, 'br', "{t: TMA, a: 6, b: 14}")
-        assert _disp(page, 'pw-panel') == 'none', "the board is hidden on a fresh card"
+        assert _disp(page, 'pw-panel') == 'none', "the board is closed on a fresh card until chosen"
         _reveal(page)
         assert _disp(page, 'nl-panel') != 'none' and _disp(page, 'pw-panel') == 'none', \
             "the kangaroo line is still the default aid"
@@ -110,6 +115,41 @@ class TestBoardOffer:
         assert "שלם" in hint and "פסים" in hint, f"the hint explains the board, got {hint!r}"
         # the games button carries the board's icon (the three-box template)
         assert page.evaluate("document.querySelectorAll('#games-drop-btn svg rect').length") == 3
+
+    def test_dedicated_board_button_in_the_bridges(self, page):
+        """A BOARD button (#pw-btn, the template icon) sits beside the aids-menu
+        button on every bridge card the board can split, usable FROM THE FIRST
+        MOMENT (no try-first gate): before any mistake a tap opens only the board
+        (the line stays hidden) and it stays open on the next card; after a
+        mistake a tap opens the board, a second tap returns to the line. Absent in
+        the other games and on chain cards."""
+        _force(page, 'br', "{t: TMA, a: 6, b: 14}")
+        page.evaluate("problems[1] = {t: TS, a: 15, b: 9}")
+        btn = page.locator("#pw-btn")
+        assert btn.is_visible() and not page.evaluate("document.getElementById('pw-btn').disabled"), "usable on a fresh card"
+        assert page.evaluate("document.querySelectorAll('#pw-btn svg rect').length") == 3
+        btn.click()
+        page.wait_for_function("!!document.querySelector('#pw-panel .pw-whole')", timeout=TIMEOUT)
+        assert page.evaluate("tryFirst") == 0 and page.evaluate("aidMode") == 'pw'
+        assert _disp(page, 'pw-panel') != 'none' and _disp(page, 'nl-panel') == 'none', "the board opens, the line stays locked"
+        assert _state(page)["whole"] == 14
+        page.evaluate("idx = 1; loadProblem()"); page.wait_for_timeout(300)
+        assert page.evaluate("tryFirst") == 0 and _disp(page, 'pw-panel') != 'none' and _state(page)["whole"] == 15, \
+            "the board stays open on the next fresh card, set to its numbers"
+        btn.click()
+        assert page.evaluate("aidMode") == 'kang' and _disp(page, 'pw-panel') == 'none' and _disp(page, 'nl-panel') == 'none', \
+            "closing it before a mistake hides it without revealing the line"
+        _reveal(page)
+        assert _disp(page, 'nl-panel') != 'none'
+        btn.click()
+        page.wait_for_function("!!document.querySelector('#pw-panel .pw-whole')", timeout=TIMEOUT)
+        assert page.evaluate("aidMode") == 'pw' and _disp(page, 'pw-panel') != 'none' and "on" in _cls(page, "#pw-btn").split()
+        btn.click()
+        assert page.evaluate("aidMode") == 'kang' and _disp(page, 'pw-panel') == 'none' and _disp(page, 'nl-panel') != 'none'
+        assert "on" not in _cls(page, "#pw-btn").split()
+        for mode, prob in ((20, "{t: TA, a: 7, b: 8}"), ('mx', "{t: TS, a: 15, b: 6}"), ('br', "{t: TRA, r: 16, g: 5, a: 9, b: 7}")):
+            _force(page, mode, prob)
+            assert not page.locator("#pw-btn").is_visible(), f"{mode} {prob}: no board button"
 
     def test_set_mode_returns_to_the_kangaroo(self, page):
         _force(page, 'br', "{t: TMA, a: 6, b: 14}")
@@ -246,34 +286,43 @@ class TestBarsAndCircles:
 
 class TestBoardAcrossCards:
     def test_stays_the_chosen_aid_and_resets_per_card(self, page):
-        """Once chosen, the board is the aid of every following card: hidden again
-        while the card is fresh, back after the first mistake — emptied and set to
-        the NEW card's whole and parts."""
+        """Once chosen, the board is the aid of every following card — open from the
+        first moment (no try-first gate), emptied and set to the NEW card's whole
+        and parts."""
         _force(page, 'br', "{t: TMA, a: 6, b: 14}")
         page.evaluate("problems[1] = {t: TS, a: 17, b: 9}")
         _open_board(page)
         page.fill("#pw-panel .pw-whole", "14"); page.click("#pw-panel .pw-add-bar")
         solve_one(page)
         assert page.evaluate("idx") == 1 and page.evaluate("aidMode") == 'pw'
-        assert _disp(page, 'pw-panel') == 'none', "fresh card → every aid hidden (try first)"
+        assert _disp(page, 'pw-panel') != 'none' and _disp(page, 'nl-panel') == 'none', \
+            "fresh card → the chosen board stays open (no gate), the line stays locked"
         _reveal(page)
         assert _disp(page, 'pw-panel') != 'none' and _disp(page, 'nl-panel') == 'none'
         st = _state(page)
         assert (st["whole"], st["parts"], st["boxes"], st["total"]) == (17, [9, 8], ["", "", ""], 0)
 
     def test_three_unknown_card_falls_back_to_the_line(self, page):
-        """The __+__+__ card has no whole-and-two-parts reading: with the board
-        chosen, that card shows the kangaroo line and offers no board toggle."""
+        """The chain card g + __ + __ has no whole-and-two-parts reading: with the
+        board chosen, that card shows the kangaroo line and offers line + jar; a jar
+        picked there turns back into the board on the next card the board can split."""
         _force(page, 'br', "{t: TMA, a: 6, b: 14}")
+        page.evaluate("problems[2] = {t: TS, a: 15, b: 9}")
         _open_board(page)
-        page.evaluate("problems[1] = {t: TRA, r: 16, a: 9, b: 7}; idx = 1; loadProblem()")
+        page.evaluate("problems[1] = {t: TRA, r: 16, g: 5, a: 9, b: 7}; idx = 1; loadProblem()")
         page.wait_for_timeout(200)
         page.evaluate("_unlockAids(); tryFirst = 1")
         assert _disp(page, 'nl-panel') != 'none' and _disp(page, 'pw-panel') == 'none'
-        # the three-unknown card offers no aid toggles at all (as before) — so no board
-        assert page.evaluate("buildGamesMenu(), document.querySelectorAll('#games-menu .gm-item').length") == 0
         assert page.evaluate("PW.applies()") is False
+        icons = page.evaluate("buildGamesMenu(), [...document.querySelectorAll('#games-menu .gm-item svg.aid-ico')].map(s=>s.querySelectorAll('rect').length)")
+        assert icons == [0, 1], f"line + jar on the chain card (no board), got rect counts {icons}"
         assert page.evaluate("aidMode") == 'pw', "the choice survives for the next splittable card"
+        page.evaluate("toggleAidMode('nl')")
+        assert page.evaluate("aidMode") == 'nl' and _disp(page, 'chain-tools') != 'none', "the jar opens on the chain card"
+        page.evaluate("idx = 2; loadProblem()"); page.wait_for_timeout(200)
+        page.evaluate("_unlockAids(); tryFirst = 1")
+        assert page.evaluate("aidMode") == 'pw' and _disp(page, 'pw-panel') != 'none' and _disp(page, 'chain-tools') == 'none', \
+            "back on a splittable bridge card the jar choice becomes the board"
 
 
 class TestTesterPage:

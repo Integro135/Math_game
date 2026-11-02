@@ -338,9 +338,9 @@ window.AIDS.variants.space = {
   `unloadBackground()` always reverts to `classic`.
 - **The part–whole board is its own module too** — `aids/part_whole.js`
   (`window.PART_WHOLE.mount({root}) → {set,reset,state,cleanup,root}`), injected
-  on demand by `bg-loader.loadPartWhole` into `#pw-panel`. It is the bridge
-  games' (`br`/`b20`) THIRD aid (`aidMode 'pw'`, after the workbook page on
-  equations): a whole-over-two-parts TEMPLATE whose boxes judge themselves
+  on demand by `bg-loader.loadPartWhole` into `#pw-panel`. In the bridge games
+  (`br`/`b20`) it takes the cookie jar's place in the aids menu (`aidMode
+  'pw'`, line + board; after the workbook page on equations): a whole-over-two-parts TEMPLATE whose boxes judge themselves
   against the real whole/parts and write the matching exercise underneath
   (whole & part → subtraction, two parts → addition), plus a DRAWING of bars
   (5, shown as five units — hovering previews the units a click would colour,
@@ -350,7 +350,8 @@ window.AIDS.variants.space = {
   skin adds plum outlines). The driver `PW` in `game/js/aids.js` splits the
   current card into `{whole, parts, missing, given}` (TA/TVA miss the whole;
   TS/TVS/TM/TMA miss a part) and `toggleAidMode('pw')` / `loadProblem` show it;
-  a card it can't split (TRA) falls back to the line. `part_whole_dev.html` is
+  a card it can't split (the chains TRA/TRS) falls back to line + jar, and a jar
+  picked there turns back into the board on the next splittable card. `part_whole_dev.html` is
   its standalone tester (the real page + a dev sidebar).
 - index.html ships only empty mounts (`#nl-dot`, `#pgm-ck-jar`); nothing
   variant-specific is copied into the game files.

@@ -4,12 +4,14 @@ from helpers import *
 
 
 # Normalise a bridge set back to its FACTS, [type, a, b], skipping the 2 balance
-# cards (TSB): a shape-unknown (TVA/TVS) and the three-unknown sum (TRA) keep
-# their a/b; an EQUATION card (2026-11-02, slots 2/6/10 of every bridge-10 set)
-# is turned back into the fact it poses — a + __ = c (TMA) → [TA, a, c−a] and
-# c − __ = a (TM) → [TS, c, c−a]. The curriculum order checks compare against this.
+# cards (TSB): a shape-unknown (TVA/TVS) and the chains (TRA g+__+__=r, TRS
+# g−__−__=r — built from the fact at the slot, a/b kept) keep their a/b; an
+# EQUATION card (2026-11-02, slots 2/6/10 of every bridge-10 set) is turned back
+# into the fact it poses — a + __ = c (TMA) → [TA, a, c−a] and c − __ = a (TM) →
+# [TS, c, c−a]. The curriculum order checks compare against this.
 BR_NORM = ("[...problems].filter(p => p.t!==TSB).map(p => "
            "p.t===TMA?[TA,p.a,p.b-p.a]:p.t===TM?[TS,p.a,p.a-p.b]:"
+           "p.t===TRS?[(p.g===p.a+p.b?TA:TS),p.a,p.b]:"
            "[(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
 
 
@@ -118,6 +120,32 @@ class TestBridgingMode:
         enter_mode(page, 'b20'); page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
         assert not page.evaluate("[...problems].some(p => p.t===TM || p.t===TMA)"), "bridge 20 keeps plain facts"
 
+    def test_bridge_chain_slot_alternates_sum_and_count_back(self, page):
+        """2026-11-02: the CHAIN slot (the 3rd unknown, arithmetic index 11) gives ONE
+        number and asks for two — a sum chain g + __ + __ = r (TRA) on one build, a
+        count-back chain g − __ − __ = r (TRS) on the next, in both bridges. Built
+        from the set's own fact (a/b kept): the child's pair always makes 5+."""
+        consts = page.evaluate("({TA, TRA, TRS})")
+        TA, TRA, TRS = consts["TA"], consts["TRA"], consts["TRS"]
+        for mode, builds in (("br", 6), ("b20", 5)):
+            enter_mode(page, mode); page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+            kinds = []
+            for _ in range(builds):
+                probs = page.evaluate("[...problems].filter(p => p.t!==TSB)")
+                chain = probs[11]
+                assert chain["t"] in (TRA, TRS), f"{mode}: the chain sits at arithmetic slot 12, got {chain}"
+                kinds.append(chain["t"])
+                g, r, a, b = chain["g"], chain["r"], chain["a"], chain["b"]
+                if chain["t"] == TRA:
+                    assert 2 <= g <= 19 and r - g >= 5, f"{mode}: {g} + __ + __ = {r} leaves too little: {chain}"
+                    assert r in (a + b, a), f"{mode}: the sum chain targets the fact's result: {chain}"
+                else:
+                    assert g - r >= 5 and r >= 1, f"{mode}: {g} − __ − __ = {r} leaves too little: {chain}"
+                    assert (g, r) in ((a + b, a), (a, a - b)), f"{mode}: the count-back chain comes from the fact: {chain}"
+                page.evaluate("restart()"); page.wait_for_timeout(120)
+            assert TRA in kinds and TRS in kinds, f"{mode}: both chains over the rotation, got {kinds}"
+            assert all(kinds[i] != kinds[i + 1] for i in range(len(kinds) - 1)), f"{mode}: the chains alternate build by build, got {kinds}"
+
     def test_bridges_weave_two_balance_cards_that_cross_ten(self, page):
         """Every bridge set (10 and 20, all of them) carries TWO balance cards (TSB,
         four numbers onto two pans) at slots 6 and 12, and EACH pan crosses a ten:
@@ -222,8 +250,8 @@ class TestBridgingMode:
         (slots 4, 8, 12 …), cycling through the three kinds — one-unknown (TVA/TVS),
         two-unknown, and the three-unknown sum (TRA). Drawn from the set's own
         problems, so a/b/answer are unchanged; exactly one per four slots."""
-        consts = page.evaluate("({TVA, TVS, TRA})")
-        kinds = {consts["TVA"], consts["TVS"], consts["TRA"]}
+        consts = page.evaluate("({TVA, TVS, TRA, TRS})")
+        kinds = {consts["TVA"], consts["TVS"], consts["TRA"], consts["TRS"]}
         self._switch_br(page)
         for _ in range(6):                                  # check all six sets
             # the 2 balance cards (TSB) sit OUTSIDE the cadence — count arithmetic slots only

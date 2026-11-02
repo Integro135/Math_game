@@ -313,11 +313,13 @@ function buildGamesMenu(){
   // EVERY mode (the operands fit the 0-20 jar); TC/TT/TCA/TBG bring their
   // own aid and are excluded
   const aidsApply=ptype===TZ||ptype===TX||ptype===TW||ptype===TDA||ptype===TDS||
-    ptype===TA||ptype===TS||ptype===TM||ptype===TMA||ptype===TVA||ptype===TVS;
+    ptype===TA||ptype===TS||ptype===TM||ptype===TMA||ptype===TVA||ptype===TVS||ptype===TRA||ptype===TRS;
   if(aidsApply){
-    const toggles=[{m:'kang',icon:nlIcon},{m:'nl',icon:jarIcon}];
-    // the bridges (גֶּשֶׁר 10 / 20) offer a THIRD aid: the part–whole board
-    if(PW.applies())toggles.push({m:'pw',icon:AID_ICON_PW});
+    // the bridges (גֶּשֶׁר 10 / 20) pair the line with the part–whole board: it takes
+    // the jar's place in the menu on every card it can split into a whole and two
+    // parts; the chain cards (g + __ + __, g − __ − __) keep the jar
+    const toggles=PW.applies()?[{m:'kang',icon:nlIcon},{m:'pw',icon:AID_ICON_PW}]
+                              :[{m:'kang',icon:nlIcon},{m:'nl',icon:jarIcon}];
     toggles.forEach(({m,icon})=>{
       extras.push({icon,cost:null,disabled:m===aidMode,fn:()=>toggleAidMode(m)});
     });
@@ -334,6 +336,13 @@ function buildGamesMenu(){
     menu.appendChild(el);
   });
   btn.classList.toggle('gm-active',extras.length>0);
+  // the bridges' own BOARD button beside the menu button (user: "a new help button
+  // in גשר 10"): on every bridge card the board can split, lit while the board is
+  // the active aid; usable from the first moment (no try-first lock)
+  const pb=document.getElementById('pw-btn');
+  if(pb){const show=aidsApply&&PW.applies();
+    pb.style.display=show?'':'none';pb.classList.toggle('gm-active',show);
+    pb.classList.toggle('on',aidMode==='pw');pb.innerHTML=AID_ICON_PW;}
   if(extras.length){
     btn.innerHTML=aidMode==='kang'?nlIcon:aidMode==='pw'?AID_ICON_PW:(chainGnMode&&(ptype===TZ||ptype===TX)?gardenIcon:jarIcon);
   }
@@ -369,10 +378,18 @@ document.getElementById('games-menu')?.addEventListener('click',e=>e.stopPropaga
 let PGM_NL=25;
 function _pgmSpan(){
   const add=ptype===TA||ptype===TVA,sub=ptype===TS||ptype===TVS||ptype===TM;
-  const top=add?num1+num2:sub?num1:ptype===TMA?num2:0;   // TMA: the whole c of a + __ = c
+  const top=add?num1+num2:sub?num1:ptype===TMA?num2:(ptype===TRA||ptype===TDA||ptype===TDS)?num1:ptype===TRS?num2:0;   // TMA: the whole c; chains: r / the start g
   return Math.max(25,(mode==='br'||mode==='b20')?top+2:top);
 }
 function aidCfg(){return (window.AIDS&&(AIDS.current||AIDS.variants.classic))||{};}
+/* where the counting jar STARTS for the current card: empty for the open sum
+   __+__ (TDA); the GIVEN g for the chains g+__+__ (TRA, she adds) and g−__−__
+   (TRS, she takes away); the first number (minuend / result) otherwise */
+function _jarStart(){
+  if(ptype===TDA)return 0;
+  if(ptype===TRA||ptype===TRS)return num2||0;
+  return num1;
+}
 /* hint line for the active variant; falls back to the classic kangaroo/cookies */
 function aidHint(kind,dir){
   const v=aidCfg();
@@ -529,9 +546,10 @@ function pgmUndo(){
   pgmUpdateAll();pgmDrawArcs(false);
 }
 
-/* ── Part–whole board (תַּבְנִית שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) — the THIRD aid,
-   offered in the bridge games only (aidMode 'pw'), after the workbook page on
-   equations (6 + __ = 14). The display + logic live in aids/part_whole.js
+/* ── Part–whole board (תַּבְנִית שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) — the bridge games'
+   aid in the jar's place (aidMode 'pw'; the games button → the board, where the
+   other games have the cookie jar), after the workbook page on equations
+   (6 + __ = 14). The display + logic live in aids/part_whole.js
    (loaded on demand into #pw-panel); this driver only tells the board the
    current problem as a WHOLE and two PARTS, and which piece is missing. */
 const PW=(()=>{
@@ -566,17 +584,30 @@ const PW=(()=>{
   return{split,applies,hint,show,hide,state,reset};
 })();
 
+/* the bridges' board button (#pw-btn): a tap opens the part–whole board, a second
+   tap returns to the number line. Inert while the aids are locked (try first). */
+function togglePartWhole(){
+  if(!PW.applies())return;
+  // available from the first moment (no try-first gate for the board): while
+  // the other aids are still locked, open / close ONLY the board
+  if(typeof tryFirst!=='undefined'&&tryFirst===0&&_aidRevealPolicy()!=='always'){
+    if(aidMode==='pw'){aidMode='kang';PW.hide();_aidHidden.pw='none';_aidHidden.nl='';}
+    else{aidMode='pw';_pwOpenFree();}
+    buildGamesMenu();return;
+  }
+  toggleAidMode(aidMode==='pw'?'kang':'pw');
+}
+
 /* ── Aid-mode toggle (kang ↔ nl, or jump to targetMode: 'kang' | 'nl' | 'pw') ── */
 function toggleAidMode(targetMode){
   if(ptype===TC||ptype===TT)return;
   if(typeof targetMode==='string'){if(targetMode===aidMode)return;aidMode=targetMode;}
-  else aidMode=aidMode==='nl'?'kang':'nl';
+  else aidMode=aidMode!=='kang'?'kang':(PW.applies()?'pw':'nl');   // the bridges flip line ↔ board
   if(aidMode==='pw'&&!PW.applies())aidMode='kang';   // the board is a bridges-only aid
-  const isTD=ptype===TDA||ptype===TDS;
   const ct=document.getElementById('chain-tools');
   const nlp=document.getElementById('nl-panel');
   if(aidMode==='nl'){
-    const _cv=isTD?(ptype===TDA?0:num1):num1;
+    const _cv=_jarStart();
     if(ct)ct.style.display='block';
     if(nlp)nlp.style.display='none';
     PW.hide();
