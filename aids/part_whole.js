@@ -11,9 +11,12 @@
       as the boxes are placed right.
    2. THE DRAWING — bars (each = 5) and circles (each = 1). She draws the whole,
       taps to colour the given part, and counts what stays white: the missing
-      number. A bar is FIVE units: every tap colours ONE MORE unit (a sixth tap
-      clears it), so the exact number shows even when she drew the "wrong"
-      bars for it — 6 can be one bar + one circle, or six units of two bars.
+      number. A bar is FIVE units: hovering it previews how many units a click
+      would colour (up to the unit under the pointer, with the count in a
+      bubble) and the click colours exactly those; clicking the last coloured
+      unit uncolours it. So the exact number shows even when she drew the
+      "wrong" bars for it — 6 can be one bar + one circle, or six units of two
+      bars. (A keyboard-activated bar colours one more unit per press.)
       Undo / clear; the total and the coloured count are shown (the uncoloured
       count is hers to find).
 
@@ -77,11 +80,19 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
   .pw-item{border:none;padding:0;cursor:pointer;background:transparent;-webkit-tap-highlight-color:transparent;line-height:0}
   .pw-item i{display:block;box-sizing:border-box;border:2.5px solid rgba(255,255,255,.92);background:transparent;
     box-shadow:0 0 0 1.5px rgba(0,0,0,.45),inset 0 0 0 1px rgba(0,0,0,.22);transition:background .15s,transform .15s}
+  .pw-bar{position:relative}
   .pw-bar i{width:58px;height:16px;border-radius:4px;display:flex;overflow:hidden}
-  /* a bar is five UNITS — thin dividers show them; each tap colours one more */
-  .pw-bar s{flex:1 1 0;display:block;text-decoration:none;border-inline-end:1.5px solid rgba(0,0,0,.28);transition:background .15s}
+  /* a bar is five UNITS — thin dividers show them; hovering previews the units a
+     click would colour (.pre = would turn on, .dim = would turn off) and a bubble
+     above the bar shows that count */
+  .pw-bar s{flex:1 1 0;display:block;text-decoration:none;border-inline-end:1.5px solid rgba(0,0,0,.28);transition:background .15s,opacity .15s}
   .pw-bar s:last-child{border-inline-end:none}
   .pw-bar s.on{background:var(--skin-accent,#FFD166)}
+  .pw-bar s.pre{background:var(--skin-accent,#FFD166);opacity:.45}
+  .pw-bar s.dim{opacity:.3}
+  .pw-bar[data-pre]::after{content:attr(data-pre);position:absolute;left:50%;bottom:calc(100% + 5px);transform:translateX(-50%);z-index:3;
+    font-family:'Fredoka One',cursive;font-size:.95rem;line-height:1;color:#fff;background:rgba(20,20,40,.85);padding:3px 7px;border-radius:8px;
+    pointer-events:none;white-space:nowrap}
   .pw-dot i{width:18px;height:18px;border-radius:50%}
   .pw-item.on i{border-color:#fff}
   .pw-dot.on i{background:var(--skin-accent,#FFD166)}
@@ -219,8 +230,20 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
         b.innerHTML=it.k==='bar'
           ?'<i>'+[0,1,2,3,4].map(u=>`<s${u<it.on?' class="on"':''}></s>`).join('')+'</i>'
           :'<i></i>';
-        // tap → one more unit coloured (a full item clears back to none)
-        b.onclick=()=>{it.on=(it.on+1)%(val(it)+1);render();};
+        if(it.k==='bar'){
+          const bar=b.firstChild;
+          // which unit (1..5) is under the pointer; 0 when there is no pointer (keyboard)
+          const unitAt=e=>{const r=bar.getBoundingClientRect();
+            if(!r.width||(e.type==='click'&&!e.detail))return 0;   // detail 0 = keyboard-activated
+            return Math.min(5,Math.max(1,Math.ceil((e.clientX-r.left)/r.width*5)));};
+          // a click on unit k colours units 1..k; a click on the LAST coloured unit uncolours it
+          const after=k=>k?(it.on===k?k-1:k):(it.on+1)%6;
+          const preview=e=>{const next=after(unitAt(e));b.dataset.pre=next;
+            [...bar.children].forEach((s,u)=>{s.classList.toggle('pre',u<next&&u>=it.on);s.classList.toggle('dim',u>=next&&u<it.on);});};
+          b.onmousemove=preview;
+          b.onmouseleave=()=>{delete b.dataset.pre;[...bar.children].forEach(s=>s.classList.remove('pre','dim'));};
+          b.onclick=e=>{it.on=after(unitAt(e));render();};
+        }else b.onclick=()=>{it.on=it.on?0:1;render();};   // a circle: tap → colour / uncolour
         canvas.appendChild(b);
       });
       const t=total();

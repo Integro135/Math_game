@@ -399,7 +399,8 @@ body.theme-girls .pw-inp{background:rgba(255,255,255,.55);border-color:rgba(199,
 body.theme-girls .pw-inp::placeholder{color:rgba(90,42,120,.45)}
 body.theme-girls .pw-arms path{stroke:rgba(154,78,217,.7)}
 body.theme-girls .pw-item i{border-color:#FFFFFF;box-shadow:0 0 0 2px rgba(120,60,150,.75),inset 0 0 0 1px rgba(120,60,150,.3)}
-body.theme-girls .pw-dot.on i,body.theme-girls .pw-bar s.on{background:#C77DFF}
+body.theme-girls .pw-dot.on i,body.theme-girls .pw-bar s.on,body.theme-girls .pw-bar s.pre{background:#C77DFF}
+body.theme-girls .pw-bar[data-pre]::after{background:rgba(74,34,68,.9)}
 body.theme-girls .pw-bar s{border-inline-end-color:rgba(120,60,150,.55)}
 body.theme-girls .pw-canvas{background:rgba(255,255,255,.3);border-color:rgba(154,78,217,.5)}
 body.theme-girls .pw-btn.pw-undo,body.theme-girls .pw-btn.pw-clear{background:rgba(255,255,255,.55);border-color:rgba(199,125,255,.8);color:#7A4070}

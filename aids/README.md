@@ -163,10 +163,13 @@ page on equations (6 + __ = 14):
   (`.pw-match`: whole & part → `14 − 6 = ___`, two parts → `9 + 6 = ___`),
   filling in as boxes are placed right;
 - **the drawing** — bars of 5 (`.pw-bar`, five `<s>` units inside) and circles
-  of 1 (`.pw-dot`), bars first; a tap on a circle colours it (`.on`), a tap on a
-  bar colours ONE MORE unit (`s.on`, `.full` at five, a sixth tap clears) so the
-  exact number shows whatever bars were drawn; undo removes the last drawn item,
-  clear empties;
+  of 1 (`.pw-dot`), bars first; a tap on a circle colours it (`.on`). Hovering
+  a bar previews how many units a click would colour — the units up to the
+  pointer (`s.pre`, `s.dim` for ones that would go off) and the count in a bubble
+  (`data-pre`) — and the click colours exactly those (`s.on`, `.full` at five);
+  a click on the last coloured unit uncolours it, a keyboard press colours one
+  more. So the exact number shows whatever bars were drawn; undo removes the
+  last drawn item, clear empties;
   the total (`.pw-total`, ✓ when it equals the whole) and the coloured count
   (`.pw-painted`) are shown — the uncoloured count is the child's to find. Capped
   at `max` (30).

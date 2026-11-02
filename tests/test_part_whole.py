@@ -174,11 +174,19 @@ class TestTemplate:
 
 
 class TestBarsAndCircles:
+    @staticmethod
+    def _unit_x(page, sel, k):
+        """x (px, inside the bar button) at the middle of unit k (1..5)."""
+        box = page.locator(sel).bounding_box()
+        return box["width"] * (k - 0.5) / 5
+
     def test_draw_colour_undo_clear(self, page):
-        """Bars count 5, circles 1; a tap on a circle colours it; a bar is FIVE
-        units and every tap colours ONE MORE (a sixth tap clears it), so the exact
-        number shows whatever bars she drew; undo removes the LAST drawn item,
-        clear empties the drawing; a total equal to the whole is ticked."""
+        """Bars count 5, circles 1; a tap on a circle colours it. A bar is FIVE
+        units: hovering previews how many a click would colour (the units up to the
+        pointer, the count in a bubble) and the click colours exactly those; a
+        click on the last coloured unit uncolours it — so the exact number shows
+        whatever bars she drew. Undo removes the LAST drawn item, clear empties the
+        drawing; a total equal to the whole is ticked."""
         _force(page, 'br', "{t: TMA, a: 6, b: 14}")
         _open_board(page)
         for _ in range(2): page.click("#pw-panel .pw-add-bar")
@@ -189,20 +197,35 @@ class TestBarsAndCircles:
         assert page.locator("#pw-panel .pw-bar >> nth=0 >> s").count() == 5, "a bar shows its five units"
         assert "pw-ok" in _cls(page, "#pw-panel .pw-total-w"), "14 drawn = the whole 14 ✓"
         BAR = "#pw-panel .pw-bar >> nth=0"
-        page.click(BAR)
-        assert _state(page)["painted"] == 1 and page.locator(BAR + " >> s.on").count() == 1, "one tap = one unit of the bar"
-        for _ in range(4): page.click(BAR)
+        bar = page.locator(BAR)
+        h = bar.bounding_box()["height"] / 2
+        at = lambda k: {"x": self._unit_x(page, BAR, k), "y": h}
+        # hover unit 3 → a preview of three units and the count bubble
+        bar.hover(position=at(3))
+        assert page.locator(BAR + " >> s.pre").count() == 3 and bar.get_attribute("data-pre") == "3"
+        bar.click(position=at(3))
+        assert _state(page)["painted"] == 3 and page.locator(BAR + " >> s.on").count() == 3, "the click colours up to the hovered unit"
+        bar.click(position=at(5))
         assert _state(page)["painted"] == 5 and "full" in _cls(page, "#pw-panel .pw-bar")
         page.click("#pw-panel .pw-dot >> nth=0")
         assert _state(page)["painted"] == 6, "a full bar + one circle coloured = the given part"
         assert page.locator("#pw-panel .pw-item.on").count() == 2
-        page.click(BAR)
-        assert _state(page)["painted"] == 1 and page.locator(BAR + " >> s.on").count() == 0, "the sixth tap clears the bar"
+        bar.hover(position=at(5))
+        assert bar.get_attribute("data-pre") == "4" and page.locator(BAR + " >> s.dim").count() == 1, "the last coloured unit previews as going off"
+        bar.click(position=at(5))
+        assert _state(page)["painted"] == 5 and page.locator(BAR + " >> s.on").count() == 4, "clicking the last coloured unit uncolours it"
+        bar.click(position=at(1)); bar.click(position=at(1))
+        assert page.locator(BAR + " >> s.on").count() == 0, "unit 1 twice → the bar is clear"
+        page.mouse.move(5, 5)
+        assert page.locator("#pw-panel .pw-bar s.pre, #pw-panel .pw-bar s.dim").count() == 0 and bar.get_attribute("data-pre") is None, "no preview without a pointer"
         page.click("#pw-panel .pw-dot >> nth=0")
         assert _state(page)["painted"] == 0, "tap a circle again → uncoloured"
+        # keyboard: Enter on a bar colours one more unit per press
+        bar.focus(); page.keyboard.press("Enter")
+        assert [i["on"] for i in _state(page)["items"]][0] == 1
         # six units of two bars read as 6 too — the exact number, whatever she drew
-        page.click("#pw-panel .pw-bar >> nth=1")
-        for _ in range(5): page.click(BAR)
+        page.locator(BAR).click(position=at(5))
+        page.locator("#pw-panel .pw-bar >> nth=1").click(position=at(1))
         assert _state(page)["painted"] == 6 and [i["on"] for i in _state(page)["items"]][:2] == [5, 1]
         page.click("#pw-panel .pw-undo")
         st = _state(page)

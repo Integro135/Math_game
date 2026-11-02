@@ -343,9 +343,9 @@ window.AIDS.variants.space = {
   equations): a whole-over-two-parts TEMPLATE whose boxes judge themselves
   against the real whole/parts and write the matching exercise underneath
   (whole & part → subtraction, two parts → addition), plus a DRAWING of bars
-  (5, shown as five units — each tap colours one more) and circles (1) tapped
-  to colour the given part, so the exact number shows whatever bars were
-  drawn. Theme-independent (no
+  (5, shown as five units — hovering previews the units a click would colour,
+  the click colours exactly those) and circles (1) tapped to colour the given
+  part, so the exact number shows whatever bars were drawn. Theme-independent (no
   variant art); its `.pw-*` classes are skin-overridable (the light unicorn
   skin adds plum outlines). The driver `PW` in `game/js/aids.js` splits the
   current card into `{whole, parts, missing, given}` (TA/TVA miss the whole;
