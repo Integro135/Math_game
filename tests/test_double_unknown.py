@@ -11,7 +11,10 @@ class TestDoubleUnknown:
     @staticmethod
     def _switch_to_mode10(page):
         """sampleWithTD-based mode 10 has predictable TD slots (4, 8, 12)."""
-        page.evaluate("setMode(10)")
+        # enter_mode waits for the ASYNC pool rebuild (POOL_PENDING) — waiting only
+        # for an answer box raced it: the boot mode's box is already there, and the
+        # rebuild landing after the test typed wiped the answer (flaky sad-modal test)
+        enter_mode(page, 10)
         page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
         page.wait_for_timeout(150)
 

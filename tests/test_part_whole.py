@@ -325,6 +325,53 @@ class TestBoardAcrossCards:
             "back on a splittable bridge card the jar choice becomes the board"
 
 
+class TestWholeAndPartsExercise:
+    """🧩 TPW — the whole-and-parts card IS the exercise: write the whole and both
+    parts, draw the whole in bars (5) and circles (1), colour a part, then ✓."""
+
+    def _card(self, page, src_js):
+        enter_mode(page, 'br')
+        page.wait_for_selector("#ans, #ans1, .pwx", timeout=TIMEOUT)
+        page.evaluate(f"problems[0] = EXERCISES.types.part_whole.fromFact({src_js}); idx = 0; score = 0; loadProblem()")
+        page.wait_for_selector("#colx-root .pwx .pw-whole", timeout=TIMEOUT)
+        page.wait_for_timeout(150)
+
+    def test_solve_needs_template_and_drawing(self, page):
+        self._card(page, "{t: TMA, a: 6, b: 14}")
+        assert page.inner_text("#colx-root .pwx-eq").replace(" ", "") == "6+___=14"
+        assert not page.locator("#chk-btn").is_visible() and not page.locator("#nl-panel").is_visible()
+        CHK = "#colx-root .pwx-chk"
+        page.click(CHK)
+        note = re.sub(r"[\u0591-\u05C7]", "", page.inner_text("#colx-root .pwx-note"))
+        assert "שלם" in note and page.evaluate("tryFirst") == 0, "empty boxes: a note, no penalty"
+        page.fill("#colx-root .pw-whole", "14"); page.fill("#colx-root .pw-part[data-i='0']", "6"); page.fill("#colx-root .pw-part[data-i='1']", "9")
+        page.click(CHK)
+        assert page.evaluate("tryFirst") == 1 and not page.evaluate("done"), "a wrong part is a mistake"
+        page.wait_for_timeout(1800)
+        page.fill("#colx-root .pw-part[data-i='1']", "8")
+        page.click(CHK)
+        assert not page.evaluate("done") and page.evaluate("tryFirst") == 1, "boxes right, drawing missing: a note only"
+        for _ in range(2): page.click("#colx-root .pw-add-bar")
+        for _ in range(4): page.click("#colx-root .pw-add-dot")
+        page.click(CHK)
+        assert not page.evaluate("done"), "nothing coloured yet: a note only"
+        bar = page.locator("#colx-root .pw-bar >> nth=0"); bb = bar.bounding_box()
+        bar.click(position={"x": bb["width"] * 0.95, "y": bb["height"] / 2})
+        page.click("#colx-root .pw-dot >> nth=0")
+        page.click(CHK)
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("score") == 10, "second try in br: 67% of 15"
+        assert page.inner_text("#colx-root .pwx-eq").replace(" ", "") == "14−6=8"
+        assert page.evaluate("_reportRows()[0].eq").startswith("🧩 14 = 6 + 8")
+
+    def test_every_fact_kind_becomes_a_card(self, page):
+        enter_mode(page, 'br'); page.wait_for_selector("#ans, #ans1, .pwx", timeout=TIMEOUT)
+        got = page.evaluate("""[{t:TA,a:9,b:6},{t:TS,a:15,b:9},{t:TMA,a:6,b:14},{t:TM,a:16,b:7}]
+            .map(f => {const c = EXERCISES.types.part_whole.fromFact(f); return [c.whole, c.parts, c.missing, c.a, c.eq];})""")
+        assert got == [[15, [9, 6], "whole", 15, "9 + 6 = ___"], [15, [9, 6], "part", 6, "15 − 9 = ___"],
+                       [14, [6, 8], "part", 8, "6 + ___ = 14"], [16, [7, 9], "part", 9, "16 − ___ = 7"]], got
+
+
 class TestTesterPage:
     def test_tester_boots_and_opens_the_board(self, page):
         """part_whole_dev.html is the real game plus a sidebar: it boots on the

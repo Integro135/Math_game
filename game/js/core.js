@@ -309,7 +309,7 @@ function loadProblem(){
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
   if(ptype===TWP){wpOp=problems[idx].op||'sub';}
   if(ptype===TWC){wcOps=problems[idx].ops||['add','sub'];}
-  const _cor=ptype===TDA||ptype===TDS||ptype===TRA||ptype===TRS?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TWC?_wc(num1,num2,num3,wcOps):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:ptype===TMA?num2-num1:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS||ptype===TRA||ptype===TRS?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TPW?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TWC?_wc(num1,num2,num3,wcOps):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:ptype===TMA?num2-num1:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
   {const _pwp=document.getElementById('pw-panel');if(_pwp)_pwp.style.display='none';}   // the part–whole board shows only via the aid branch below
@@ -330,6 +330,7 @@ function loadProblem(){
    :ptype===TDL?'🃏 חַלְּקִי בְּתוֹרוֹת — אַחַת לְכָל אַחַת, עַד שֶׁלֹּא נִשְׁאָר כְּלוּם!'
    :ptype===TPK?'📦 כַּמָּה קֻפְסָאוֹת צְרִיכִים כְּדֵי לֶאֱרֹז אֶת הַכֹּל?'
    :ptype===TFR?'⚖️ הַעֲבִירִי כָּךְ שֶׁלְּכֻלָּן יִהְיֶה אוֹתוֹ מִסְפָּר!'
+   :ptype===TPW?'🧩 כִּתְבִי אֶת הַשָּׁלֵם וְאֶת הַחֲלָקִים, צַיְּרִי בְּפַסִּים (5) וְעִגּוּלִים (1), וּלְחַצִי ✓!'
    :ptype===TCN?'🤔 אֶפְשָׁר לְחַלֵּק שָׁוֶה בְּשָׁוֶה — אוֹ שֶׁיִּשָּׁאֵר מַשֶּׁהוּ?'
    :ptype===TPL?'🍽️ קְבוּצוֹת שָׁווֹת! סִפְרִי אֶת כָּל הַצַּלָּחוֹת — כַּמָּה בְּסַךְ הַכֹּל?'
    :ptype===TMU?'❓ אֵיזֶה מִסְפָּר חָסֵר בַּכֶּפֶל? קִפְצִי עַל הַיָּשָׁר וְסִפְרִי אֶת הַקְּפִיצוֹת!'
@@ -404,7 +405,7 @@ function loadProblem(){
   // TCM (coin multiplication) / TBC (bagel cost) / TPG (polygon sides) / TMC
   // (multiplication chain) / TMK (אַלּוּפָה multiplication): the module owns its
   // own scaffold; no number-line aid
-  if(ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN){
+  if(ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TPW){
     const ct=document.getElementById('chain-tools');if(ct)ct.style.display='none';
     const nlp=document.getElementById('nl-panel');if(nlp)nlp.style.display='none';
     chainGnMode=false;tdaJarMode=false;}
@@ -437,7 +438,7 @@ function loadProblem(){
     if(nlp){nlp.style.display='';NL.configure(num1+num2+_thStep,_thStep,num1);NL.init(num1);}
     chainGnMode=false;tdaJarMode=false;}
   // Aid display — kangaroo NL or the cookie jar, per aidMode
-  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TRH&&ptype!==TLG&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TBE&&ptype!==TSB&&ptype!==TDL&&ptype!==TPK&&ptype!==TFR&&ptype!==TCN&&ptype!==TMU&&ptype!==TBG&&ptype!==TH){
+  if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TRH&&ptype!==TLG&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TBE&&ptype!==TSB&&ptype!==TDL&&ptype!==TPK&&ptype!==TFR&&ptype!==TCN&&ptype!==TPW&&ptype!==TMU&&ptype!==TBG&&ptype!==TH){
   // the bridges pair the line with the part–whole board (no jar): a jar picked on a
   // chain card becomes the board on the next card the board can split
   if(aidMode==='nl'&&typeof PW!=='undefined'&&PW.applies())aidMode='pw';
@@ -467,7 +468,7 @@ function loadProblem(){
   },60);
   buildGamesMenu();
   // the aid-toggle menu is meaningless inside a self-contained exercise
-  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TMU||ptype===TBG)?'hidden':'';}
+  {const _gb=document.getElementById('games-drop-btn');if(_gb)_gb.style.visibility=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TPW||ptype===TMU||ptype===TBG)?'hidden':'';}
   // Digit hint button — shown for TT, TBG, and for TS/TM where both nums > 10
   {const _dhBtn=document.getElementById('digit-hint-btn');
   if(_dhBtn){
@@ -500,7 +501,7 @@ function _varShapeSVG(kind,size){
 /* ── Equation ── */
 function renderEq(){
   // leaving a module-owned exercise (TCA) → release its listeners/timers
-  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TRH&&ptype!==TLG&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TBE&&ptype!==TSB&&ptype!==TDL&&ptype!==TPK&&ptype!==TFR&&ptype!==TCN&&ptype!==TMU){_colxCleanup();_colxCleanup=null;}
+  if(_colxCleanup&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TRH&&ptype!==TLG&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TBE&&ptype!==TSB&&ptype!==TDL&&ptype!==TPK&&ptype!==TFR&&ptype!==TCN&&ptype!==TPW&&ptype!==TMU){_colxCleanup();_colxCleanup=null;}
   // restore hint visibility (TC hides it and embeds it inline)
   if(ptype!==TC){const hEl=document.getElementById('hint');if(hEl)hEl.style.display='';}
   const n=t=>`<span class="eq-n" data-num="${t}">${t}</span>`;
@@ -641,7 +642,7 @@ function renderEq(){
         '</div>';
     }
   }
-  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TMU)h='<div id="colx-root" class="colx-root"></div>';
+  else if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TPW||ptype===TMU)h='<div id="colx-root" class="colx-root"></div>';
   else if(ptype===TBG)h=n(num1)+(bgOp==='add'?op('+','op-p'):op('-','op-m'))+nB(num2,num1,bgOp==='add'?'add':'sub')+op('=','op-e')+inp;
   else               h=n(num1)+op('+','op-p')+nB(num2,num1,'add')+op('=','op-e')+inp;
   document.getElementById('eq').innerHTML=h;
@@ -654,7 +655,7 @@ function renderEq(){
   if(ptype!==TVA&&ptype!==TVS){const _eq=document.getElementById('eq');
    const _nums=_eq.querySelectorAll('.eq-n[data-num],.eq-res[data-num]');
    if(_nums.length>=2)_nums[0].classList.add('eq-noobj');}
-  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TMU)_colxMount();
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TPW||ptype===TMU)_colxMount();
 }
 
 /* ── self-contained exercise host (TCA → column_add, TCS → column_sub) ──
@@ -669,7 +670,7 @@ function _colxMount(){
   loadExercise(exName,()=>{
     // problem changed while loading (idx moved, left colx, or now a DIFFERENT
     // colx type) → a stale async module-load must NOT clobber the live mount
-    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TRH&&ptype!==TLG&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TBE&&ptype!==TSB&&ptype!==TDL&&ptype!==TPK&&ptype!==TFR&&ptype!==TCN&&ptype!==TMU)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
+    if((ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TRH&&ptype!==TLG&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TBE&&ptype!==TSB&&ptype!==TDL&&ptype!==TPK&&ptype!==TFR&&ptype!==TCN&&ptype!==TPW&&ptype!==TMU)||idx!==myIdx||EXERCISE_OF_TYPE[ptype]!==exName)return;
     const root=document.getElementById('colx-root');
     const ex=window.EXERCISES&&EXERCISES.types[exName];
     if(!root||!ex)return;
@@ -755,7 +756,7 @@ function showBtns(s){
       btns.innerHTML='<button class="btn b-skip" id="skip-btn" style="display:none" onclick="skipLangQuestion()">⏭️ דַּלְּגִי עַל הַשְּׁאֵלָה</button>';
     _maybeShowSkip();
     // exercise modules (TCA/TCS/TCM/TBC/TPG/TMC/TMK) check themselves — no host check button
-    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TMU)?'none':'flex';
+    if(cb)cb.style.display=(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TPW||ptype===TMU)?'none':'flex';
   }else{
     if(cb)cb.style.display='none';
     btns.innerHTML=
@@ -779,7 +780,7 @@ document.addEventListener('input',e=>{
 });
 function checkAns(){
   if(done)return;
-  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TMU)return;   // the exercise module checks itself
+  if(ptype===TCA||ptype===TCS||ptype===TCM||ptype===TBC||ptype===TPG||ptype===TMC||ptype===TMK||ptype===TPP||ptype===TCP||ptype===TWP||ptype===TWC||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TTS||ptype===THF||ptype===TPL||ptype===TIC||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN||ptype===TPW||ptype===TMU)return;   // the exercise module checks itself
   // ── Multi-unknown problems: TWO empty boxes — __+__ (TDA), __−__ (TDS), and the
   //    chains with a GIVEN number g + __ + __ = r (TRA) / g − __ − __ = r (TRS) ──
   if(ptype===TDA||ptype===TDS||ptype===TRA||ptype===TRS){
@@ -1216,6 +1217,7 @@ function _reportRows(){
     else if(r.ptype===TDL)eq=`🃏 ${p.n||'?'} ÷ ${p.k||'?'} = ${r.correct}`;
     else if(r.ptype===TPK)eq=`📦 ${p.n||'?'} ÷ ${p.b||'?'} = ${r.correct}`;
     else if(r.ptype===TFR)eq=`⚖️ ${(p.start||[]).join(' · ')} → ${(p.start||[]).length} × ${r.correct}`;
+    else if(r.ptype===TPW)eq=`🧩 ${p.whole} = ${(p.parts||[]).join(' + ')} (${p.eq||''})`;
     else if(r.ptype===TCN){eq=`🤔 ${p.n||'?'} ÷ ${p.k||'?'} — ${p.n%p.k?'נִשְׁאָר '+(p.n%p.k):'בְּלִי שְׁאֵרִית'}`;cor=r.correct===1?'כֵּן':'לֹא';}
     else if(r.ptype===TPL)eq=`🍽️ ${p.g||'?'} × ${p.s||'?'} = ${r.correct}`;
     else if(r.ptype===TVA||r.ptype===TVS){const E=s=>({circle:'🔵',triangle:'🔺',square:'🟦'}[s]||'🔷');const e=E(p.sym),opc=r.ptype===TVA?'+':'−';

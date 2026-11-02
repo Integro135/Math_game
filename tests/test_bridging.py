@@ -9,7 +9,8 @@ from helpers import *
 # EQUATION card (2026-11-02, slots 2/6/10 of every bridge-10 set) is turned back
 # into the fact it poses — a + __ = c (TMA) → [TA, a, c−a] and c − __ = a (TM) →
 # [TS, c, c−a]. The curriculum order checks compare against this.
-BR_NORM = ("[...problems].filter(p => p.t!==TSB).map(p => "
+# A whole-and-parts card (TPW, 2026-11-02, every 3rd card) carries its fact in `src`.
+BR_NORM = ("[...problems].filter(p => p.t!==TSB).map(p => p.t===TPW ? p.src : p).map(p => "
            "p.t===TMA?[TA,p.a,p.b-p.a]:p.t===TM?[TS,p.a,p.a-p.b]:"
            "p.t===TRS?[(p.g===p.a+p.b?TA:TS),p.a,p.b]:"
            "[(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
@@ -107,7 +108,8 @@ class TestBridgingMode:
         TM, TMA = consts["TM"], consts["TMA"]
         self._switch_br(page)
         for s in range(6):
-            probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [p.t, p.a, p.b])")
+            # a whole-and-parts card (TPW) may pose the equation — read its fact from `src`
+            probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => p.t===TPW ? p.src : p).map(p => [p.t, p.a, p.b])")
             eq_idx = [i for i, (t, a, b) in enumerate(probs) if t in (TM, TMA)]
             assert eq_idx == [1, 5, 9], f"set{s+1}: equations at arithmetic slots 2, 6, 10 — got {eq_idx}"
             for i in eq_idx:
@@ -145,6 +147,27 @@ class TestBridgingMode:
                 page.evaluate("restart()"); page.wait_for_timeout(120)
             assert TRA in kinds and TRS in kinds, f"{mode}: both chains over the rotation, got {kinds}"
             assert all(kinds[i] != kinds[i + 1] for i in range(len(kinds) - 1)), f"{mode}: the chains alternate build by build, got {kinds}"
+
+    def test_bridges_weave_whole_and_parts_every_third_card(self, page):
+        """2026-11-02: the WHOLE-AND-PARTS exercise (🧩 TPW) is part of every bridge
+        set: after every two cards the next fact card becomes one — the first is
+        the 3rd card, never two 🧩 within three cards; each card's whole / parts /
+        missing number match its own fact."""
+        TPW = page.evaluate("TPW")
+        facts = page.evaluate("[TA,TS,TMA,TM]")
+        for mode, builds in (("br", 6), ("b20", 5)):
+            enter_mode(page, mode); page.wait_for_selector("#ans, #ans1, .pwx", timeout=TIMEOUT)
+            for _ in range(builds):
+                ps = page.evaluate("[...problems]")
+                idx = [i for i, p in enumerate(ps) if p["t"] == TPW]
+                assert len(idx) >= 3 and idx[0] == 2, f"{mode}: 🧩 from the 3rd card on, got {idx}"
+                assert all(b - a >= 3 for a, b in zip(idx, idx[1:])), f"{mode}: two cards between 🧩s, got {idx}"
+                for i in idx:
+                    p = ps[i]; w, (x, y) = p["whole"], p["parts"]
+                    assert x + y == w and x > 0 and y > 0, p
+                    assert p["a"] == (w if p["missing"] == "whole" else w - p["given"]), p
+                    assert p["src"]["t"] in facts, p
+                page.evaluate("restart()"); page.wait_for_timeout(150)
 
     def test_bridges_weave_two_balance_cards_that_cross_ten(self, page):
         """Every bridge set (10 and 20, all of them) carries TWO balance cards (TSB,

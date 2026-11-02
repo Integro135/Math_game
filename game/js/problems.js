@@ -466,8 +466,23 @@ function _withBridgeScales(set,mode){
   if(bl[1])set.splice(Math.min(11,set.length),0,bl[1]);
   return set;
 }
+// 2026-11-02: the WHOLE-AND-PARTS card (🧩 TPW, exercises/part_whole.ex.js) —
+// after every two cards of a bridge set, the next fact card (a+b, a−b, a + __ = c,
+// a − __ = b) is posed as a part–whole exercise: write the whole and both parts,
+// draw the whole in bars of 5 and circles of 1, colour a part. The fact is kept in
+// `src` (same facts, same order); unknowns, chains and balance cards are left alone.
+function _weavePartWhole(set){
+  const ex=EX('part_whole');if(!ex)return set;
+  let since=0;   // the first one comes after two cards
+  for(let i=0;i<set.length;i++){
+    const p=set[i];
+    if(since>=2&&(p.t===TA||p.t===TS||p.t===TMA||p.t===TM)){const c=ex.fromFact(p);if(c){set[i]=c;since=0;continue;}}
+    since++;
+  }
+  return set;
+}
 function makeBridgePool(){
-  const set=_withBridgeScales(_sprinkleEquations(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length](),_brTurn%2?'sub':'add')),'br');
+  const set=_weavePartWhole(_withBridgeScales(_sprinkleEquations(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length](),_brTurn%2?'sub':'add')),'br'));
   _brTurn=(_brTurn+1)%_BRIDGE_SETS.length;
   try{localStorage.setItem('brTurn',String(_brTurn));}catch(e){}
   return set;
@@ -542,7 +557,7 @@ function _bridge20Set5(){
 // instead of being a separate set — so it recurs throughout bridge-20 too.
 const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2,_bridge20Set3,_bridge20Set4,_bridge20Set5];
 function makeBridge20Pool(){
-  const set=_withBridgeScales(_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length](),_b20Turn%2?'sub':'add'),'b20');   // 15 + 2 balance cards
+  const set=_weavePartWhole(_withBridgeScales(_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length](),_b20Turn%2?'sub':'add'),'b20'));   // 15 + 2 balance cards
   _b20Turn=(_b20Turn+1)%_BRIDGE20_SETS.length;
   try{localStorage.setItem('b20Turn',String(_b20Turn));}catch(e){}
   // NOTE: no polygon weaving here — the bridge-20 curriculum order MUST stay
