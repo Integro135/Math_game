@@ -83,6 +83,11 @@ function loadJarStage(onReady){
   if(window.JAR_STAGE){ if(onReady) onReady(); return; }
   _injectScript('aids/jar_stage.js', () => { if(onReady) onReady(); });
 }
+/* the part–whole board (aids/part_whole.js) — the bridge games' third aid */
+function loadPartWhole(onReady){
+  if(window.PART_WHOLE){ if(onReady) onReady(); return; }
+  _injectScript('aids/part_whole.js', () => { if(onReady) onReady(); });
+}
 
 /* ── exercise-type modules — ONE FILE PER TYPE ── */
 function loadExercise(name, onReady){

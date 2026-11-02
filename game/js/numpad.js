@@ -40,7 +40,7 @@
      (matchMedia('(hover:none)').matches && navigator.maxTouchPoints > 0)));
   if (!TOUCH) return;
 
-  var SEL = 'input.ans-inp,input.tx-sub-inp';
+  var SEL = 'input.ans-inp,input.tx-sub-inp,input.pw-inp';   // .pw-inp = the part–whole board's boxes
   var pad = null, active = null;
   /* a tap OUTSIDE the pad closes it — but only from a comfortable distance:
      taps within ~2.5cm of the pad's edge (mid-solve stray fingers, nearby

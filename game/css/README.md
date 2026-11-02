@@ -54,8 +54,10 @@ and `.star-pulse` on `#score-star`.
 value pill / reset); TT tens-hint icon (`.tt-hint-icon`) and `#digit-hint-btn`;
 **try-first gate** visuals; the inline **number-line kangaroo panel** (`#nl-panel`
 with `.nl-bar-track`, ticks, `.nl-num`, the `.nl-dot`/`.kang` rider, arcs, and the
-fixed-position jump trail/dust/firework particles); chain-garden button and display
-(`.pgm-gn-*`).
+fixed-position jump trail/dust/firework particles); the **part–whole board panel**
+(`#pw-panel` — the container only; the template / bars / circles inside carry
+`.pw-*` classes styled by `aids/part_whole.js` itself); chain-garden button and
+display (`.pgm-gn-*`).
 
 **Key functionality.**
 - **Try-first lock.** `.tf-locked` greys out and disables an element. `body.tf-locked-nl` hides the number-line/garden number labels and ticks and desaturates the rider/dot, so kids must estimate before the scale is revealed. `#tf-msg` / `#tf-nl-note` are the prompt text (with per-theme color tweaks for `theme-girls` / `theme-galaxy`).
@@ -133,6 +135,7 @@ treat that contract as off-limits.
 | `.gm-active` | games-menu JS | Makes the games dropdown button visible/clickable. |
 | `.open` | menu JS | Shows `#theme-menu` / `#games-menu`. |
 | `#nl-panel` | aids JS | The inline number-line kangaroo aid panel (rider, arcs, ticks). |
+| `#pw-panel` | aids JS | The part–whole board panel (bridges' third aid); `.pw-*` internals come from `aids/part_whole.js`. |
 | `.glass` | static | Shared frosted-panel mixin (header, card, …). |
 | `.mode-ind` | header markup | Read-only current-game text in `.hdr-corner`. |
 | `.glow-click` | hint JS | Gold glow marking a clickable hint target. |

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<!-- ═══════════════════════════════════════════════════════════════════
+     TESTER — the part–whole board (תַּבְנִית שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) and the
+     equation cards (6 + __ = 14) of גֶּשֶׁר 10 / 20, viewed on their own.
+     This is the REAL game page (a copy of index.html's skeleton + the same
+     scripts, so it runs from file:// with no iframe or fetch) plus a dev
+     sidebar (#pwdev, bottom of the file) that forces any card, reveals the
+     aids and opens the board at once. Keep the skeleton in step with
+     index.html — tests/test_part_whole.py checks every id/script/stylesheet
+     of index.html is present here.
+     ═══════════════════════════════════════════════════════════════════ -->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧩 טֶסְטֶר — שָׁלֵם–חֵלֶק</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="game/css/base.css">
+<link rel="stylesheet" href="game/css/aids.css">
+<link rel="stylesheet" href="game/css/effects.css">
+<link rel="stylesheet" href="game/css/themes.css">
+<link rel="stylesheet" href="game/css/responsive.css">
+<link rel="stylesheet" href="game/css/form.css">
+<link rel="stylesheet" href="game/css/numpad.css">
+<!-- ── LOADING SCREEN: opaque, first thing painted, hides the game AND its
+     background until the theme's scene has drawn its first frame (or 40 s).
+     Inline so it needs no stylesheet or font to appear. bg-loader.js reports
+     progress/readiness through window.GAME_LOADING; main.js delays the intro
+     splash and the background preload until it is gone. ── -->
+<style id="load-css">
+#load-screen{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  direction:rtl;text-align:center;color:#eef2ff;font-family:'Fredoka One','Nunito','Segoe UI',Arial,sans-serif;
+  background:radial-gradient(ellipse at 50% 40%,#2a1d5e 0%,#160f3a 55%,#0a0720 100%);transition:opacity .5s ease}
+#load-screen.out{opacity:0;pointer-events:none}
+#load-screen .ld-title{font-size:clamp(28px,6vw,46px);letter-spacing:.02em;text-shadow:0 3px 18px rgba(0,0,0,.6),0 0 30px rgba(180,150,255,.35)}
+#load-screen .ld-ring{width:78px;height:78px;border-radius:50%;border:6px solid rgba(160,170,255,.2);border-top-color:#ffd27d;border-right-color:#c9a6ff;animation:ldSpin 1.1s linear infinite}
+#load-screen .ld-txt{font-family:'Nunito','Segoe UI',Arial,sans-serif;font-weight:800;font-size:clamp(16px,3.4vw,21px);color:#dfe6ff;min-height:1.4em}
+#load-screen .ld-bar{width:min(70vw,360px);height:8px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
+#load-screen .ld-bar i{display:block;height:100%;width:8%;border-radius:999px;background:linear-gradient(90deg,#ffd27d,#ff9ecf,#9ec2ff);transition:width .5s ease}
+#load-screen .ld-hint{font-family:'Nunito','Segoe UI',Arial,sans-serif;font-size:14px;color:rgba(200,210,255,.7);opacity:0;transition:opacity .5s}
+#load-screen .ld-hint.on{opacity:1}
+@keyframes ldSpin{to{transform:rotate(360deg)}}
+</style>
+<style id="pwdev-css">
+#pwdev{position:fixed;top:10px;left:10px;z-index:9600;width:252px;max-height:calc(100vh - 20px);overflow:auto;direction:rtl;
+  background:rgba(14,10,30,.93);color:#e8e8f0;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 12px 8px;
+  font:800 12.5px/1.35 'Nunito','Segoe UI',sans-serif;box-shadow:0 10px 32px rgba(0,0,0,.5);backdrop-filter:blur(8px)}
+#pwdev::-webkit-scrollbar{width:4px}#pwdev::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:2px}
+#pwdev .pwd-h{font-size:.95rem;font-weight:900;color:#ffd700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+#pwdev .pwd-x{cursor:pointer;opacity:.6;font-size:.9rem}#pwdev .pwd-x:hover{opacity:1}
+#pwdev .pwd-sec{border-top:1px solid rgba(255,255,255,.1);padding:7px 0 4px}
+#pwdev .pwd-t{font-size:.66rem;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:5px}
+#pwdev .pwd-pills{display:flex;flex-wrap:wrap;gap:4px}
+#pwdev .pwd-p{padding:4px 9px;border-radius:20px;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);cursor:pointer;
+  white-space:nowrap;direction:ltr;unicode-bidi:isolate;transition:all .12s}
+#pwdev .pwd-p.he{direction:rtl}
+#pwdev .pwd-p:hover{background:rgba(255,255,255,.16);transform:scale(1.04)}#pwdev .pwd-p:active{transform:scale(.95)}
+#pwdev .pwd-p.on{background:#ffd700;color:#1a1200;border-color:#ffd700}
+#pwdev .pwd-p.b20{border-color:rgba(100,181,246,.4)}#pwdev .pwd-p.b20.on{background:#64B5F6;border-color:#64B5F6;color:#001a3a}
+#pwdev .pwd-row{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+#pwdev select,#pwdev input[type=number]{padding:4px 6px;border-radius:8px;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);
+  color:#e8e8f0;font:800 12px 'Nunito',sans-serif;text-align:center}
+#pwdev select{direction:ltr}#pwdev input[type=number]{width:52px;-moz-appearance:textfield}
+#pwdev .pwd-go{padding:4px 10px;border-radius:8px;border:none;background:#ffd700;color:#1a1200;font:900 12px 'Nunito',sans-serif;cursor:pointer}
+#pwdev .pwd-chk{display:flex;align-items:center;gap:6px;margin-top:6px;color:rgba(255,255,255,.8);cursor:pointer}
+#pwdev #pwd-status{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.1);font-size:.72rem;color:rgba(255,255,255,.55);direction:ltr;text-align:left;min-height:1.2em}
+#pwdev-show{position:fixed;top:10px;left:10px;z-index:9600;display:none;padding:6px 10px;border-radius:20px;border:none;background:rgba(14,10,30,.9);
+  color:#ffd700;font:900 13px 'Nunito',sans-serif;cursor:pointer}
+@media(max-width:900px){#pwdev{width:210px;font-size:11.5px}}
+</style>
+</head>
+<body>
+
+<div id="load-screen">
+  <div class="ld-title">מִשְׂחֲקֵי חֶשְׁבּוֹן</div>
+  <div class="ld-ring"></div>
+  <div class="ld-txt">טוֹעֲנִים אֶת הָעוֹלָם…</div>
+  <div class="ld-bar"><i></i></div>
+  <div class="ld-hint">עוֹד רֶגַע, מְצַיְּרִים אֶת הָרֶקַע 🎨</div>
+</div>
+<script>
+/* window.GAME_LOADING — the loading screen's controller (see bg-loader.js).
+   show(): put it up (boot, or a theme whose scene isn't loaded yet)
+   step(label, frac): status line + progress bar (frac 0..1)
+   done(): fade out and remove; fires the 'game-ready' event once
+   onReady(fn): run fn now if ready, else when it happens
+   Safety: the screen never stays longer than MAX ms. */
+(function(){
+  var MAX = 40000, el = document.getElementById('load-screen'), ready = false, maxTO = null, hintTO = null, up = true;
+  function q(s){ return el ? el.querySelector(s) : null; }
+  function done(){
+    if (!el || !up){ if (!ready){ ready = true; window.dispatchEvent(new CustomEvent('game-ready')); } return; }
+    up = false; clearTimeout(maxTO); clearTimeout(hintTO);
+    var b = q('.ld-bar i'); if (b) b.style.width = '100%';
+    el.classList.add('out');
+    setTimeout(function(){ if (el && el.parentNode) el.parentNode.removeChild(el); el = null; }, 560);
+    if (!ready){ ready = true; window.dispatchEvent(new CustomEvent('game-ready')); }
+  }
+  function arm(){ clearTimeout(maxTO); clearTimeout(hintTO); maxTO = setTimeout(done, MAX); hintTO = setTimeout(function(){ var h = q('.ld-hint'); if (h) h.classList.add('on'); }, 5000); }
+  window.GAME_LOADING = {
+    show: function(label){
+      if (!el){                                  // a later theme switch to a scene not yet loaded: rebuild it
+        el = document.createElement('div'); el.id = 'load-screen';
+        el.innerHTML = '<div class="ld-title">מִשְׂחֲקֵי חֶשְׁבּוֹן</div><div class="ld-ring"></div><div class="ld-txt"></div><div class="ld-bar"><i></i></div><div class="ld-hint">עוֹד רֶגַע, מְצַיְּרִים אֶת הָרֶקַע 🎨</div>';
+        document.body.appendChild(el);
+      }
+      up = true; el.classList.remove('out'); ready = false;
+      var t = q('.ld-txt'); if (t && label) t.textContent = label;
+      var b = q('.ld-bar i'); if (b) b.style.width = '8%';
+      arm();
+    },
+    step: function(label, frac){ var t = q('.ld-txt'); if (t && label) t.textContent = label; var b = q('.ld-bar i'); if (b && frac != null) b.style.width = Math.round(Math.max(0.08, Math.min(1, frac)) * 100) + '%'; },
+    done: done,
+    onReady: function(fn){ if (ready) fn(); else window.addEventListener('game-ready', function h(){ window.removeEventListener('game-ready', h); fn(); }); },
+    isUp: function(){ return up; }
+  };
+  arm();
+})();
+</script>
+
+<div id="bg"></div>
+<div id="stars-layer"></div>
+<div id="particles"></div>
+
+<div class="wrap">
+
+  <header class="header glass">
+    <button id="theme-toggle" class="theme-toggle-btn" onclick="openThemeMenu(event)" title="בְּחַר עִיצּוּב">🎨</button>
+    <button id="settings-btn" class="theme-toggle-btn settings-gear" onclick="openParentGate(event)" title="הַגְדָּרוֹת מִשְׂחָק">⚙️</button>
+    <!-- top corner: the current game as read-only TEXT, above the gift goal;
+         changing the game lives only in the settings modal (⚙️) -->
+    <div class="hdr-corner">
+      <div class="mode-ind" id="mode-ind"></div>
+      <div class="gift-indicator" id="gift-indicator" style="display:none">
+        <span id="gift-next"></span>
+      </div>
+    </div>
+    <div class="hdr-top">
+      <span class="uni" id="uni-left">🦄</span>
+      <h1 class="title" id="game-title" title="v10.16">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <span class="uni" id="uni-right">✨</span>
+    </div>
+    <div class="hdr-stats">
+      <span><span id="score-star">⭐</span> נִיקּוּד: <strong id="score-val">0</strong></span>
+      <span id="prog-txt">📖 תַּרְגִּיל 1 מִתּוֹךְ 12</span>
+    </div>
+    <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+  </header>
+
+  <div class="card glass" id="card">
+    <div class="eq-row"><div class="equation" id="eq"></div><div class="eq-btns-row"><button id="chk-btn" class="chk-btn" onclick="checkAns()">✔?</button><div class="eq-mini-btns"><button id="digit-hint-btn" class="tt-hint-icon" style="display:none" data-hint="" onclick="showDigitHint(this)">?</button><button class="games-drop-btn gm-active" id="games-drop-btn" onclick="openGamesMenu(event)" title="מִשְׂחֲקוֹנִים">🦘</button></div></div></div>
+    <div class="hint"     id="hint"></div>
+    <div id="chain-tools" style="display:none">
+      <div id="tf-nl-note">💪 נַסִּי לְבַד. אַתְּ אַלּוּפָה!</div>
+      <div class="pgm-nl"><div class="pgm-bar" id="pgm-bar"><svg class="pgm-arcs-svg" id="pgm-arcs-svg" viewBox="0 0 100 16" preserveAspectRatio="none"></svg><div class="pgm-dot" id="pgm-dot"></div></div><div class="pgm-nl-nums" id="pgm-nums"></div></div>
+      <div class="pgm-scene">
+        <button class="pgm-side pgm-minus" id="pgm-btn-minus" onclick="pgmMinus()">−</button>
+        <div class="pgm-jar-col">
+          <!-- the jar display module (aids/jar_stage.js) mounts here; art comes
+               from the active aid variant (aids/<name>.aids.js) -->
+          <div id="pgm-ck-jar"></div><div id="pgm-gn-display" style="display:none"><div class="pgm-gn-flowers" id="pgm-gn-flowers"></div><div class="pgm-gn-lbl">🌸 <span id="pgm-gn-count">0</span></div></div><div class="pgm-jar-btm"><div class="pgm-val" id="pgm-val">0</div><button class="pgm-rst" onclick="pgmInitChain()" title="התחל מחדש">↺</button></div>
+        </div>
+        <button class="pgm-side pgm-plus" id="pgm-btn-plus" onclick="pgmPlus()">+</button>
+      </div>
+    </div>
+    <div id="nl-panel" style="display:none"><div class="nl-row"><button class="side-btn btn-minus" id="nl-btn-minus" onclick="NL.step(-1)">−</button><div class="nl-wrap" id="nl-wrap"><svg class="nl-arcs-svg" id="nl-arcs-svg" viewBox="0 0 600 88" preserveAspectRatio="none"></svg><div class="nl-bar-track" id="nl-bar"><div class="nl-dot" id="nl-dot"></div></div></div><button class="side-btn btn-plus" id="nl-btn-plus" onclick="NL.step(1)">+</button></div><div class="nl-controls"><button class="ctrl-btn btn-reset" onclick="NL.reset()"><span class="btn-icon">↺</span></button><button class="ctrl-btn btn-undo" onclick="NL.undo()"><span class="btn-icon">↩</span></button></div></div>
+    <!-- the part–whole board (תַּבְנִית שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) — the bridge
+         games' third aid; aids/part_whole.js mounts here on demand -->
+    <div id="pw-panel" style="display:none"></div>
+    <div class="div"></div>
+    <div class="fb" id="fb"></div>
+    <div class="btn-row" id="btns"></div>
+  </div>
+
+</div>
+
+<!-- success celebrations are external screens (success_screens/*.js); the host
+     (game/js/success.js) creates their full-screen modal root at runtime -->
+
+<div id="sad-ov" style="display:none"><div class="sad-box"><span class="sad-emoji">😢</span></div></div>
+
+<div id="num-tt"><div class="ntt-lbl"></div><div class="ntt-grid"></div></div>
+
+<div id="report-ov" style="display:none">
+  <div class="report-box">
+    <div class="report-hdr">
+      <span class="report-title">📊 סִיכּוּם תַּרְגִּילִים</span>
+      <button class="ko-close" onclick="reportClose()">✕</button>
+    </div>
+    <div id="report-body"></div>
+  </div>
+</div>
+
+<!-- ── Settings modal — three sub-tabs: general (game picker + options),
+     game prizes, and run history. Tabs switch via pickSetTab(). ── -->
+<div id="settings-ov" style="display:none" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-box">
+    <div class="settings-hdr">
+      <span class="settings-title">⚙️ הַגְדָּרוֹת מִשְׂחָק</span>
+      <button class="ko-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="set-tabs">
+      <button class="set-tab active" data-stab="general" onclick="pickSetTab('general')">⚙️ כְּלָלִי</button>
+      <button class="set-tab" data-stab="prizes" onclick="pickSetTab('prizes')">🎁 פְּרָסִים</button>
+      <button class="set-tab" data-stab="history" onclick="pickSetTab('history')">📜 הִיסְטוֹרְיָה</button>
+    </div>
+
+    <!-- General settings (game picker + options) -->
+    <div class="set-panel set-panel-active" data-stab="general">
+      <div class="set-sec-lbl">בַּחֲרִי רָמָה וּמִשְׂחָק:</div>
+      <div class="level-row" id="level-row"></div>
+      <div class="set-sec-lbl set-cfg-lbl">עוֹד הַגְדָּרוֹת:</div>
+      <label class="set-toggle">
+        <input type="checkbox" id="intro-toggle" checked onchange="setIntroEnabled(this.checked)">
+        <span>מָסַךְ פְּתִיחָה בִּטְעִינַת הַמִּשְׂחָק</span>
+      </label>
+      <label class="set-toggle">
+        <input type="checkbox" id="borrow-toggle" onchange="setSubBorrowMode(this.checked?'auto':'hybrid')">
+        <span>חִסּוּר בְּטוּר: פְּרִיטָה אוֹטוֹמָטִית (בִּמְקוֹם לְחִיצָה)</span>
+      </label>
+      <label class="set-name">
+        <span>הַשֵּׁם שֶׁלִּי:</span>
+        <input type="text" id="name-input" maxlength="12" placeholder="לְמָשָׁל: נֹעָה"
+               oninput="setPlayerName(this.value)">
+      </label>
+    </div>
+
+    <!-- Game prizes -->
+    <div class="set-panel" data-stab="prizes">
+      <div class="set-sec-lbl">גֹּבַהּ הַפְּרָס לְכָל מִשְׂחָק (0 = אֵין פְּרָס), וּלְיָדוֹ 🎁× — כַּמָּה פְּרָסִים מְקַבְּלִים בִּזְכִיָּה:</div>
+      <div class="prize-row" id="prize-row"></div>
+    </div>
+
+    <!-- Run history (name + game + grade per completed set, kept across runs) -->
+    <div class="set-panel" data-stab="history">
+      <div id="history-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Parent gate — a multiplication challenge guarding the settings modal.
+     Same box style/position as #settings-ov; settings open only on a correct
+     answer. ── -->
+<div id="parent-ov" style="display:none" onclick="if(event.target===this)closeParentGate()">
+  <div class="settings-box">
+    <div class="settings-hdr">
+      <span class="settings-title">הוֹכֵחַ שֶׁאַתָּה הוֹרֶה</span>
+      <button class="ko-close" onclick="closeParentGate()">✕</button>
+    </div>
+    <div class="set-sec-lbl">פִּתְרוּ אֶת תַּרְגִּיל הַחִלּוּק כְּדֵי לְהִכָּנֵס לַהַגְדָּרוֹת:</div>
+    <div id="parent-q" style="font-family:'Fredoka One',cursive;font-size:2.2rem;text-align:center;direction:ltr;color:#ffe9a8;margin:6px 0 14px"></div>
+    <div style="display:flex;gap:14px;justify-content:center;align-items:center">
+      <input type="number" id="parent-ans" inputmode="numeric" autocomplete="off" class="ans-inp"
+             onkeydown="if(event.key==='Enter')checkParentGate()">
+      <button class="chk-btn" onclick="checkParentGate()" title="אִשּׁוּר">✔</button>
+    </div>
+    <div id="parent-err" style="text-align:center;color:#ff9ab0;font-weight:800;min-height:1.3em;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ── Theme picker menu (outside any backdrop-filter parent) ── -->
+<div id="theme-menu">
+  <button class="tm-item" onclick="pickTheme('girls')"><span class="tm-icon">🦄</span></button>
+  <button class="tm-item" onclick="pickTheme('galaxy')"><span class="tm-icon">🌌</span></button>
+  <button class="tm-item" onclick="pickTheme('reef')"><span class="tm-icon">🐠</span></button>
+  <button class="tm-item" onclick="pickTheme('dubai')"><span class="tm-icon">🏙️</span></button>
+  <button class="tm-item" onclick="pickTheme('savanna')"><span class="tm-icon">🦁</span></button>
+  <button class="tm-item" onclick="pickTheme('dinosaurs')"><span class="tm-icon">🦕</span></button>
+  <button class="tm-item" onclick="pickTheme('frozen')"><span class="tm-icon">❄️</span></button>
+  <button class="tm-item" onclick="pickTheme('maldives')"><span class="tm-icon">🏝️</span></button>
+  <button class="tm-item" onclick="pickTheme('autumn')"><span class="tm-icon">🍂</span></button>
+</div>
+
+<!-- ── Games dropdown menu (outside any backdrop-filter parent) ── -->
+<div id="games-menu"></div>
+
+<script>try{localStorage.setItem('introSplash','0');}catch(e){}</script>   <!-- tester: no intro splash -->
+<script src="game/js/data.js"></script>
+<script src="game/js/problems.js"></script>
+<script src="game/js/core.js"></script>
+<script src="game/js/success.js"></script>
+<script src="game/js/aids.js"></script>
+<script src="game/js/bg-loader.js"></script>
+<script src="game/js/themes.js"></script>
+<script src="game/js/main.js"></script>
+<script src="game/js/numpad.js"></script>
+
+<!-- ── the dev sidebar (not part of the game) ── -->
+<aside id="pwdev">
+  <div class="pwd-h"><span>🧩 טֶסְטֶר — שָׁלֵם–חֵלֶק</span><span class="pwd-x" title="הסתר" onclick="PWDEV.hide()">✕</span></div>
+  <div class="pwd-sec"><div class="pwd-t">כרטיסים — גֶּשֶׁר 10</div><div class="pwd-pills" id="pwd-br"></div></div>
+  <div class="pwd-sec"><div class="pwd-t">כרטיסים — גֶּשֶׁר 20</div><div class="pwd-pills" id="pwd-b20"></div></div>
+  <div class="pwd-sec"><div class="pwd-t">מותאם אישית</div>
+    <div class="pwd-row">
+      <select id="pwd-type" title="סוג">
+        <option value="TMA">a + __ = b</option><option value="TM">a − __ = b</option>
+        <option value="TA">a + b</option><option value="TS">a − b</option>
+        <option value="TVA">a + ○ (○ = b)</option><option value="TVS">a − ○ (○ = b)</option>
+      </select>
+      <input id="pwd-a" type="number" value="6" title="a"><input id="pwd-b" type="number" value="14" title="b">
+      <button class="pwd-go" onclick="PWDEV.custom()">הצג</button>
+    </div>
+  </div>
+  <div class="pwd-sec"><div class="pwd-t">עזרים</div>
+    <div class="pwd-pills">
+      <span class="pwd-p he" onclick="PWDEV.aid('pw')">🧩 שלם–חלק</span>
+      <span class="pwd-p he" onclick="PWDEV.aid('kang')">🦘 ישר</span>
+      <span class="pwd-p he" onclick="PWDEV.aid('nl')">🍪 צנצנת</span>
+      <span class="pwd-p he" onclick="PWDEV.reveal()">💪 גלה עזרים</span>
+    </div>
+    <label class="pwd-chk"><input type="checkbox" id="pwd-auto" checked> לפתוח את שלם–חלק מיד עם הכרטיס</label>
+  </div>
+  <div class="pwd-sec"><div class="pwd-t">הסדרה האמיתית</div>
+    <div class="pwd-pills">
+      <span class="pwd-p he" onclick="PWDEV.set('br')">גשר 10</span>
+      <span class="pwd-p he b20" onclick="PWDEV.set('b20')">גשר 20</span>
+      <span class="pwd-p he" onclick="PWDEV.nextEq()">⏭ למשוואה הבאה</span>
+    </div>
+  </div>
+  <div class="pwd-sec"><div class="pwd-t">עיצוב</div>
+    <div class="pwd-pills"><span class="pwd-p he" onclick="PWDEV.theme()">🎨 ערכה הבאה</span></div>
+  </div>
+  <div id="pwd-status">—</div>
+</aside>
+<button id="pwdev-show" onclick="PWDEV.show()">🧩 טסטר</button>
+<script>
+/* PWDEV — drives the live game in THIS window (every game global is in scope) */
+window.PWDEV=(function(){
+  const $=id=>document.getElementById(id);
+  // [label, mode, problem expression] — the equation forms first
+  const CARDS=[
+    ['6 + __ = 14','br',"({t:TMA,a:6,b:14})"],
+    ['9 + __ = 16','br',"({t:TMA,a:9,b:16})"],
+    ['16 − __ = 7','br',"({t:TM,a:16,b:7})"],
+    ['14 − __ = 8','br',"({t:TM,a:14,b:8})"],
+    ['9 + 6','br',"({t:TA,a:9,b:6})"],
+    ['15 − 9','br',"({t:TS,a:15,b:9})"],
+    ['9 + ○ (○=6)','br',"({t:TVA,a:9,b:6,sym:'circle'})"],
+    ['15 − △ (△=9)','br',"({t:TVS,a:15,b:9,sym:'triangle'})"],
+    ['18 + __ = 27','b20',"({t:TMA,a:18,b:27})"],
+    ['25 − __ = 18','b20',"({t:TM,a:25,b:18})"],
+    ['19 + 8','b20',"({t:TA,a:19,b:8})"],
+    ['27 − 9','b20',"({t:TS,a:27,b:9})"],
+  ];
+  let cur=null;
+  function status(t){$('pwd-status').textContent=t;}
+  function mark(){document.querySelectorAll('#pwd-br .pwd-p,#pwd-b20 .pwd-p').forEach(el=>el.classList.toggle('on',el.dataset.k===cur));}
+  function ready(cb,tries){
+    tries=tries==null?120:tries;
+    if(window.POOL_PENDING!==true&&typeof problems!=='undefined'&&problems.length){cb();return;}
+    if(tries<=0){status('⏱ timeout');return;}
+    setTimeout(()=>ready(cb,tries-1),60);
+  }
+  // the aids are hidden until the first mistake — pretend one happened
+  function reveal(){if(typeof tryFirst!=='undefined'&&tryFirst===0&&typeof _unlockAids==='function'){_unlockAids();tryFirst=1;}}
+  function aid(m){reveal();toggleAidMode(m);status('aid: '+aidMode);}
+  function force(m,expr,auto){
+    cur=expr;mark();
+    const go=()=>{
+      const p=eval(expr);problems[idx]=p;done=false;loadProblem();
+      status(mode+' · '+expr.replace(/^\(|\)$/g,''));
+      if(auto==null?$('pwd-auto').checked:auto)setTimeout(()=>aid('pw'),120);
+    };
+    if(mode!==m){setMode(m);ready(go);}else go();
+  }
+  function custom(){
+    const t=$('pwd-type').value,a=+$('pwd-a').value||0,b=+$('pwd-b').value||0;
+    const sym=(t==='TVA'||t==='TVS')?",sym:'circle'":'';
+    force(mode==='b20'?'b20':'br',`({t:${t},a:${a},b:${b}${sym}})`);
+  }
+  function set(m){cur=null;mark();if(mode===m||m==='br')setMode(m);else setMode(m);ready(()=>status(m+' · '+problems.length+' cards'));}
+  // jump to the next equation card (TMA / TM) of the live set
+  function nextEq(){
+    for(let k=1;k<=problems.length;k++){const j=(idx+k)%problems.length;const p=problems[j];
+      if(p.t===TMA||p.t===TM){idx=j;done=false;loadProblem();status(mode+' · card '+(j+1)+' · '+p.t+' '+p.a+','+p.b);
+        if($('pwd-auto').checked)setTimeout(()=>aid('pw'),120);return;}}
+    status('no equation card in this set');
+  }
+  const THEME_KEYS=(typeof THEMES==='object'&&THEMES)?Object.keys(THEMES):['girls','galaxy','reef','dubai','savanna','dinosaurs','frozen','maldives','autumn'];
+  function theme(){
+    let c='girls';try{c=localStorage.getItem('gameTheme')||'girls';}catch(e){}
+    const n=THEME_KEYS[(THEME_KEYS.indexOf(c)+1)%THEME_KEYS.length];
+    if(typeof pickTheme==='function')pickTheme(n);status('theme: '+n);
+  }
+  function hide(){$('pwdev').style.display='none';$('pwdev-show').style.display='block';}
+  function show(){$('pwdev').style.display='';$('pwdev-show').style.display='none';}
+  function build(){
+    CARDS.forEach(([lbl,m,expr])=>{
+      const el=document.createElement('span');el.className='pwd-p'+(m==='b20'?' b20':'');el.dataset.k=expr;el.textContent=lbl;
+      el.onclick=()=>force(m,expr);$(m==='br'?'pwd-br':'pwd-b20').appendChild(el);
+    });
+  }
+  build();
+  // start on the first equation card once the game has booted
+  const boot=()=>ready(()=>force('br',CARDS[0][2]));
+  if(window.GAME_LOADING&&GAME_LOADING.onReady)GAME_LOADING.onReady(()=>setTimeout(boot,200));else setTimeout(boot,600);
+  return{CARDS,force,custom,aid,reveal,set,nextEq,theme,hide,show};
+})();
+</script>
+</body>
+</html>

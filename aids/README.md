@@ -146,6 +146,35 @@ explicit `fx.poof` (it relies on the engine's default cookie-crumb palette).
 7. **Revert.** `unloadBackground()` always calls `loadAids('classic')`, so the
    default kangaroo + cookie jar returns when no themed background is active.
 
+## 5b. `part_whole.js` — the part–whole board (the bridges' third aid)
+
+A second self-contained module in this folder, NOT a variant and not themed by
+the variants: `window.PART_WHOLE.mount({root}) → handle` with
+`set({whole, parts:[a,b], missing:'whole'|'part', given, max})`, `reset()`,
+`state()`, `cleanup()`, `root`. Injected on demand by `bg-loader.loadPartWhole`
+into `#pw-panel` and driven by the `PW` driver in `game/js/aids.js`
+(`aidMode 'pw'`, offered in גֶּשֶׁר 10 / 20 only). It renders, after the workbook
+page on equations (6 + __ = 14):
+
+- **the template** — the whole (שָׁלֵם) on top, two parts (חֵלֶק) below; every box
+  judges itself against the truth it was handed (`.pw-ok` / `.pw-err`; a prefix
+  of a right number stays neutral; a duplicate of a distinct part is the fault of
+  the box typed last) and the matching exercise is written underneath
+  (`.pw-match`: whole & part → `14 − 6 = ___`, two parts → `9 + 6 = ___`),
+  filling in as boxes are placed right;
+- **the drawing** — bars of 5 (`.pw-bar`, five `<s>` units inside) and circles
+  of 1 (`.pw-dot`), bars first; a tap on a circle colours it (`.on`), a tap on a
+  bar colours ONE MORE unit (`s.on`, `.full` at five, a sixth tap clears) so the
+  exact number shows whatever bars were drawn; undo removes the last drawn item,
+  clear empties;
+  the total (`.pw-total`, ✓ when it equals the whole) and the coloured count
+  (`.pw-painted`) are shown — the uncoloured count is the child's to find. Capped
+  at `max` (30).
+
+It injects its own `<style id="pw-style">`; every element carries a stable
+`.pw-*` class that a skin may restyle (`unicorns.skin.css` does, for the light
+valley). `part_whole_dev.html` at the repo root is its standalone tester.
+
 ## 6. Adding a new variant
 
 1. Create `aids/<name>.aids.js` registering

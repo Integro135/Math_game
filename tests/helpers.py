@@ -44,7 +44,7 @@ def get_state(page) -> dict:
         ptype, num1, num2, num3, num4,
         idx, score, done, mode, ttOp, bgOp,
         TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TCA, TCS, TBG, TCM, TBC,
-        TH, TVA, TVS, TRA
+        TH, TVA, TVS, TRA, TMA
     })""")
 
 
@@ -103,6 +103,8 @@ def correct_answer(state: dict) -> tuple:
         return ("single", n1 + n2)    # single ⃝-unknown ADD (num1 + ⃝, ⃝=num2)
     if p == state.get("TVS"):
         return ("single", n1 - n2)    # single ⃝-unknown SUB
+    if p == state.get("TMA"):
+        return ("single", n2 - n1)    # the equation a + __ = c (num2 = the whole c)
     if p == state.get("TRA"):
         # __+__+__ = R (R stored in num1); any triple summing to R is accepted —
         # return a balanced one (three boxes #ans1/#ans2/#ans3)

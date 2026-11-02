@@ -289,6 +289,16 @@ const AID_ICON_BOX=
   `<circle cx="10" cy="5" r="2.2" fill="currentColor" stroke="none"/>`+
   `<circle cx="15.5" cy="3.4" r="2.2" fill="currentColor" stroke="none"/>`+
   `<circle cx="21" cy="5" r="2.2" fill="currentColor" stroke="none"/></svg>`;
+// the part–whole board: a whole box over two part boxes (the bridges' third aid)
+const AID_ICON_PW=
+  `<svg class="aid-ico" viewBox="0 0 34 26" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">`+
+  `<rect x="11" y="2" width="12" height="9" rx="2"/>`+
+  `<rect x="2" y="15" width="12" height="9" rx="2"/>`+
+  `<rect x="20" y="15" width="12" height="9" rx="2"/>`+
+  `<line x1="14" y1="11" x2="9" y2="15"/>`+
+  `<line x1="20" y1="11" x2="25" y2="15"/></svg>`;
+/* the games button shows the ACTIVE aid's icon */
+function aidModeIcon(){return aidMode==='nl'?AID_ICON_BOX:aidMode==='pw'?AID_ICON_PW:AID_ICON_NL;}
 function buildGamesMenu(){
   const menu=document.getElementById('games-menu');
   const btn=document.getElementById('games-drop-btn');
@@ -303,9 +313,12 @@ function buildGamesMenu(){
   // EVERY mode (the operands fit the 0-20 jar); TC/TT/TCA/TBG bring their
   // own aid and are excluded
   const aidsApply=ptype===TZ||ptype===TX||ptype===TW||ptype===TDA||ptype===TDS||
-    ptype===TA||ptype===TS||ptype===TM;
+    ptype===TA||ptype===TS||ptype===TM||ptype===TMA||ptype===TVA||ptype===TVS;
   if(aidsApply){
-    [{m:'kang',icon:nlIcon},{m:'nl',icon:jarIcon}].forEach(({m,icon})=>{
+    const toggles=[{m:'kang',icon:nlIcon},{m:'nl',icon:jarIcon}];
+    // the bridges (גֶּשֶׁר 10 / 20) offer a THIRD aid: the part–whole board
+    if(PW.applies())toggles.push({m:'pw',icon:AID_ICON_PW});
+    toggles.forEach(({m,icon})=>{
       extras.push({icon,cost:null,disabled:m===aidMode,fn:()=>toggleAidMode(m)});
     });
     if((ptype===TZ||ptype===TX||ptype===TW)&&aidMode==='nl'){
@@ -322,7 +335,7 @@ function buildGamesMenu(){
   });
   btn.classList.toggle('gm-active',extras.length>0);
   if(extras.length){
-    btn.innerHTML=aidMode==='kang'?nlIcon:(chainGnMode&&(ptype===TZ||ptype===TX)?gardenIcon:jarIcon);
+    btn.innerHTML=aidMode==='kang'?nlIcon:aidMode==='pw'?AID_ICON_PW:(chainGnMode&&(ptype===TZ||ptype===TX)?gardenIcon:jarIcon);
   }
 }
 function openGamesMenu(e){
@@ -356,7 +369,7 @@ document.getElementById('games-menu')?.addEventListener('click',e=>e.stopPropaga
 let PGM_NL=25;
 function _pgmSpan(){
   const add=ptype===TA||ptype===TVA,sub=ptype===TS||ptype===TVS||ptype===TM;
-  const top=add?num1+num2:sub?num1:0;
+  const top=add?num1+num2:sub?num1:ptype===TMA?num2:0;   // TMA: the whole c of a + __ = c
   return Math.max(25,(mode==='br'||mode==='b20')?top+2:top);
 }
 function aidCfg(){return (window.AIDS&&(AIDS.current||AIDS.variants.classic))||{};}
@@ -516,11 +529,49 @@ function pgmUndo(){
   pgmUpdateAll();pgmDrawArcs(false);
 }
 
-/* ── Aid-mode toggle (kang ↔ nl, or jump to targetMode) ── */
+/* ── Part–whole board (תַּבְנִית שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) — the THIRD aid,
+   offered in the bridge games only (aidMode 'pw'), after the workbook page on
+   equations (6 + __ = 14). The display + logic live in aids/part_whole.js
+   (loaded on demand into #pw-panel); this driver only tells the board the
+   current problem as a WHOLE and two PARTS, and which piece is missing. */
+const PW=(()=>{
+  let h=null;
+  // the current card as whole + parts: a+b → whole a+b, parts a,b (the whole
+  // is missing); a−b, a−__=b, a+__=c → whole first, parts given + missing
+  function split(){
+    if(ptype===TA||ptype===TVA)return{whole:num1+num2,parts:[num1,num2],missing:'whole'};
+    if(ptype===TS||ptype===TVS)return{whole:num1,parts:[num2,num1-num2],missing:'part',given:num2};
+    if(ptype===TM)return{whole:num1,parts:[num2,num1-num2],missing:'part',given:num2};    // a − __ = b
+    if(ptype===TMA)return{whole:num2,parts:[num1,num2-num1],missing:'part',given:num1};   // a + __ = c
+    return null;
+  }
+  function applies(){return (mode==='br'||mode==='b20')&&!!split();}
+  function hint(){return '🧩 כִּתְבִי אֶת הַשָּׁלֵם לְמַעְלָה וְאֶת הַחֲלָקִים לְמַטָּה, וְצַיְּרִי פַּסִּים (5) וְעִגּוּלִים (1)!';}
+  // show the panel for the current card (mounting the module on first use, and
+  // again after a card rebuild replaced the panel element)
+  function show(){
+    const root=document.getElementById('pw-panel');if(!root)return;
+    const s=split();if(!s){root.style.display='none';return;}
+    root.style.display='';
+    loadPartWhole(()=>{
+      const cur=document.getElementById('pw-panel');
+      if(!cur||aidMode!=='pw')return;              // switched away while loading
+      if(!h||h.root!==cur){if(h)h.cleanup();h=PART_WHOLE.mount({root:cur});}
+      h.set(Object.assign({max:30},s));
+    });
+  }
+  function hide(){const root=document.getElementById('pw-panel');if(root)root.style.display='none';}
+  function state(){return h?h.state():null;}
+  function reset(){if(h)h.reset();}
+  return{split,applies,hint,show,hide,state,reset};
+})();
+
+/* ── Aid-mode toggle (kang ↔ nl, or jump to targetMode: 'kang' | 'nl' | 'pw') ── */
 function toggleAidMode(targetMode){
   if(ptype===TC||ptype===TT)return;
   if(typeof targetMode==='string'){if(targetMode===aidMode)return;aidMode=targetMode;}
   else aidMode=aidMode==='nl'?'kang':'nl';
+  if(aidMode==='pw'&&!PW.applies())aidMode='kang';   // the board is a bridges-only aid
   const isTD=ptype===TDA||ptype===TDS;
   const ct=document.getElementById('chain-tools');
   const nlp=document.getElementById('nl-panel');
@@ -528,16 +579,23 @@ function toggleAidMode(targetMode){
     const _cv=isTD?(ptype===TDA?0:num1):num1;
     if(ct)ct.style.display='block';
     if(nlp)nlp.style.display='none';
+    PW.hide();
     pgmCV=_cv;pgmCk=Array.from({length:_cv},(_,i)=>i%5);pgmArcs=[];
     pgmBuildNL();pgmRenderJar();pgmDrawArcs();pgmUpdateAll();
+  }else if(aidMode==='pw'){
+    if(ct)ct.style.display='none';
+    if(nlp)nlp.style.display='none';
+    PW.show();
   }else{
     if(ct)ct.style.display='none';
+    PW.hide();
     // re-size the line for THIS problem (it may have loaded with the jar)
     if(nlp){nlp.style.display='';NL.init([TC,TT,TCA,TCS,TMU,TBG,TH].includes(ptype)?0:_kangFit());}
   }
   buildGamesMenu();
   {const hEl=document.getElementById('hint');if(!hEl)return;
-  if(ptype===TA)hEl.textContent=aidMode==='kang'?aidHint('nl','add'):aidHint('jar','add');
-  else if(ptype===TS||ptype===TM)hEl.textContent=aidMode==='kang'?aidHint('nl','sub'):aidHint('jar','sub');}
+  if(aidMode==='pw')hEl.textContent=PW.hint();
+  else if(ptype===TA||ptype===TVA||ptype===TMA)hEl.textContent=aidMode==='kang'?aidHint('nl','add'):aidHint('jar','add');
+  else if(ptype===TS||ptype===TM||ptype===TVS)hEl.textContent=aidMode==='kang'?aidHint('nl','sub'):aidHint('jar','sub');}
 }
 

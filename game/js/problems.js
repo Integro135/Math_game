@@ -53,6 +53,21 @@ function _sprinkleUnknowns(set){
   }
   return set;
 }
+// 2026-11-02: EQUATIONS (מִשְׁוָאוֹת) — after the workbook page "6 + __ = 14": in
+// גֶּשֶׁר 10 the facts at arithmetic slots 2, 6 and 10 (index 1, 5, 9 — between the
+// unknowns at 3, 7, 11) are posed as an equation with a MISSING NUMBER: an
+// addition a+b becomes  a + __ = a+b  (TMA, the missing addend) and a count-back
+// a−b becomes  a − __ = a−b  (TM, the missing subtrahend). Same facts, same
+// order — the child finds the whole and the parts (the part–whole board,
+// aids/part_whole.js, is the matching aid).
+function _sprinkleEquations(set){
+  for(let i=1;i<set.length;i+=4){
+    const p=set[i];
+    if(p.t===TA){p.t=TMA;p.b=p.a+p.b;}         // a + __ = a+b
+    else if(p.t===TS){p.t=TM;p.b=p.a-p.b;}     // a − __ = a−b
+  }
+  return set;
+}
 
 // Cap an arithmetic pool to `target` AND fold in polygon side-counting shapes so
 // a shape shows up about ONCE EVERY 9 problems (the 9th, 18th … slot), while the
@@ -344,6 +359,10 @@ function makeMxPool(){
 //    pans, every pan a crossing of 10: 4 9 | 5 8 → 13) are woven into every set at
 //    slots 6 and 12 (_withBridgeScales); the arithmetic was trimmed to 13 (set 6: 12)
 //    so a set still holds at most 15.
+//    2026-11-02: EQUATIONS — the facts at arithmetic slots 2, 6, 10 are posed as
+//    6 + __ = 14 (TMA) / 16 − __ = 7 (TM), see _sprinkleEquations; the count and the
+//    order are unchanged. The part–whole board (שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) is
+//    the bridges' third aid for them (aids/part_whole.js).
 //    SET 1 — the +9 and +8 ladders (9+6 … 9+9, 8+6 … 8+8) with −9 / −8 count-backs.
 //    SET 2 — COUNT-BACKS from 14 … 18 (14−7 … 18−9), two additions to finish.
 //    SET 3 — DOUBLES & near-doubles: 7+7, 8+8, 9+9, 7+8, 8+9 … with inverses.
@@ -421,7 +440,7 @@ function _withBridgeScales(set,mode){
   return set;
 }
 function makeBridgePool(){
-  const set=_withBridgeScales(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length]()),'br');
+  const set=_withBridgeScales(_sprinkleEquations(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length]())),'br');
   _brTurn=(_brTurn+1)%_BRIDGE_SETS.length;
   try{localStorage.setItem('brTurn',String(_brTurn));}catch(e){}
   return set;

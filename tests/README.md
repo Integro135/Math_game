@@ -64,7 +64,8 @@ set HEADED=1 && set SLOW_MO=600 && py -m pytest tests
 | `test_number_line.py`     | 9  | `TestNumberLineVisibility`, `TestNumberLineInteraction` | הופעת/אינטראקציית ישר המספרים (`#nl-panel`) |
 | `test_tens.py`            | 4  | `TestTensProblems` | תרגילי עשרות עגולות (TT) — מלך & מלכה |
 | `test_tooltips.py`        | 20 | `TestNumberHoverTooltip`, `TestBridgeSplitTooltip` | tooltips של אובייקטים + פיצול קשר־עשר בריחוף |
-| `test_bridging.py`        | 38 | `TestBridgingMode`, `TestBridge20` | גשר 10 🌈 וגשר 20 🌉 |
+| `test_bridging.py`        | 44 | `TestBridgingMode`, `TestBridge20` | גשר 10 🌈 וגשר 20 🌉 (סדרות, נעלמים, משוואות, מאזניים) |
+| `test_part_whole.py`      | 13 | `TestEquationCard`, `TestBoardOffer`, `TestTemplate`, `TestBarsAndCircles`, `TestBoardAcrossCards`, `TestTesterPage` | תבנית שלם–חלק + פסים ועיגולים (העזר השלישי של הגשרים), משוואות `a + __ = c`, והטסטר `part_whole_dev.html` |
 | `test_var_unknown.py`     | 10 | `TestVarOneUnknown` | נעלם־צורה יחיד (⃝ = N, אח"כ a ± ⃝ = ?) |
 | `test_dynamic.py`         | 9  | `TestDynamicExercises` | טעינה דינמית של `exercises/*.ex.js` |
 | `test_big_step.py`        | 6  | `TestBigStepMode` | מספרים גדולים ±1/2 (עַד 100 / TBG) |

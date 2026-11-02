@@ -100,7 +100,7 @@
     </div>
     <div class="hdr-top">
       <span class="uni" id="uni-left">🦄</span>
-      <h1 class="title" id="game-title" title="v10.15">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
+      <h1 class="title" id="game-title" title="v10.16">💕 מִשְׂחֲקֵי חֶשְׁבּוֹן 💕</h1>
       <span class="uni" id="uni-right">✨</span>
     </div>
     <div class="hdr-stats">
@@ -127,6 +127,9 @@
       </div>
     </div>
     <div id="nl-panel" style="display:none"><div class="nl-row"><button class="side-btn btn-minus" id="nl-btn-minus" onclick="NL.step(-1)">−</button><div class="nl-wrap" id="nl-wrap"><svg class="nl-arcs-svg" id="nl-arcs-svg" viewBox="0 0 600 88" preserveAspectRatio="none"></svg><div class="nl-bar-track" id="nl-bar"><div class="nl-dot" id="nl-dot"></div></div></div><button class="side-btn btn-plus" id="nl-btn-plus" onclick="NL.step(1)">+</button></div><div class="nl-controls"><button class="ctrl-btn btn-reset" onclick="NL.reset()"><span class="btn-icon">↺</span></button><button class="ctrl-btn btn-undo" onclick="NL.undo()"><span class="btn-icon">↩</span></button></div></div>
+    <!-- the part–whole board (תַּבְנִית שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) — the bridge
+         games' third aid; aids/part_whole.js mounts here on demand -->
+    <div id="pw-panel" style="display:none"></div>
     <div class="div"></div>
     <div class="fb" id="fb"></div>
     <div class="btn-row" id="btns"></div>

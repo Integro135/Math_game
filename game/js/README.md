@@ -49,7 +49,7 @@ fills at runtime.
 - **`roundRect` polyfill** — adds `CanvasRenderingContext2D.prototype.roundRect`
   if missing (used by the canvas success/FX code).
 - **ptype codes** — single-source string constants for every problem type:
-  `TM`(missing), `TS`(sub), `TA`(add), `TX`(mixed −then+), `TZ`(triple add),
+  `TM`(missing), `TMA`(missing addend `'missing_add'`: `a + __ = c`), `TS`(sub), `TA`(add), `TX`(mixed −then+), `TZ`(triple add),
   `TW`(twin sub), `TDA`/`TDS`(double-unknown add/sub), `TC`(coins), `TT`(tens),
   `TCA`(column add `'col_add'`), `TCS`(column sub `'col_sub'`),
   `TBG`(big ± small step), `TCM`(coin multiplication `'coin_mul'`).
@@ -429,7 +429,13 @@ This is the largest file and owns nearly all gameplay state and logic.
   `pgmRenderJar`, `pgmRenderGarden`, `openChainGarden`, `pgmBuildNL`,
   `pgmUpdateNL`, `pgmDrawArcs`, `pgmUpdateAll`, `pgmPlus`, `pgmMinus`, `pgmUndo`),
   and the engine state `pgmCV,pgmCk,pgmArcs,pgmTensMode,chainGnMode,tdaJarMode`.
-- **`toggleAidMode(targetMode)`** — switches between kangaroo NL and cookie jar.
+- **`toggleAidMode(targetMode)`** — switches between kangaroo NL, cookie jar and
+  (bridges only) the part–whole board (`'kang'` | `'nl'` | `'pw'`).
+- **`PW`** — the part–whole board DRIVER: `split()` turns the current card into
+  `{whole, parts, missing, given}`, `applies()` (bridge modes + a splittable card),
+  `show()/hide()` (loads `aids/part_whole.js` on demand, mounts into `#pw-panel`,
+  re-mounts after a card rebuild), `hint()`, `state()`. `AID_ICON_PW` is its
+  fixed menu icon; `aidModeIcon()` picks the games-button icon per `aidMode`.
 
 **Key functionality you must know**
 - **The engine is generic; all art comes from the active AIDS variant.** `NL`'s
@@ -454,8 +460,9 @@ This is the largest file and owns nearly all gameplay state and logic.
   every background* (small line-art SVGs), so the toggle reads the same
   everywhere even as the rider/jar art changes per scene.
 - **`buildGamesMenu()`** builds the dropdown: the kangaroo↔jar toggle applies to
-  every "plain numbers" ptype (TZ/TX/TW/TDA/TDS/TA/TS/TM); TC/TT/TCA/TCS/TCM/TBG
-  bring their own aid (or none) and are excluded. When the jar is active on a
+  every "plain numbers" ptype (TZ/TX/TW/TDA/TDS/TA/TS/TM/TMA/TVA/TVS); TC/TT/TCA/TCS/
+  TCM/TBG bring their own aid (or none) and are excluded. In the bridge games a
+  THIRD toggle offers the part–whole board (`PW.applies()`). When the jar is active on a
   chain problem it also offers the chain-garden upgrade (costs 20 ⭐ via
   `openChainGarden`).
 - **`toggleAidMode`** flips `aidMode` (or jumps to a target), shows/hides the
@@ -479,6 +486,7 @@ This is the largest file and owns nearly all gameplay state and logic.
 - **`applySkin(skin)`** — swaps the skin `<link href>`.
 - **`loadAids(name)`** — injects an aid variant, then `applyAidsVariant()`.
 - **`loadJarStage(onReady)`** — injects `aids/jar_stage.js` once.
+- **`loadPartWhole(onReady)`** — injects `aids/part_whole.js` (the part–whole board) once.
 - **`loadExercise(name,onReady)` / `loadExercisesFor(mode,onReady)`** — inject
   one / all exercise type files for a mode.
 - **`loadBackground(name)` / `unloadBackground()`** — scene module lifecycle.

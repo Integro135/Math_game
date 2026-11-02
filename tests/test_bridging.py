@@ -3,6 +3,16 @@ from helpers import *
 
 
 
+# Normalise a bridge set back to its FACTS, [type, a, b], skipping the 2 balance
+# cards (TSB): a shape-unknown (TVA/TVS) and the three-unknown sum (TRA) keep
+# their a/b; an EQUATION card (2026-11-02, slots 2/6/10 of every bridge-10 set)
+# is turned back into the fact it poses — a + __ = c (TMA) → [TA, a, c−a] and
+# c − __ = a (TM) → [TS, c, c−a]. The curriculum order checks compare against this.
+BR_NORM = ("[...problems].filter(p => p.t!==TSB).map(p => "
+           "p.t===TMA?[TA,p.a,p.b-p.a]:p.t===TM?[TS,p.a,p.a-p.b]:"
+           "[(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+
+
 # ─────────────────────────────────────────────────────────
 # Bridging-10 mode (br): focused practice on crossing 10
 # ─────────────────────────────────────────────────────────
@@ -76,14 +86,37 @@ class TestBridgingMode:
     def test_br_every_set_is_hard(self, page):
         """ALL SIX sets: every problem is a hard crossing (9+8, 7+6, 17−9 …) — no
         gentle 9+2 / 11−1 left."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         TA = consts["TA"]
-        NORM = "[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        NORM = BR_NORM
         self._switch_br(page)
         for s in range(6):
             for t, a, b in page.evaluate(NORM):
                 assert self._hard_ok(TA, t, a, b), f"set{s+1}: {a},{b} is not a hard crossing"
             page.evaluate("restart()"); page.wait_for_timeout(120)
+
+    def test_br_poses_three_facts_per_set_as_equations(self, page):
+        """2026-11-02 (the workbook page "6 + __ = 14"): in EVERY bridge-10 set the
+        facts at arithmetic slots 2, 6 and 10 (between the unknowns at 4, 8, 12) are
+        posed as EQUATIONS with a missing number — an addition as a + __ = c (TMA),
+        a count-back as c − __ = a (TM). Same hard facts, same order; nowhere else
+        in the set, and bridge 20 keeps its plain facts."""
+        consts = page.evaluate("({TM, TMA})")
+        TM, TMA = consts["TM"], consts["TMA"]
+        self._switch_br(page)
+        for s in range(6):
+            probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [p.t, p.a, p.b])")
+            eq_idx = [i for i, (t, a, b) in enumerate(probs) if t in (TM, TMA)]
+            assert eq_idx == [1, 5, 9], f"set{s+1}: equations at arithmetic slots 2, 6, 10 — got {eq_idx}"
+            for i in eq_idx:
+                t, a, b = probs[i]
+                if t == TMA:   # a + __ = b: the whole 14–18, both parts 5–9
+                    assert 14 <= b <= 18 and 5 <= a <= 9 and 5 <= b - a <= 9, f"set{s+1}: {a} + __ = {b} is not a hard crossing"
+                else:          # a − __ = b: count back from 14–18 to a single digit, taking 5–9
+                    assert 14 <= a <= 18 and 5 <= b <= 9 and 5 <= a - b <= 9, f"set{s+1}: {a} − __ = {b} is not a hard count-back"
+            page.evaluate("restart()"); page.wait_for_timeout(120)
+        enter_mode(page, 'b20'); page.wait_for_selector("#ans, #ans1", timeout=TIMEOUT)
+        assert not page.evaluate("[...problems].some(p => p.t===TM || p.t===TMA)"), "bridge 20 keeps plain facts"
 
     def test_bridges_weave_two_balance_cards_that_cross_ten(self, page):
         """Every bridge set (10 and 20, all of them) carries TWO balance cards (TSB,
@@ -156,9 +189,9 @@ class TestBridgingMode:
         """The br session equals the prescribed 15-problem list, in order. Every
         4th problem is re-rendered as its shape-unknown form (TVA/TVS); we
         normalise it back to its base add/sub type to verify the curriculum."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         self._switch_br(page)
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ]
         assert probs == expected, (
             f"br problems deviate from the prescribed order.\n"
@@ -170,11 +203,11 @@ class TestBridgingMode:
         sets: set 1 → 2 → 3 → 4 → 5 → 6 → set 1 (deterministic). The shape-unknown
         type is woven into every set (see test_br_weaves_unknown_every_fourth);
         normalise TVA/TVS back to their base add/sub type for the order check."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
                (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3,
                 self.EXPECTED_SEQ_4, self.EXPECTED_SEQ_5, self.EXPECTED_SEQ_6)]
-        NORM = "[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        NORM = BR_NORM
         self._switch_br(page)
         seen = [page.evaluate(NORM)]
         for _ in range(6):
@@ -285,10 +318,10 @@ class TestBridgingMode:
 
     def test_br_set2_exact_order(self, page):
         """The second selection serves SET 2 in its exact prescribed order."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         self._switch_br(page)            # set 1
         self._reenter_br(page)           # set 2
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_2]
         assert probs == expected, (
             f"br set 2 deviates from the prescribed order.\n"
@@ -305,11 +338,11 @@ class TestBridgingMode:
 
     def test_br_set3_exact_order(self, page):
         """The third selection serves SET 3 (big bridges) in its exact prescribed order."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         self._switch_br(page)            # set 1
         self._reenter_br(page)           # set 2
         self._reenter_br(page)           # set 3
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_3]
         assert probs == expected, (
             f"br set 3 deviates from the prescribed order.\n"
@@ -318,10 +351,10 @@ class TestBridgingMode:
 
     def test_br_set3_all_cross_ten(self, page):
         """Every set-3 problem genuinely bridges 10 (it IS a crossing-ten curriculum)."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch_br(page); self._reenter_br(page); self._reenter_br(page)   # set 3
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         assert len(probs) == 13
         for t, a, b in probs:
             if t == TA:
@@ -339,11 +372,11 @@ class TestBridgingMode:
 
     def test_br_set4_exact_order(self, page):
         """The fourth selection serves SET 4 (gentle crossings) in its exact prescribed order."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         self._switch_br(page)
         for _ in range(3):
             self._reenter_br(page)       # set 4
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_4]
         assert probs == expected, (
             f"br set 4 deviates from the prescribed order.\n"
@@ -353,12 +386,12 @@ class TestBridgingMode:
     def test_br_set4_is_plus7_and_plus6(self, page):
         """Set 4 is the +7 / +6 set: every problem a hard crossing, nearly all using
         a 6 or a 7 (plus the 4+9 / 5+9 / 14−5 finish)."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         TA = consts["TA"]
         self._switch_br(page)
         for _ in range(3):
             self._reenter_br(page)       # set 4
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         assert len(probs) == 13
         for t, a, b in probs:
             assert self._hard_ok(TA, t, a, b), f"{a},{b} must be a hard crossing"
@@ -378,18 +411,18 @@ class TestBridgingMode:
 
     def test_br_set5_exact_order(self, page):
         """The fifth selection serves SET 5 (+9 shortcut) in its exact prescribed order."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         self._reach_set(page, 5)
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_5]
         assert probs == expected, f"br set 5 deviates.\nexpected={expected}\ngot={probs}"
 
     def test_br_set5_all_cross_ten(self, page):
         """Every set-5 problem bridges 10 (all are +9 / −9 crossings)."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         TA, TS = consts["TA"], consts["TS"]
         self._reach_set(page, 5)
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         assert len(probs) == 13
         for t, a, b in probs:
             if t == TA:
@@ -405,18 +438,18 @@ class TestBridgingMode:
 
     def test_br_set6_exact_order(self, page):
         """The sixth selection serves SET 6 (mid-teen count-backs) in its exact order."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         self._reach_set(page, 6)
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         expected = [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ_6]
         assert probs == expected, f"br set 6 deviates.\nexpected={expected}\ngot={probs}"
 
     def test_br_set6_all_cross_ten(self, page):
         """Every set-6 problem bridges 10 (14/15 count-backs + builds to 14/15/16)."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         TA, TS = consts["TA"], consts["TS"]
         self._reach_set(page, 6)
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         assert len(probs) == 12
         for t, a, b in probs:
             if t == TA:
@@ -427,11 +460,11 @@ class TestBridgingMode:
     def test_br_alternates_sets_in_turns(self, page):
         """Each menu selection advances: set1 → 2 → 3 → 4 → 5 → 6 → set1 (unknowns
         woven into every set; normalised back to base types for the order check)."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         exp = [[[consts[t], a, b] for t, a, b in seq] for seq in
                (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3,
                 self.EXPECTED_SEQ_4, self.EXPECTED_SEQ_5, self.EXPECTED_SEQ_6)]
-        NORM = "[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        NORM = BR_NORM
         self._switch_br(page)
         seen = [page.evaluate(NORM)]
         for _ in range(6):
@@ -455,7 +488,7 @@ class TestBridgingMode:
     def test_br_reclick_while_active_rotates_set(self, page):
         """Re-selecting גָּשֵׁר 10 while ALREADY in it starts a fresh game with
         the next set (the no-op guard is lifted for br only)."""
-        NORM = "[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        NORM = BR_NORM
         consts = page.evaluate("({TA, TS})")
         self._switch_br(page)                        # set 1
         assert page.evaluate(NORM) == [[consts[t], a, b] for t, a, b in self.EXPECTED_SEQ]
@@ -551,19 +584,19 @@ class TestBridge20:
     def test_b20_exact_order(self, page):
         # every 4th problem is re-rendered as a shape-unknown (TVA/TVS); normalise
         # back to its base add/sub type to verify the curriculum order.
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         self._switch(page)
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         expected = [[consts[t], a, b] for t, a, b in self.B20_SEQ]
         assert probs == expected, f"b20 order deviated.\nexpected={expected}\ngot={probs}"
 
     def test_b20_every_problem_is_a_big_crossing(self, page):
         """Every b20 problem is a hard bridge — the units alone make 13+ (8+7, 18+9,
         27−9) — and most of each set crosses 20."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         TA = consts["TA"]
         self._switch(page)
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         for t, a, b in probs:
             assert self._hard(TA, a, b, t), f"{a}{'+' if t == TA else '-'}{b} is not a big crossing"
 
@@ -583,10 +616,10 @@ class TestBridge20:
         """Every rebuild advances the set: 1 → 2 → 3 → 4 → 5 → 1 (the shape-unknown type
         is woven into EACH set, every 4th problem; normalised back to base types for
         the order check)."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         exps = [[[consts[t], a, b] for t, a, b in seq]
                 for seq in (self.B20_SEQ, self.B20_SEQ_2, self.B20_SEQ_3, self.B20_SEQ_4, self.B20_SEQ_5)]
-        NORM = "[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        NORM = BR_NORM
         self._switch(page)
         got = [page.evaluate(NORM)]
         for _ in range(5):
@@ -606,9 +639,9 @@ class TestBridge20:
     def test_b20_all_five_sets_are_hard(self, page):
         """ALL FIVE sets: every problem is a big crossing (units 13+), and at least
         half of each set crosses 20 (sum / minuend over 20)."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         TA = consts["TA"]
-        NORM = "[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])"
+        NORM = BR_NORM
         self._switch(page)
         for s in range(5):
             probs = page.evaluate(NORM)
@@ -628,11 +661,11 @@ class TestBridge20:
 
     def test_b20_set2_exact_order_and_is_hard(self, page):
         """Set 2 (the big +9) serves its exact order; every problem is a big crossing."""
-        consts = page.evaluate("({TA, TS, TVA, TVS})")
+        consts = page.evaluate("({TA, TS, TVA, TVS, TM, TMA})")
         TA, TS = consts["TA"], consts["TS"]
         self._switch(page)                          # set 1
         page.evaluate("restart()"); page.wait_for_timeout(120)   # → set 2
-        probs = page.evaluate("[...problems].filter(p => p.t!==TSB).map(p => [(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
+        probs = page.evaluate(BR_NORM)
         expected = [[consts[t], a, b] for t, a, b in self.B20_SEQ_2]
         assert probs == expected, f"b20 set 2 order deviated.\nexpected={expected}\ngot={probs}"
         for t, a, b in probs:

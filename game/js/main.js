@@ -109,14 +109,14 @@ document.addEventListener('keydown',e=>{
   // it must run before the text-field guard, not here.)
   if(aidMode==='kang'&&document.getElementById('nl-panel')?.style.display!=='none'){
     e.preventDefault();
-    if(!done){const _add=ptype===TA||ptype===TCA||ptype===TZ||ptype===TVA||ptype===TDA||ptype===TRA||(ptype===TX&&tzAddMode());NL.step(_add?1:-1);}
+    if(!done){const _add=ptype===TA||ptype===TCA||ptype===TZ||ptype===TVA||ptype===TMA||ptype===TDA||ptype===TRA||(ptype===TX&&tzAddMode());NL.step(_add?1:-1);}
     return;
   }
   if(done)return;
   // Cookie jar (nl mode): spacebar adds/removes a cookie per problem direction
   if(aidMode==='nl'&&document.getElementById('chain-tools')?.style.display!=='none'){
     e.preventDefault();
-    const isAdd=ptype===TDA||ptype===TRA||ptype===TA||ptype===TZ||ptype===TVA||(ptype===TX&&tzAddMode());
+    const isAdd=ptype===TDA||ptype===TRA||ptype===TA||ptype===TZ||ptype===TVA||ptype===TMA||(ptype===TX&&tzAddMode());
     if(isAdd)pgmPlus();else pgmMinus();
   }
 });

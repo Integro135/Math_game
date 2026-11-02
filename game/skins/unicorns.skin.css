@@ -383,3 +383,23 @@ body.theme-girls .end-grade-msg{color:#7A4070}
 body.theme-girls .b-skip{border-color:rgba(126,110,228,.6);color:#6A55C8;background:rgba(140,124,240,.09);box-shadow:0 0 12px rgba(140,124,240,.25)}
 body.theme-girls .b-skip:hover,body.theme-girls .b-skip:active{
   background:rgba(140,124,240,.14);box-shadow:0 0 20px rgba(140,124,240,.4)}
+
+/* ════ THE PART–WHOLE BOARD (aids/part_whole.js) over the light valley ════
+   White labels wash out on the candy sky — wrap them in the same deep-plum
+   outline as the number line's labels; bars / circles get a plum rim. */
+body.theme-girls #pw-panel{background:rgba(255,255,255,.22);border-color:rgba(199,125,255,.45)}
+body.theme-girls .pw-lbl,body.theme-girls .pw-counts,body.theme-girls .pw-match{
+  color:#FFFFFF;
+  text-shadow:0 1px 2px rgba(74,34,68,.95),0 -1px 2px rgba(74,34,68,.9),
+              1px 0 2px rgba(74,34,68,.9),-1px 0 2px rgba(74,34,68,.9);
+}
+body.theme-girls .pw-count b{color:#FFD93D}
+body.theme-girls .pw-inp{background:rgba(255,255,255,.55);border-color:rgba(199,125,255,.8);color:#5a2a78;
+  text-shadow:none;box-shadow:0 3px 0 rgba(120,60,150,.35)}
+body.theme-girls .pw-inp::placeholder{color:rgba(90,42,120,.45)}
+body.theme-girls .pw-arms path{stroke:rgba(154,78,217,.7)}
+body.theme-girls .pw-item i{border-color:#FFFFFF;box-shadow:0 0 0 2px rgba(120,60,150,.75),inset 0 0 0 1px rgba(120,60,150,.3)}
+body.theme-girls .pw-dot.on i,body.theme-girls .pw-bar s.on{background:#C77DFF}
+body.theme-girls .pw-bar s{border-inline-end-color:rgba(120,60,150,.55)}
+body.theme-girls .pw-canvas{background:rgba(255,255,255,.3);border-color:rgba(154,78,217,.5)}
+body.theme-girls .pw-btn.pw-undo,body.theme-girls .pw-btn.pw-clear{background:rgba(255,255,255,.55);border-color:rgba(199,125,255,.8);color:#7A4070}

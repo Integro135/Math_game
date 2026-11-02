@@ -279,7 +279,7 @@ function _kangFit(){
   // last hop is never off the end. גָּשֵׁר 20 bridges reach 25 (e.g. 19+6, 25−9): a
   // fixed 0..24 line put such an answer AT or PAST the right edge, giving it away.
   const _isAddT=ptype===TA||ptype===TVA;
-  const _nlHi=Math.max(20,(ptype===TM||ptype===TS||ptype===TVS)?num1:0,_isAddT?num1+num2:0);
+  const _nlHi=Math.max(20,(ptype===TM||ptype===TS||ptype===TVS)?num1:0,_isAddT?num1+num2:0,ptype===TMA?num2:0);
   // in the bridge games (גֶּשֶׁר 10 / 20) keep the answer OFF the very edge — extend
   // a couple past the top value, like the framed windows the other exercises use.
   const _nlMax=(mode==='br'||mode==='b20')?_nlHi+2:_nlHi;
@@ -293,7 +293,8 @@ function _kangFit(){
   if(ptype===TZ){NL.configure(_tzLo+20,1,_tzLo);return _tzLo;}
   // a line longer than 0..20 (19+9 → 0..30) keeps EVERY tick but shows only the
   // fives' numbers; the rest appear on hover / under the rider (NL.buildNL, nl-sparse)
-  NL.configure(_nlMax,1);return 0;
+  // a + __ = c (TMA): the rider parks ON a — she hops up to the whole c and counts the hops
+  NL.configure(_nlMax,1);return ptype===TMA?num1:0;
 }
 function loadProblem(){
   if(idx>=problems.length){endGame();return}
@@ -304,14 +305,16 @@ function loadProblem(){
   if(ptype===TBG){bgOp=problems[idx].op||'sub';}
   if(ptype===TWP){wpOp=problems[idx].op||'sub';}
   if(ptype===TWC){wcOps=problems[idx].ops||['add','sub'];}
-  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TWC?_wc(num1,num2,num3,wcOps):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const _cor=ptype===TDA||ptype===TDS||ptype===TRA?num1:ptype===TC?num1:ptype===TPG||ptype===TPP||ptype===TCP||ptype===TTS||ptype===THF||ptype===TPL||ptype===TSQ||ptype===TCZ||ptype===TTF||ptype===TWM||ptype===TSO||ptype===TRH||ptype===TLG||ptype===TBE||ptype===TSB||ptype===TDL||ptype===TPK||ptype===TFR||ptype===TCN?num1:ptype===TMU?num2:ptype===TMC||ptype===TMK?num1*num2:ptype===TCM?num1/(num2||5):ptype===TIC?num1/(num2||2):ptype===TBC?num1*(num2||5):ptype===TWP?(wpOp==='add'?num1+num2:num1-num2):ptype===TWC?_wc(num1,num2,num3,wcOps):ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TCA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:ptype===TMA?num2-num1:num1-num2;
   report[idx]={ptype,num1,num2,num3,num4,correct:_cor,wrongs:[]};
   done=false;
+  {const _pwp=document.getElementById('pw-panel');if(_pwp)_pwp.style.display='none';}   // the part–whole board shows only via the aid branch below
   document.getElementById('prog-txt').textContent=`📖 תַּרְגִּיל ${idx+1} מִתּוֹךְ ${gameLen()}`;
   document.getElementById('prog-bar').style.width=`${(idx/gameLen())*100}%`;
   setFb('','');
   document.getElementById('hint').textContent=
-    ptype===TCA?'🦸 חַבְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
+    (aidMode==='pw'&&typeof PW!=='undefined'&&PW.applies())?PW.hint()
+   :ptype===TCA?'🦸 חַבְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
    :ptype===TCS?'🦸 חַסְּרִי בְּעַמּוּדוֹת: קֹדֶם אֲחָדוֹת, אַחַר כָּךְ עֲשָׂרוֹת!'
    :ptype===TPG?'🔷 סְפְרִי אֶת הַצּוּרָה וְכִתְבִי אֶת הַמִּסְפָּר!'
    :ptype===TPP?'📐 חַשְּׁבִי אֶת הַהֶקֵּף — חַבְּרִי אֶת אָרְכֵי כָּל הַצְּלָעוֹת!'
@@ -352,6 +355,8 @@ function loadProblem(){
    :ptype===TZ?'🧮 חַשֵּׁב בְּשָׁלָבִים: קוֹדֶם חַבֵּר שְׁנַיִם, אַחַר כָּךְ הוֹסֵף שְׁלִישִׁי!'
    :ptype===TT?(ttOp==='add'?'🔟 קְפַץ קָדִימָה בַּעֲשָׂרוֹת עַל הַיָּשָׁר!':'🔟 קְפַץ אָחוֹר בַּעֲשָׂרוֹת עַל הַיָּשָׁר!')
    :ptype===TH?'💯 חַבְּרִי מֵאוֹת שְׁלֵמוֹת — סְפֹר אֶת הַמֵּאוֹת (וְהָעֲשָׂרוֹת)!'
+   :ptype===TMA?(aidMode==='kang'?'❓ אֵיזֶה מִסְפָּר חָסֵר? קִפְצִי מֵהַמִּסְפָּר הָרִאשׁוֹן עַד הַשָּׁלֵם וְסִפְרִי אֶת הַקְּפִיצוֹת!'
+                       :'❓ אֵיזֶה מִסְפָּר חָסֵר? הוֹסִיפִי עַד הַשָּׁלֵם וְסִפְרִי כַּמָּה הוֹסַפְתְּ!')
    :ptype===TA?(aidMode==='kang'?aidHint('nl','add'):aidHint('jar','add'))
       :(aidMode==='kang'?aidHint('nl','sub'):aidHint('jar','sub'));
   renderEq();showBtns('check');resetAidUsed();
@@ -430,11 +435,15 @@ function loadProblem(){
   if(ptype!==TC&&ptype!==TT&&ptype!==TCA&&ptype!==TCS&&ptype!==TCM&&ptype!==TBC&&ptype!==TPG&&ptype!==TMC&&ptype!==TMK&&ptype!==TPP&&ptype!==TCP&&ptype!==TWP&&ptype!==TWC&&ptype!==TSQ&&ptype!==TCZ&&ptype!==TTF&&ptype!==TWM&&ptype!==TSO&&ptype!==TRH&&ptype!==TLG&&ptype!==TTS&&ptype!==THF&&ptype!==TPL&&ptype!==TIC&&ptype!==TBE&&ptype!==TSB&&ptype!==TDL&&ptype!==TPK&&ptype!==TFR&&ptype!==TCN&&ptype!==TMU&&ptype!==TBG&&ptype!==TH){
   const isTD=ptype===TDA||ptype===TDS||ptype===TRA;
   const useNL=aidMode==='nl';
-  const useKang=aidMode==='kang';
+  // the part–whole board (the bridges' third aid, aids.js PW) — a card it can't
+  // split into whole + parts (the three-unknown sum) falls back to the line
+  const usePW=aidMode==='pw'&&typeof PW!=='undefined'&&PW.applies();
+  const useKang=aidMode==='kang'||(aidMode==='pw'&&!usePW);
   const ct=document.getElementById('chain-tools');if(ct)ct.style.display=useNL?'block':'none';
   const nlp=document.getElementById('nl-panel');
   if(nlp){nlp.style.display=useKang?'':'none';
     if(useKang)NL.init(_kangFit());}
+  if(usePW)PW.show();
   if(useNL){
     pgmTensMode=false;chainGnMode=false;
     const _cv=isTD?((ptype===TDA||ptype===TRA)?0:num1):num1;
@@ -504,6 +513,7 @@ function renderEq(){
   const resB=t=>`<span class="eq-res" data-num="${t}"${t>10?` data-split="10,${t-10}"`:''}>${t}</span>`;
   let h='';
   if(ptype===TM)     h=n(num1)+op('-','op-m')+inp+op('=','op-e')+resB(num2);
+  else if(ptype===TMA)h=n(num1)+op('+','op-p')+inp+op('=','op-e')+resB(num2);   // a + __ = c — the missing addend (מִשְׁוָאָה)
   else if(ptype===TS)h=n(num1)+op('-','op-m')+nB(num2,num1,'sub')+op('=','op-e')+inp;
   else if(ptype===TX||ptype===TZ||ptype===TW){
     const op1=(ptype===TX||ptype===TW)?op('-','op-m'):op('+','op-p');
@@ -822,7 +832,7 @@ function checkAns(){
   const inp=document.getElementById('ans');
   const v=inp?parseInt(inp.value,10):NaN;
   if(!inp||inp.value===''||isNaN(v)){setFb('נָא לְהַזִּין מִסְפָּר בָּרִיבּוּעַ 💗','fb-err');return}
-  const correct=ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:num1-num2;
+  const correct=ptype===TT?(ttOp==='add'?num1+num2:num1-num2):ptype===TBG?(bgOp==='add'?num1+num2:num1-num2):ptype===TZ?num1+num2+num3+num4:ptype===TW?num1-num2-num3:ptype===TA||ptype===TVA||ptype===TH?num1+num2:ptype===TX?num1-num2+num3:ptype===TMA?num2-num1:num1-num2;
   _markAns(inp,v===correct);
   done=true;if(inp)inp.disabled=true;
   document.getElementById('btns').innerHTML='';
@@ -927,7 +937,7 @@ function markAidUsed(){if(aidUsed)return;aidUsed=true;}
 function resetAidUsed(){aidUsed=false;}
 let tryFirst=0;
 function _tfPts(){return tryFirst===0?modePts():tryFirst===1?Math.round(modePts()*.67):0;}
-let _aidHidden={nl:'none',ct:'none'};   // aid-panel displays to restore on unlock
+let _aidHidden={nl:'none',ct:'none',pw:'none'};   // aid-panel displays to restore on unlock
 /* ── aid reveal policy — GENERIC, declared per exercise type ────────────────
    Every exercise type file (exercises/<name>.ex.js) may declare
      aidsReveal: 'always' | 'afterMistake'   (default 'afterMistake')
@@ -961,7 +971,7 @@ function _lockAids(){
     const gb=document.getElementById('games-drop-btn');
     if(gb){gb.disabled=false;gb.classList.remove('tf-locked');
       gb.innerHTML=typeof AID_ICON_NL!=='undefined'
-        ?(aidMode==='nl'?AID_ICON_BOX:AID_ICON_NL):'🦘';}
+        ?aidModeIcon():'🦘';}
     ['pgm-btn-plus','pgm-btn-minus','nl-btn-plus','nl-btn-minus'].forEach(id=>{
       const el=document.getElementById(id);if(el){el.disabled=false;el.classList.remove('tf-locked');}});
     document.querySelectorAll('.pgm-rst').forEach(el=>{el.disabled=false;el.classList.remove('tf-locked');});
@@ -970,7 +980,8 @@ function _lockAids(){
     // _unlockAids restores the always-on line instead of a stale 'none'.
     const nlp=document.getElementById('nl-panel');
     const ct=document.getElementById('chain-tools');
-    _aidHidden={nl:nlp?nlp.style.display:'none',ct:ct?ct.style.display:'none'};
+    const pwp=document.getElementById('pw-panel');
+    _aidHidden={nl:nlp?nlp.style.display:'none',ct:ct?ct.style.display:'none',pw:pwp?pwp.style.display:'none'};
     document.getElementById('tf-msg')?.remove();
     const note=document.getElementById('tf-nl-note');if(note)note.style.display='none';
     const hint=document.getElementById('hint');if(hint)hint.style.visibility='';
@@ -986,9 +997,11 @@ function _lockAids(){
   // mistake; remember what loadProblem chose so the unlock can restore it
   const nlp=document.getElementById('nl-panel');
   const ct=document.getElementById('chain-tools');
-  _aidHidden={nl:nlp?nlp.style.display:'none',ct:ct?ct.style.display:'none'};
+  const pwp=document.getElementById('pw-panel');
+  _aidHidden={nl:nlp?nlp.style.display:'none',ct:ct?ct.style.display:'none',pw:pwp?pwp.style.display:'none'};
   if(nlp)nlp.style.display='none';
   if(ct)ct.style.display='none';
+  if(pwp)pwp.style.display='none';
   const note=document.getElementById('tf-nl-note');if(note)note.style.display='block';
   const hint=document.getElementById('hint');if(hint)hint.style.visibility='hidden';
   // Insert prominent message where the aid will appear
@@ -1002,7 +1015,7 @@ function _unlockAids(){
   if(gb){gb.disabled=false;gb.classList.remove('tf-locked');
     // the toggle icons are background-independent (see aids.js)
     gb.innerHTML=typeof AID_ICON_NL!=='undefined'
-      ?(aidMode==='nl'?AID_ICON_BOX:AID_ICON_NL):'🦘';}
+      ?aidModeIcon():'🦘';}
   ['pgm-btn-plus','pgm-btn-minus','nl-btn-plus','nl-btn-minus'].forEach(id=>{
     const el=document.getElementById(id);if(el){el.disabled=false;el.classList.remove('tf-locked');}});
   document.querySelectorAll('.pgm-rst').forEach(el=>{el.disabled=false;el.classList.remove('tf-locked');});
@@ -1010,8 +1023,10 @@ function _unlockAids(){
   // reveal the aid panels exactly as loadProblem configured them
   const nlp=document.getElementById('nl-panel');
   const ct=document.getElementById('chain-tools');
+  const pwp=document.getElementById('pw-panel');
   if(nlp)nlp.style.display=_aidHidden.nl;
   if(ct)ct.style.display=_aidHidden.ct;
+  if(pwp)pwp.style.display=_aidHidden.pw;
   const note=document.getElementById('tf-nl-note');if(note)note.style.display='none';
   const hint=document.getElementById('hint');if(hint)hint.style.visibility='';
   document.getElementById('tf-msg')?.remove();
@@ -1112,6 +1127,7 @@ function rebuildCard(){
       </div>
     </div>
     <div id="nl-panel" style="display:none"><div class="nl-row"><button class="side-btn btn-minus" id="nl-btn-minus" onclick="NL.step(-1)">−</button><div class="nl-wrap" id="nl-wrap"><svg class="nl-arcs-svg" id="nl-arcs-svg" viewBox="0 0 600 88" preserveAspectRatio="none"></svg><div class="nl-bar-track" id="nl-bar"><div class="nl-dot" id="nl-dot"></div></div></div><button class="side-btn btn-plus" id="nl-btn-plus" onclick="NL.step(1)">+</button></div><div class="nl-controls"><button class="ctrl-btn btn-reset" onclick="NL.reset()"><span class="btn-icon">↺</span></button><button class="ctrl-btn btn-undo" onclick="NL.undo()"><span class="btn-icon">↩</span></button></div></div>
+    <div id="pw-panel" style="display:none"></div>
     <div class="div"></div>
     <div class="fb" id="fb"></div>
     <div class="btn-row" id="btns"></div>`;
@@ -1141,6 +1157,7 @@ function _reportRows(){
     const p=problems[i]||{};
     let eq,cor=r.correct;
     if(r.ptype===TM)      eq=`${r.num1} − ${r.correct} = ${r.num2}`;
+    else if(r.ptype===TMA)eq=`${r.num1} + ${r.correct} = ${r.num2}`;
     else if(r.ptype===TS) eq=`${r.num1} − ${r.num2} = ${r.correct}`;
     else if(r.ptype===TX) eq=`${r.num1} − ${r.num2} + ${r.num3} = ${r.correct}`;
     else if(r.ptype===TW) eq=`${r.num1} − ${r.num2} − ${r.num3} = ${r.correct}`;

@@ -72,6 +72,9 @@ subtraction_game/
 │  │                                 grid, drop/burst FX) — loaded on demand;
 │  │                                 consumes any variant's art, auto-sizes
 │  │                                 items from the itemSVG viewBox
+│  ├─ part_whole.js                ★ the PART–WHOLE BOARD (שָׁלֵם–חֵלֶק template +
+│  │                                 bars-of-5 / circles-of-1 drawing) — the
+│  │                                 bridge games' third aid, loaded on demand
 │  ├─ classic.aids.js              kangaroo rider + cookie jar (boot default)
 │  ├─ space.aids.js                rocket rider + asteroid capsule + planets
 │  ├─ reef.aids.js                 dolphin rider + pearl chest + coral garden
@@ -333,6 +336,22 @@ window.AIDS.variants.space = {
   (aids.js pgm*) only drives the handle.
 - A background opts in via `aids: 'space'` in its BACKGROUNDS entry;
   `unloadBackground()` always reverts to `classic`.
+- **The part–whole board is its own module too** — `aids/part_whole.js`
+  (`window.PART_WHOLE.mount({root}) → {set,reset,state,cleanup,root}`), injected
+  on demand by `bg-loader.loadPartWhole` into `#pw-panel`. It is the bridge
+  games' (`br`/`b20`) THIRD aid (`aidMode 'pw'`, after the workbook page on
+  equations): a whole-over-two-parts TEMPLATE whose boxes judge themselves
+  against the real whole/parts and write the matching exercise underneath
+  (whole & part → subtraction, two parts → addition), plus a DRAWING of bars
+  (5, shown as five units — each tap colours one more) and circles (1) tapped
+  to colour the given part, so the exact number shows whatever bars were
+  drawn. Theme-independent (no
+  variant art); its `.pw-*` classes are skin-overridable (the light unicorn
+  skin adds plum outlines). The driver `PW` in `game/js/aids.js` splits the
+  current card into `{whole, parts, missing, given}` (TA/TVA miss the whole;
+  TS/TVS/TM/TMA miss a part) and `toggleAidMode('pw')` / `loadProblem` show it;
+  a card it can't split (TRA) falls back to the line. `part_whole_dev.html` is
+  its standalone tester (the real page + a dev sidebar).
 - index.html ships only empty mounts (`#nl-dot`, `#pgm-ck-jar`); nothing
   variant-specific is copied into the game files.
 

@@ -70,7 +70,7 @@ Beyond the four families, skins also restyle a wide range of game UI:
 the **number line** (`#nl-panel` track, `.tick`/`.tick.major`, `.nl-num`,
 `.nl-dot`, `.kang` rider, `.arc-add`/`.arc-sub`, the `±`/reset/undo controls),
 the **chain mini-line** (`.pgm-bar`, `.pgm-dot`, `.pgm-nl-num*`,
-`.pgm-arc-*`, `.pgm-plus`/`.pgm-minus`, `.pgm-jar-btm`), the **settings modal**
+`.pgm-arc-*`, `.pgm-plus`/`.pgm-minus`, `.pgm-jar-btm`), the **part–whole board** (`#pw-panel`, `.pw-lbl`, `.pw-inp`, `.pw-match`, `.pw-item`/`.pw-bar`/`.pw-dot`, `.pw-canvas`, `.pw-counts` — see `unicorns.skin.css` for the light-skin outline treatment), the **settings modal**
 (`#settings-ov`, `.settings-box`, `.tier-tab`, `.lvl-btn`), the
 **success-tooltip** `#num-tt`, the header/stats/progress, the equation
 (`.eq-n`/`.eq-op`/`.eq-res`), action buttons (`.btn`, `.b-chk`/`.b-try`/
