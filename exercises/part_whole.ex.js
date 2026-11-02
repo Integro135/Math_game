@@ -72,6 +72,7 @@ window.EXERCISES.types.part_whole=(()=>{
     const say=t=>{note.textContent=t;};
     function check(){
       if(solved||!h)return;
+      h.reveal();                                          // ✓ shows the boxes' verdict, as Enter does
       const st=h.state(),[w,p0,p1]=st.boxes;
       if(w===''||p0===''||p1===''){say('כִּתְבִי אֶת הַשָּׁלֵם וְאֶת שְׁנֵי הַחֲלָקִים 💗');return;}
       const j=st.judged;

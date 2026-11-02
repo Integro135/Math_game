@@ -158,7 +158,7 @@ menu — the games button offers line + board on every card it can split). It
 renders, after the workbook page on equations (6 + __ = 14):
 
 - **the template** — the whole (שָׁלֵם) on top, two parts (חֵלֶק) below; every box
-  judges itself against the truth it was handed (`.pw-ok` / `.pw-err`; a prefix
+  is judged against the truth it was handed — the verdict SHOWS only on Enter (or `reveal()`), never live while typing — (`.pw-ok` / `.pw-err`; a prefix
   of a right number stays neutral; a duplicate of a distinct part is the fault of
   the box typed last) and the matching exercise is written underneath
   (`.pw-match`: whole & part → `14 − 6 = ___`, two parts → `9 + 6 = ___`),

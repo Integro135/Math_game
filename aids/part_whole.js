@@ -3,12 +3,13 @@
    (מִשְׁוָאוֹת: 6 + __ = 14). Two tools, side by side:
 
    1. THE TEMPLATE — the whole (שָׁלֵם) on top, the two parts (חֵלֶק) below. The
-      child types the exercise's numbers into the right places. Every box judges
-      itself against the real whole/parts: green = right place, red = not this
-      one (a prefix of a right number stays neutral while she types). Under the
-      template the MATCHING EXERCISE is written (the workbook's rule: whole and
-      a part given → subtraction, two parts given → addition) and its slots fill
-      as the boxes are placed right.
+      child types the exercise's numbers into the right places. Every box is
+      judged against the real whole/parts, but the verdict (green = right place,
+      red = not this one) shows only when she presses ENTER — never live while
+      she types, so it can't be used to guess. Under the template the MATCHING
+      EXERCISE is written (the workbook's rule: whole and a part given →
+      subtraction, two parts given → addition); its slots fill, on Enter, with
+      the boxes placed right.
    2. THE DRAWING — bars (each = 5) and circles (each = 1). She draws the whole,
       taps to colour the given part, and counts what stays white: the missing
       number. A bar is FIVE units: hovering it previews how many units a click
@@ -30,6 +31,7 @@
        handle.set({whole, parts:[a,b], missing:'whole'|'part', given, max})
                         — a new problem: remembers the truth, clears everything
        handle.reset()   — empty the boxes and the drawing
+       handle.reveal()  — SHOW the boxes' verdict (as Enter does; typing hides it)
        handle.state()   — {whole, parts, missing, given, boxes, judged, bars,
                            dots, total, painted, match, done}  (tests / dev)
        handle.cleanup()
@@ -172,15 +174,24 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
       if(rem.includes(me))return 'ok';
       return rem.some(x=>String(x).startsWith(v))?null:'err';
     }
+    // the verdict is computed on every keystroke (state() / the exercise's ✓ read
+    // it) but SHOWN — green / red boxes, the lit arms, the filled-in exercise —
+    // only when she presses Enter (user: live green let her guess the answer);
+    // typing again hides it until the next Enter
+    let shown=false;
     function judge(){
-      const sw=judgeWhole();markBox(whole,sw);
-      const sp=[judgePart(0),judgePart(1)];parts.forEach((el,i)=>markBox(el,sp[i]));
-      tpl.classList.toggle('pw-whole-ok',sw==='ok');
-      const done=sw==='ok'&&sp[0]==='ok'&&sp[1]==='ok';
-      tpl.classList.toggle('pw-done',done);
-      renderMatch(sw==='ok',sp);
-      st={w:sw,p:sp,done};
+      const sw=judgeWhole(),sp=[judgePart(0),judgePart(1)];
+      st={w:sw,p:sp,done:sw==='ok'&&sp[0]==='ok'&&sp[1]==='ok'};
+      paint();
     }
+    function paint(){
+      const sw=shown?st.w:null,sp=shown?st.p:[null,null];
+      markBox(whole,sw);parts.forEach((el,i)=>markBox(el,sp[i]));
+      tpl.classList.toggle('pw-whole-ok',sw==='ok');
+      tpl.classList.toggle('pw-done',shown&&st.done);
+      renderMatch(sw==='ok',sp);
+    }
+    function reveal(){shown=true;judge();}
     // the matching exercise (the workbook's rule): whole & a part → subtraction,
     // two parts → addition. Its slots fill as the boxes are placed right.
     function renderMatch(wOk,sp){
@@ -200,11 +211,12 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
       }
     }
     boxes.forEach((el,i)=>{
-      el.addEventListener('input',()=>{el.value=clean(el.value);if(i>0)last=i-1;judge();});
-      // Enter walks whole → part → part → the exercise's own answer box
+      el.addEventListener('input',()=>{el.value=clean(el.value);if(i>0)last=i-1;shown=false;judge();});
+      // Enter SHOWS the verdict, then walks whole → part → part → the exercise's own answer box
       el.addEventListener('keydown',e=>{
         if(e.key!=='Enter')return;
         e.preventDefault();e.stopPropagation();
+        reveal();
         const nxt=boxes[i+1]||document.getElementById('ans');
         if(nxt&&!nxt.disabled)nxt.focus();else el.blur();
       });
@@ -262,7 +274,7 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
       boxes.forEach(el=>{el.value='';markBox(el,null);});
       tpl.classList.remove('pw-done','pw-whole-ok');
       match.textContent='';match.classList.remove('on');
-      items=[];last=-1;st={w:null,p:[null,null],done:false};
+      items=[];last=-1;shown=false;st={w:null,p:[null,null],done:false};
       render();
     }
     function set(p){
@@ -279,7 +291,7 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
     }
     function cleanup(){root.innerHTML='';root.classList.remove('pw-root');}
     render();
-    return{root,set,reset,state,cleanup};
+    return{root,set,reset,state,reveal,cleanup};
   }
 
   return{mount};

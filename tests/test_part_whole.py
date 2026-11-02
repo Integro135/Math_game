@@ -160,24 +160,34 @@ class TestBoardOffer:
 
 class TestTemplate:
     def test_whole_and_parts_judge_themselves(self, page):
-        """6 + __ = 14: the whole is 14, the parts 6 and 8. A wrong number goes red,
-        a prefix of a right one stays neutral, a right one goes green; a duplicate
-        of a distinct part is the fault of the box typed LAST; the matching
-        exercise (whole & part → subtraction) fills in as the boxes are placed."""
+        """6 + __ = 14: the whole is 14, the parts 6 and 8. NOTHING is coloured
+        while she types (live green gave the answer away) — the verdict shows on
+        ENTER: a wrong number red, a prefix of a right one neutral, a right one
+        green; a duplicate of a distinct part is the fault of the box typed LAST;
+        the matching exercise (whole & part → subtraction) fills in. Typing again
+        hides the verdict until the next Enter."""
         _force(page, 'br', "{t: TMA, a: 6, b: 14}")
         _open_board(page)
         st = _state(page)
         assert (st["whole"], st["parts"], st["missing"], st["given"]) == (14, [6, 8], 'part', 6)
         W, P0, P1 = "#pw-panel .pw-whole", "#pw-panel .pw-part[data-i='0']", "#pw-panel .pw-part[data-i='1']"
-        page.fill(W, "6");  assert "pw-err" in _cls(page, W), "6 is a part, not the whole"
-        page.fill(W, "1");  assert "pw-err" not in _cls(page, W) and "pw-ok" not in _cls(page, W), "a prefix of 14 stays neutral"
-        page.fill(W, "14"); assert "pw-ok" in _cls(page, W)
+        def put(sel, v, enter=True):
+            page.fill(sel, v)
+            if enter: page.press(sel, "Enter")
+        neutral = lambda sel: "pw-ok" not in _cls(page, sel) and "pw-err" not in _cls(page, sel)
+        put(W, "14", enter=False)
+        assert neutral(W) and _state(page)["match"] == "" and _state(page)["judged"]["w"] == "ok", \
+            "the right whole, typed: judged, but NOT shown green"
+        put(W, "6");  assert "pw-err" in _cls(page, W), "6 is a part, not the whole"
+        put(W, "1", enter=False); assert neutral(W), "typing hides the verdict"
+        page.press(W, "Enter"); assert neutral(W), "a prefix of 14 stays neutral"
+        put(W, "14"); assert "pw-ok" in _cls(page, W)
         assert _state(page)["match"] == "14 − ___ = ___"
-        page.fill(P0, "6");  assert "pw-ok" in _cls(page, P0)
+        put(P0, "6");  assert "pw-ok" in _cls(page, P0)
         assert _state(page)["match"] == "14 − 6 = ___"
-        page.fill(P1, "6");  assert "pw-err" in _cls(page, P1) and "pw-ok" in _cls(page, P0), "the duplicate is the later box"
-        page.fill(P1, "9");  assert "pw-err" in _cls(page, P1)
-        page.fill(P1, "8");  assert "pw-ok" in _cls(page, P1)
+        put(P1, "6");  assert "pw-err" in _cls(page, P1) and "pw-ok" in _cls(page, P0), "the duplicate is the later box"
+        put(P1, "9");  assert "pw-err" in _cls(page, P1)
+        put(P1, "8");  assert "pw-ok" in _cls(page, P1)
         st = _state(page)
         assert st["done"] and st["match"] == "14 − 6 = 8"
         assert "pw-done" in _cls(page, "#pw-panel .pw-tpl")
@@ -207,9 +217,11 @@ class TestTemplate:
         _open_board(page)
         page.fill("#pw-panel .pw-part[data-i='0']", "6")
         page.fill("#pw-panel .pw-part[data-i='1']", "9")
+        page.press("#pw-panel .pw-part[data-i='1']", "Enter")   # the verdict shows on Enter
         assert all("pw-ok" in c for c in page.evaluate("[...document.querySelectorAll('#pw-panel .pw-part')].map(e=>e.className)"))
         assert _state(page)["match"] == "9 + 6 = ___"
         page.fill("#pw-panel .pw-whole", "15")
+        page.press("#pw-panel .pw-whole", "Enter")
         assert _state(page)["match"] == "9 + 6 = 15" and _state(page)["done"]
 
 
