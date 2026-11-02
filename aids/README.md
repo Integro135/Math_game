@@ -171,7 +171,7 @@ renders, after the workbook page on equations (6 + __ = 14):
   a click on the last coloured unit uncolours it, a keyboard press colours one
   more. So the exact number shows whatever bars were drawn; undo removes the
   last drawn item, clear empties;
-  the total (`.pw-total`, ✓ when it equals the whole) and the coloured count
+  the total (`.pw-total` — deliberately NO tick or green when it equals the whole, so it can't be used to guess) and the coloured count
   (`.pw-painted`) are shown — the uncoloured count is the child's to find. Capped
   at `max` (30).
 

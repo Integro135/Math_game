@@ -102,8 +102,6 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
   .pw-counts{display:flex;gap:18px;font-family:'Nunito',sans-serif;font-weight:900;font-size:.9rem;color:rgba(255,255,255,.85);
     text-shadow:0 1px 4px rgba(0,0,0,.45)}
   .pw-count b{font-family:'Fredoka One',cursive;font-size:1.2rem;color:#fff;margin-inline-start:4px}
-  .pw-count.pw-ok b{color:#4ade80}
-  .pw-count.pw-ok::after{content:' ✓';color:#4ade80}
   @media(max-width:480px){
     .pw-root{gap:10px 16px}.pw-bar i{width:46px;height:14px}.pw-dot i{width:15px;height:15px}
     .pw-inp{width:54px;height:46px;font-size:1.45rem}.pw-whole{width:62px;height:52px;font-size:1.7rem}
@@ -144,7 +142,7 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
       `</div>`;
     const q=s=>root.querySelector(s);
     const tpl=q('.pw-tpl'),whole=q('.pw-whole'),parts=[...root.querySelectorAll('.pw-part')],match=q('.pw-match');
-    const canvas=q('.pw-canvas'),totalEl=q('.pw-total'),paintedEl=q('.pw-painted'),totalW=q('.pw-total-w');
+    const canvas=q('.pw-canvas'),totalEl=q('.pw-total'),paintedEl=q('.pw-painted');
     const bBar=q('.pw-add-bar'),bDot=q('.pw-add-dot'),bUndo=q('.pw-undo'),bClear=q('.pw-clear');
     const boxes=[whole,...parts];
     let truth={whole:null,parts:[],missing:'part',given:null},MAX=30;
@@ -248,7 +246,8 @@ window.PART_WHOLE=window.PART_WHOLE||(()=>{
       });
       const t=total();
       totalEl.textContent=t;paintedEl.textContent=painted();
-      totalW.classList.toggle('pw-ok',truth.whole!=null&&t===truth.whole);
+      // NO tick / green on a total that equals the whole (user: it lets her guess her
+      // way to the answer) — the counts stay neutral whatever she draws
       bBar.disabled=t+5>MAX;bDot.disabled=t+1>MAX;
       bUndo.disabled=bClear.disabled=!items.length;
     }

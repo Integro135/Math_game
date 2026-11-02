@@ -235,7 +235,8 @@ class TestBarsAndCircles:
         assert (st["bars"], st["dots"], st["total"], st["painted"]) == (2, 4, 14, 0)
         assert page.locator("#pw-panel .pw-bar").count() == 2 and page.locator("#pw-panel .pw-dot").count() == 4
         assert page.locator("#pw-panel .pw-bar >> nth=0 >> s").count() == 5, "a bar shows its five units"
-        assert "pw-ok" in _cls(page, "#pw-panel .pw-total-w"), "14 drawn = the whole 14 ✓"
+        assert "pw-ok" not in _cls(page, "#pw-panel .pw-total-w") and page.inner_text("#pw-panel .pw-total-w").find("✓") < 0, \
+            "14 drawn = the whole 14, yet NO tick / green — it would give the answer away"
         BAR = "#pw-panel .pw-bar >> nth=0"
         bar = page.locator(BAR)
         h = bar.bounding_box()["height"] / 2
@@ -269,7 +270,7 @@ class TestBarsAndCircles:
         assert _state(page)["painted"] == 6 and [i["on"] for i in _state(page)["items"]][:2] == [5, 1]
         page.click("#pw-panel .pw-undo")
         st = _state(page)
-        assert (st["dots"], st["total"]) == (3, 13) and "pw-ok" not in _cls(page, "#pw-panel .pw-total-w")
+        assert (st["dots"], st["total"]) == (3, 13)
         page.click("#pw-panel .pw-clear")
         st = _state(page)
         assert (st["bars"], st["dots"], st["total"], st["painted"]) == (0, 0, 0, 0)
