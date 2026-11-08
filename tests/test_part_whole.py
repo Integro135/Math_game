@@ -377,6 +377,22 @@ class TestWholeAndPartsExercise:
         assert page.inner_text("#colx-root .pwx-eq").replace(" ", "") == "14−6=8"
         assert page.evaluate("_reportRows()[0].eq").startswith("🧩 14 = 6 + 8")
 
+    def test_board_holds_still_as_the_drawing_grows(self, page):
+        """The 4th bar (past 15) used to pull the drawing up beside the template,
+        top-left: #colx-root is shrink-to-fit, so the board's width followed the
+        drawing. Now the board has a fixed width and the drawing stays underneath."""
+        self._card(page, "{t: TA, a: 9, b: 8}")
+        rect = ("(s => {const r = document.querySelector(s).getBoundingClientRect();"
+                " return [Math.round(r.x), Math.round(r.y), Math.round(r.width)];})")
+        first = None
+        for n in range(6):
+            page.click("#colx-root .pw-add-bar" if n < 4 else "#colx-root .pw-add-dot")
+            now = [page.evaluate(f"{rect}('{s}')") for s in ("#colx-root .pw-tpl", "#colx-root .pw-draw")]
+            first = first or now
+            assert now == first, f"{n + 1} items: the board moved {first} -> {now}"
+        tpl, draw = first
+        assert draw[1] > tpl[1], "the drawing sits under the template"
+
     def test_every_fact_kind_becomes_a_card(self, page):
         enter_mode(page, 'br'); page.wait_for_selector("#ans, #ans1, .pwx", timeout=TIMEOUT)
         got = page.evaluate("""[{t:TA,a:9,b:6},{t:TS,a:15,b:9},{t:TMA,a:6,b:14},{t:TM,a:16,b:7}]

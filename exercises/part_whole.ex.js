@@ -39,7 +39,11 @@ window.EXERCISES.types.part_whole=(()=>{
   .pwx{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
   .pwx-eq{font-family:'Fredoka One',cursive;font-size:2.4rem;line-height:1.1;color:#fff;letter-spacing:.04em;
     text-shadow:0 3px 0 rgba(0,0,0,.18),0 8px 18px rgba(0,0,0,.32);white-space:nowrap}
-  .pwx-board{width:100%}
+  /* a FIXED width, drawing always under the template: #colx-root is shrink-to-fit,
+     so a content-sized board let the 4th bar pull the drawing up beside the template */
+  .pwx-board{width:min(420px,calc(100vw - 48px))}
+  .pwx .pw-root{flex-direction:column;align-items:center;flex-wrap:nowrap}
+  .pwx .pw-draw{flex:none;width:100%;max-width:none}
   .pwx-foot{display:flex;align-items:center;gap:14px;justify-content:center;flex-wrap:wrap}
   .pwx-note{min-height:1.3em;font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;color:#ffe08a;
     text-shadow:0 1px 4px rgba(0,0,0,.5);text-align:center}
