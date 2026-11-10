@@ -145,7 +145,7 @@ subtraction_game/
 │  ├─ unicorns3.bg.js + unicorns/    truth, used by BOTH the game and the
 │  ├─ dubai3.bg.js                   harness; themes map to them via
 │  ├─ reef2.bg.js                    _BG_THEMES (themes.js). LIVE: space2,
-│  ├─ savanna.bg.js + savanna_animals/   unicorns3, dubai3, reef2, savanna,
+│  ├─ savanna2.bg.js + savanna_rigs/     unicorns3, dubai3, reef2, savanna2,
 │  ├─ dinosaurs3.bg.js + dino_rigs/      dinosaurs3, aurora, maldives2
 │  ├─ aurora.bg.js + princess/ + olaf/   (aurora serves the ❄️ theme;
 │  │                                     it replaced frozen.bg.js)
@@ -160,7 +160,7 @@ subtraction_game/
 │  ├─ space2.html                  thin dev harnesses (one per module):
 │  ├─ unicorns3.html                 open directly in a browser to iterate
 │  ├─ dubai3.html                  on a scene in isolation
-│  ├─ savanna.html / dinosaurs3.html
+│  ├─ savanna2.html / dinosaurs3.html
 │  ├─ aurora.html / maldives2.html / reef2.html / autumn.html
 │  ├─ underwater_happy_reef.html
 │  └─ _verify*.py                  per-scene marker/render checks
@@ -221,7 +221,7 @@ background's AIDS variant (§3.5), and runs the previous background's
 **Adding a background:** write `backgrounds/foo.bg.js` (same shape) +
 `game/skins/foo.skin.css`, then map a theme to `loadBackground('foo')` in
 `applyTheme` (themes.js). Iterate standalone with a copy of the
-`backgrounds/savanna.html` harness.
+`backgrounds/savanna2.html` harness.
 
 ### 3.2 Skins — `game/skins/<name>.skin.css`
 

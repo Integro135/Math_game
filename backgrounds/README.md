@@ -4,8 +4,8 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef2.bg.js`, `savanna.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives2.bg.js`, `autumn.bg.js` | Loaded by the game at runtime (`reef.bg.js` and `maldives.bg.js` are the legacy reef / beach scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `dinosaurs3.html`, `maldives2.html`, `autumn.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef2.bg.js`, `savanna2.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives2.bg.js`, `autumn.bg.js` | Loaded by the game at runtime (`reef.bg.js`, `maldives.bg.js` and `savanna.bg.js` are the legacy reef / beach / savanna scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
+| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `savanna2.html`, `dinosaurs3.html`, `maldives2.html`, `autumn.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
 | **Unicorn valley** | `unicorns3.bg.js` + `unicorns/*.item.js` | `girls` → **`unicorns3`**: v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
 | **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
@@ -45,14 +45,67 @@ below DW 900 and shrinks the rest to half on a phone (`layoutBeach`). Each
 rebuilds its layout in `resize()` when DW changes (an orientation flip), and
 reports it through `_reef2.layout()` / `_dubai3.layout()` / `_mv2.layout()`.
 
-`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef2` (the 2026-09 rebuild; `reef.bg.js` is the legacy scene, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna`, `dinosaurs→dinosaurs3`,
+`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef2` (the 2026-09 rebuild; `reef.bg.js` is the legacy scene, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna2` (the 2026-11 from-scratch rebuild; `savanna.bg.js` + `savanna_animals/` are the legacy scene, unloaded), `dinosaurs→dinosaurs3`,
 `maldives→maldives2` (the 2026-09 canvas rebuild with the day cycle, storms and the pokemon walkers; `maldives.bg.js` is the legacy SVG scene, unloaded),
 `autumn→autumn` (the 🍂 golden grove, 2026-10 — its own section at the end of this file)
 (🏙️, 🦁, 🦕, 🏝️ and 🍂 are their own themes in the menu). Canvas-scene themes spawn no
 floating emoji particles. Note: a new theme also needs a `body.theme-<name>
 #stars-layer {display:block}` rule in themes.css, or the stage stays hidden.
 
-**savanna.bg.js — Pride Rock through a full DAY CYCLE.** Harness:
+**savanna2.bg.js — the savanna, rebuilt from scratch (2026-11, v10.22).**
+Harness: `savanna2.html` (seven hour keys, Pause, Fast ×20, a herd of each
+kind, Roar, Trick, Birds, Restart); stills: `_verify_savanna2.py`. One canvas,
+a responsive design space (`DH` 900, `DW` 400–2400 from the aspect ratio) and
+five baked layers — sky strip, far (Kilimanjaro + hills), ground (plain,
+waterhole, Pride Rock, baobab, acacias, termite mound), the front grass bank
+and the vignette — repainted only when the look signature moves
+(`repaintIfNeeded`). A day is `DAY_SEC` = 240 s through eight keys (`KEYS`:
+dawn, morning, noon, golden, sunset, dusk, night ×2) with a hold at each;
+sun and moon ride real arcs, stars + shooting stars + fireflies at night,
+gold motes at dusk, clouds, bird flocks, pond glints and ripple rings.
+
+THE CAST are the `savanna_rigs/` canvas rigs (below), loaded on demand
+(`needScript`; `preload()` warms them). The PRIDE — lion, lioness, a teen
+lioness and a cub — lives on Pride Rock: each paces its own range of the ridge
+(`PRIDE_DEF`, `ridgeY`/`seatY`), the lion lingers at the tip of the ledge, a
+smaller cat never settles on top of a bigger one (`crowded`), and two meeting
+nose to nose raise a ❤️. HERDS (`KINDS`: zebra, ostrich, elephant, cheetah,
+giraffe, lioness + real cubs) cross the plain in depth lanes, walking or at a
+run, with young. Tricks on a schedule and on click: the rig's own `pose` (roar
+/ yawn / pounce / crouch / bray / trumpet / long tongue / display squawk), a jump, the
+cheetah's spin and the rarer fart (green puffs from `vent`); the lion's roar
+shakes the ground layers. Clicks: an animal → a trick (the lion always roars),
+the sun / moon / waterhole → the next hour, the baobab → a burst of birds, the
+sky → a flock at that height.
+
+Layout follows the screen: on a narrow stage (`DW` < 1000 — phones, portrait
+tablets) the rock is LOW (`RKY` 0.38) so the pride stands below the game
+panel, the cast shrinks (`PRS`, `HS`), the teen stays home under `DW` 560 and
+only one herd crosses at a time; on a wide one the pride keeps to the clear
+strip left of the game's `.wrap` panel when that strip can hold a lion
+(`measureClear` → `clearX`). A frame governor draws every other frame on touch
+devices and when frames run heavy. "rumi" strolls the plain every 2–4 min on
+her own overlay layer. `window._sav2` exposes ready / tod / setTod / setSpeed /
+phase / pride / herds / spawn / clearHerds / auto (false holds the scheduled
+herds) / act / roaring / puffs / hearts / layout / perf and the click targets (`sunXY`, `moonXY`, `pondXY`, `baobabXY`,
+`skyXY`) for the harness and the tests. Skin: `game/skins/savanna.skin.css`.
+Aids: `savanna` (cheetah number-line rider + amber fruit jar). Tests:
+`tests/test_savanna2.py` (the harness + one in-game class).
+
+**savanna_rigs/ — the animals of savanna2.** `kit.js` (`window.SavKit`: the
+shared palette, gradient, blob / taper / leg helpers, the one glossy eye, blush,
+bowtie, ribbon, heart, sound rings) and one file per family: `cats.js`
+(LionRig, LionessRig, CubRig, CheetahRig — one skeleton, four builds),
+`zebra.js`, `giraffe.js`, `elephant.js`, `ostrich.js`. Every rig is
+`{ draw(ctx, L, t), HEIGHT, WIDTH (half-width), STRIDE, RUN_STRIDE,
+ACT_SECONDS }` and reads `L = { x, y, s, dir, ph, wt, moving, go, run, pose,
+tint, lit, bowtie, ribbon }` — feet planted through stance, a real walk and a
+real run per animal, lit by the hour through `L.lit`. House style: side view
+with ONE eye, an open mouth is a real gap with a hinged jaw, no outlines, soft
+gradients, lighter belly, rim light. `parade.html` lines them all up (still /
+walk / run / pose).
+
+**savanna.bg.js — LEGACY (unloaded since v10.22): Pride Rock through a full DAY CYCLE.** Harness:
 `savanna.html` (Morning/Noon/Afternoon/Night jump the clock, Pause, Fast ×20).
 A whole day takes `DAY_SEC` = 240 s: MORNING (pink-violet dawn, sun rising
 right of Pride Rock), NOON (blue sky, small white sun high up), AFTERNOON (the
@@ -82,8 +135,8 @@ trumpet sound rings; ❤️ when two pride members meet face to face. Animals ar
 drawn on their own layer and tinted with the hour (`source-atop`). Ambient:
 drifting clouds (dimmed at night), bird flocks by day, golden dust motes at
 sunset, swaying foreground grass, and "rumi" strolling the plain every 2–4 min
-(first after 1–3 min; her own overlay layer, stopped by `cleanup()`). `window._sav2` exposes tod/setTod/setSpeed/
-phase/pride/herd/spawn/act for the harness and tests. Skin:
+(first after 1–3 min; her own overlay layer, stopped by `cleanup()`). It exposed `window._sav2` (tod/setTod/setSpeed/
+phase/pride/herd/spawn/act) — the name savanna2 now owns. Skin:
 `game/skins/savanna.skin.css`. Aids: `savanna` (cheetah number-line rider +
 amber fruit jar).
 
@@ -96,12 +149,12 @@ shadow), blink, floating hearts, click → zap / jump / fly-out, and the reef's 
 ("swim") mode (rotated 90°, arm raised, ripples). API: `ChibiWalker.walk /
 patrol / trigger`. Design source + preview: `rumi/rumi.html` (the same figure,
 documented; mirror art edits into the module); sandboxes `rumi-test.html`,
-`reef-test.html`, `walker-demo.html`. Used by savanna.bg.js (strolls the plain
+`reef-test.html`, `walker-demo.html`. Used by savanna2.bg.js (strolls the plain
 every 2–4 min, first after 1–3 min), dinosaurs3.bg.js (strolls the valley every
 2–4 min, first after ~45 s–2¼ min; `_dino3.rumi()` forces one) and reef.bg.js
 (fly mode).
 
-**savanna_animals/ — the from-scratch animal rigs used by savanna.bg.js.**
+**savanna_animals/ — the animal rigs of the LEGACY savanna.bg.js (savanna2 draws `savanna_rigs/`).**
 A new soft cartoon take on every savanna animal, each drawn on canvas in its
 own file on top of `rig-common.js` (`window.SavRig`: gradients, `fluff` lobe
 rings, round-jointed `leg`, big `eye`, `blink`, `shade` tints): `lion.js`

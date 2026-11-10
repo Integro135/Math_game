@@ -538,7 +538,7 @@ This is the largest file and owns nearly all gameplay state and logic.
 - **`theme`** — current theme (from `localStorage.gameTheme`, default `girls`).
 - **`_BG_THEMES`** — maps a theme id to its background module name
   (`galaxy→space`, `girls→unicorns`, `reef→reef`, `dubai→dubai`,
-  `savanna→savanna`).
+  `savanna→savanna2`).
 - **`THEMES`** — per-theme data: particles, rainbow colors (`rbColors`), and the
   fireworks variants (`fw[]` + `fwSuper`) consumed by `success.js`.
 - **`applyTheme(t)`**, **`openThemeMenu`/`pickTheme`/`toggleTheme`**.

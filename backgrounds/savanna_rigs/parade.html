@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Savanna rigs — Parade</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     The workshop for the from-scratch savanna rigs (kit.js + one file per
+     family). All of them side by side at ONE shared px-per-unit scale, on a
+     blank studio backdrop — judge them as a family. Click an animal (or a
+     name tab) to see it alone and big; click again for the parade.
+       Walk  marches them (feet planted: wt advances with the distance)
+       Run   the same at the run gait, for the rigs that have one
+       Act   plays every signature action, staggered
+       Flip / BG
+     A missing rig file is simply skipped. window._paradeTest has hooks for
+     the screenshot harness (manual clock: manual(true) + advance(dt)).
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #ece6db; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #ctrl { position: fixed; bottom: 18px; left: 0; right: 0; display: flex; gap: 8px; flex-wrap: wrap;
+          justify-content: center; z-index: 10; }
+  .hbtn { padding: 8px 16px; background: rgba(70,50,40,.16); color: rgba(60,40,30,.9);
+          border: 1px solid rgba(90,60,40,.28); border-radius: 999px; font: 13px Georgia, serif;
+          letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+  .hbtn.on { background: rgba(215,120,60,.6); color: #fff8ee; }
+  body.dark .hbtn { background: rgba(60,24,14,.5); color: rgba(255,214,160,.92); border-color: rgba(255,170,90,.4); }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ctrl">
+  <button class="hbtn" id="walk">Walk</button>
+  <button class="hbtn" id="run">Run</button>
+  <button class="hbtn" id="act">Act</button>
+  <button class="hbtn" id="flip">Flip</button>
+  <button class="hbtn" id="bg">BG</button>
+</div>
+<script src="kit.js"></script>
+<script src="cats.js"></script>
+<script src="zebra.js"></script>
+<script src="giraffe.js"></script>
+<script src="elephant.js"></script>
+<script src="ostrich.js"></script>
+<script>
+(function(){
+  const TAU = Math.PI * 2;
+  const ORDER = [
+    { name: 'giraffe',  rig: 'GiraffeRig' },
+    { name: 'elephant', rig: 'ElephantRig' },
+    { name: 'zebra',    rig: 'ZebraRig' },
+    { name: 'lion',     rig: 'LionRig', extra: { bowtie: false } },
+    { name: 'lioness',  rig: 'LionessRig' },
+    { name: 'cub',      rig: 'CubRig', extra: { ribbon: true } },
+    { name: 'cheetah',  rig: 'CheetahRig' },
+    { name: 'ostrich',  rig: 'OstrichRig' },
+  ].filter(o => window[o.rig]);
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  const BGS = ['blank', 'slate', 'dusk', 'night'];
+  const LITS = [null, null, [1.06, 0.88, 0.72], [0.42, 0.5, 0.8]];
+  let W, H, bgI = 0, lastT = 0, walking = false, running = false, frozen = null, only = null, dir = 1;
+  let manual = false, clock = 0;
+  const GAP = 12;
+  const cast = ORDER.map((o, i) => ({
+    o, R: window[o.rig],
+    L: Object.assign({ x: 0, y: 0, s: 1, dir: 1, ph: i * 0.9, wt: i * 1.3, moving: false, go: 0, run: false, pose: 0 }, o.extra || {}),
+    poseT0: null,
+  }));
+  const shown = () => only ? cast.filter(c => c.o.name === only) : cast;
+
+  function layout(){
+    const list = shown();
+    const maxH = Math.max(...list.map(c => c.R.HEIGHT));
+    const total = list.reduce((a, c) => a + c.R.WIDTH * 2 + GAP, 0);
+    const S = Math.min(H * (only ? 0.62 : 0.6) / maxH, W * 0.94 / total);
+    let x = (W - total * S) / 2;
+    for (const c of list){
+      const w = c.R.WIDTH * 2 * S;
+      c.L.x = x + w / 2; c.L.y = H * 0.8; c.L.s = S;
+      x += w + GAP * S;
+    }
+  }
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layout();
+  }
+  addEventListener('resize', resize); resize();
+
+  function lgr(x1, y1, x2, y2, st){ const g = ctx.createLinearGradient(x1, y1, x2, y2); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+  function backdrop(){
+    const bg = BGS[bgI];
+    document.body.classList.toggle('dark', bg !== 'blank');
+    if (bg === 'blank'){
+      ctx.fillStyle = lgr(0, 0, 0, H, [[0, '#f5f1e9'], [0.8, '#ebe4d8'], [1, '#e2d9ca']]); ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(120,95,70,.08)'; ctx.fillRect(0, H * 0.8, W, H * 0.2);
+      return;
+    }
+    if (bg === 'slate'){ ctx.fillStyle = '#3a3f4b'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#2e323c'; ctx.fillRect(0, H * 0.8, W, H * 0.2); return; }
+    ctx.fillStyle = bg === 'dusk' ? lgr(0, 0, 0, H * 0.8, [[0, '#3a1030'], [0.45, '#b53a2a'], [0.78, '#f08a3c'], [1, '#f7c25a']])
+                                  : lgr(0, 0, 0, H * 0.8, [[0, '#060b1e'], [0.7, '#1a2a52'], [1, '#3a4a78']]);
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = bg === 'dusk' ? lgr(0, H * 0.8, 0, H, [[0, '#6a5a30'], [1, '#3e3418']]) : lgr(0, H * 0.8, 0, H, [[0, '#2a2438'], [1, '#141224']]);
+    ctx.fillRect(0, H * 0.8, W, H * 0.2);
+  }
+
+  function sim(t, dt){
+    for (const c of shown()){
+      const L = c.L, R = c.R;
+      const want = walking && c.poseT0 === null ? 1 : 0;
+      L.go += (want - L.go) * Math.min(1, dt * 6);
+      L.moving = L.go > 0.02; L.run = running && !!R.RUN_STRIDE; L.dir = dir; L.lit = LITS[bgI];
+      if (L.moving){
+        const stride = (L.run ? R.RUN_STRIDE : R.STRIDE) * L.s;
+        const cps = L.run ? (R.RUN_CPS || 1.9) : (R.WALK_CPS || 0.85);     // cycles per second
+        const dx = stride * cps * dt * L.go;
+        L.wt += TAU * dx / stride; L.x += dx * dir;
+        const w = R.WIDTH * 2 * L.s;
+        if (L.x - w > W) L.x = -w; if (L.x + w < 0) L.x = W + w;
+      }
+      L.pose = c.poseT0 === null ? 0 : Math.max(0, Math.min(1, (t - c.poseT0) / (R.ACT_SECONDS || 1.9)));
+      if (L.pose >= 1){ c.poseT0 = null; L.pose = 0; }
+      if (frozen !== null) L.pose = frozen;
+    }
+  }
+  function render(t){
+    backdrop();
+    const blank = BGS[bgI] === 'blank';
+    for (const c of shown()){
+      ctx.fillStyle = blank ? 'rgba(70,50,35,.20)' : 'rgba(20,10,6,.30)';
+      ctx.beginPath(); ctx.ellipse(c.L.x, c.L.y + 1.5 * c.L.s, c.R.WIDTH * 0.9 * c.L.s, 5 * c.L.s, 0, 0, TAU); ctx.fill();
+      c.R.draw(ctx, c.L, t);
+    }
+    ctx.fillStyle = blank ? 'rgba(70,50,35,.6)' : 'rgba(255,214,160,.7)'; ctx.font = '13px Georgia, serif';
+    for (const c of shown()) ctx.fillText(c.o.name, c.L.x - ctx.measureText(c.o.name).width / 2, H * 0.8 + 26);
+  }
+  function frame(ts){
+    if (!manual){
+      const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t; clock = t;
+      sim(t, dt); render(t);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const act = () => shown().forEach((c, i) => { if (c.poseT0 === null) c.poseT0 = clock + i * 0.18; });
+  const btn = id => document.getElementById(id);
+  btn('walk').onclick = e => { walking = !walking; e.target.classList.toggle('on', walking); };
+  btn('run').onclick = e => { running = !running; e.target.classList.toggle('on', running); };
+  btn('act').onclick = act;
+  btn('flip').onclick = () => { dir = -dir; };
+  btn('bg').onclick = () => { bgI = (bgI + 1) % BGS.length; };
+  cv.addEventListener('click', e => {
+    if (only){ only = null; layout(); return; }
+    for (const c of cast){
+      const hw = c.R.WIDTH * c.L.s;
+      if (e.clientX > c.L.x - hw && e.clientX < c.L.x + hw){ only = c.o.name; layout(); return; }
+    }
+  });
+  window._paradeTest = {
+    act, walk: on => { walking = on; }, run: on => { running = on; }, setBg: i => { bgI = i; }, flip: d => { dir = d; },
+    names: () => cast.map(c => c.o.name), freeze: p => { frozen = p; }, only: n => { only = n; layout(); },
+    hideUI: () => { btn('walk').parentNode.style.display = 'none'; },
+    manual: on => { manual = on; },
+    advance: dt => { const n = Math.max(1, Math.round(dt / 0.02)); for (let i = 0; i < n; i++){ clock += dt / n; sim(clock, dt / n); } render(clock); },
+    cast: () => shown().map(c => ({ name: c.o.name, x: c.L.x, y: c.L.y, s: c.L.s, wt: c.L.wt, h: c.R.HEIGHT, w: c.R.WIDTH })),
+  };
+})();
+</script>
+</body>
+</html>
