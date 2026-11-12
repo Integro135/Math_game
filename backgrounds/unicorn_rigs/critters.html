@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unicorn valley — critters</title>
+<!-- The workshop for critters.js (BunnyRig + SwanRig): every bunny coat sitting,
+     one nibbling, one mid-hop, one in the pose; a swan and a cygnet on the pond.
+       Still / Hop / Pose   what they are all doing
+       Freeze + slider      hold the hop / pose progress at one value
+       Light                day → dusk → night
+       Flip                 mirror everyone
+     window._paradeTest has hooks for the screenshot script (custom casts). -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: #f4eef8; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #ctrl { position: fixed; bottom: 14px; left: 0; right: 0; display: flex; gap: 8px; flex-wrap: wrap;
+          justify-content: center; align-items: center; z-index: 10; font: 13px Georgia, serif; color: #6a4a7a; }
+  .hbtn { padding: 7px 15px; background: rgba(150,110,180,.16); color: #5a3f6c; border: 1px solid rgba(130,90,160,.3);
+          border-radius: 999px; font: 13px Georgia, serif; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+  .hbtn.on { background: rgba(214,120,180,.7); color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ctrl">
+  <button class="hbtn on" id="still">Still</button>
+  <button class="hbtn" id="hop">Hop</button>
+  <button class="hbtn" id="pose">Pose</button>
+  <label><input type="checkbox" id="frz"> Freeze</label>
+  <input type="range" id="prog" min="0" max="1" step="0.01" value="0.45">
+  <span id="pv">0.45</span>
+  <button class="hbtn" id="light">Light</button>
+  <button class="hbtn" id="flip">Flip</button>
+</div>
+<script src="../savanna_rigs/kit.js"></script>
+<script src="critters.js"></script>
+<script>
+(function(){
+  const TAU = Math.PI * 2, B = window.BunnyRig, SW = window.SwanRig;
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  const LITS = [null, [1.05, 0.86, 0.78], [0.45, 0.5, 0.8]];
+  const SKY = [['#fdf3fa', '#e6f0ff'], ['#f7c6b4', '#b98cc0'], ['#1a1c3e', '#3a3f72']];
+  const GRASS = ['#cfe9b8', '#a9b58a', '#3d5a66'], POND = ['#bfe3f4', '#b9a3c8', '#2c3f70'];
+  let W, H, litI = 0, mode = 'still', frozen = null, dir = 1, custom = null, clock = 0, lastT = 0;
+  let ground = 0, water = 0;
+
+  // the default cast: all coats sitting, one nibbling, one mid-hop, one in the pose; two swans
+  const cast = [];
+  if (B){
+    B.COATS.forEach((c, i) => cast.push({ rig: B, L: { coat: c, ph: i * 1.3 }, name: c }));
+    cast.push({ rig: B, L: { coat: 'cream', ph: 7, nibble: 1 }, name: 'nibble', fix: 'nibble' });
+    cast.push({ rig: B, L: { coat: 'grey', ph: 8, hop: 0.45 }, name: 'mid-hop', fix: 'hop' });
+    cast.push({ rig: B, L: { coat: 'rose', ph: 9, pose: 0.4 }, name: 'pose', fix: 'pose' });
+  }
+  const swans = SW ? [{ rig: SW, L: { ph: 0.4 }, name: 'swan' }, { rig: SW, L: { ph: 2, cygnet: true }, name: 'cygnet' },
+                      { rig: SW, L: { ph: 3.1, pose: 0.5 }, name: 'pose', fix: 'pose' }] : [];
+
+  function layout(){
+    ground = H * 0.5; water = H * 0.8;
+    const S = Math.min(W / (cast.length * 96), H * 0.36 / 100);
+    cast.forEach((c, i) => {
+      c.x0 = W * (i + 0.5) / cast.length - (c.fix === 'hop' ? 0.6 * B.HOP * S : 0);
+      c.L.x = c.x0; c.L.y = ground; c.L.s = S; c.hopT = -i * 0.13;
+    });
+    swans.forEach((c, i) => { c.L.x = W * (0.25 + i * 0.25); c.L.y = water; c.L.s = S * (c.L.cygnet ? 1 : 1.1); });
+  }
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layout();
+  }
+  addEventListener('resize', resize); resize();
+
+  function backdrop(g, wy){
+    const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, SKY[litI][0]); sky.addColorStop(1, SKY[litI][1]);
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = GRASS[litI]; ctx.fillRect(0, g, W, (wy || H) - g - (wy ? 40 : 0));
+    if (wy){ ctx.fillStyle = POND[litI]; ctx.fillRect(0, wy - 40, W, H - wy + 40); }
+  }
+  function sim(t, dt){
+    const cyc = B ? B.HOP_SECONDS + 0.55 : 1;
+    for (const c of cast.concat(swans)){
+      const L = c.L; L.dir = dir; L.lit = LITS[litI];
+      const actS = c.rig.ACT_SECONDS;
+      if (c.rig === B){
+        if (mode === 'hop'){
+          c.hopT += dt;
+          if (c.hopT >= cyc){ c.hopT -= cyc; c.x0 += dir * B.HOP * L.s; }
+          if (c.x0 > W + 60) c.x0 = -60; if (c.x0 < -60) c.x0 = W + 60;
+          L.hop = frozen !== null ? frozen : Math.max(0, Math.min(1, c.hopT / B.HOP_SECONDS));
+        } else L.hop = c.fix === 'hop' && mode === 'still' ? (frozen !== null ? frozen : 0.45) : 0;
+        L.x = c.x0 + dir * B.hopX(L.hop || 0) * B.HOP * L.s;
+      }
+      if (mode === 'pose') L.pose = frozen !== null ? frozen : ((t + (c.L.ph || 0) * 0.2) / (actS + 0.6)) % 1 * (1 + 0.6 / actS);
+      else L.pose = c.fix === 'pose' ? (frozen !== null && mode === 'still' ? frozen : c.rig === B ? 0.4 : 0.5) : 0;
+      if (L.pose > 1) L.pose = 0;
+      if (c.rig === SW) L.moving = mode === 'hop';
+    }
+  }
+  function render(t){
+    backdrop(ground, water);
+    ctx.font = '13px Georgia, serif';
+    for (const c of cast.concat(swans)){
+      if (c.rig === B){
+        ctx.fillStyle = 'rgba(60,80,50,.16)';
+        ctx.beginPath(); ctx.ellipse(c.L.x, c.L.y + 1, 24 * c.L.s, 3.5 * c.L.s, 0, 0, TAU); ctx.fill();
+      }
+      c.rig.draw(ctx, c.L, t);
+      ctx.fillStyle = litI === 2 ? 'rgba(230,220,255,.8)' : 'rgba(90,60,110,.7)';
+      ctx.fillText(c.name, c.L.x - ctx.measureText(c.name).width / 2, c.L.y + 24);
+    }
+  }
+  // a custom cast for the screenshot script: items = [{ rig: 'bunny'|'swan', x, y, travel, mark, ...L }]
+  function renderCustom(){
+    const o = custom.opts; litI = o.lit || 0;
+    backdrop(o.ground != null ? o.ground : H, o.water);
+    for (const it of custom.items){
+      const R = it.rig === 'swan' ? SW : B, L = Object.assign({ s: 1, dir: 1, ph: 0 }, it); L.lit = LITS[litI];
+      if (it.mark){                                         // where the hind toes must stay at take-off / landing
+        ctx.fillStyle = 'rgba(200,40,90,.55)';
+        ctx.fillRect(it.x0 + L.dir * 9 * L.s - 0.5, it.y - 3, 1, 12);
+        ctx.fillRect(it.x0 + L.dir * (9 + B.HOP) * L.s - 0.5, it.y - 3, 1, 12);
+      }
+      if (it.travel) L.x = it.x0 + L.dir * B.hopX(L.hop || 0) * B.HOP * L.s;
+      R.draw(ctx, L, it.t != null ? it.t : (o.t || 0));
+    }
+  }
+  function frame(ts){
+    const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t; clock = t;
+    if (custom) renderCustom(); else { sim(t, dt); render(t); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const btn = id => document.getElementById(id);
+  const setMode = m => { mode = m; ['still', 'hop', 'pose'].forEach(k => btn(k).classList.toggle('on', k === m)); if (m !== 'hop') layout(); };
+  ['still', 'hop', 'pose'].forEach(k => { btn(k).onclick = () => setMode(k); });
+  const syncFreeze = () => { frozen = btn('frz').checked ? +btn('prog').value : null; btn('pv').textContent = (+btn('prog').value).toFixed(2); };
+  btn('frz').onchange = syncFreeze; btn('prog').oninput = syncFreeze;
+  btn('light').onclick = () => { litI = (litI + 1) % LITS.length; };
+  btn('flip').onclick = () => { dir = -dir; };
+
+  window._paradeTest = {
+    hideUI: () => { btn('ctrl').style.display = 'none'; },
+    mode: setMode, freeze: p => { frozen = p; }, setLit: i => { litI = i; }, flip: d => { dir = d; },
+    custom: (items, opts) => { custom = items ? { items, opts: opts || {} } : null; if (custom) renderCustom(); },
+    info: () => ({ W, H, bunny: B && { H: B.HEIGHT, W: B.WIDTH, HOP: B.HOP, coats: B.COATS }, swan: SW && { H: SW.HEIGHT, W: SW.WIDTH } }),
+    // draw cost: n draws of one bunny / one swan (ms per draw)
+    perf: n => {
+      const out = {}, run = (R, L) => { const t0 = performance.now(); for (let i = 0; i < n; i++) R.draw(ctx, L, i * 0.016); return (performance.now() - t0) / n; };
+      if (B){ out.bunnySit = run(B, { x: 200, y: 300, s: 1, dir: 1, coat: 'cream' }); out.bunnyHop = run(B, { x: 200, y: 300, s: 1, dir: 1, coat: 'cream', hop: 0.45 }); }
+      if (SW){ out.swan = run(SW, { x: 400, y: 300, s: 1, dir: 1 }); out.swanPose = run(SW, { x: 400, y: 300, s: 1, dir: 1, pose: 0.5 });
+               out.cygnet = run(SW, { x: 500, y: 300, s: 1, dir: 1, cygnet: true }); }
+      return out;
+    },
+    // the painted extent of one draw, in rig units around the anchor (a test-only scratch canvas)
+    bbox: (rig, L) => {
+      const c = document.createElement('canvas'); c.width = c.height = 600;
+      const g = c.getContext('2d'); (rig === 'swan' ? SW : B).draw(g, Object.assign({ x: 300, y: 400, s: 2, dir: 1 }, L), 2);
+      const d = g.getImageData(0, 0, 600, 600).data; let x0 = 600, x1 = 0, y0 = 600, y1 = 0;
+      for (let y = 0; y < 600; y++) for (let x = 0; x < 600; x++) if (d[(y * 600 + x) * 4 + 3] > 40){ if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      return { left: (x0 - 300) / 2, right: (x1 - 300) / 2, top: (y0 - 400) / 2, bottom: (y1 - 400) / 2 };
+    },
+    // canvas state after a draw must equal the state before it
+    leak: () => {
+      const probe = () => [ctx.globalAlpha, ctx.lineWidth, ctx.getTransform().toString(), ctx.globalCompositeOperation].join('|');
+      const a = probe(); let ok = true;
+      if (B) for (const k of [0, 0.3, 0.6]){ B.draw(ctx, { x: 100, y: 100, s: 1, hop: k, pose: k, nibble: k }, 1); ok = ok && probe() === a; }
+      if (SW) for (const k of [0, 0.5]){ SW.draw(ctx, { x: 100, y: 100, s: 1, pose: k }, 1); SW.draw(ctx, { x: 100, y: 100, s: 1, pose: k, cygnet: true }, 1); ok = ok && probe() === a; }
+      return ok;
+    },
+  };
+})();
+</script>
+</body>
+</html>

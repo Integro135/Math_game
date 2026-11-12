@@ -4,11 +4,12 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space2.bg.js`, `unicorns3.bg.js`, `dubai3.bg.js`, `reef2.bg.js`, `savanna2.bg.js`, `dinosaurs3.bg.js`, `aurora.bg.js`, `maldives2.bg.js`, `autumn.bg.js` | Loaded by the game at runtime (`reef.bg.js`, `maldives.bg.js` and `savanna.bg.js` are the legacy reef / beach / savanna scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
-| **Thin dev harness** (`<name>.html`) | `space2.html`, `unicorns3.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `savanna2.html`, `dinosaurs3.html`, `maldives2.html`, `autumn.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
-| **Reusable scene parts** (`dino_rigs/*.js`) | `rig-common.js` + `trex.js`, `bronto.js`, `stego.js`, `trike.js`, `ptero.js`, `baby.js` | The canvas dinosaur rigs, loaded on demand by `dinosaurs3.bg.js` (see the dino_rigs paragraph below). |
-| **Unicorn valley** | `unicorns3.bg.js` + `unicorns/*.item.js` | `girls` → **`unicorns3`**: v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
-| **Space v2** (`space2.bg.js` + `space2.html`) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
+| **Game-ready module** (`<name>.bg.js`) | `space4.bg.js`, `unicorns4.bg.js`, `dubai3.bg.js`, `reef4.bg.js`, `savanna2.bg.js`, `dinosaurs4.bg.js`, `aurora2.bg.js`, `maldives2.bg.js`, `autumn.bg.js` | Loaded by the game at runtime (`reef.bg.js`, `reef2.bg.js`, `maldives.bg.js` and `savanna.bg.js` are the legacy reef / beach / savanna scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
+| **Thin dev harness** (`<name>.html`) | `space4.html`, `unicorns4.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `reef4.html`, `savanna2.html`, `dinosaurs4.html`, `maldives2.html`, `autumn.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Reusable scene parts** (`dinosaur_rigs/*.js`) | `trex.js`, `raptor.js`, `bronto.js`, `para.js`, `stego.js`, `trike.js`, `ptero.js`, `hatch.js` (on `savanna_rigs/kit.js`) | The canvas dinosaur rigs, loaded on demand by `dinosaurs4.bg.js` (see its section below). The older `dino_rigs/*.js` (`rig-common.js` + six rigs) belong to the legacy `dinosaurs3.bg.js`, unloaded. |
+| **Unicorn valley** | `unicorns4.bg.js` + `unicorn_rigs/*.js` | `girls` → **`unicorns4`**: the 2026-11 from-scratch rebuild — one canvas, a day cycle, the castle, the rainbow, the crystal falls and a cast of canvas rigs (unicorns in seven coats, a winged flyer, bunnies, swans). **Full section below.** The previous valley is legacy, unloaded: `unicorns3.bg.js` + `unicorns/*.item.js` = v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
+| **Space v4** (`space4.bg.js` + `space4.html`) | `space4.bg.js`, `space4.html` | Theme `galaxy` → `space4`: space2's ray-traced black hole carried over unchanged, under a 2-D world redesigned from baked sprites (2026-11) — about a fifth of the canvas calls and a quarter of the script time per frame. **Full section below.** |
+| **Space v2** (`space2.bg.js` + `space2.html`, LEGACY, unloaded) | `space2.bg.js`, `space2.html` | The space scene recreated around a general-relativistic, ray-traced black hole: a WebGL2 sky layer (adaptive quality, baked sky) under the 2-D world — Sun, a wandering Earth and Saturn, passing solar-system worlds, galaxies, comets, the supernova and every click reaction; still-painted sky without WebGL2. Theme `galaxy` → `space2`. **Full section below.** |
 | **Standalone study** (`blackhole.html`) | `blackhole.html` | The physics study the space hole came from: a GR ray-traced black hole in one WebGL2 file, not wired into the game — drag to spin the hole, wheel to zoom, quality/bloom/jets/dust toggles. **Full section below.** |
 
 **Loading veil for slow scenes** (`game/js/bg-loader.js`): most backgrounds
@@ -26,7 +27,7 @@ scene calls `window.BG_LOADING.done()` from its first rendered frame — with a
 visible and playable while the backdrop loads. Scenes that don't opt in show no
 veil at all.
 
-Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns3`,
+Theme → background mapping (`_BG_THEMES`, themes.js): `girls→unicorns4` (the 2026-11 rebuild; `unicorns3.bg.js` is the legacy valley, unloaded),
 **Responsive fit (2026-09-15).** The three 2026-09 scenes (reef2, dubai3,
 maldives2) no longer cover-fit-and-crop a fixed 1600×900 design. The design
 HEIGHT stays 900 and the design WIDTH follows the window's aspect
@@ -45,7 +46,7 @@ below DW 900 and shrinks the rest to half on a phone (`layoutBeach`). Each
 rebuilds its layout in `resize()` when DW changes (an orientation flip), and
 reports it through `_reef2.layout()` / `_dubai3.layout()` / `_mv2.layout()`.
 
-`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space2` (the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef2` (the 2026-09 rebuild; `reef.bg.js` is the legacy scene, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna2` (the 2026-11 from-scratch rebuild; `savanna.bg.js` + `savanna_animals/` are the legacy scene, unloaded), `dinosaurs→dinosaurs3`,
+`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space4` (the 2026-11 redesign around space2's unchanged GR-black-hole; `space2.bg.js` is the legacy scene, unloaded — the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef4` (painted again from scratch in 2026-11 on reef3's baked engine — reef3 itself was removed; `reef2.bg.js` and `reef.bg.js` are the legacy scenes, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna2` (the 2026-11 from-scratch rebuild; `savanna.bg.js` + `savanna_animals/` are the legacy scene, unloaded), `dinosaurs→dinosaurs4` (the 2026-11 from-scratch rebuild; `dinosaurs3.bg.js` + `dino_rigs/` are the legacy valley, unloaded),
 `maldives→maldives2` (the 2026-09 canvas rebuild with the day cycle, storms and the pokemon walkers; `maldives.bg.js` is the legacy SVG scene, unloaded),
 `autumn→autumn` (the 🍂 golden grove, 2026-10 — its own section at the end of this file)
 (🏙️, 🦁, 🦕, 🏝️ and 🍂 are their own themes in the menu). Canvas-scene themes spawn no
@@ -150,8 +151,8 @@ shadow), blink, floating hearts, click → zap / jump / fly-out, and the reef's 
 patrol / trigger`. Design source + preview: `rumi/rumi.html` (the same figure,
 documented; mirror art edits into the module); sandboxes `rumi-test.html`,
 `reef-test.html`, `walker-demo.html`. Used by savanna2.bg.js (strolls the plain
-every 2–4 min, first after 1–3 min), dinosaurs3.bg.js (strolls the valley every
-2–4 min, first after ~45 s–2¼ min; `_dino3.rumi()` forces one) and reef.bg.js
+every 2–4 min, first after 1–3 min), dinosaurs4.bg.js (strolls the valley every
+2–4 min, first after ~45 s–2¼ min; `_dino4.rumi()` forces one) and reef.bg.js
 (fly mode).
 
 **savanna_animals/ — the animal rigs of the LEGACY savanna.bg.js (savanna2 draws `savanna_rigs/`).**
@@ -645,7 +646,72 @@ Both scenes' own code is in git history if any of it is ever wanted back.
 
 ---
 
-## unicorns3.bg.js — Unicorn Valley v3 (the 🦄 theme, integrated)
+## unicorns4.bg.js — Unicorn Valley 4 (the 🦄 theme, rebuilt from scratch, 2026-11, v10.24)
+
+Theme `girls` → `unicorns4` (`_BG_THEMES`) — the game's default look. Harness:
+`unicorns4.html` (seven hour keys, Pause, Fast ×20, Visitors, Flyer, Trick,
+Magic, Restart); stills: `_verify_unicorns4.py`; tests: `tests/test_unicorns4.py`.
+ONE canvas, no DOM actors: a responsive design space (`DH` 900, `DW` 400–2400)
+and baked layers repainted only when the look signature moves
+(`repaintIfNeeded`) — the sky strip, FAR (two lilac snow ranges, the castle
+hill and the fairy-tale castle `paintCastle`), GROUND (three rolling flower
+meadows `paintBand`, the crystal cliff `paintCliff`, the pond, blossom trees,
+mushrooms, bushes), the front grass bank, five small flower sprites and the
+vignette. A day is `DAY_SEC` = 240 s through eight keys (`KEYS`: dawn, morning,
+noon, golden, sunset, dusk, night ×2): the sun rises behind the cliff and sets
+behind the castle; at night the moon, stars, a baked aurora curtain, fireflies
+and the castle windows come out and every horn glows.
+
+Live: the rainbow (a baked half-disc behind the ranges; `shimmer`), clouds,
+the waterfall (two scrolling streak sheets in the cut of the cliff, foam, mist;
+rainbow water for 7 s), pond glints / ripples / a jumping fish, castle flags,
+window lights, spire twinkles and fireworks (`ROCKETS`), swaying front flowers,
+petals, butterflies, magic motes, and one capped particle pool (`FX`: star,
+heart, spark, petal, puff).
+
+THE CAST are the `unicorn_rigs/` canvas rigs (below): the resident MARE AND
+HER FOAL wander the meadow (`stepFamily`; the foal gallops to catch up),
+VISITING parties of one to three cross in a lane at a walk or a gallop in every
+coat but the mare's (`spawnVisitors`), a winged FLYER crosses the sky on a
+rainbow ribbon and a trail of stars (`spawnFlyer`, one at a time), BUNNIES hop
+in the front grass and a SWAN with two cygnets glides round the pond. Tricks
+(on a schedule and on a tap): a unicorn's horn-flare rear with a burst of stars
+from `hornTip`, a leap that leaves a little rainbow (`ARCS`), a shower of
+hearts, the rare sparkly toot; the flyer somersaults; a bunny stands up and
+hops away; the swan beats her wings. Other taps: sun / moon → the next hour,
+the falls → rainbow water, the pond → a fish, the castle → fireworks, a tree →
+petals, a front flower → a nod, the rainbow → a shimmer, open sky → a shooting
+star.
+
+Narrow stages (`DW` < 1000) get a lower, narrower cliff (`CLY` 0.56), a smaller
+castle, three trees, two bunnies, a swan with one cygnet, a smaller cast (`CS`)
+and one visitor at a time. The frame governor draws every other frame on touch
+devices and when frames run heavy. `window._uni4` exposes ready / tod / setTod /
+setSpeed / phase / look / layout / perf / taps, the cast (everyone, family,
+visitors, flyer, bunnies, swans, spawn, fly, clearVisitors, auto, act, hitAt,
+hornXY, arcs), the effects (`fx.rainbow / rainbowFall / castle / fish / petals /
+star`, fxCount, rockets, ripples, fishUp, shimmering, rainbowWater, shooting,
+kicks) and the tap targets (`sunXY`, `moonXY`, `pondXY`, `fallsXY`, `castleXY`,
+`rainbowXY`, `treeXY(i)`, `flowerXY(i)`, `skyXY`). Skin `unicorns`, aids
+`unicorns`.
+
+**unicorn_rigs/ — the valley's cast.** On the savanna kit
+(`savanna_rigs/kit.js`, loaded first): `unicorn.js` (UnicornRig — seven coats
+`COATS`, a flowing rainbow mane and tail, `wings` + `fly`, `foal`, `glow`, walk
+and a gallop with a flight phase, the magic-rear `pose`, `hornTip(L)`; draw a
+foal at `FOAL_SCALE`) and `critters.js` (BunnyRig — five coats, `hop` 0..1 drawn
+in place with `hopX(k)` for the caller's x, a stand-up `pose`, `nibble`;
+SwanRig — a swan or a `cygnet`, clipped at the waterline, a wing-beat `pose`).
+Dev pages: `parade.html`, `critters.html`. House style as the savanna rigs:
+one eye in profile, no outlines.
+
+The previous valley (`unicorns3.bg.js`, `unicorns3.html`, `unicorns/*.item.js`
+— DOM unicorns and castle over a canvas) is LEGACY, unloaded; it stays because
+`autumn.bg.js` borrows `unicorns/bunny.item.js`. Its section follows.
+
+---
+
+## unicorns3.bg.js — Unicorn Valley v3 (LEGACY, unloaded since v10.24)
 
 Theme `girls` → `unicorns3` (`_BG_THEMES`). **The best of v1 and v2 in one
 module:** the canvas WORLD of `unicorns2.bg.js` — the full DAY CYCLE (dawn /
@@ -747,7 +813,161 @@ four looks to `c:/tmp/unicorns3`). Test hooks: `window._uni3` —
 
 ---
 
-## space2.bg.js — deep space around a ray-traced black hole (the 🌌 galaxy theme, integrated)
+## space4.bg.js — deep space, repainted to be beautiful round the SAME black hole (the 🌌 galaxy theme, 2026-11, v10.29; engine from v10.26)
+
+**v4 (v10.29, 2026-11-12) — the same engine, repainted to be beautiful.** Asked
+for with "Recreate space background. Make it as beautiful as possible. No need
+to change black hole". space3 (v10.26) had made the scene cheap (everything a
+baked sprite) but its sky was nearly empty and its worlds flat; space4 keeps
+that engine and every behaviour, hook and tap, and replaces the art. space3's
+files were removed (never committed); everything below that describes the engine
+is unchanged. What is new:
+
+- **THE DEEP SKY — a third canvas** (`skyArt`, between the WebGL sky and the
+  moving layer; `bakeDeepSky`, part `w03b`). A still painting, painted once per
+  layout and composited by the browser — it adds NOTHING to a frame. The Milky
+  Way (a river of star clouds with dust lanes down its middle), an emission
+  nebula (hydrogen in rose and red, oxygen in teal at its heart, blue and violet
+  veils, dark pillars, the young stars that light it), a blue reflection nebula
+  round a young cluster, a green-gold shell, far galaxies (edge-on spindle,
+  ellipticals, a face-on spiral), a globular cluster, ~4,000 dust stars thicker
+  along the Milky Way, glow stars, spiked stars, the Sun's light spilling up
+  from below. GAS is flat colour laid as a soft ellipse and then CUT by a tiling
+  fbm noise tile (`noiseTiles()`: `soft` clouds, `wisp` filaments, `lane` thin
+  dark lanes, `grain`) with `destination-in`; lanes are carved with
+  `destination-out`. The sky is seeded (`mulberry(20261112)`), so a resize
+  repaints the SAME sky. It melts away round the hole (gas clear inside 4.2 r,
+  everything clear inside 3.3 r), so the hole's own lensed sky is untouched.
+- **Worlds painted per pixel from noise** (`makeFbm`, `pixMap`): `gasMap`
+  (colour by latitude from a ramp, band edges that wander, cloud tops drawn out
+  into long streaks, storm ovals with a pale collar — Saturn, Jupiter, Neptune,
+  Uranus, Venus), `rockMap` (relief-driven tone ramp, dark provinces, polar
+  caps, craters — Mars, Mercury, the Moon), `paintEarthMaps` (ocean basins per
+  pixel; the land on a sheet of its own so climate-by-latitude and relief colour
+  the land alone; weather as noise cut into cloud systems). `richTex(id)` gives
+  the passing worlds their repainted maps (the old vector maps are the fallback).
+- **A real night side.** `bakeShade`: the dark is a wide circle centred well
+  toward the Sun (`r·1.2` out, clear to `r·1.25`, dark by `r·1.8`), which gives
+  a curved, soft terminator about a third of the way across the disc; an
+  atmosphere glows along the limb inside the disc; the Earth's city lights show
+  only where the night mask lets them.
+- **Saturn's rings**: 135 ringlets a half instead of 49, their brightness
+  modulated ringlet by ringlet.
+- **Galaxies** (`bakeGalaxy`): arms of star clouds, dust lanes on the inner edge
+  of each arm (`destination-out`), pink star nurseries, a bright bar and core.
+- **The crew, repainted (v10.32)**: `buildCrew` bakes the same two sprites
+  (same sizes and anchors, so the flight and the taps are untouched) with new
+  art — the rocket: a polished hull, a red nose and tail band, swept fins lit
+  on the leading edge, panel seams and rivets, a brass porthole with deep
+  glass, a flame with a blue-white core; the astronaut: a shaded suit with
+  joint rings, gloves, boots with soles, a life-support pack and hose, a
+  helmet whose gold visor holds the Earth and a few stars.
+- **The Sun**: a wide corona (its sprite reaches `0.36·M` above the limb) with
+  broad faint streamers; granulation as noise tiles laid in `soft-light` /
+  `overlay` / `multiply` (bright cells, a net of darker lanes); prominences as
+  seven nested strands, deep red outside and white-hot at the core.
+
+Cost (`_perf_space4.py`): 635 canvas calls and 1.1 ms of script a frame (space2:
+3,286 calls, 2.95 ms). The deep sky bakes in ~5–50 ms at layout (the noise tiles,
+~40 ms, are made once per page). Tests: `tests/test_space4.py` (18 — the 16 of
+space3 plus `TestDeepSky`: the painting keeps clear of the hole and is never
+touched after layout; every world has a night side away from the Sun).
+
+Traps met in v4: a night-side gradient centred INSIDE the disc only darkens a
+thin rim — the centre must sit beyond the limb toward the Sun for a terminator
+to cross the disc; a pattern fill follows the context transform, so a noise tile
+is scaled by transforming before `fillRect`; the first `bakeSun` pays for the
+noise tiles, not `bakeDeepSky`.
+
+
+Theme `galaxy` → `space4` (`_BG_THEMES`). Harness `space4.html`; stills
+`_verify_space4.py`; cost probe `_perf_space4.py`; tests `tests/test_space4.py`.
+Skin `space`, aids `space`. The user's brief: "keep the blackhole as it is
+since it is perfect, improve all else, be aware of rendering slowness cost
+because of too many objects".
+
+**The black hole is space2's, unchanged.** The WebGL2 layer (shaders, the
+off-axis camera, the baked sky, the precessing hole with its disk, jets, photon
+ring and lensed Milky Way, the bloom chain), the adaptive quality governor, the
+3-D dust simulation, the still-painted sky without WebGL2 and the 2-D lens
+helpers (`bhPull`, `lensImage`) were copied verbatim; the hole sits at
+x = 0.90 W, y = 0.36 H with a shadow radius of 0.075·min(W,H) as before.
+Everything about how it works is in the space2 section below — it still
+applies. (`c:/tmp/space/build.py` shows which line ranges were carried over.)
+
+**Everything else is new, built on one rule — PAINT ONCE, BLIT MANY.** The old
+2-D layer re-stroked every star, ring, crater and granule as vectors each
+frame: ~3,270 canvas calls (970 fills, 350 strokes, 21 gradients built). The
+new one bakes every object into a sprite when the scene is laid out; a frame at
+full detail is ~650 calls, of which ~450 are `rect` / `lineTo` segments inside
+~25 batched fills and strokes, plus ~60 `drawImage` and no gradients. Script
+time per frame fell from 2.9–4.4 ms to 0.7 ms (`_perf_space4.py`).
+
+- **Stars** — faint ones: six twinkle groups, one path each; bright ones: six
+  baked star sprites. Stars near the hole are lensed once at layout (neither
+  moves). **Constellations** and their lit twins, the **nebula** (baked at half
+  resolution) and the three **galaxies** are sprites; a galaxy's tilted, slowly
+  turning image is re-rendered into its own small canvas twice a second.
+- **Worlds** (`makeBody` / `refreshBody` / `drawBody`) — a painted surface map
+  (x = longitude, y linear in sin latitude) wrapped on a sphere as a row of
+  longitude strips into a small canvas of its own only `BODY_HZ` = 12 times a
+  second, masked to the disc and shaded by ONE baked overlay (limb darkening,
+  the night side away from the Sun, a sheen, a lit rim; re-baked when the Sun's
+  direction moves 0.1 rad). The frame blits that canvas. A leaning body
+  (Saturn) lays its strips flat first and turns the result once — rotated
+  strips leave hairline seams. The Earth adds a faster cloud map and a
+  city-lights map cut by a night mask; Saturn's rings are two baked halves
+  (the far one carries the body's shadow) and the rings' shadow on the body is
+  part of its overlay; the passing worlds reuse space2's surface maps.
+- **The Sun** — the corona, the limb-darkened granulated disc with sunspots and
+  the chromosphere are baked at half resolution; live are a breathing second
+  blit of the corona, three prominence arches (baked, stretched) and a flare.
+- **Small things** — comets (a rotated tail sprite, always away from the Sun),
+  the supernova (a baked ring + one path of debris), shooting stars, tidal
+  streaks, travellers and sparks: a sprite or one batched path each.
+- **The dust** keeps its simulation and its look but is drawn in buckets
+  (heat colour × brightness × size): ~40 paths instead of a fillStyle string, a
+  fill and a stroke per grain.
+- Detail follows the governor only at its last-resort tier (`lite()` =
+  potato): fewer stars and travellers, no nebula or ring gravel, half the
+  grains drawn (`buildDetail`, without disturbing the worlds).
+
+**The cast.** Saturn and the Earth (with the Moon and two satellites) roam on
+slow curved paths that keep clear of the hole; Mercury, Venus, Mars, Jupiter
+(with its four moons), Uranus (with its rings), Neptune, Pluto and an asteroid
+drift past one or two at a time and can be swallowed (→ a tidal streak); a
+little ROCKET patrols on smooth cubic legs that are rejected if they would
+swing near the hole, and an ASTRONAUT floats beside the Earth (both new).
+
+**Taps** (on the bare sky) show the object's Hebrew fact in the `#gxy-fact`
+bubble — the old scene's texts, plus two new ones for the rocket and the
+astronaut — and: the black hole → the feeding frenzy (the disk and jets flare,
+every grain is yanked in, a space rock spirals in and is drawn into a streak);
+Saturn / Earth / a passing world → it spins up; the Moon or a satellite → an
+extra lap; a galaxy → it whirls; a constellation → it lights up; a bright star
+→ a supernova; the rocket → a roll; the astronaut → a somersault; the Sun → a
+flare; empty sky → a burst of travellers.
+
+**Hooks** — `window._space4`: `bh`, `gl`, `dust`, `surge`, `taps`, `fact`,
+`perf()` (2-D ms per frame, tier, counts), `targets()`, `hitAt(x, y)`,
+`bodies()`, `orbiters()`, `galaxies()`, `constellations()`, `stars()`,
+`rocket()`, `astronaut()`, `comets()`, `nova()`, `rock()`, `tidal()`,
+`startNova()`, `startComet(x, y)`, `flare()`, and space2's `passers`,
+`passStats`, `movers`, `simulateMovers(sec)`, `spawnAll()`, `simulate(sec)`.
+
+**The loader knows it by name.** A slow scene keeps the loading screen up until
+its first frame calls `BG_LOADING.done()` — but `game/js/bg-loader.js` decides
+that a scene is slow BEFORE its module exists, from the name tables `SLOW_BGS`,
+`LOAD_LABELS` and `LOAD_STEPS`. `space4` is registered in all three; without
+that the first switch to the theme left the screen up for its 40 s safety
+timeout (a test checks the tables). Any future rename must update them.
+
+The previous scene (`space2.bg.js`, `space2.html`) is LEGACY, unloaded; its
+section follows and remains the reference for the black hole.
+
+---
+
+## space2.bg.js — deep space around a ray-traced black hole (LEGACY 2-D world, unloaded since v10.26 — its black hole lives on in space4)
 
 Theme `galaxy` → `space2` (`_BG_THEMES`). Harness `space2.html`; skin
 `game/skins/space.skin.css`; aids `space` (rocket + stars). The legacy 2-D
@@ -1050,7 +1270,90 @@ URL params: `?q=auto|low|medium|high|ultra` · `?spin=0` · `?bloom=0` ·
 
 ---
 
-## dinosaurs3.bg.js — volcano valley at dusk (the 🦕 theme, integrated)
+## dinosaurs4.bg.js — Volcano Valley 4 (the 🦕 theme, rebuilt from scratch, 2026-11, v10.25)
+
+Theme `dinosaurs` → `dinosaurs4` (`_BG_THEMES`). Harness: `dinosaurs4.html`
+(seven hour keys, Pause, Fast ×20, a family of each kind, Ptero, Egg, Erupt,
+Storm, Swimmer, Trick, Restart); stills: `_verify_dinosaurs4.py`; tests:
+`tests/test_dinosaurs4.py`. ONE canvas, a responsive design space (`DH` 900,
+`DW` 400–2400) and baked layers repainted only when the look signature moves
+(`repaintIfNeeded`): the sky strip, FAR (two hazy ranges, a table mountain,
+THE VOLCANO `paintVolcano`), GROUND (the jungle line, three meadows
+`paintBand`, the lake, palms / tree ferns / cycads, rocks, fern clumps, a
+fallen log), the front bank, four frond sprites and the vignette. The game
+card hugs the LEFT in this theme (`game/skins/dinosaurs.skin.css`), so the
+volcano stands on the RIGHT — crater at ~77 % of the width, its left foot at
+~56 % (a test holds it clear of the card).
+
+A day is `DAY_SEC` = 240 s through eight keys (`KEYS`: dawn, morning, noon,
+golden, sunset, dusk, night ×2): the sun comes up on the right edge, passes
+over the crater and sinks behind the volcano's left shoulder; `L.lava` makes
+the fire light the cone at night; morning mist, stars, a moon, shooting stars,
+fireflies.
+
+Live: the volcano's fire (`drawVolcanoLive`: the lava lake, three glowing
+streams with pulses running down `LAVA_CH`, a smoke plume, embers), the thread
+of water down the table mountain, a far herd of long-neck silhouettes behind
+the jungle line, far flocks of flyers, the lake (glints, ripples) with its
+long-necked SWIMMER (`surface`: she comes up, looks about, squirts, sinks),
+coconuts, dragonflies, pollen, and one capped particle pool (`FX`: lava,
+spark, ash, dust, puff, drop, heart).
+
+THE SHOWS — taps on the volcano alternate between them (`startShow`): an
+ERUPTION (a 3-2-1 countdown over the crater, a lava fountain, lava bombs
+thrown wide, an ash cloud, the ground shaking, `ERUPT_DUR` 8.2 s) and a METEOR
+SHOWER (ten fiery streaks, flashes and dust beyond the ranges, `STORM_DUR`
+7.6 s). Either way `panic()` sends every dinosaur for the nearest edge with a
+startled hop and the pteranodon speeds away; nobody is spawned until the sky
+has been quiet for 2.5 s (`showBusy`).
+
+THE CAST are the `dinosaur_rigs/` canvas rigs (below). Families (`KINDS`:
+trex, raptor, bronto, para, stego, trike — `h` is the on-screen height, so the
+species keep their true relative sizes) cross the valley in depth lanes at a
+walk or a run with their young (`spawnHerd`; up to two families, one on a
+narrow stage). Tricks on a schedule and on a tap: the rig's signature `pose`
+(the T-rex's roar shakes the ground), a hop, the rarer fart (green puffs); a
+tap also gives a new coat (`recolour`). The PTERANODON crosses the sky,
+flapping and gliding, and may carry an EGG: it lets it go on the way (or when
+tapped) — the egg falls, bounces, rests rocking, cracks and hatches, and the
+BABY hops out and toddles off (`dropEgg` → `stepEgg` → `spawnBaby`); a tap on
+a resting egg hatches it at once. Other taps: the lake → the swimmer (again:
+she squirts), a palm → a coconut, the sun / moon → the next hour, the sky →
+far flyers (a shooting star at night).
+
+Narrow stages (`DW` < 1000) get a smaller volcano, four trees, a smaller cast
+(`HS`) and small families. The frame governor draws every other frame on touch
+devices and when frames run heavy. "rumi" strolls the valley every 2–4 min
+(first after ~45 s – 2¼ min; `_dino4.rumi()` forces one). `window._dino4`
+exposes ready / tod / setTod / setSpeed / phase / look / layout / perf / taps,
+the shows (erupt, storm, show, shows, nextShow, busy, shake), the cast
+(everyone, herds, herd, spawn, clearHerds, auto, kinds, act, fly, ptero, lay,
+egg, eggs, hatch, babies, roaring, panicked, hitAt), the lake (surface,
+swimmer, ripples), coconuts / flocks / smoke / fxCount / shooting and the tap
+targets (`sunXY`, `moonXY`, `volcanoXY`, `lakeXY`, `palmXY(i)`, `skyXY`). Skin
+`dinosaurs`, aids `dinosaurs`.
+
+**dinosaur_rigs/ — the valley's cast.** On the savanna kit
+(`savanna_rigs/kit.js`, loaded first; three-bone IK legs with planted feet):
+`trex.js` (TrexRig — pose ROAR), `raptor.js` (RaptorRig — a feathered sprinter,
+pose CHIRP-HOP), `bronto.js` (BrontoRig — pose MUNCH AND CALL), `para.js`
+(ParaRig — walks on four, runs on two, pose TRUMPET), `stego.js` (StegoRig —
+pose PROUD WAG), `trike.js` (TrikeRig — pose SNORT AND STOMP), `ptero.js`
+(PteroRig — in flight: `wt` wing beat, `glide`, `carry` + `feet(L)`, pose
+SQUAWK) and `hatch.js` (EggRig — `wobble`, `crack`, `hatch`, `empty`; BabyRig —
+the hatchling). Every ground rig is `{ draw(ctx, L, t), HEIGHT, WIDTH,
+STRIDE, RUN_STRIDE, ACT_SECONDS, WALK_CPS, RUN_CPS, COATS, mouth(L) }` with
+`L = { x, y, s, dir, ph, wt, moving, go, run, pose, tint, lit, coat }` — five
+coats each. Dev pages: `dev_bipeds.html`, `dev_giants.html`,
+`dev_armored.html`, `dev_flyers.html`. House style as the savanna rigs: one eye
+in profile, a real mouth gap, no outlines.
+
+The previous valley (`dinosaurs3.bg.js`, `dinosaurs3.html`, `dino_rigs/`) is
+LEGACY, unloaded. Its section follows.
+
+---
+
+## dinosaurs3.bg.js — volcano valley at dusk (LEGACY, unloaded since v10.25)
 
 The 🦕 theme is served by **`dinosaurs3.bg.js`** — a canvas scene that draws
 its own scenery and animates the from-scratch **`dino_rigs/`** (loaded on
@@ -1155,7 +1458,96 @@ Verify via `_verify_dinos.py` (idle + mid-action stills of each, plus the
 parade, to `c:\tmp\dino_rigs`). These rigs ARE the game's dinosaurs now:
 `dinosaurs3.bg.js` loads them on demand.
 
-## aurora.bg.js — AURORA & ICE (the ❄️ theme, integrated)
+## aurora2.bg.js — the ice world, painted again from scratch (the ❄️ theme, 2026-11, v10.30)
+
+Theme `frozen` → `aurora2` (`_BG_THEMES`); skin and aids are still the ❄️
+theme's (`frozen`). Harness `aurora2.html` (the same buttons as aurora.html);
+stills `_verify_aurora2.py`; cost `_perf_aurora2.py`; tests
+`tests/test_aurora2.py` (11 — the scene had none before). Asked for with
+"Recreate ice world from scratch. Make it as beautiful as possible."
+
+**What is carried over, untouched.** The CAST and the engine are
+`aurora.bg.js`'s, copied VERBATIM by line range (`c:\tmp\ice\build.py` checks
+each range against the text it must start with): the harbour seals and their
+acts, the orcas in the channel, the two princess sisters (`princess/princess.js`),
+the snowman (`olaf/olaf.js`, a DOM rig on its own layer), the polar bear and
+her cub, the igloo's fire and its arctic fox, the palace's live lights and its
+lightning storm, shooting stars, snowfall, mist, the layer scheme
+(`skyL · auroraL → auroraLo → reflL · midL · foreL`), the pacing loop, the
+taps and every hook. All of that is documented in the `aurora.bg.js` section
+below and still holds. The hook is now `window._aurora2`.
+
+**What is new — everything that is painted** (parts `c:\tmp\ice\parts\a*.js`):
+- **The sky** (`paintSky`): a deep gradient that pales to teal at the horizon;
+  the Milky Way as gas — flat colour laid as a soft ellipse, then CUT by a
+  tiling fbm noise tile (`noiseTiles()`: `soft`, `wisp`, `lane`, `grain`) with
+  `destination-in`, a dust lane carved with `destination-out`; veils of violet
+  and teal; ~3,000 dust stars in five tints, half of them along the Milky Way.
+  Seeded (`mulberry`), so a resize repaints the same sky.
+- **The aurora** (`drawAurora`): the same three curtains and the same noise,
+  but each ray is drawn ONE PIXEL wide into a narrow strip (`AUR_N` = 168
+  columns) and the strip is stretched across the sky with smoothing — a curtain
+  is silk, not a picket fence. ~500 one-pixel blits every other frame (the old
+  one: 360 wide hard-edged columns). New colours: a crimson crown on the main
+  curtain, a rose-violet high veil.
+- **The ranges** (`range`): summits and saddles joined by a jagged skyline; the
+  whole massif is laid in shade, then every peak gets its MOONLIT FLANK (from
+  the summit down the right-hand skyline to the saddle and back up a zigzag
+  ridge), spurs on both flanks, a noise texture and haze toward the foot
+  (`source-atop`, so only what is painted takes them), a lit crest. Three
+  ranges (far, near, snowy foothills), then the aurora's green on the high
+  snow and a line of small firs along the far shore (`fir`).
+- **The ice palace** (`paintCastle`): the same silhouettes (the live effects and
+  the lightning read `CASTLE.spires / tips / lights / door / box`), repainted
+  as crystal prisms of three faces with snow on their ledges, warm lancet
+  windows, an arcade in the wall, two flying bridges, two outer turrets, a
+  great gate drawn over the central spire.
+- **The lake** (`paintLake`, the old painter with a new ground): cloudy ice —
+  three noise tiles laid in `soft-light` / `overlay`; the ranges and the palace
+  mirror in it more strongly (0.36).
+- **Icebergs** (`iceberg`, same outlines so the seals' ledges fit): blue
+  glacier ice, facets as gradients lit toward the moon, melt grooves, a light
+  inside, a noise texture, snow lying on every ledge.
+- **The near shore** (`paintFore`): the same bank profile (the walkers stand on
+  it), a far drift in shade, hollows and crests, the snow's grain, and firs
+  under snow at both ends of the shore.
+
+**The animals, repainted (v10.31).** v10.30 carried the animals' drawing over
+unchanged and Eran's verdict was "All the animals looks the same … Make them
+look best". Their poses, acts and schedules are still the old code's, but every
+draw function is new (parts `a60`–`a64`), each built on cached gradients
+(`lgc`) so a frame creates none:
+- **Seals** (`drawSeal`): a plump body, silver above and cream below, mottled
+  with spots and pale rings; paddle flippers with their digits; a round head
+  that grows out of the neck, a pale whisker pad, long whiskers, a big wet eye.
+- **Orcas** (`drawOrcaBody`): glossy black catching the moon and the aurora;
+  the white chin, belly and the flank patch sweeping up toward the tail; the
+  eye patch; the grey saddle; a tall fin with a lit leading edge; a broad
+  paddle of a flipper; notched flukes.
+- **Polar bears** (`bearLeg`, `drawBear`): ivory fur shaded blue beneath; a
+  high rump and a long neck that melts into the shoulders (its fill fades out
+  toward the body, so there is no seam); a small head with a long arched
+  muzzle; legs with a broad thigh narrowing to the knee and wide furry paws
+  with dark claws.
+- **The arctic fox** (`drawFox`): a thick white coat, a soft brush with a pale
+  tip, slender legs with dark feet, a pointed muzzle, ears lined with grey, an
+  amber eye — and a real SITTING pose (haunches, upright body, the brush lying
+  along the ice) instead of the trotting body tilted.
+A dev hook `_aurora2.sheet(true)` paints every animal large over the scene
+(`drawSheet`): judge the art there, not at 40 px in the scene.
+
+**Why the first two mountain painters were dropped** (worth knowing before
+trying again): painting a range per pixel from ridged noise lit by its slope
+gave crumpled foil at high frequency and draped curtains when the noise was
+drawn out downhill — it never read as a mountain. A mountain reads from its
+two-tone structure (a bright flank and a shaded one meeting at a ridge), which
+is drawn directly here; noise is only the texture on top.
+
+Cost: unchanged in kind — the static layers are painted once per resize, a
+frame is the same list of blits as before (in the game: ~1.3–1.6 ms of script
+a frame in headless Chrome).
+
+## aurora.bg.js — AURORA & ICE (LEGACY art, unloaded since v10.30 — its cast and engine live on in aurora2)
 
 A polar night over a frozen lake. **It replaced `frozen.bg.js`** as the ❄️
 theme's scene and REUSES that theme's skin and aids, so the wiring was a
@@ -1335,7 +1727,128 @@ Lightning, Restart). Verify via
 `_verify_aurora.py` (default / cast+breach / bright stills to
 c:/tmp/dino_rigs + a double-restart leak check).
 
-## reef2.bg.js — the coral reef, rebuilt from zero (2026-09)
+## reef4.bg.js — the reef, painted again from scratch to be beautiful (the 🐠 theme, 2026-11, v10.28)
+
+Theme `reef` → `reef4` (`_BG_THEMES`). Harness: `reef4.html` (seven hour keys,
+Pause, Fast ×20, Q2 / Q1 / Q0, Turtle, Dolphins, Shark, Whale, Orca, Clean,
+Trick, Poop, Restart — it pins quality 2); stills: `_verify_reef4.py`; cost:
+`_perf_reef4.py`; tests: `tests/test_reef4.py`, `tests/test_reef_station.py`.
+Asked for with "the new one is much less beautiful than what it was before.
+make it from scratch … as beautiful as possible" — reef3 (v10.27) was cheap to
+draw but flat: lilac rocks, a few candy corals, big cartoon fish. reef4 keeps
+reef3's ENGINE (one baked picture, flipbooks, bent-frame sway books, the hour
+as a gradient) and replaces ALL of the art; reef3's files were removed (it was
+never committed). The hero rigs in `reef_rigs/` are the same ones.
+
+**The picture** (all of it baked, so its richness costs nothing per frame):
+- *Water*: a deep blue gradient broken by soft noise clouds, a sun bloom, long
+  soft rays laid in `screen`, a skin of wavelets, darker far corners.
+- *Two far planes* of reef silhouettes in the water's own colour, softened.
+- *Sand*: ONE sheet (`bakeSand`) — dunes with a lit back and a shaded lee, short
+  broken ripple marks that get finer with distance, rubble and shells. The
+  picture takes the sheet twice (behind the reef, then its front strip over the
+  reef's feet), so there is no join; the reef's contact shadow goes on last.
+- *Two reef masses* frame a channel of sand under the game card (`LEFT`,
+  `RIGHT`, each a height profile): piles of lumpy limestone boulders
+  (`boulder`: warm lit cap → deep blue underside, noise + grain textures, pits,
+  cracks, ragged crusts of colour), and on them ~170 painted colonies —
+  `cBrain`, `cTable`, `cStag`, `cPlate`, `cTube`, `cBarrel`, `cBubble`, `cMush`
+  — placed as HEROES (`HERO_L` / `HERO_R`: kind, u across the mass, v down its
+  face, size, colour) plus small fillers on the remaining boulders. Everything
+  is y-sorted, then the whole reef layer is lit at once (`lightReef`: depth
+  shade, sun side, a still net of caustics, a wash of the water's colour).
+- *On the floor* (`paintFloor`): two anemones, two giant clams, the chest, sea
+  stars, urchins, coral heads on their own lumps of rock, tufts of seagrass.
+- Every painter takes a bundle `B = { g, e, m }`: the picture, the night's own
+  light (emissive, half size) and the mask of where moving light may fall
+  (quarter size) — one pass paints all three.
+
+**What moves, and what it costs**
+- *Swaying things* (`PLANTS`, `ANEMS`): lace sea fans, soft-coral trees, sea
+  whips, plumes, grass, anemones (a back and a front sprite — a hiding
+  clownfish is drawn between them). Each is painted once and bent into 15
+  frames (`swayBook`); on screen it is one blit.
+- *Moving caustics* (`drawLit`): the caustic tile scrolled twice into a
+  half-size layer and cut by the mask (`destination-in`), refreshed every 2nd
+  frame (4th at Q1), laid over reef and sand in `lighter`.
+- *Rays* (`drawRays`): two baked fans cross-fading (one at Q1, none at Q0).
+- *The hour*: one gradient strip over the frame (`gradeL`, `L.ovA`); at night
+  the emissive layer is added in `lighter` (points of light on the polyps), the
+  jellyfish, the sign and the plankton are drawn after it.
+- *Two blurred foreground corners* (dark coral close to the eye).
+
+**The fish** (`paintFish`, species as data in `FISH`): painted the way the reef
+is — a body profile per species, back → flank → belly colours, the markings
+clipped to the body (`PAT`), a faint net of scales, a shaded belly and a sheen
+along the back, fins as membranes with rays and coloured rims, an eye with an
+iris. Species: clownfish, regal tang (`dory`), yellow tang, emperor angelfish,
+threadfin butterflyfish, moorish idol, parrotfish, royal gramma, anthias,
+chromis, fusilier, cleaner wrasse. A fish's loop is baked as a flipbook; the
+body's S-bend is put in afterwards strip by strip (`warp` in `bakeOne`).
+`fishBook(kind, haze)` also bakes a hazed copy for the FAR school (fusiliers,
+layer −1, drawn before the rays). Layers: −1 far school · 0 the chromis behind
+the fans · 1 bottom dwellers · 2 fish and visitors · 3 what glows.
+
+**The larger creatures, repainted (v10.32)** — `reef_rigs/painted.js` (one file,
+seven creatures; dev sheet `reef_rigs/painted_dev.html`: every creature large
+and in motion, click = every trick, `#still` freezes the swim). The cartoon
+rigs it replaces (`turtle / dolphin / shark / octopus / seahorse / crab /
+puffer.js` and their dev pages) were removed; `jelly.js` stays. Same contract
+(`window.<Name>Rig = { draw(ctx, L, t), BOX, LEN, FRAMES, ACT_SECONDS, COATS,
+mouth(L) [, STRIDE, CPS, BOX_PUFF, siphon(L)] }`, the cruise look a pure
+function of `L.wt`), so the flipbooks, tricks and visitors needed no change.
+Painted like the fish: real proportions, colour from back to belly, light from
+above, a glossy `eye()`. Turtle (scutes with pale hearts and seams, wing-like
+flippers that row; trick: it waves), dolphin (tail stock and flukes beat up and
+down; it chatters), blacktip shark (black tip on every fin, a clean white belly
+line, gill slits; a grin), octopus (origin = the rock under it; eight arms
+built by `arm()` — out from under the head, along the rock, the tip coiled —
+suckers beneath, eyes with a level pupil; it flings its arms wide), seahorse (a
+chain of beads with armour rings, crown, fluttering fin, coiled tail; it bows),
+crab (front view, eight stepping legs, claws that snap), pufferfish (`L.puff`
+blows the boxy fish into a ball of spines). In reef4: `RIG_FILES` loads
+`painted.js` under the name `TurtleRig`; the octopus stands at `OCTO.y + 5·s`
+and its hit box is centred `0.4·len` above the rock.
+
+**The cast** (wide: ~47; phone: ~27): clownfish at their anemones, the regal
+tang, a butterflyfish pair, yellow tangs over the crests, the emperor angelfish,
+a moorish idol pair, the parrotfish, grammas along the reef's faces, a cloud of
+anthias over the right-hand crest, the chromis school, the far fusiliers, the
+cleaner wrasse; rigs: octopus (on a ledge reserved for it: the `'octo'` hero
+slot), seahorse, pufferfish, crabs, jellyfish; visitors (turtle, dolphins,
+shark) and giants (whale, orca). Steering, target retirement, the cleaning
+station (anchored on the table coral tagged `'station'`; the neon sign
+"תחנת ניקוי" on a short post beside it), tricks, the poop gag, taps, the
+governor and the quality tiers are reef3's, unchanged in behaviour. New: bubble
+vents (the chest, a barrel sponge, tube sponges) let a thread of bubbles go.
+
+**Measured** with `_perf_reef4.py` (headless Chrome, 1280×800 at DPR 2,
+everything busy, 52 creatures; main-thread work via CDP since headless frame
+gaps are noise): reef4 5.4 % busy, ~1.1 ms of script per frame, 84 blits, 4.9
+screens of pixels (Q1: 4.0, Q0: 2.6); reef2, the old reef: 10.7 % busy, 2.6 ms.
+In the game: 5.2 % busy, 0.9 ms per frame — the same as the other scenes.
+
+**Traps**
+- Anything standing still next to a tap target steals its taps: a rig's hit
+  box is wide (`hitActor`). The seahorse has its own blade of grass, clear of
+  the anemones, clams and chest — keep it that way (the tap tests wait for a
+  target to be free, with a margin, and time out if it never is).
+- `ANEMS` is rebuilt on every bake: actors keep `anemI` and are re-bound after
+  a same-width resize.
+- The emissive layer wants POINTS (`emitDots`), not outlines: ring strokes at
+  full strength read as neon signs.
+- Debug sheets by URL hash on the harness: `#corals`, `#sway`, `#fish`.
+- Sources are kept as parts (`c:\tmp\reef4\parts\q*.js`, joined by `build.py`);
+  the module in the repo is the single source of truth.
+
+Hooks `window._reef4`: the same set as reef3 had — ready / baked / tod / setTod
+/ setSpeed / phase / look / time / quality / auto / taps / actors / fish /
+counts / act / visit / giant / giantNow / station / soil / orbit / poop / poops
+/ clams / chest / bubbles / particles / stationXY / signXY / anemXY / clamXY /
+chestXY / starXY / coralXY / sunXY / waterXY / hitAt / layout (now `left`,
+`right`, `sun`) / perf / rumi / rumiLayer.
+
+## reef2.bg.js — the coral reef, rebuilt from zero (2026-09) — LEGACY, unloaded since v10.27
 
 `window.BACKGROUNDS.reef2 = { skin:'reef', aids:'reef', init({stage}) → cleanup }`.
 **This is the 🐠 theme's scene** — `_BG_THEMES` maps `reef:'reef2'` (2026-09-14);

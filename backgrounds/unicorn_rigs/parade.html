@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unicorn rig — Parade</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     The workshop for unicorn.js: every coat standing in a row, one winged,
+     one foal, at ONE shared px-per-unit scale (the foal at FOAL_SCALE).
+       Still / Walk / Run / Fly / Pose   the five states (Pose plays the magic rear)
+       Wings   wings on everybody          Flip   mirror         Light  day → sunset → night
+       pose / phase sliders freeze the pose and the gait phase (double-click a slider to release)
+     Click a unicorn to see it alone and big; click again for the row.
+     window._paradeTest has the hooks for the screenshot script (manual
+     clock, frozen pose / phase, strips with fixed ground ticks, perf).
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #f3ecf7; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #ctrl { position: fixed; bottom: 14px; left: 0; right: 0; display: flex; gap: 8px; flex-wrap: wrap;
+          justify-content: center; align-items: center; z-index: 10; font: 12px Georgia, serif; color: #6a4f86; }
+  .hbtn { padding: 7px 14px; background: rgba(140,100,190,.14); color: #5c3f7c;
+          border: 1px solid rgba(140,100,190,.32); border-radius: 999px; font: 12px Georgia, serif;
+          letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+  .hbtn.on { background: rgba(214,120,190,.7); color: #fff; }
+  body.dark #ctrl { color: #e6d8ff; }
+  body.dark .hbtn { background: rgba(40,30,80,.5); color: #e6d8ff; border-color: rgba(200,170,255,.4); }
+  input[type=range] { width: 110px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ctrl">
+  <button class="hbtn on" data-m="still">Still</button>
+  <button class="hbtn" data-m="walk">Walk</button>
+  <button class="hbtn" data-m="run">Run</button>
+  <button class="hbtn" data-m="fly">Fly</button>
+  <button class="hbtn" data-m="pose">Pose</button>
+  <button class="hbtn" id="wings">Wings</button>
+  <button class="hbtn" id="flip">Flip</button>
+  <button class="hbtn" id="light">Light</button>
+  <label>pose <input type="range" id="poseS" min="0" max="1" step="0.01" value="0"></label>
+  <label>phase <input type="range" id="phaseS" min="0" max="1" step="0.01" value="0"></label>
+  <span id="perf"></span>
+</div>
+<script src="../savanna_rigs/kit.js"></script>
+<script src="unicorn.js"></script>
+<script>
+(function(){
+  const TAU = Math.PI * 2, R = window.UnicornRig;
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  const LITS = [null, [1, 0.8, 0.7], [0.45, 0.5, 0.8]], GLOW = [0, 0.35, 1];
+  const ORDER = R.COATS.map(c => ({ name: c, coat: c }))
+    .concat([{ name: 'winged', coat: 'pearl', wings: true }, { name: 'foal', coat: 'rose', foal: true }]);
+  let W, H, lightI = 0, lastT = 0, mode = 'still', dir = 1, only = null, wingsAll = false, zoom = 1;
+  let frozenPose = null, frozenPhase = null, manual = false, clock = 0, strip = null, showTip = false;
+  const GAP = 10, GY = 0.76;
+  const cast = ORDER.map((o, i) => ({
+    o, poseT0: null, k: o.foal ? R.FOAL_SCALE : 1,
+    L: { x: 0, y: 0, s: 1, dir: 1, ph: i * 0.9, wt: i * 1.3, moving: false, go: 0, run: false, pose: 0, fly: 0, glow: 0,
+         coat: o.coat, wings: !!o.wings, foal: !!o.foal },
+  }));
+  const shown = () => only ? cast.filter(c => c.o.name === only) : cast;
+
+  function layout(){
+    const list = shown();
+    const total = list.reduce((a, c) => a + R.WIDTH * 2 * c.k + GAP, 0);
+    const S = Math.min(H * (only ? 0.5 : 0.42) / R.HEIGHT, W * 0.96 / total) * zoom;
+    let x = (W - total * S) / 2;
+    for (const c of list){
+      const w = R.WIDTH * 2 * c.k * S;
+      c.L.x = x + w * 0.45; c.gy = H * GY; c.L.s = S * c.k;
+      x += w + GAP * S;
+    }
+  }
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layout();
+    if (manual) render(clock);
+  }
+  addEventListener('resize', resize); resize();
+
+  function lgr(x1, y1, x2, y2, st){ const g = ctx.createLinearGradient(x1, y1, x2, y2); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+  function backdrop(gy){
+    document.body.classList.toggle('dark', lightI === 2);
+    const sky = [[[0, '#fdf6ff'], [0.6, '#f6ecfb'], [1, '#fbe9f1']], [[0, '#7a4a8c'], [0.5, '#f08a8c'], [1, '#ffd29a']], [[0, '#0b0f2c'], [0.7, '#252a62'], [1, '#474a8c']]][lightI];
+    const gr = [['#e9f4e4', '#d6ead6'], ['#b98a8c', '#8c6478'], ['#2c2c5c', '#1a1a3c']][lightI];
+    ctx.fillStyle = lgr(0, 0, 0, gy, sky); ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = lgr(0, gy, 0, H, [[0, gr[0]], [1, gr[1]]]); ctx.fillRect(0, gy, W, H - gy);
+    ctx.fillStyle = lightI === 2 ? 'rgba(255,255,255,.18)' : 'rgba(120,90,140,.22)'; ctx.fillRect(0, gy, W, 1.5);   // the ground line
+  }
+  function shadow(x, gy, s, lifted){
+    ctx.fillStyle = lightI === 2 ? 'rgba(6,6,26,.34)' : 'rgba(90,70,120,.13)';
+    const k = 1 - 0.35 * (lifted || 0);
+    ctx.beginPath(); ctx.ellipse(x - 4 * s, gy + 2 * s, R.WIDTH * 0.7 * s * k, 4.5 * s * k, 0, 0, TAU); ctx.fill();
+  }
+
+  function sim(t, dt){
+    for (const c of shown()){
+      const L = c.L;
+      const posing = c.poseT0 !== null || frozenPose !== null;
+      const want = (mode === 'walk' || mode === 'run') && !posing ? 1 : 0;
+      L.go += (want - L.go) * Math.min(1, dt * 6);
+      L.fly += ((mode === 'fly' ? 1 : 0) - L.fly) * Math.min(1, dt * 2.5);
+      if (L.fly < 0.002) L.fly = 0;
+      L.wings = !!c.o.wings || wingsAll || mode === 'fly' || L.fly > 0;
+      L.moving = L.go > 0.02; L.run = mode === 'run'; L.dir = dir; L.lit = LITS[lightI]; L.glow = GLOW[lightI];
+      if (L.moving){
+        const stride = (L.run ? R.RUN_STRIDE : R.STRIDE) * L.s, cps = L.run ? R.RUN_CPS : R.WALK_CPS;
+        const dx = stride * cps * dt * L.go;
+        L.wt += TAU * dx / stride; L.x += dx * dir;
+        const w = R.WIDTH * 2 * L.s;
+        if (L.x - w > W) L.x = -w; if (L.x + w < 0) L.x = W + w;
+      }
+      if (frozenPhase !== null) L.wt = frozenPhase * TAU;
+      L.pose = c.poseT0 === null ? 0 : Math.max(0, Math.min(1, (t - c.poseT0) / R.ACT_SECONDS));
+      if (L.pose >= 1){ c.poseT0 = null; L.pose = 0; }
+      if (frozenPose !== null) L.pose = frozenPose;
+      L.y = c.gy - L.fly * 70 * L.s;
+    }
+  }
+  function tipMark(L){
+    if (!showTip) return;
+    const p = R.hornTip(L); ctx.strokeStyle = '#e02060'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, TAU); ctx.moveTo(p.x - 9, p.y); ctx.lineTo(p.x + 9, p.y); ctx.moveTo(p.x, p.y - 9); ctx.lineTo(p.x, p.y + 9); ctx.stroke();
+  }
+  function render(t){
+    if (strip) return renderStrip(t);
+    backdrop(H * GY);
+    for (const c of shown()){ shadow(c.L.x, c.gy, c.L.s, c.L.fly); R.draw(ctx, c.L, t); tipMark(c.L); }
+    ctx.fillStyle = lightI === 2 ? 'rgba(230,216,255,.8)' : 'rgba(92,63,124,.7)'; ctx.font = '13px Georgia, serif';
+    for (const c of shown()) ctx.fillText(c.o.name, c.L.x - ctx.measureText(c.o.name).width / 2, c.gy + 28);
+  }
+  // a strip: n frames of one unicorn in a grid. Gaits: the camera follows the
+  // body, the ground ticks are fixed in the world — a planted hoof stays on its tick.
+  function renderStrip(t){
+    const q = strip, c = cast.find(c => c.o.name === q.name) || cast[0], n = q.n, cols = q.cols || 4, rows = Math.ceil(n / cols);
+    const cw = W / cols, chh = H / rows, s = q.s * c.k, L = Object.assign({}, c.L, q.extra || {});
+    ctx.fillStyle = lightI === 2 ? '#1a1c48' : lightI === 1 ? '#f4b49c' : '#f6effa'; ctx.fillRect(0, 0, W, H);
+    L.s = s; L.dir = dir; L.lit = LITS[lightI]; if (q.extra == null || q.extra.glow == null) L.glow = GLOW[lightI];
+    L.go = 0; L.moving = false; L.run = false; L.fly = (q.extra && q.extra.fly) || 0; L.pose = (q.extra && q.extra.pose) || 0;
+    const stride = q.kind === 'run' ? R.RUN_STRIDE : R.STRIDE;
+    for (let i = 0; i < n; i++){
+      const x0 = (i % cols) * cw, y0 = Math.floor(i / cols) * chh, gy = y0 + chh * (q.gy || 0.88), cx = x0 + cw * (q.cx || 0.46);
+      let tt = q.t != null ? q.t : 1.7, cam = 0;
+      if (q.kind === 'walk' || q.kind === 'run'){ L.go = 1; L.moving = true; L.run = q.kind === 'run'; L.wt = i / n * TAU; cam = i / n * stride; }
+      else if (q.kind === 'fly'){ L.fly = 1; L.wings = true; tt = (q.t || 0) + i / n / R.WING_CPS; }
+      else if (q.kind === 'open'){ L.fly = i / (n - 1); L.wings = true; }
+      else if (q.kind === 'pose'){ L.pose = q.poses ? q.poses[i] : (i + 0.5) / n; tt = (q.t || 1.7) + L.pose * R.ACT_SECONDS; }
+      else if (q.kind === 'coats'){ L.coat = R.COATS[i % R.COATS.length]; }
+      else if (q.kind === 'time'){ tt = (q.t || 0) + i * (q.dt || 0.25); }
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, cw, chh); ctx.clip();
+      ctx.fillStyle = lightI === 2 ? 'rgba(255,255,255,.2)' : 'rgba(120,90,140,.25)'; ctx.fillRect(x0, gy, cw, 1.5);
+      if (cam || q.kind === 'walk' || q.kind === 'run'){
+        const d = 20 * s * dir;
+        for (let k = -40; k < 60; k++){ const x = cx + (k * 20 - cam) * s * dir; if (x > x0 && x < x0 + cw) ctx.fillRect(x - 0.75, gy, 1.5, 9); }
+      }
+      L.x = cx; L.y = gy - (q.kind === 'fly' || q.kind === 'open' ? (q.lift != null ? q.lift : 40) * s * L.fly : 0);
+      shadow(cx, gy, s, L.fly);
+      R.draw(ctx, L, tt); tipMark(L);
+      ctx.restore();
+    }
+  }
+  function frame(ts){
+    if (!manual){
+      const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t; clock = t;
+      sim(t, dt); render(t);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const $ = id => document.getElementById(id);
+  const setMode = m => {
+    mode = m; strip = null;
+    if (m === 'still') layout();                          // back to the row
+    document.querySelectorAll('[data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === (m === 'pose' ? 'still' : m)));
+    if (m === 'pose'){ mode = 'still'; shown().forEach((c, i) => { if (c.poseT0 === null) c.poseT0 = clock + i * 0.2; }); }
+  };
+  document.querySelectorAll('[data-m]').forEach(b => { b.onclick = () => setMode(b.dataset.m); });
+  $('wings').onclick = e => { wingsAll = !wingsAll; e.target.classList.toggle('on', wingsAll); };
+  $('flip').onclick = () => { dir = -dir; };
+  $('light').onclick = () => { lightI = (lightI + 1) % 3; };
+  $('poseS').oninput = e => { frozenPose = +e.target.value; };
+  $('poseS').ondblclick = e => { frozenPose = null; e.target.value = 0; };
+  $('phaseS').oninput = e => { frozenPhase = +e.target.value; };
+  $('phaseS').ondblclick = () => { frozenPhase = null; };
+  cv.addEventListener('click', e => {
+    if (only){ only = null; layout(); return; }
+    for (const c of cast){
+      const hw = R.WIDTH * c.L.s;
+      if (e.clientX > c.L.x - hw && e.clientX < c.L.x + hw){ only = c.o.name; layout(); return; }
+    }
+  });
+  function perf(extra, n){
+    n = n || 200;
+    const L = Object.assign({ x: 300, y: 400, s: 1, dir: 1, ph: 0.4, wt: 1, moving: true, go: 1, run: false, pose: 0, fly: 0, glow: 0.3, coat: 'pearl' }, extra || {});
+    for (let i = 0; i < 60; i++) R.draw(ctx, L, i * 0.016);            // warm up
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++){ L.wt += 0.1; R.draw(ctx, L, i * 0.016); }
+    ctx.getImageData(0, 0, 1, 1);                                        // flush the raster queue
+    return (performance.now() - t0) / n;
+  }
+  window._paradeTest = {
+    hideUI: () => { $('ctrl').style.display = 'none'; },
+    names: () => cast.map(c => c.o.name),
+    only: n => { only = n || null; strip = null; layout(); },
+    zoom: z => { zoom = z; layout(); },
+    mode: setMode, light: i => { lightI = i; }, flip: d => { dir = d; }, wings: on => { wingsAll = on; },
+    setPose: v => { frozenPose = v; }, setPhase: v => { frozenPhase = v; }, showTip: on => { showTip = on; },
+    set: (name, o) => { const c = cast.find(c => c.o.name === name); Object.assign(c.L, o); },
+    manual: on => { manual = on; },
+    setT: t => { clock = t; sim(clock, 0); render(clock); },
+    advance: dt => { const n = Math.max(1, Math.round(dt / 0.02)); for (let i = 0; i < n; i++){ clock += dt / n; sim(clock, dt / n); } render(clock); },
+    strip: q => { strip = q; render(clock); },
+    cast: () => shown().map(c => ({ name: c.o.name, x: c.L.x, y: c.L.y, s: c.L.s, wt: c.L.wt, h: R.HEIGHT, w: R.WIDTH })),
+    tip: name => { const c = cast.find(c => c.o.name === name); return R.hornTip(c.L); },
+    perf,
+  };
+})();
+</script>
+</body>
+</html>

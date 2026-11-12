@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volcano Valley 4 — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the DINOSAURS4 background module. The scene
+     lives in dinosaurs4.bg.js — the SAME file the game loads (single source of
+     truth); the cast are the canvas rigs in dinosaur_rigs/. The buttons poke
+     window._dino4: the hour keys, Pause / Fast ×20, a family of each kind,
+     Ptero (a pteranodon with an egg), Egg (an egg falls now), Erupt, Storm,
+     Swimmer, Trick (everyone does one), Restart.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #3a6a5a; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  #bar { position: fixed; top: 40px; left: 18px; z-index: 10; display: flex; gap: 6px; flex-wrap: wrap; max-width: 52vw; direction: ltr; }
+  #bar button {
+    padding: 7px 14px;
+    background: rgba(40, 30, 20, 0.5); color: rgba(255, 240, 215, 0.95);
+    border: 1px solid rgba(255, 210, 140, 0.4); border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; box-shadow: 0 4px 18px rgba(20, 10, 0, 0.4); transition: background .2s;
+  }
+  #bar button:hover { background: rgba(120, 70, 30, 0.65); }
+  #bar button.on { background: rgba(255, 170, 70, 0.5); border-color: rgba(255, 220, 150, 0.8); }
+  #clock { position: fixed; top: 14px; left: 18px; z-index: 10; color: rgba(255,255,255,.9); font: 12px/1.4 Georgia, serif; letter-spacing: .12em; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="clock"></div>
+<div id="bar">
+  <button data-tod="0.03">Dawn</button>
+  <button data-tod="0.16">Morning</button>
+  <button data-tod="0.36">Noon</button>
+  <button data-tod="0.55">Golden</button>
+  <button data-tod="0.67">Sunset</button>
+  <button data-tod="0.77">Dusk</button>
+  <button data-tod="0.90">Night</button>
+  <button id="pause">Pause</button>
+  <button id="fast">Fast</button>
+  <button data-herd="trex">T-rex</button>
+  <button data-herd="raptor">Raptors</button>
+  <button data-herd="bronto">Bronto</button>
+  <button data-herd="para">Para</button>
+  <button data-herd="stego">Stego</button>
+  <button data-herd="trike">Trike</button>
+  <button id="ptero">Ptero</button>
+  <button id="egg">Egg</button>
+  <button id="erupt">Erupt</button>
+  <button id="storm">Storm</button>
+  <button id="swim">Swimmer</button>
+  <button id="trick">Trick</button>
+  <button id="restart">Restart</button>
+</div>
+<script src="dinosaurs4.bg.js"></script>
+<script>
+let cleanup = null, paused = false, fast = false;
+const $ = id => document.getElementById(id), T = () => window._dino4;
+function start(){ if (cleanup) cleanup(); cleanup = window.BACKGROUNDS.dinosaurs4.init({ stage: $('stage') }); }
+document.querySelectorAll('[data-tod]').forEach(b => b.onclick = e => { e.stopPropagation(); T().setTod(+b.dataset.tod); });
+document.querySelectorAll('[data-herd]').forEach(b => b.onclick = e => { e.stopPropagation(); T().spawn(b.dataset.herd); });
+$('pause').onclick = e => { e.stopPropagation(); paused = !paused; e.target.classList.toggle('on', paused); T().setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+$('fast').onclick = e => { e.stopPropagation(); fast = !fast; e.target.classList.toggle('on', fast); T().setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+$('ptero').onclick = e => { e.stopPropagation(); T().fly({ carry: true }); };
+$('egg').onclick = e => { e.stopPropagation(); T().egg(); };
+$('erupt').onclick = e => { e.stopPropagation(); T().erupt(); };
+$('storm').onclick = e => { e.stopPropagation(); T().storm(); };
+$('swim').onclick = e => { e.stopPropagation(); T().surface(); };
+$('trick').onclick = e => { e.stopPropagation(); const n = T().everyone().length; for (let i = 0; i < n; i++) T().act(i, ['pose', 'jump', 'fart'][i % 3]); };
+$('restart').addEventListener('click', e => { e.stopPropagation(); start(); });
+setInterval(() => {
+  if (!T()) return;
+  const t = T().tod(), p = T().perf(), h = (5 + t * 24) % 24;
+  $('clock').textContent =
+    T().phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0') +
+    '  |  cast ' + p.cast + '  |  ' + (p.halfRate ? '½ rate' : 'full') + ' ' + p.costEma.toFixed(1) + ' ms';
+}, 250);
+start();
+</script>
+</body>
+</html>

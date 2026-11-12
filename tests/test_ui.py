@@ -36,6 +36,7 @@ class TestAnswerBorders:
         """The state colors must win over any skin styling (galaxy active)."""
         page.evaluate("applyTheme('galaxy')")
         page.wait_for_timeout(1800)
+        wait_scene_up(page)
         page.evaluate("setMode(10)")
         page.wait_for_function("!window.POOL_PENDING && problems.length === 12", timeout=TIMEOUT)
         page.evaluate("problems[0] = {t: TS, a: 8, b: 3}; idx = 0; loadProblem()")

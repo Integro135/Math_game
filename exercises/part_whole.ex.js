@@ -7,12 +7,13 @@
    The card shows the fact as an equation with its blank (9 + 6 = ___,
    6 + ___ = 14, 15 − 9 = ___, 16 − ___ = 7) and, under it, the part–whole
    board (aids/part_whole.js): the whole on top, two parts below, and the
-   drawing of bars (5) and circles (1). To solve it she must
-     1. write the whole and both parts in their places (every box judges
-        itself; the missing number is one of them), and
-     2. draw the whole with bars and circles and colour one part,
-   then press ✓. A wrong number in a box is a mistake (api.wrong); an empty
-   box or an unfinished drawing only gets a note (no penalty).
+   drawing of bars (5) and circles (1). To solve it she writes the whole and
+   both parts in their places (every box judges itself; the missing number is
+   one of them) and presses ✓. A wrong number in a box is a mistake
+   (api.wrong); an empty box only gets a note (no penalty). The drawing is
+   there to help her count — it is NOT required: right numbers solve the card
+   whatever the drawing shows (2026-11-10, user: the drawing should not be a
+   must when she solved it correctly).
 
    Built from the bridge sets' own facts by problems.js _weavePartWhole (the
    fact stays in `src` for the curriculum order check). Problem shape:
@@ -83,9 +84,8 @@ window.EXERCISES.types.part_whole=(()=>{
       if(j.w!=='ok'||j.p[0]!=='ok'||j.p[1]!=='ok'){
         say('');api.wrong(`${w} | ${p0} ${p1}`);return;      // a wrong number = a mistake
       }
-      if(st.total!==p.whole){say(`צַיְּרִי אֶת הַשָּׁלֵם ${p.whole} בְּפַסִּים וְעִגּוּלִים ✏️`);return;}
-      if(!p.parts.includes(st.painted)){say('צִבְעִי חֵלֶק אֶחָד — וְסִפְרִי אֶת מָה שֶׁנִּשְׁאַר 🎨');return;}
-      solved=true;box.classList.add('pwx-done');
+      solved=true;                                         // right numbers solve it — the drawing is optional
+      box.classList.add('pwx-done');
       box.querySelector('.pwx-eq').textContent=st.match;   // the equation, filled in
       say('');api.solved();
     }

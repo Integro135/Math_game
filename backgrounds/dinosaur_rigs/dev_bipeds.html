@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosaur rigs — the bipeds (T-rex, raptor)</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Workshop for the two-legged hunters: trex.js (TrexRig) and raptor.js
+     (RaptorRig), on ../savanna_rigs/kit.js. Both at ONE shared px-per-unit
+     scale, so their true relative sizes show.
+       Walk  marches them (feet planted: wt advances with the distance)
+       Run   the same at the run gait      Act  plays the signature action
+       Coat  cycles the five coats         Flip / BG (blank, slate, dusk, night)
+     window._paradeTest has the hooks of the screenshot harness: grid() draws
+     a static sheet of any poses, bbox() measures what a pose really covers,
+     plant() checks that no stance foot is ever pulled off its spot, leak()
+     and cost() check the canvas state and the draw time.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #ece6db; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #ctrl { position: fixed; bottom: 18px; left: 0; right: 0; display: flex; gap: 8px; flex-wrap: wrap;
+          justify-content: center; z-index: 10; }
+  .hbtn { padding: 8px 16px; background: rgba(70,50,40,.16); color: rgba(60,40,30,.9);
+          border: 1px solid rgba(90,60,40,.28); border-radius: 999px; font: 13px Georgia, serif;
+          letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+  .hbtn.on { background: rgba(215,120,60,.6); color: #fff8ee; }
+  body.dark .hbtn { background: rgba(60,24,14,.5); color: rgba(255,214,160,.92); border-color: rgba(255,170,90,.4); }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ctrl">
+  <button class="hbtn" id="walk">Walk</button>
+  <button class="hbtn" id="run">Run</button>
+  <button class="hbtn" id="act">Act</button>
+  <button class="hbtn" id="coat">Coat</button>
+  <button class="hbtn" id="flip">Flip</button>
+  <button class="hbtn" id="bg">BG</button>
+</div>
+<script src="../savanna_rigs/kit.js"></script>
+<script>
+// the harness listens in on the kit's IK: was a foot ever moved off the spot it was asked for?
+(function(){
+  const K = window.SavKit, leg0 = K.leg;
+  window._legRec = null;
+  K.leg = function(g, rx, ry, fx, fy){
+    const ch = leg0.apply(this, arguments);
+    if (window._legRec) window._legRec.push(Math.hypot(ch[3][0] - fx, ch[3][1] - fy));
+    return ch;
+  };
+})();
+</script>
+<script src="trex.js"></script>
+<script src="raptor.js"></script>
+<script>
+(function(){
+  const TAU = Math.PI * 2;
+  const ORDER = [{ name: 'trex', rig: 'TrexRig' }, { name: 'raptor', rig: 'RaptorRig' }].filter(o => window[o.rig]);
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const BGS = ['blank', 'slate', 'dusk', 'night'];
+  const LITS = [null, null, [1, 0.8, 0.7], [0.45, 0.5, 0.8]];
+  let DPR = Math.min(devicePixelRatio || 1, 2), W, H, bgI = 0, lastT = 0, walking = false, running = false, dir = 1, coatI = 0;
+  let manual = false, clock = 0;
+  const cast = ORDER.map((o, i) => ({ o, R: window[o.rig], poseT0: null,
+    L: { x: 0, y: 0, s: 1, dir: 1, ph: i * 0.9, wt: i * 1.3, moving: false, go: 0, run: false, pose: 0, coat: window[o.rig].COATS[0] } }));
+
+  function layout(){
+    const maxH = Math.max(...cast.map(c => c.R.HEIGHT)), GAP = 30;
+    const total = cast.reduce((a, c) => a + c.R.WIDTH * 2 + GAP, 0);
+    const S = Math.min(H * 0.6 / maxH, W * 0.9 / total);
+    let x = (W - total * S) / 2;
+    for (const c of cast){ const w = c.R.WIDTH * 2 * S; c.L.x = x + w / 2; c.L.y = H * 0.8; c.L.s = S; x += w + GAP * S; }
+  }
+  function resize(){
+    W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); layout();
+  }
+  addEventListener('resize', () => { if (!manual) resize(); }); resize();
+
+  function lgr(x1, y1, x2, y2, st){ const g = ctx.createLinearGradient(x1, y1, x2, y2); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+  function backdrop(bg, gy, w, h){
+    document.body.classList.toggle('dark', bg !== 'blank');
+    if (bg === 'blank'){
+      ctx.fillStyle = lgr(0, 0, 0, h, [[0, '#f5f1e9'], [0.8, '#ebe4d8'], [1, '#e2d9ca']]); ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(120,95,70,.08)'; ctx.fillRect(0, gy, w, h - gy); return;
+    }
+    if (bg === 'slate'){ ctx.fillStyle = '#3a3f4b'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#2e323c'; ctx.fillRect(0, gy, w, h - gy); return; }
+    ctx.fillStyle = bg === 'dusk' ? lgr(0, 0, 0, gy, [[0, '#3a1030'], [0.45, '#b53a2a'], [0.78, '#f08a3c'], [1, '#f7c25a']])
+                                  : lgr(0, 0, 0, gy, [[0, '#060b1e'], [0.7, '#1a2a52'], [1, '#3a4a78']]);
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = bg === 'dusk' ? lgr(0, gy, 0, h, [[0, '#6a5a30'], [1, '#3e3418']]) : lgr(0, gy, 0, h, [[0, '#2a2438'], [1, '#141224']]);
+    ctx.fillRect(0, gy, w, h - gy);
+  }
+
+  function sim(t, dt){
+    for (const c of cast){
+      const L = c.L, R = c.R, want = walking && c.poseT0 === null ? 1 : 0;
+      L.go += (want - L.go) * Math.min(1, dt * 6);
+      L.moving = L.go > 0.02; L.run = running; L.dir = dir; L.lit = LITS[bgI]; L.coat = R.COATS[coatI % R.COATS.length];
+      if (L.moving){
+        const stride = (L.run ? R.RUN_STRIDE : R.STRIDE) * L.s, cps = L.run ? R.RUN_CPS : R.WALK_CPS;
+        const dx = stride * cps * dt * L.go;
+        L.wt += TAU * dx / stride; L.x += dx * dir;
+        const w = R.WIDTH * 2 * L.s;
+        if (L.x - w > W) L.x = -w; if (L.x + w < 0) L.x = W + w;
+      }
+      L.pose = c.poseT0 === null ? 0 : Math.max(0, Math.min(1, (t - c.poseT0) / R.ACT_SECONDS));
+      if (L.pose >= 1){ c.poseT0 = null; L.pose = 0; }
+    }
+  }
+  function render(t){
+    backdrop(BGS[bgI], H * 0.8, W, H);
+    const blank = BGS[bgI] === 'blank';
+    for (const c of cast){
+      ctx.fillStyle = blank ? 'rgba(70,50,35,.20)' : 'rgba(20,10,6,.30)';
+      ctx.beginPath(); ctx.ellipse(c.L.x, c.L.y + 1.5 * c.L.s, c.R.WIDTH * 0.8 * c.L.s, 5 * c.L.s, 0, 0, TAU); ctx.fill();
+      c.R.draw(ctx, c.L, t);
+    }
+    ctx.fillStyle = blank ? 'rgba(70,50,35,.6)' : 'rgba(255,214,160,.7)'; ctx.font = '13px Georgia, serif';
+    for (const c of cast){ const s = c.o.name + ' · ' + c.L.coat; ctx.fillText(s, c.L.x - ctx.measureText(s).width / 2, H * 0.8 + 26); }
+  }
+  function frame(ts){
+    if (!manual){ const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t; clock = t; sim(t, dt); render(t); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const act = () => cast.forEach((c, i) => { if (c.poseT0 === null) c.poseT0 = clock + i * 0.25; });
+  const btn = id => document.getElementById(id);
+  btn('walk').onclick = e => { walking = !walking; e.target.classList.toggle('on', walking); };
+  btn('run').onclick = e => { running = !running; e.target.classList.toggle('on', running); };
+  btn('act').onclick = act;
+  btn('coat').onclick = () => { coatI++; };
+  btn('flip').onclick = () => { dir = -dir; };
+  btn('bg').onclick = () => { bgI = (bgI + 1) % BGS.length; };
+  window._dev = { ctx, cv, cast, BGS, LITS, backdrop, setManual(w, h){ manual = true; DPR = 1; W = w; H = h; cv.width = w; cv.height = h;
+    cv.style.width = w + 'px'; cv.style.height = h + 'px'; ctx.setTransform(1, 0, 0, 1, 0, 0); btn('ctrl').style.display = 'none'; } };
+})();
+</script>
+<script>
+// ── the screenshot harness: window._paradeTest
+(function(){
+  const D = window._dev, ctx = D.ctx, TAU = Math.PI * 2;
+  const RIG = { trex: window.TrexRig, raptor: window.RaptorRig };
+  const mkL = (R, o, x, y, s) => Object.assign({ x, y, s, dir: 1, ph: 1, wt: 0, go: 0, run: false, pose: 0, coat: R.COATS[0] }, o || {});
+
+  // grid(name, cells, opts) — a static sheet, one rig per cell.
+  //   cell = { L: { …overrides of L }, t, dx (unit offset), k (scale factor), name (the other rig), label, mark (show mouth()) }
+  //   opts = { cols, cw, ch, s, bg (0..3), gy (ground line, from the cell top), ox (rig x in the cell), overlay, alpha, clip }
+  function grid(name, cells, o){
+    o = o || {};
+    const cols = o.overlay ? 1 : (o.cols || cells.length), rows = o.overlay ? 1 : Math.ceil(cells.length / cols);
+    const cw = o.cw || 400, ch = o.ch || 400, bg = o.bg || 0, s = o.s || 1, gy = o.gy || ch - 40;
+    D.setManual(cw * cols, ch * rows);
+    for (let r = 0; r < rows; r++){ ctx.save(); ctx.translate(0, r * ch); D.backdrop(D.BGS[bg], gy, cw * cols, ch); ctx.restore(); }
+    cells.forEach((c, i) => {
+      const col = o.overlay ? 0 : i % cols, row = o.overlay ? 0 : Math.floor(i / cols), R = RIG[c.name || name];
+      const x = col * cw + (o.ox != null ? o.ox : cw / 2) + (c.dx || 0) * s, y = row * ch + gy;
+      const L = mkL(R, c.L, x, y, s * (c.k || 1));
+      if (L.lit === undefined && D.LITS[bg]) L.lit = D.LITS[bg];
+      const t = c.t != null ? c.t : 1 + i * 0.37;
+      ctx.save();
+      if (o.clip){ ctx.beginPath(); ctx.rect(col * cw, row * ch, cw, ch); ctx.clip(); }
+      if (o.alpha) ctx.globalAlpha = o.alpha;
+      R.draw(ctx, L, t);
+      ctx.restore();
+      if (c.mark){ const m = R.mouth(L, t); ctx.fillStyle = '#ff00ff'; ctx.fillRect(m.x - 2.5, m.y - 2.5, 5, 5); }
+      if (c.label){ ctx.fillStyle = bg ? 'rgba(255,230,190,.8)' : 'rgba(70,50,35,.7)'; ctx.font = '13px Georgia, serif'; ctx.fillText(c.label, col * cw + 8, row * ch + 18); }
+    });
+    return [cw * cols, ch * rows];
+  }
+  // what a pose really covers, in UNIT space (x from the anchor, y from the ground; y0 = the top)
+  function bbox(name, Lo, t){
+    const R = RIG[name], s = 2, ax = 800, ay = 800;
+    D.setManual(1600, 1000); ctx.clearRect(0, 0, 1600, 1000);
+    R.draw(ctx, mkL(R, Lo, ax, ay, s), t == null ? 1 : t);
+    const d = ctx.getImageData(0, 0, 1600, 1000).data;
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (let y = 0; y < 1000; y++) for (let x = 0; x < 1600; x++) if (d[(y * 1600 + x) * 4 + 3] > 24){
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    return { x0: (x0 - ax) / s, x1: (x1 + 1 - ax) / s, y0: (y0 - ay) / s, y1: (y1 + 1 - ay) / s };
+  }
+  // the union of bbox over a sweep: field = 'pose' | 'wt', n samples, extra L
+  function sweep(name, field, n, Lo){
+    const u = { x0: 1e9, x1: -1e9, y0: 1e9, y1: -1e9 };
+    for (let i = 0; i < n; i++){
+      const o = Object.assign({}, Lo); o[field] = field === 'wt' ? TAU * i / n : (i + 0.5) / n;
+      const b = bbox(name, o, 1 + i * 0.13);
+      u.x0 = Math.min(u.x0, b.x0); u.x1 = Math.max(u.x1, b.x1); u.y0 = Math.min(u.y0, b.y0); u.y1 = Math.max(u.y1, b.y1);
+    }
+    return u;
+  }
+  // planted feet: the furthest the IK ever moved a foot from the spot it was asked for, over one cycle
+  function plant(name, run){
+    const R = RIG[name]; let worst = 0;
+    D.setManual(600, 600);
+    for (let i = 0; i < 360; i++){
+      window._legRec = [];
+      R.draw(ctx, mkL(R, { wt: TAU * i / 360, go: 1, run: !!run }, 300, 500, 1), 1 + i * 0.01);
+      for (const v of window._legRec) worst = Math.max(worst, v);
+    }
+    window._legRec = null;
+    return worst;
+  }
+  // canvas state after a draw must equal the state before it
+  function leak(name){
+    const R = RIG[name];
+    D.setManual(600, 600);
+    const snap = () => [ctx.getTransform().toString(), ctx.globalAlpha, ctx.lineWidth, ctx.lineCap, ctx.lineJoin, ctx.fillStyle, ctx.strokeStyle,
+                        ctx.globalCompositeOperation, ctx.shadowBlur, ctx.filter].join('|');
+    const a = snap(); let ok = true;
+    for (let i = 0; i < 40; i++){
+      R.draw(ctx, mkL(R, { dir: i & 1 ? -1 : 1, wt: i * 0.7, go: i % 3 ? 1 : 0, run: !!(i & 2), pose: i % 4 ? (i % 20) / 20 : 0, lit: i & 4 ? [1, .8, .7] : null,
+                           tint: 0.9 + (i % 5) * 0.05, coat: R.COATS[i % R.COATS.length] }, 300, 500, 1), i * 0.31);
+      if (snap() !== a) ok = false;
+    }
+    return ok;
+  }
+  // ms per draw at s = 1 (walk, run and pose mixed), n draws
+  function cost(name, n){
+    const R = RIG[name]; n = n || 200;
+    D.setManual(600, 600);
+    const Ls = []; for (let i = 0; i < n; i++) Ls.push(mkL(R, { wt: i * 0.21, go: i % 4 ? 1 : 0, run: !!(i & 8), pose: i % 5 === 0 ? (i % 50) / 50 : 0,
+                                                              coat: R.COATS[i % R.COATS.length], lit: [1, 0.9, 0.8] }, 300, 500, 1));
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++) R.draw(ctx, Ls[i], i * 0.016);
+    return (performance.now() - t0) / n;
+  }
+  window._paradeTest = { grid, bbox, sweep, plant, leak, cost, names: () => Object.keys(RIG).filter(k => RIG[k]),
+                         info: name => { const R = RIG[name], o = {}; for (const k in R) if (typeof R[k] !== 'function') o[k] = R[k]; return o; } };
+})();
+</script>
+</body>
+</html>

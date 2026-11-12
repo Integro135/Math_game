@@ -105,7 +105,7 @@ function loadExercisesFor(mode, onReady){
 }
 
 /* ── loading veil for SLOW backgrounds ──────────────────────────────────────
-   Most scenes appear instantly, but a heavy one (space2 compiles its WebGL2
+   Most scenes appear instantly, but a heavy one (space4 compiles its WebGL2
    ray-tracer and bakes the sky — up to ~20 s on a weak machine) would otherwise
    leave the stage black with no sign that anything is happening. Such a scene
    is marked `slowLoad: true` on its module (and listed in SLOW_BGS, which also
@@ -116,7 +116,7 @@ function loadExercisesFor(mode, onReady){
        rendered frame — with a safety timeout so it can never get stuck.
    The veil lives inside the stage (#stars-layer) and is pointer-events:none, so
    the game card stays visible and fully usable while the backdrop loads. */
-const SLOW_BGS = ['space2'];
+const SLOW_BGS = ['space4', 'space2'];      // by NAME, because the first load happens before the module object exists
 const BG_LOAD_MAX = 45000;                 // safety: never leave the veil up forever
 let _veil = null, _veilMaxTO = null, _veilHintTO = null;
 
@@ -169,8 +169,8 @@ function hideBgVeil(now){
 
 /* the scene tells us when its first frame is actually on screen */
 let _slowPending = false;
-const LOAD_LABELS = { space2: 'טוֹעֲנִים אֶת הֶחָלָל…' };
-const LOAD_STEPS  = { space2: 'מְצַיְּרִים חוֹר שָׁחוֹר 🌌' };
+const LOAD_LABELS = { space4: 'טוֹעֲנִים אֶת הֶחָלָל…', space2: 'טוֹעֲנִים אֶת הֶחָלָל…' };
+const LOAD_STEPS  = { space4: 'מְצַיְּרִים חוֹר שָׁחוֹר 🌌', space2: 'מְצַיְּרִים חוֹר שָׁחוֹר 🌌' };
 window.BG_LOADING = {
   done: () => { hideBgVeil(); const gl = _gameLoading(); if(gl && _slowPending){ _slowPending = false; gl.step('כִּמְעַט מוּכָן…', 0.95); gl.done(); } },
   showing: () => !!_veil || (!!_gameLoading() && _gameLoading().isUp()),
@@ -247,7 +247,7 @@ function loadBackground(name){
     else run();
   };
   if(window.BACKGROUNDS[name]){ start(); return; }
-  // (space2 does its heavy black-hole precomputation while its script runs, so a
+  // (space4 does its heavy black-hole precomputation while its script runs, so a
   //  slow scene's "drawing" label goes up before the fetch, not after)
   if(gl) gl.step(slow ? (LOAD_STEPS[name] || 'מְצַיְּרִים אֶת הָעוֹלָם…') : 'טוֹעֲנִים אֶת הָרֶקַע…', 0.3);
   _injectScript('backgrounds/' + name + '.bg.js', () => {

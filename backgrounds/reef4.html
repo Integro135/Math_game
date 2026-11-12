@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reef 4 — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the REEF4 background module. The scene
+     lives in reef4.bg.js — the SAME file the game loads (single source of
+     truth); the hero creatures are the canvas rigs in reef_rigs/. The buttons
+     poke window._reef4: the hour keys, Pause / Fast ×20, the quality tier
+     (Q2 / Q1 / Q0), the visitors (Turtle, Dolphins, Shark, Whale, Orca),
+     Clean (a fish turns spotty and goes to the station), Trick (everyone
+     does one), Poop, Restart. The harness pins quality 2 — headless frame
+     gaps would otherwise step the tier down by themselves.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #2e96c6; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  #bar { position: fixed; top: 40px; right: 18px; z-index: 10; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 60vw; direction: ltr; }
+  #bar button {
+    padding: 7px 14px;
+    background: rgba(10, 40, 80, 0.5); color: rgba(230, 250, 255, 0.95);
+    border: 1px solid rgba(150, 230, 255, 0.45); border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; box-shadow: 0 4px 18px rgba(0, 20, 60, 0.4); transition: background .2s;
+  }
+  #bar button:hover { background: rgba(30, 100, 160, 0.7); }
+  #bar button.on { background: rgba(120, 220, 255, 0.45); border-color: rgba(200, 250, 255, 0.9); }
+  #clock { position: fixed; top: 14px; right: 18px; z-index: 10; color: rgba(255,255,255,.92); font: 12px/1.4 Georgia, serif; letter-spacing: .1em; text-shadow: 0 1px 4px rgba(0,30,80,.7); text-align: right; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="clock"></div>
+<div id="bar">
+  <button data-tod="0.03">Dawn</button>
+  <button data-tod="0.16">Morning</button>
+  <button data-tod="0.36">Noon</button>
+  <button data-tod="0.55">Golden</button>
+  <button data-tod="0.67">Sunset</button>
+  <button data-tod="0.77">Dusk</button>
+  <button data-tod="0.90">Night</button>
+  <button id="pause">Pause</button>
+  <button id="fast">Fast</button>
+  <button data-q="2" class="on">Q2</button>
+  <button data-q="1">Q1</button>
+  <button data-q="0">Q0</button>
+  <button data-visit="turtle">Turtle</button>
+  <button data-visit="dolphin">Dolphins</button>
+  <button data-visit="shark">Shark</button>
+  <button data-giant="whale">Whale</button>
+  <button data-giant="orca">Orca</button>
+  <button id="clean">Clean</button>
+  <button id="trick">Trick</button>
+  <button id="poop">Poop</button>
+  <button id="restart">Restart</button>
+</div>
+<script src="reef4.bg.js"></script>
+<script>
+let cleanup = null, paused = false, fast = false, q = 2;
+const $ = id => document.getElementById(id), T = () => window._reef4;
+function start(){ if (cleanup) cleanup(); cleanup = window.BACKGROUNDS.reef4.init({ stage: $('stage') }); T().quality(q); }
+document.querySelectorAll('[data-tod]').forEach(b => b.onclick = e => { e.stopPropagation(); T().setTod(+b.dataset.tod); });
+document.querySelectorAll('[data-q]').forEach(b => b.onclick = e => { e.stopPropagation(); q = +b.dataset.q; T().quality(q); document.querySelectorAll('[data-q]').forEach(x => x.classList.toggle('on', x === b)); });
+document.querySelectorAll('[data-visit]').forEach(b => b.onclick = e => { e.stopPropagation(); T().visit(b.dataset.visit); });
+document.querySelectorAll('[data-giant]').forEach(b => b.onclick = e => { e.stopPropagation(); T().giant(b.dataset.giant); });
+$('pause').onclick = e => { e.stopPropagation(); paused = !paused; e.target.classList.toggle('on', paused); T().setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+$('fast').onclick = e => { e.stopPropagation(); fast = !fast; e.target.classList.toggle('on', fast); T().setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+$('clean').onclick = e => { e.stopPropagation(); T().soil('dory') || T().soil('bfly') || T().soil('ytang'); };
+$('trick').onclick = e => { e.stopPropagation(); const n = T().actors().length; for (let i = 0; i < n; i++) T().act(i); };
+$('poop').onclick = e => { e.stopPropagation(); T().poop(); };
+$('restart').addEventListener('click', e => { e.stopPropagation(); start(); });
+setInterval(() => {
+  if (!T()) return;
+  const t = T().tod(), p = T().perf(), h = (5 + t * 24) % 24;
+  $('clock').textContent =
+    T().phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0') +
+    '  |  cast ' + p.cast + '  |  Q' + p.Q + (p.halfRate ? ' ½ rate' : '') + '  |  ' + p.blits + ' blits, ' + p.live + ' live  |  ' + p.costEma.toFixed(1) + ' ms';
+}, 250);
+start();
+</script>
+</body>
+</html>

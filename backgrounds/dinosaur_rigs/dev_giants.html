@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosaur rigs — the gentle giants</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Workshop for bronto.js (BrontoRig) and para.js (ParaRig): the two of
+     them side by side at ONE shared px-per-unit scale, on a blank studio
+     backdrop.
+       Walk / Run   march them (feet planted: wt advances with the distance)
+       Act          plays the signature action
+       Coat         next coat        Flip   mirror
+       BG           blank → slate → sunset light → night light
+     Click a dinosaur to see it alone and big (click again for both).
+     window._paradeTest has the hooks for the screenshot harness: scene()
+     draws a fixed list of poses instead of the live parade, bench() times
+     the draw, and a missing rig file is simply skipped.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #ece6db; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #ctrl { position: fixed; bottom: 14px; left: 0; right: 0; display: flex; gap: 8px; flex-wrap: wrap;
+          justify-content: center; z-index: 10; }
+  .hbtn { padding: 8px 16px; background: rgba(70,50,40,.16); color: rgba(60,40,30,.9);
+          border: 1px solid rgba(90,60,40,.28); border-radius: 999px; font: 13px Georgia, serif;
+          letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+  body.dark .hbtn { background: rgba(60,24,14,.5); color: rgba(255,214,160,.92); border-color: rgba(255,170,90,.4); }
+  .hbtn.on, body.dark .hbtn.on { background: rgba(215,120,60,.6); color: #fff8ee; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ctrl">
+  <button class="hbtn" id="walk">Walk</button>
+  <button class="hbtn" id="run">Run</button>
+  <button class="hbtn" id="act">Act</button>
+  <button class="hbtn" id="coat">Coat</button>
+  <button class="hbtn" id="flip">Flip</button>
+  <button class="hbtn" id="bg">BG</button>
+</div>
+<script src="../savanna_rigs/kit.js"></script>
+<script src="bronto.js"></script>
+<script src="para.js"></script>
+<script>
+(function(){
+  const TAU = Math.PI * 2;
+  const ORDER = [{ name: 'bronto', rig: 'BrontoRig' }, { name: 'para', rig: 'ParaRig' }].filter(o => window[o.rig]);
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  const BGS = ['blank', 'slate', 'dusk', 'night'];
+  const LITS = [null, null, [1, 0.8, 0.7], [0.45, 0.5, 0.8]];
+  let W, H, bgI = 0, lastT = 0, walking = false, running = false, only = null, dir = 1, coatI = 0;
+  let manual = false, clock = 0, fixed = null;
+  const GAP = 30;
+  const cast = ORDER.map((o, i) => ({
+    o, R: window[o.rig],
+    L: { x: 0, y: 0, s: 1, dir: 1, ph: i * 0.9, wt: i * 1.3, moving: false, go: 0, run: false, pose: 0, coat: window[o.rig].COATS[0] },
+    poseT0: null,
+  }));
+  const shown = () => only ? cast.filter(c => c.o.name === only) : cast;
+
+  function layout(){
+    const list = shown();
+    if (!list.length) return;
+    const maxH = Math.max(...list.map(c => c.R.HEIGHT * 1.2));
+    const total = list.reduce((a, c) => a + c.R.WIDTH * 2 + GAP, 0);
+    const S = Math.min(H * 0.62 / maxH, W * 0.94 / total);
+    let x = (W - total * S) / 2;
+    for (const c of list){
+      const w = c.R.WIDTH * 2 * S;
+      c.L.x = x + w / 2; c.L.y = H * 0.8; c.L.s = S;
+      x += w + GAP * S;
+    }
+  }
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layout();
+  }
+  addEventListener('resize', resize); resize();
+
+  function lgr(x1, y1, x2, y2, st){ const g = ctx.createLinearGradient(x1, y1, x2, y2); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+  function backdrop(bg, gy){
+    document.body.classList.toggle('dark', bg !== 'blank');
+    if (bg === 'blank'){
+      ctx.fillStyle = lgr(0, 0, 0, H, [[0, '#f5f1e9'], [0.8, '#ebe4d8'], [1, '#e2d9ca']]); ctx.fillRect(0, 0, W, H);
+      if (gy != null){ ctx.fillStyle = 'rgba(120,95,70,.08)'; ctx.fillRect(0, gy, W, H - gy); }
+      return;
+    }
+    if (bg === 'slate'){ ctx.fillStyle = '#3a3f4b'; ctx.fillRect(0, 0, W, H); if (gy != null){ ctx.fillStyle = '#2e323c'; ctx.fillRect(0, gy, W, H - gy); } return; }
+    ctx.fillStyle = bg === 'dusk' ? lgr(0, 0, 0, H, [[0, '#3a1030'], [0.45, '#b53a2a'], [0.78, '#f08a3c'], [1, '#f7c25a']])
+                                  : lgr(0, 0, 0, H, [[0, '#060b1e'], [0.7, '#1a2a52'], [1, '#3a4a78']]);
+    ctx.fillRect(0, 0, W, H);
+    if (gy != null){ ctx.fillStyle = bg === 'dusk' ? '#5a4c28' : '#201c30'; ctx.fillRect(0, gy, W, H - gy); }
+  }
+
+  function sim(t, dt){
+    for (const c of shown()){
+      const L = c.L, R = c.R;
+      const want = walking && c.poseT0 === null ? 1 : 0;
+      L.go += (want - L.go) * Math.min(1, dt * 4);
+      L.moving = L.go > 0.02; L.run = running && !!R.RUN_STRIDE; L.dir = dir; L.lit = LITS[bgI];
+      L.coat = R.COATS[coatI % R.COATS.length];
+      if (L.moving){
+        const stride = (L.run ? R.RUN_STRIDE : R.STRIDE) * L.s;
+        const cps = L.run ? (R.RUN_CPS || 1.9) : (R.WALK_CPS || 0.85);
+        const dx = stride * cps * dt * L.go;
+        L.wt += TAU * dx / stride; L.x += dx * dir;
+        const w = R.WIDTH * 2 * L.s;
+        if (L.x - w > W) L.x = -w; if (L.x + w < 0) L.x = W + w;
+      }
+      L.pose = c.poseT0 === null ? 0 : Math.max(0, Math.min(1, (t - c.poseT0) / (R.ACT_SECONDS || 2)));
+      if (L.pose >= 1){ c.poseT0 = null; L.pose = 0; }
+    }
+  }
+  function shadow(x, y, s, R, blank){
+    ctx.fillStyle = blank ? 'rgba(70,50,35,.18)' : 'rgba(20,10,6,.30)';
+    ctx.beginPath(); ctx.ellipse(x, y + 1.5 * s, R.WIDTH * 0.8 * s, 5 * s, 0, 0, TAU); ctx.fill();
+  }
+  function render(t){
+    backdrop(BGS[bgI], H * 0.8);
+    const blank = BGS[bgI] === 'blank';
+    for (const c of shown()){ shadow(c.L.x, c.L.y, c.L.s, c.R, blank); c.R.draw(ctx, c.L, t); }
+    ctx.fillStyle = blank ? 'rgba(70,50,35,.6)' : 'rgba(255,214,160,.7)'; ctx.font = '13px Georgia, serif';
+    for (const c of shown()){ const s = c.o.name + ' · ' + c.L.coat; ctx.fillText(s, c.L.x - ctx.measureText(s).width / 2, H * 0.8 + 26); }
+  }
+  // a fixed list of poses (the screenshot harness): items = [{ rig, x, y, s, dir, ph, wt, go, run, pose,
+  // coat, tint, lit, t, shadow, mouth, label }], opts = { bg, ground, guides: [x…], t }
+  function scene(items, opts){
+    opts = opts || {}; manual = true; fixed = { items, opts };
+    const bg = BGS[opts.bg || 0], blank = bg === 'blank';
+    backdrop(bg, opts.ground);
+    for (const it of items){
+      const R = window[it.rig]; if (!R) continue;
+      const L = Object.assign({ x: 0, y: 0, s: 1, dir: 1, ph: 0, wt: 0, go: 0, run: false, pose: 0, coat: R.COATS[0], lit: LITS[opts.bg || 0] }, it);
+      L.moving = L.go > 0.02;
+      const t = it.t != null ? it.t : (opts.t || 0);
+      if (it.shadow !== false) shadow(L.x, L.y, L.s, R, blank);
+      R.draw(ctx, L, t);
+      if (it.mouth){
+        const m = R.mouth(L);
+        ctx.strokeStyle = '#e0206a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(m.x - 7, m.y); ctx.lineTo(m.x + 7, m.y); ctx.moveTo(m.x, m.y - 7); ctx.lineTo(m.x, m.y + 7); ctx.stroke();
+      }
+      if (it.box){                                        // the rig's declared HEIGHT / WIDTH box
+        ctx.strokeStyle = 'rgba(40,120,220,.6)'; ctx.lineWidth = 1;
+        ctx.strokeRect(L.x - R.WIDTH * L.s, L.y - R.HEIGHT * L.s, R.WIDTH * 2 * L.s, R.HEIGHT * L.s);
+      }
+      if (it.label){
+        ctx.fillStyle = blank ? 'rgba(70,50,35,.7)' : 'rgba(255,214,160,.8)'; ctx.font = '13px Georgia, serif';
+        ctx.fillText(it.label, L.x - ctx.measureText(it.label).width / 2, L.y + 22);
+      }
+    }
+    if (opts.guides){
+      ctx.strokeStyle = 'rgba(220,40,60,.55)'; ctx.lineWidth = 1;
+      for (const g of opts.guides){ ctx.beginPath(); ctx.moveTo(g, 0); ctx.lineTo(g, H); ctx.stroke(); }
+    }
+    // a leak check: after every rig's draw the canvas state must be back to the page's own
+    const m = ctx.getTransform();
+    return { alpha: ctx.globalAlpha, a: m.a, d: m.d, e: m.e, f: m.f };
+  }
+  // the draw cost: n draws of one rig at s = 1 (walking, mid-pose mixes included) → ms per draw
+  function bench(rig, n, extra){
+    const R = window[rig], L = Object.assign({ x: W / 2, y: H * 0.8, s: 1, dir: 1, ph: 0.3, wt: 0, go: 1, moving: true, run: false, pose: 0, coat: R.COATS[0], lit: [1, 0.8, 0.7] }, extra || {});
+    for (let i = 0; i < 60; i++){ L.wt += 0.1; R.draw(ctx, L, i * 0.016); }                 // warm up
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++){ L.wt += 0.1; R.draw(ctx, L, i * 0.016); }
+    ctx.getImageData(0, 0, 1, 1);                                                          // flush the raster queue
+    return (performance.now() - t0) / n;
+  }
+
+  // the painted extent of one pose, in the rig's own units relative to its anchor (x: + = forward):
+  // drawn alone on a cleared canvas, then the alpha channel is scanned
+  function bbox(it){
+    const R = window[it.rig], s = it.s || 0.5;
+    const L = Object.assign({ x: Math.round(W / 2), y: Math.round(H * 0.75), s, dir: 1, ph: 0, wt: 0, go: 0, run: false, pose: 0, coat: R.COATS[0] }, it, { s });
+    L.moving = L.go > 0.02;
+    manual = true; ctx.clearRect(0, 0, W, H);
+    R.draw(ctx, L, it.t || 0);
+    const w = cv.width, h = cv.height, d = ctx.getImageData(0, 0, w, h).data;
+    let x0 = w, x1 = -1, y0 = h, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0, i = y * w * 4 + 3; x < w; x++, i += 4) if (d[i] > 24){
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    const k = DPR * s;
+    return { back: +((L.x * DPR - x0) / k).toFixed(1), front: +((x1 + 1 - L.x * DPR) / k).toFixed(1),
+             top: +((L.y * DPR - y0) / k).toFixed(1), below: +((y1 + 1 - L.y * DPR) / k).toFixed(1) };
+  }
+
+  function frame(ts){
+    if (!manual){
+      const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t; clock = t;
+      sim(t, dt); render(t);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const act = () => shown().forEach((c, i) => { if (c.poseT0 === null) c.poseT0 = clock + i * 0.3; });
+  const btn = id => document.getElementById(id);
+  btn('walk').onclick = e => { walking = !walking; e.target.classList.toggle('on', walking); };
+  btn('run').onclick = e => { running = !running; e.target.classList.toggle('on', running); };
+  btn('act').onclick = act;
+  btn('coat').onclick = () => { coatI++; };
+  btn('flip').onclick = () => { dir = -dir; };
+  btn('bg').onclick = () => { bgI = (bgI + 1) % BGS.length; };
+  cv.addEventListener('click', e => {
+    if (only){ only = null; layout(); return; }
+    for (const c of cast){
+      const hw = c.R.WIDTH * c.L.s;
+      if (e.clientX > c.L.x - hw && e.clientX < c.L.x + hw){ only = c.o.name; layout(); return; }
+    }
+  });
+  window._paradeTest = {
+    scene, bench, bbox, act, walk: on => { walking = on; }, run: on => { running = on; }, setBg: i => { bgI = i; }, flip: d => { dir = d; },
+    coat: i => { coatI = i; }, names: () => cast.map(c => c.o.name), only: n => { only = n; layout(); },
+    hideUI: () => { btn('walk').parentNode.style.display = 'none'; },
+    manual: on => { manual = on; },
+    advance: dt => { const n = Math.max(1, Math.round(dt / 0.02)); for (let i = 0; i < n; i++){ clock += dt / n; sim(clock, dt / n); } render(clock); },
+    cast: () => shown().map(c => ({ name: c.o.name, x: c.L.x, y: c.L.y, s: c.L.s, wt: c.L.wt, h: c.R.HEIGHT, w: c.R.WIDTH })),
+    rigs: () => ORDER.map(o => { const R = window[o.rig]; return { name: o.rig, HEIGHT: R.HEIGHT, WIDTH: R.WIDTH, STRIDE: R.STRIDE, RUN_STRIDE: R.RUN_STRIDE,
+                                                                    ACT_SECONDS: R.ACT_SECONDS, WALK_CPS: R.WALK_CPS, RUN_CPS: R.RUN_CPS, COATS: R.COATS }; }),
+    size: () => ({ W, H }),
+  };
+})();
+</script>
+</body>
+</html>

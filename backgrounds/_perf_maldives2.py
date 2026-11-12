@@ -24,7 +24,7 @@ CASES = [
     ("maldives2 storm", "maldives",  "window._mv2",    ["stormAt(1)", "bolt()"]),
     ("reef2",           "reef",      "window._reef2",  []),
     ("dubai3",          "dubai",     "window._dubai3", []),
-    ("aurora",          "frozen",    "window._aurora", []),
+    ("aurora2",         "frozen",    "window._aurora2", []),
 ]
 VIEW     = {"width": 1280, "height": 800}
 DSF      = 2

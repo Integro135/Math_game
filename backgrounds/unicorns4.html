@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unicorn Valley 4 — Dev Harness</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     Thin development harness for the UNICORNS4 background module. The scene
+     lives in unicorns4.bg.js — the SAME file the game loads (single source of
+     truth); the cast are the canvas rigs in unicorn_rigs/. The buttons poke
+     window._uni4: the hour keys, Pause / Fast ×20, Visitors (a unicorn party
+     crosses), Flyer (a winged one crosses the sky), Trick (everyone does
+     one), Magic (rainbow shimmer, rainbow falls, fireworks, a fish, petals),
+     Restart.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f6c9e4; overflow: hidden; width: 100vw; height: 100vh; }
+  #stage { position: fixed; inset: 0; }
+  #bar { position: fixed; top: 40px; right: 18px; z-index: 10; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 62vw; direction: ltr; }
+  #bar button {
+    padding: 7px 14px;
+    background: rgba(255, 255, 255, 0.55); color: rgba(110, 50, 130, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 999px;
+    font-family: Georgia, 'Times New Roman', serif; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; box-shadow: 0 4px 18px rgba(120, 40, 120, 0.22); transition: background .2s;
+  }
+  #bar button:hover { background: rgba(255, 255, 255, 0.85); }
+  #bar button.on { background: rgba(255, 143, 200, 0.8); color: #fff; }
+  #clock { position: fixed; top: 14px; right: 18px; z-index: 10; color: rgba(90, 40, 110, .9); font: 12px/1.4 Georgia, serif; letter-spacing: .12em;
+           background: rgba(255,255,255,.5); padding: 3px 10px; border-radius: 999px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="clock"></div>
+<div id="bar">
+  <button data-tod="0.03">Dawn</button>
+  <button data-tod="0.16">Morning</button>
+  <button data-tod="0.36">Noon</button>
+  <button data-tod="0.55">Golden</button>
+  <button data-tod="0.67">Sunset</button>
+  <button data-tod="0.77">Dusk</button>
+  <button data-tod="0.90">Night</button>
+  <button id="pause">Pause</button>
+  <button id="fast">Fast</button>
+  <button id="visit">Visitors</button>
+  <button id="flyer">Flyer</button>
+  <button id="trick">Trick</button>
+  <button id="magic">Magic</button>
+  <button id="restart">Restart</button>
+</div>
+<script src="unicorns4.bg.js"></script>
+<script>
+let cleanup = null, paused = false, fast = false;
+const $ = id => document.getElementById(id), T = () => window._uni4;
+function start(){ if (cleanup) cleanup(); cleanup = window.BACKGROUNDS.unicorns4.init({ stage: $('stage') }); }
+document.querySelectorAll('[data-tod]').forEach(b => b.onclick = e => { e.stopPropagation(); T().setTod(+b.dataset.tod); });
+$('pause').onclick = e => { e.stopPropagation(); paused = !paused; e.target.classList.toggle('on', paused); T().setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+$('fast').onclick = e => { e.stopPropagation(); fast = !fast; e.target.classList.toggle('on', fast); T().setSpeed(paused ? 0 : (fast ? 20 : 1)); };
+$('visit').onclick = e => { e.stopPropagation(); T().spawn && T().spawn(); };
+$('flyer').onclick = e => { e.stopPropagation(); T().fly && T().fly(); };
+$('trick').onclick = e => { e.stopPropagation(); if (!T().everyone) return; const n = T().everyone().length; for (let i = 0; i < n; i++) T().act(i, ['pose', 'jump', 'hearts', 'toot'][i % 4]); };
+$('magic').onclick = e => { e.stopPropagation(); const f = T().fx; f.rainbow(); f.rainbowFall(); f.castle(); f.fish(); f.petals(0); };
+$('restart').addEventListener('click', e => { e.stopPropagation(); start(); });
+setInterval(() => {
+  if (!T()) return;
+  const t = T().tod(), p = T().perf(), h = (5 + t * 24) % 24;
+  $('clock').textContent =
+    T().phase().toUpperCase() + ' · ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0') +
+    '  |  cast ' + p.cast + '  |  ' + (p.halfRate ? '½ rate' : 'full') + ' ' + p.costEma.toFixed(1) + ' ms';
+}, 250);
+start();
+</script>
+</body>
+</html>

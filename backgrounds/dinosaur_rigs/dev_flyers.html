@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosaur rigs — flyer, egg, hatchling</title>
+<!-- ───────────────────────────────────────────────────────────────────────
+     The workshop for ptero.js (PteroRig) and hatch.js (EggRig, BabyRig).
+     Live stage: the pteranodon beats overhead, an egg and a hatchling below.
+       Walk / Run   march the hatchling (feet planted: wt follows the distance)
+       Act          the squawk and the squeak-hop
+       Glide        the pteranodon soars        Carry   it holds an egg
+       Hatch        plays wobble → crack → hatch on the egg
+       Coat / Flip / BG
+     A missing rig file is simply skipped. window._paradeTest has the hooks
+     for the screenshot harness: sheet(items, opts) draws any list of
+     { rig, L, t, mark, label, ground } exactly as given.
+     ─────────────────────────────────────────────────────────────────────── -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body { background: #ece6db; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #ctrl { position: fixed; bottom: 14px; left: 0; right: 0; display: flex; gap: 8px; flex-wrap: wrap;
+          justify-content: center; z-index: 10; }
+  .hbtn { padding: 8px 14px; background: rgba(70,50,40,.16); color: rgba(60,40,30,.9);
+          border: 1px solid rgba(90,60,40,.28); border-radius: 999px; font: 13px Georgia, serif;
+          letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+  .hbtn.on { background: rgba(215,120,60,.6); color: #fff8ee; }
+  body.dark .hbtn { background: rgba(60,24,14,.5); color: rgba(255,214,160,.92); border-color: rgba(255,170,90,.4); }
+  body.dark .hbtn.on { background: rgba(215,120,60,.75); color: #fff8ee; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="ctrl">
+  <button class="hbtn" id="walk">Walk</button>
+  <button class="hbtn" id="run">Run</button>
+  <button class="hbtn" id="act">Act</button>
+  <button class="hbtn" id="glide">Glide</button>
+  <button class="hbtn" id="carry">Carry</button>
+  <button class="hbtn" id="hatch">Hatch</button>
+  <button class="hbtn" id="coat">Coat</button>
+  <button class="hbtn" id="flip">Flip</button>
+  <button class="hbtn" id="bg">BG</button>
+</div>
+<script src="../savanna_rigs/kit.js"></script>
+<script src="ptero.js"></script>
+<script src="hatch.js"></script>
+<script>
+(function(){
+  const TAU = Math.PI * 2;
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+  const BGS = ['blank', 'slate', 'dusk', 'night'];
+  const LITS = [null, null, [1, 0.8, 0.7], [0.45, 0.5, 0.8]];
+  const P = window.PteroRig, E = window.EggRig, B = window.BabyRig;
+  let W, H, GY, bgI = 0, dir = 1, coatI = 0, walking = false, running = false, gliding = false, carrying = false;
+  let manual = false, clock = 0, lastT = 0;
+  const ptero = { L: { x: 0, y: 0, s: 1, dir: 1, ph: 0.4, wt: 0, glide: 0, pose: 0, carry: false }, t0: null };
+  const egg   = { L: { x: 0, y: 0, s: 1, dir: 1, ph: 0.7, wobble: 0, crack: 0, hatch: 0 }, t0: null };
+  const baby  = { L: { x: 0, y: 0, s: 1, dir: 1, ph: 1.2, wt: 0, go: 0, moving: false, run: false, pose: 0 }, t0: null };
+
+  function resize(){
+    W = innerWidth; H = innerHeight; GY = H * 0.8;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const S = Math.min(W / 520, H / 400);
+    ptero.L.x = W * 0.5; ptero.L.y = H * 0.3; ptero.L.s = S;
+    egg.L.x = W * 0.3; egg.L.y = GY; egg.L.s = S * 1.4;
+    baby.L.x = W * 0.66; baby.L.y = GY; baby.L.s = S * 1.4;
+  }
+  addEventListener('resize', resize); resize();
+
+  function lgr(x1, y1, x2, y2, st){ const g = ctx.createLinearGradient(x1, y1, x2, y2); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+  function backdrop(plain){
+    const bg = BGS[bgI], gy = plain ? H : GY;
+    document.body.classList.toggle('dark', bg !== 'blank');
+    if (bg === 'blank'){
+      ctx.fillStyle = lgr(0, 0, 0, H, [[0, '#f5f1e9'], [0.8, '#ebe4d8'], [1, '#e2d9ca']]); ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(120,95,70,.08)'; ctx.fillRect(0, gy, W, H - gy);
+      return;
+    }
+    if (bg === 'slate'){ ctx.fillStyle = '#3a3f4b'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#2e323c'; ctx.fillRect(0, gy, W, H - gy); return; }
+    ctx.fillStyle = bg === 'dusk' ? lgr(0, 0, 0, gy, [[0, '#3a1030'], [0.45, '#b53a2a'], [0.78, '#f08a3c'], [1, '#f7c25a']])
+                                  : lgr(0, 0, 0, gy, [[0, '#060b1e'], [0.7, '#1a2a52'], [1, '#3a4a78']]);
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = bg === 'dusk' ? lgr(0, gy, 0, H, [[0, '#6a5a30'], [1, '#3e3418']]) : lgr(0, gy, 0, H, [[0, '#2a2438'], [1, '#141224']]);
+    ctx.fillRect(0, gy, W, H - gy);
+  }
+  const blank = () => BGS[bgI] === 'blank';
+  function shadow(x, y, w, s){
+    ctx.fillStyle = blank() ? 'rgba(70,50,35,.18)' : 'rgba(20,10,6,.30)';
+    ctx.beginPath(); ctx.ellipse(x, y + 1.5 * s, w * s, 4 * s, 0, 0, TAU); ctx.fill();
+  }
+  function cross(p, col){
+    ctx.strokeStyle = col || '#e02060'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, TAU); ctx.moveTo(p.x - 8, p.y); ctx.lineTo(p.x + 8, p.y); ctx.moveTo(p.x, p.y - 8); ctx.lineTo(p.x, p.y + 8); ctx.stroke();
+  }
+
+  function sim(t, dt){
+    const lit = LITS[bgI];
+    if (P){
+      const L = ptero.L;
+      L.wt += TAU * P.FLAP_CPS * dt; L.glide += ((gliding ? 1 : 0) - L.glide) * Math.min(1, dt * 3);
+      L.carry = carrying; L.dir = dir; L.lit = lit; L.coat = P.COATS[coatI % P.COATS.length];
+      if (E) L.eggCoat = E.COATS[coatI % E.COATS.length];
+      L.pose = ptero.t0 === null ? 0 : Math.min(1, (t - ptero.t0) / P.ACT_SECONDS);
+      if (L.pose >= 1){ ptero.t0 = null; L.pose = 0; }
+    }
+    if (E){
+      const L = egg.L, u = egg.t0 === null ? -1 : t - egg.t0;
+      L.dir = dir; L.lit = lit; L.coat = E.COATS[coatI % E.COATS.length];
+      L.wobble = u < 0 ? 0 : Math.max(0, Math.min(1, u / 1.5) * (1 - Math.max(0, (u - 3.2) / 1.2)));
+      L.crack = u < 0 ? 0 : Math.max(0, Math.min(1, (u - 1.2) / 2));
+      L.hatch = u < 0 ? 0 : Math.max(0, Math.min(1, (u - 3.4) / 3.2));
+      if (u > 10) egg.t0 = null;
+    }
+    if (B){
+      const L = baby.L, want = walking && baby.t0 === null ? 1 : 0;
+      L.go += (want - L.go) * Math.min(1, dt * 6);
+      L.moving = L.go > 0.02; L.run = running; L.dir = dir; L.lit = lit; L.coat = B.COATS[coatI % B.COATS.length];
+      if (L.moving){
+        const stride = (L.run ? B.RUN_STRIDE : B.STRIDE) * L.s, dx = stride * (L.run ? B.RUN_CPS : B.WALK_CPS) * dt * L.go;
+        L.wt += TAU * dx / stride; L.x += dx * dir;
+        const w = B.WIDTH * 2 * L.s;
+        if (L.x - w > W) L.x = -w; if (L.x + w < 0) L.x = W + w;
+      }
+      L.pose = baby.t0 === null ? 0 : Math.min(1, (t - baby.t0) / B.ACT_SECONDS);
+      if (L.pose >= 1){ baby.t0 = null; L.pose = 0; }
+    }
+  }
+  function render(t){
+    backdrop(false);
+    if (E){ shadow(egg.L.x, egg.L.y, E.WIDTH * 0.9, egg.L.s); E.draw(ctx, egg.L, t); }
+    if (B){ shadow(baby.L.x, baby.L.y, B.WIDTH * 0.8, baby.L.s); B.draw(ctx, baby.L, t); }
+    if (P) P.draw(ctx, ptero.L, t);
+  }
+  function frame(ts){
+    if (!manual){
+      const t = ts / 1000, dt = Math.min(0.05, Math.max(0, t - lastT)); lastT = t; clock = t;
+      sim(t, dt); render(t);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const btn = id => document.getElementById(id);
+  const tog = (id, get, set) => { btn(id).onclick = e => { set(!get()); e.target.classList.toggle('on', get()); }; };
+  tog('walk', () => walking, v => { walking = v; });
+  tog('run', () => running, v => { running = v; });
+  tog('glide', () => gliding, v => { gliding = v; });
+  tog('carry', () => carrying, v => { carrying = v; });
+  const act = () => { if (ptero.t0 === null) ptero.t0 = clock; if (baby.t0 === null) baby.t0 = clock + 0.2; };
+  btn('act').onclick = act;
+  btn('hatch').onclick = () => { egg.t0 = egg.t0 === null ? clock : null; };
+  btn('coat').onclick = () => { coatI++; };
+  btn('flip').onclick = () => { dir = -dir; };
+  btn('bg').onclick = () => { bgI = (bgI + 1) % BGS.length; };
+
+  // ── the screenshot harness: draw exactly the items given, on a plain backdrop.
+  //    item = { rig, L, t, mark: ['mouth' | 'feet'], label, ground: half-width (units) of a ground line + shadow }
+  //    opts = { bg, vlines: [x…], hlines: [y…] }
+  function sheet(items, o){
+    manual = true; o = o || {};
+    if (o.bg != null) bgI = o.bg;
+    backdrop(true);
+    const ink = blank() ? 'rgba(70,50,35,' : 'rgba(255,214,160,';
+    ctx.lineWidth = 1; ctx.strokeStyle = ink + '.22)';
+    ctx.beginPath();
+    for (const x of o.vlines || []){ ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (const y of o.hlines || []){ ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+    let n = 0;
+    for (const it of items){
+      const R = window[it.rig]; if (!R) continue;
+      const L = Object.assign({ s: 1, dir: 1 }, it.L), t = it.t || 0;
+      if (L.lit === undefined) L.lit = LITS[bgI];
+      if (it.ground){
+        ctx.fillStyle = ink + '.25)'; ctx.fillRect(L.x - it.ground * L.s, L.y, it.ground * 2 * L.s, 1);
+        shadow(L.x, L.y, it.ground * 0.6, L.s);
+      }
+      R.draw(ctx, L, t); n++;
+      for (const m of it.mark || []) if (R[m]) cross(R[m](L, t), m === 'feet' ? '#2060e0' : '#e02060');
+      if (it.label){ ctx.fillStyle = ink + '.75)'; ctx.font = '12px Georgia, serif'; ctx.fillText(it.label, L.x - ctx.measureText(it.label).width / 2, it.ly || L.y + 20); }
+    }
+    return n;
+  }
+  window._paradeTest = {
+    sheet, ctx, act,
+    live: () => { manual = false; },
+    manual: on => { manual = on; },
+    advance: dt => { const n = Math.max(1, Math.round(dt / 0.02)); for (let i = 0; i < n; i++){ clock += dt / n; sim(clock, dt / n); } render(clock); },
+    set: o => { if (o.bg != null) bgI = o.bg; if (o.coat != null) coatI = o.coat; if (o.dir) dir = o.dir; if (o.walk != null) walking = o.walk;
+                if (o.run != null) running = o.run; if (o.glide != null) gliding = o.glide; if (o.carry != null) carrying = o.carry;
+                if (o.hatch) egg.t0 = clock; },
+    hideUI: () => { btn('walk').parentNode.style.display = 'none'; },
+    rigs: () => ['PteroRig', 'EggRig', 'BabyRig'].filter(n => window[n]),
+    info: n => { const R = window[n], o = {}; for (const k in R) if (typeof R[k] !== 'function') o[k] = R[k]; return o; },
+    call: (n, fn, L, t) => window[n][fn](Object.assign({ x: 0, y: 0, s: 1, dir: 1 }, L), t),
+    // the painted extent of one draw, in units from the anchor (a scratch canvas — dev page only)
+    bounds: (n, L, t) => {
+      const N = 1100, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
+      window[n].draw(g, Object.assign({ dir: 1 }, L, { x: N / 2, y: N / 2, s: 2 }), t || 0);
+      const d = g.getImageData(0, 0, N, N).data; let l = N, r = 0, tp = N, b = 0;
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (d[(y * N + x) * 4 + 3] > 24){ if (x < l) l = x; if (x > r) r = x; if (y < tp) tp = y; if (y > b) b = y; }
+      return { l: (l - N / 2) / 2, r: (r - N / 2) / 2, t: (tp - N / 2) / 2, b: (b - N / 2) / 2 };
+    },
+    // one draw with save / restore counted: is the canvas state left as it was?
+    leak: (n, L, t) => {
+      let depth = 0, max = 0; const s0 = ctx.save, r0 = ctx.restore;
+      ctx.save = function(){ depth++; if (depth > max) max = depth; return s0.call(this); };
+      ctx.restore = function(){ depth--; return r0.call(this); };
+      const m0 = ctx.getTransform(), a0 = ctx.globalAlpha, c0 = ctx.globalCompositeOperation;
+      try { window[n].draw(ctx, Object.assign({ x: 300, y: 300, s: 1, dir: 1 }, L), t || 0); } finally { ctx.save = s0; ctx.restore = r0; }
+      const m1 = ctx.getTransform();
+      return { depth, max, alpha: ctx.globalAlpha === a0, comp: ctx.globalCompositeOperation === c0,
+               transform: ['a', 'b', 'c', 'd', 'e', 'f'].every(k => m0[k] === m1[k]) };
+    },
+    // ms per draw: n draws of one rig, the phase and clock running
+    bench: (n, L, count) => {
+      const R = window[n]; L = Object.assign({ x: 300, y: 300, s: 1, dir: 1 }, L); count = count || 200;
+      const t0 = performance.now();
+      for (let i = 0; i < count; i++){ L.wt = i * 0.21; R.draw(ctx, L, i * 0.016); }
+      return (performance.now() - t0) / count;
+    },
+  };
+})();
+</script>
+</body>
+</html>

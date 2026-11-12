@@ -141,13 +141,13 @@ subtraction_game/
 │  ├─ README.md                    ★ per-background docs (scene inventory, timers,
 │  │                               click interactions) + the HTML→.bg.js porting
 │  │                               checklist for game integration
-│  ├─ space2.bg.js                 ★ background MODULES — single source of
-│  ├─ unicorns3.bg.js + unicorns/    truth, used by BOTH the game and the
+│  ├─ space4.bg.js                 ★ background MODULES — single source of
+│  ├─ unicorns4.bg.js + unicorn_rigs/ truth, used by BOTH the game and the
 │  ├─ dubai3.bg.js                   harness; themes map to them via
-│  ├─ reef2.bg.js                    _BG_THEMES (themes.js). LIVE: space2,
-│  ├─ savanna2.bg.js + savanna_rigs/     unicorns3, dubai3, reef2, savanna2,
-│  ├─ dinosaurs3.bg.js + dino_rigs/      dinosaurs3, aurora, maldives2
-│  ├─ aurora.bg.js + princess/ + olaf/   (aurora serves the ❄️ theme;
+│  ├─ reef4.bg.js + reef_rigs/       _BG_THEMES (themes.js). LIVE: space4,
+│  ├─ savanna2.bg.js + savanna_rigs/     unicorns4, dubai3, reef4, savanna2,
+│  ├─ dinosaurs4.bg.js + dinosaur_rigs/  dinosaurs4, aurora2, maldives2
+│  ├─ aurora2.bg.js + princess/ + olaf/  (aurora2 serves the ❄️ theme;
 │  │                                     it replaced frozen.bg.js)
 │  ├─ maldives2.bg.js + pokemons/    the 🏝️ beach: day cycle + storms (canvas) + pokemon walkers
 │  ├─ autumn.bg.js                 the 🍂 golden grove: leaf crowns, falling leaves, sea squills,
@@ -157,11 +157,11 @@ subtraction_game/
 │  ├─ whales.bg.js                 playground, not game-integrated
 │  ├─ blackhole.html               standalone GR black-hole study (WebGL2) —
 │  │                               the physics space2.bg.js renders its hole with
-│  ├─ space2.html                  thin dev harnesses (one per module):
-│  ├─ unicorns3.html                 open directly in a browser to iterate
+│  ├─ space4.html                  thin dev harnesses (one per module):
+│  ├─ unicorns4.html                 open directly in a browser to iterate
 │  ├─ dubai3.html                  on a scene in isolation
-│  ├─ savanna2.html / dinosaurs3.html
-│  ├─ aurora.html / maldives2.html / reef2.html / autumn.html
+│  ├─ savanna2.html / dinosaurs4.html
+│  ├─ aurora2.html / maldives2.html / reef4.html / autumn.html
 │  ├─ underwater_happy_reef.html
 │  └─ _verify*.py                  per-scene marker/render checks
 │
@@ -215,7 +215,7 @@ window.BACKGROUNDS.space2 = {          // the file's own name: space2.bg.js
 `game/js/bg-loader.js` exposes `loadBackground(name)` / `unloadBackground()`:
 it injects the module script on demand, swaps the skin `<link>`, loads the
 background's AIDS variant (§3.5), and runs the previous background's
-`cleanup()`. `applyTheme('galaxy')` → `loadBackground('space2')`;
+`cleanup()`. `applyTheme('galaxy')` → `loadBackground('space4')`;
 `unloadBackground()` reverts skin → none and aids → `classic`.
 
 **Adding a background:** write `backgrounds/foo.bg.js` (same shape) +

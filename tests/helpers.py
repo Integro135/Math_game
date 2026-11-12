@@ -172,6 +172,14 @@ def wait_fw_and_advance(page, before_idx: int) -> None:
         page.wait_for_timeout(250)
 
 
+def wait_scene_up(page, timeout: int = 120_000) -> None:
+    """After a theme switch: wait until the background's loading veil is down.
+    A slow scene (the space theme compiles its WebGL shaders) keeps #load-screen
+    over the game until its first frame — seconds, or tens of seconds on a busy
+    machine — and the veil swallows every click meanwhile."""
+    page.wait_for_function("!window.BG_LOADING || !window.BG_LOADING.showing()", timeout=timeout)
+
+
 def reveal_aids(page) -> None:
     """Make one wrong answer so the (fully hidden) aid panels become visible.
     Re-submits if the first click didn't register (robust under CPU load —

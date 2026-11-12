@@ -340,7 +340,7 @@ class TestBoardAcrossCards:
 
 class TestWholeAndPartsExercise:
     """🧩 TPW — the whole-and-parts card IS the exercise: write the whole and both
-    parts, draw the whole in bars (5) and circles (1), colour a part, then ✓."""
+    parts, then ✓. The bars (5) and circles (1) are there to help — optional."""
 
     def _card(self, page, src_js):
         enter_mode(page, 'br')
@@ -349,7 +349,7 @@ class TestWholeAndPartsExercise:
         page.wait_for_selector("#colx-root .pwx .pw-whole", timeout=TIMEOUT)
         page.wait_for_timeout(150)
 
-    def test_solve_needs_template_and_drawing(self, page):
+    def test_solve_needs_the_template_but_not_the_drawing(self, page):
         self._card(page, "{t: TMA, a: 6, b: 14}")
         assert page.inner_text("#colx-root .pwx-eq").replace(" ", "") == "6+___=14"
         assert not page.locator("#chk-btn").is_visible() and not page.locator("#nl-panel").is_visible()
@@ -362,20 +362,25 @@ class TestWholeAndPartsExercise:
         assert page.evaluate("tryFirst") == 1 and not page.evaluate("done"), "a wrong part is a mistake"
         page.wait_for_timeout(1800)
         page.fill("#colx-root .pw-part[data-i='1']", "8")
+        assert page.locator("#colx-root .pw-bar, #colx-root .pw-dot").count() == 0, "nothing drawn"
         page.click(CHK)
-        assert not page.evaluate("done") and page.evaluate("tryFirst") == 1, "boxes right, drawing missing: a note only"
-        for _ in range(2): page.click("#colx-root .pw-add-bar")
-        for _ in range(4): page.click("#colx-root .pw-add-dot")
-        page.click(CHK)
-        assert not page.evaluate("done"), "nothing coloured yet: a note only"
-        bar = page.locator("#colx-root .pw-bar >> nth=0"); bb = bar.bounding_box()
-        bar.click(position={"x": bb["width"] * 0.95, "y": bb["height"] / 2})
-        page.click("#colx-root .pw-dot >> nth=0")
-        page.click(CHK)
-        page.wait_for_function("done === true", timeout=TIMEOUT)
+        page.wait_for_function("done === true", timeout=TIMEOUT)   # the right numbers solve it — no drawing needed
+        assert page.inner_text("#colx-root .pwx-note") == ""
         assert page.evaluate("score") == 10, "second try in br: 67% of 15"
         assert page.inner_text("#colx-root .pwx-eq").replace(" ", "") == "14−6=8"
         assert page.evaluate("_reportRows()[0].eq").startswith("🧩 14 = 6 + 8")
+
+    def test_a_half_drawing_does_not_hold_back_a_right_answer(self, page):
+        """A drawing she started and left (one bar of 15, nothing coloured) does
+        not stop a correct card: first try, full marks."""
+        self._card(page, "{t: TA, a: 9, b: 6}")
+        page.click("#colx-root .pw-add-bar")
+        page.fill("#colx-root .pw-whole", "15"); page.fill("#colx-root .pw-part[data-i='0']", "9"); page.fill("#colx-root .pw-part[data-i='1']", "6")
+        assert page.locator("#colx-root .pw-bar").count() == 1 and page.locator("#colx-root .pw-bar s.on").count() == 0
+        page.press("#colx-root .pw-part[data-i='1']", "Enter")      # Enter in the last box checks, as ✓ does
+        page.wait_for_function("done === true", timeout=TIMEOUT)
+        assert page.evaluate("tryFirst") == 0 and page.evaluate("score") == 15
+        assert page.inner_text("#colx-root .pwx-eq").replace(" ", "") == "9+6=15"
 
     def test_board_holds_still_as_the_drawing_grows(self, page):
         """The 4th bar (past 15) used to pull the drawing up beside the template,

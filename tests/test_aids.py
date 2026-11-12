@@ -46,6 +46,7 @@ class TestJarStageDisplay:
             "document.querySelector('#pgm-ck-jar .jst-item').innerHTML")
         page.evaluate("applyTheme('galaxy')")
         page.wait_for_timeout(2200)
+        wait_scene_up(page)
         page.evaluate("problems[0] = {t: TA, a: 3, b: 2}; idx = 0; loadProblem()")
         page.wait_for_timeout(200)
         reveal_aids(page)
@@ -90,6 +91,7 @@ class TestAidToggleIcons:
         page.keyboard.press("Escape")
         page.evaluate("applyTheme('galaxy')")
         page.wait_for_timeout(2000)
+        wait_scene_up(page)          # the space scene's loading veil swallows clicks until its first frame
         self._open_menu(page)
         galaxy = page.evaluate(
             "document.querySelector('#games-menu .gm-item svg.aid-ico').outerHTML")
