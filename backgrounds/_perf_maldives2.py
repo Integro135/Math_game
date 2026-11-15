@@ -23,7 +23,7 @@ CASES = [
     ("maldives2 fair",  "maldives",  "window._mv2",    []),
     ("maldives2 storm", "maldives",  "window._mv2",    ["stormAt(1)", "bolt()"]),
     ("reef2",           "reef",      "window._reef2",  []),
-    ("dubai3",          "dubai",     "window._dubai3", []),
+    ("dubai4",          "dubai",     "window._dubai4", []),
     ("aurora2",         "frozen",    "window._aurora2", []),
 ]
 VIEW     = {"width": 1280, "height": 800}

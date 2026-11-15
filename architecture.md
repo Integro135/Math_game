@@ -143,9 +143,9 @@ subtraction_game/
 │  │                               checklist for game integration
 │  ├─ space4.bg.js                 ★ background MODULES — single source of
 │  ├─ unicorns4.bg.js + unicorn_rigs/ truth, used by BOTH the game and the
-│  ├─ dubai3.bg.js                   harness; themes map to them via
+│  ├─ dubai4.bg.js                   harness; themes map to them via
 │  ├─ reef4.bg.js + reef_rigs/       _BG_THEMES (themes.js). LIVE: space4,
-│  ├─ savanna2.bg.js + savanna_rigs/     unicorns4, dubai3, reef4, savanna2,
+│  ├─ savanna2.bg.js + savanna_rigs/     unicorns4, dubai4, reef4, savanna2,
 │  ├─ dinosaurs4.bg.js + dinosaur_rigs/  dinosaurs4, aurora2, maldives2
 │  ├─ aurora2.bg.js + princess/ + olaf/  (aurora2 serves the ❄️ theme;
 │  │                                     it replaced frozen.bg.js)
@@ -159,7 +159,7 @@ subtraction_game/
 │  │                               the physics space2.bg.js renders its hole with
 │  ├─ space4.html                  thin dev harnesses (one per module):
 │  ├─ unicorns4.html                 open directly in a browser to iterate
-│  ├─ dubai3.html                  on a scene in isolation
+│  ├─ dubai4.html                  on a scene in isolation
 │  ├─ savanna2.html / dinosaurs4.html
 │  ├─ aurora2.html / maldives2.html / reef4.html / autumn.html
 │  ├─ underwater_happy_reef.html
@@ -401,6 +401,9 @@ Current recipes:
   and since the division request, **17**: + ONE division card at index 5
   (`_nextDivision`, localStorage `divKind`) walking through the six division kinds
   (`half`, `ice_cream`, `deal`, `pack`, `fair`, `can_share`), one per game.
+  Since 2026-11-15 it is **18**: + ONE range card (🎯 `num_range.make('mx')` —
+  which numbers lie between two bounds) at index 14, question 15, after every
+  other woven card, so none of them moves.
 - **Superman (`sup`)** — a BALANCED equal share of every interactive type,
   shuffled: `column_add.make('sup')` (3 = 2-carry + 1 no-carry),
   `big_step.make('sup')` (3 big-number SUBTRACTIONS),
@@ -420,7 +423,9 @@ Current recipes:
   `balance.make('mulc')` (מֹאזְנַיִם — one `__+15=12+__` + one four-numbers-onto-two-pans card),
   and four division-without-a-division-sign kinds (2026-10): `deal` (dealing in turns),
   `pack` (how many boxes), `fair` (make uneven plates equal), `can_share` (yes/no, with
-  the leftover). אַלּוּפָה now rotates 18 types through 8 math slots — every type within
+  the leftover), and since 2026-11-15 the 🎯 range card (`num_range.make('mulc')`), kept
+  in EVERY game together with `mult_champ` and `triple_sum` (`_fitTypes` `always`).
+  אַלּוּפָה now rotates the other 18 types through 7 math slots — every type within
   three games (`_fitTypes`)
   and `plates.make('mulc')` (g plates × s items → total, the multiplication story),
   plus the two basic-multiplication exercises borrowed from Superman —
@@ -466,7 +471,8 @@ window.EXERCISES.types.column_add = {
 `{ [TCA]:'column_add', [TCS]:'column_sub', [TCM]:'coin_mul', [TBC]:'bagel_cost',
 [TPG]:'polygon', [TMC]:'mult_chain', [TMK]:'mult_champ', [TPP]:'perimeter',
 [TCP]:'compare', [TWP]:'word_prob', [TTS]:'triple_sum', [THF]:'half', [TPL]:'plates', [TIC]:'ice_cream',
-[TBE]:'balance', [TSB]:'balance', [TDL]:'deal', [TPK]:'pack', [TFR]:'fair', [TCN]:'can_share' }`. `renderEq` emits a
+[TBE]:'balance', [TSB]:'balance', [TDL]:'deal', [TPK]:'pack', [TFR]:'fair', [TCN]:'can_share',
+[TRG]:'num_range' }`. `renderEq` emits a
 single `<div id="colx-root">` for any of them and calls `_colxMount` (core.js).
 `_colxMount` injects `exercises/<name>.ex.js` on demand (bg-loader
 .loadExercise) and mounts it into that root. Its async load callback re-checks

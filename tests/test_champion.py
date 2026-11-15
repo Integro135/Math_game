@@ -1940,7 +1940,7 @@ class TestStoryQuiz:
             "mulc": ['mult_champ', 'perimeter', 'column_sub', 'column_add', 'compare',
                      'word_prob', 'word_chain', 'triple_sum', 'half', 'plates',
                      'coin_mul', 'bagel_cost', 'ice_cream', 'mult_unknown', 'balance',
-                     'deal', 'pack', 'fair', 'can_share'],
+                     'deal', 'pack', 'fair', 'can_share', 'num_range'],
         }
         for mode in ("sup", "mulc"):
             enter_mode(page, mode)
@@ -1959,7 +1959,7 @@ class TestStoryQuiz:
                     const kinds=new Set(d.filter(p=>R.includes(p.t)).map(p=>p.t));
                     kinds.forEach(k=>everKind.add(k));
                     // a type must show up within THREE consecutive games: אַלּוּפָה has more
-                    // types than math slots (18 rotating types, 8 slots), so they take turns (_fitTypes)
+                    // types than math slots (18 rotating types, 7 slots — ×, __+__+__ and the 🎯 range card are in every game), so they take turns (_fitTypes)
                     const d2=makePool(mode), d3=makePool(mode);
                     d2.concat(d3).filter(p=>R.includes(p.t)).forEach(p=>everKind.add(p.t));   // d2/d3 also advance the kind rotation
                     const nonReading=new Set(d.concat(d2,d3).filter(p=>!R.includes(p.t)).map(p=>p.t));

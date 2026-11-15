@@ -4,8 +4,8 @@ This folder holds the game's swappable scene backdrops. Two kinds of files live 
 
 | Kind | Files | Status |
 |---|---|---|
-| **Game-ready module** (`<name>.bg.js`) | `space4.bg.js`, `unicorns4.bg.js`, `dubai3.bg.js`, `reef4.bg.js`, `savanna2.bg.js`, `dinosaurs4.bg.js`, `aurora2.bg.js`, `maldives2.bg.js`, `autumn.bg.js` | Loaded by the game at runtime (`reef.bg.js`, `reef2.bg.js`, `maldives.bg.js` and `savanna.bg.js` are the legacy reef / beach / savanna scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
-| **Thin dev harness** (`<name>.html`) | `space4.html`, `unicorns4.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `reef4.html`, `savanna2.html`, `dinosaurs4.html`, `maldives2.html`, `autumn.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
+| **Game-ready module** (`<name>.bg.js`) | `space4.bg.js`, `unicorns4.bg.js`, `dubai4.bg.js`, `reef4.bg.js`, `savanna2.bg.js`, `dinosaurs4.bg.js`, `aurora2.bg.js`, `maldives2.bg.js`, `autumn.bg.js` | Loaded by the game at runtime (`reef.bg.js`, `reef2.bg.js`, `maldives.bg.js` and `savanna.bg.js` are the legacy reef / beach / savanna scenes — nothing loads them; `frozen.bg.js` was REMOVED — `aurora.bg.js` serves the ❄️ theme now) |
+| **Thin dev harness** (`<name>.html`) | `space4.html`, `unicorns4.html`, `dubai4.html`, `dubai3.html`, `dubai2.html`, `dubai_skyline.html`, `underwater_happy_reef.html`, `reef2.html`, `reef4.html`, `savanna2.html`, `dinosaurs4.html`, `maldives2.html`, `autumn.html` | Dev-only; opens its `.bg.js` module directly in a browser (single source of truth) |
 | **Reusable scene parts** (`dinosaur_rigs/*.js`) | `trex.js`, `raptor.js`, `bronto.js`, `para.js`, `stego.js`, `trike.js`, `ptero.js`, `hatch.js` (on `savanna_rigs/kit.js`) | The canvas dinosaur rigs, loaded on demand by `dinosaurs4.bg.js` (see its section below). The older `dino_rigs/*.js` (`rig-common.js` + six rigs) belong to the legacy `dinosaurs3.bg.js`, unloaded. |
 | **Unicorn valley** | `unicorns4.bg.js` + `unicorn_rigs/*.js` | `girls` → **`unicorns4`**: the 2026-11 from-scratch rebuild — one canvas, a day cycle, the castle, the rainbow, the crystal falls and a cast of canvas rigs (unicorns in seven coats, a winged flyer, bunnies, swans). **Full section below.** The previous valley is legacy, unloaded: `unicorns3.bg.js` + `unicorns/*.item.js` = v2's canvas world + day cycle carrying v1's CSS unicorns (`unicorns/unicorn.item.js`), castle (`unicorns/castle.item.js`), particle waterfall (`unicorns/waterfall.item.js`), bunnies (`unicorns/bunny.item.js`) and rainbow look. The v1 and v2 modules were **deleted 2026-09** — see the history section below. |
 | **Space v4** (`space4.bg.js` + `space4.html`) | `space4.bg.js`, `space4.html` | Theme `galaxy` → `space4`: space2's ray-traced black hole carried over unchanged, under a 2-D world redesigned from baked sprites (2026-11) — about a fifth of the canvas calls and a quarter of the script time per frame. **Full section below.** |
@@ -46,7 +46,7 @@ below DW 900 and shrinks the rest to half on a phone (`layoutBeach`). Each
 rebuilds its layout in `resize()` when DW changes (an orientation flip), and
 reports it through `_reef2.layout()` / `_dubai3.layout()` / `_mv2.layout()`.
 
-`dubai→dubai3` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space4` (the 2026-11 redesign around space2's unchanged GR-black-hole; `space2.bg.js` is the legacy scene, unloaded — the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef4` (painted again from scratch in 2026-11 on reef3's baked engine — reef3 itself was removed; `reef2.bg.js` and `reef.bg.js` are the legacy scenes, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna2` (the 2026-11 from-scratch rebuild; `savanna.bg.js` + `savanna_animals/` are the legacy scene, unloaded), `dinosaurs→dinosaurs4` (the 2026-11 from-scratch rebuild; `dinosaurs3.bg.js` + `dino_rigs/` are the legacy valley, unloaded),
+`dubai→dubai4` (golden hour, built from zero in 2026-09; the two legacy Dubai scenes and their `_verify.js` logic harness were deleted once it shipped), `galaxy→space4` (the 2026-11 redesign around space2's unchanged GR-black-hole; `space2.bg.js` is the legacy scene, unloaded — the GR-black-hole scene; the legacy 2-D `space.bg.js` was removed in 2026-09 and space2 now paints its own still sky without WebGL2), `reef→reef4` (painted again from scratch in 2026-11 on reef3's baked engine — reef3 itself was removed; `reef2.bg.js` and `reef.bg.js` are the legacy scenes, unloaded), `dubai→dubai2` (the from-scratch redraw; `dubai` is the legacy scene), `savanna→savanna2` (the 2026-11 from-scratch rebuild; `savanna.bg.js` + `savanna_animals/` are the legacy scene, unloaded), `dinosaurs→dinosaurs4` (the 2026-11 from-scratch rebuild; `dinosaurs3.bg.js` + `dino_rigs/` are the legacy valley, unloaded),
 `maldives→maldives2` (the 2026-09 canvas rebuild with the day cycle, storms and the pokemon walkers; `maldives.bg.js` is the legacy SVG scene, unloaded),
 `autumn→autumn` (the 🍂 golden grove, 2026-10 — its own section at the end of this file)
 (🏙️, 🦁, 🦕, 🏝️ and 🍂 are their own themes in the menu). Canvas-scene themes spawn no
@@ -228,7 +228,78 @@ never position jumps).
 
 ---
 
-## dubai3.bg.js — Dubai at golden hour, built from zero (the 🏙️ theme, integrated)
+## dubai4.bg.js — the city, recreated: a skyline across a wide bay (the 🏙️ theme, 2026-11, v10.34)
+
+Theme `dubai` → `dubai4` (`_BG_THEMES`); skin and aids `dubai`. Harness
+`dubai4.html` (the same buttons as dubai3.html); stills `_verify_dubai4.py`;
+tests `tests/test_dubai4.py` (10 — the scene had none before). Asked for with
+"recreate from scratch the city background. make deep changes. make it as
+beautifull as possible."
+
+**What is carried over, untouched.** The ENGINE and the SHOWS are
+`dubai3.bg.js`'s, copied VERBATIM by line range (`c:\tmp\city\build.py` checks
+each range against the text it must start with): the hour (`look`, `KEYS`,
+the per-look-key repaint), the sun and the moon, the Burj Khalifa's lobes and
+its LED / new-year shows, the Burj Al Arab and its live sail, the JBH, Ain
+Dubai, the Museum, the Frame, the shore and the fountain lake, the living
+overlays, the UFO, the drone show, the interception show, fireworks, the
+fountain, traffic, birds, dolphins, taps, the pacing loop and every hook (now
+`window._dubai4`). All of that is documented in the `dubai3.bg.js` section below
+and still holds.
+
+**The deep changes** (parts `c:\tmp\city\parts\c*.js`):
+- **The composition: a wide bay.** `HZ` 790 → **690**: nearly a third of the
+  frame is water (it was an eighth). To give it the room the skyline is drawn
+  a little smaller — `BK = 0.86` scales the Burj's lobes and mast, the sail
+  (`ALARAB.h` 244), the wheel (`AIN.r` 98) — and the sun / moon arcs were
+  re-centred so they still set at the waterline. Everything keyed on `HZ`
+  followed by itself.
+- **The towers are not alike** (`paintTower`, `towerFace`, `buildCity`): six
+  face SHAPES — `box · step` (three setbacks) `· taper · round` (a domed top)
+  `· twist` (edges that swing, slanted floor lights) `· sail` (one bulging
+  edge) — on eighteen towers; the glass mirrors the sky from zenith to sunset
+  and darkens to the street, the sun lies across it from the west, floors and
+  mullions and windows are batched (three window colours = three paths, where
+  dubai3 set a fill style per window); after dark every tower wears a band of
+  coloured light at its crown, a line of it down one edge and a soft halo
+  (`ACCENT`, by `seed`).
+- **The sky** (`paintSky`): the hour's five colours, then four long bands of
+  CLOUD — a 640×128 scratch canvas filled dusk-above / lit-below, cut by a
+  noise tile stretched sideways (`destination-in`), faded top and bottom, and
+  stretched across the frame — so the sunset has clouds burning from below;
+  stars in three batched paths.
+- **The far city** (`paintFar`): three ranks of silhouettes (spires, setbacks,
+  slanted roofs), nearer ones darker, their lights coming on with the evening.
+- **The water** (`paintWater`, `buildRefl`): its own colour with long ripples
+  (noise laid in `soft-light`, stretched flat); the mirror slices are now cut
+  on whole device rows of the ½-res layer (dubai3's `slice + 0.5` overlap
+  showed as scanlines once the water was deep); the same mirror drawn again
+  stretched 2.4× in `lighter` so every light leaves a streak down the water;
+  the sun's path as a fan of eighteen soft rows (the clipped fan had hard
+  edges and a dark wedge).
+- **The near shore** (`foreL`, `paintFore`, `forePalm`): a layer over the bottom
+  42 % of the frame, blitted AFTER everything that moves — palms in the two
+  bottom corners (a tapering trunk, each frond a feather: a rib with a serrated
+  blade), dark against the bright water with the sun along their western
+  edges, and lanterns on a line slung from each. Boats pass behind it.
+- **The fleet, repainted** (`BOATS`, `drawBoats`): seven boats on lanes from the
+  far shore to close by, scaled by depth (`boatScale`) and drawn far-to-near —
+  a wooden dhow (upswept prow, stern castle, a lateen sail full of the last
+  light, lanterns from the masthead), a white yacht (raked bow, three decks of
+  glass, a radar arch), an abra (canopy on posts, heads along the bench), a
+  speedboat throwing spray.
+- **The plane and the helicopter, repainted** (`drawPlane`, `drawHeli`): an
+  airliner with a line of windows, engines, a coloured tail and winglet; a red
+  helicopter with a glass nose, tail rotor, skids and a rotor disc.
+
+**Traps.** The still city repaints on every look-key (24 per cycle), so every
+painter here must stay cheap: batch into paths, never one fill style per
+window. A static layer drawn over the water must be blitted after the
+reflection layer or the mirror paints over it — hence `foreL`. Scaling the
+skyline means scaling GEOMETRY (`BK` inside `buildBurj`), not the canvas: the
+live shows read the same lobes.
+
+## dubai3.bg.js — Dubai at golden hour (LEGACY art, unloaded since v10.34 — its engine and shows live on in dubai4)
 
 Theme `dubai` → `dubai3` (`_BG_THEMES`). Harness `dubai3.html` (Golden / Blue
 hour / Night, LED show, Fountain, Fireworks, Spin wheel, Heli, Plane, Dolphin,
@@ -855,6 +926,30 @@ is unchanged. What is new:
   modulated ringlet by ringlet.
 - **Galaxies** (`bakeGalaxy`): arms of star clouds, dust lanes on the inner edge
   of each arm (`destination-out`), pink star nurseries, a bright bar and core.
+- **The hole visibly pulls and swallows particles (v10.33).** Asked for in
+  Hebrew: it must be CLEAR that the hole swallows the particles flying across
+  the screen, and particles a tap creates must be drawn to it. The old
+  travellers felt the hole only inside 7 r, weakly (`bhPull(s, .5)`), so few
+  ever fell in. Now (`fall`, `drawTravelers`, `tapBurst`, part `w04`): every
+  particle feels the hole from ANYWHERE on screen — `1500·(M/800)·(r/d)²` px/s²
+  toward it plus a sideways swirl (0.55 of that inside 9 r), so the fall is a
+  spiral; inside 3.4 r its speed is damped so nothing slings back out; at
+  1.12 r it is swallowed (`gulp`: a glow flash, `EATEN` counts it). Each keeps
+  its last six positions (sampled every 50 ms) and its TRAIL is drawn through
+  them — the bend of the path is what makes the pull readable; trails are
+  three batched paths (far · hot, gold inside 4.5 r · tapped, cyan), each
+  stroked twice (a wide soft glow under a bright core) without rebuilding the
+  path. 18 ambient particles (10 on the last-resort tier) cross from the edges
+  at 30–110 px/s; about one a second is swallowed and replaced. A tap on empty
+  sky throws 12 bright particles from the spot (`tapBurst`), and `burst()` (a
+  tap on the rocket, the astronaut, a galaxy) throws some too; a tapped
+  particle's pull grows with its age (`2.4·(1 + age)²` after 1.2 s), so every
+  one is taken within a few seconds. The hole's own code (shaders, dust,
+  `bhPull`) is untouched. Hooks: `eaten()` → `{ n, tap }`, `particles()` →
+  `{ flying, tapped, list }`. Trap met: `buildDetail` also runs when the
+  quality governor changes tier — resetting the tapped particles there made
+  them vanish two seconds after a tap in headless Chrome; they are reset in
+  `buildScene` only.
 - **The crew, repainted (v10.32)**: `buildCrew` bakes the same two sprites
   (same sizes and anchors, so the flight and the taps are untouched) with new
   art — the rocket: a polished hull, a red nose and tail band, swept fins lit

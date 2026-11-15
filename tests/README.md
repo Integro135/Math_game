@@ -69,10 +69,11 @@ set HEADED=1 && set SLOW_MO=600 && py -m pytest tests
 | `test_savanna2.py`        | 18 | `TestScene`, `TestAnimals`, `TestFitAndLifecycle`, `TestInGame` | רקע הסוואנה החדש (`savanna2.bg.js` + `savanna_rigs/`): הלהקה על הסלע, מחזור היום, עדרים מכל סוג, תעלולים ולחיצות, טלפון, ושילוב במשחק |
 | `test_unicorns4.py`       | 18 | `TestValley`, `TestCast`, `TestFitAndLifecycle`, `TestInGame` | עמק חדי-הקרן החדש (`unicorns4.bg.js` + `unicorn_rigs/`): מחזור היום, לחיצות (מפל, בריכה, טירה, קשת, עץ, פרח, שמיים), הסוסה והסייח, אורחים, המעופפת, ארנבים, ברבורים, טלפון, ושילוב במשחק |
 | `test_dinosaurs4.py`      | 23 | `TestValley`, `TestCast`, `TestFitAndLifecycle`, `TestInGame` | עמק הדינוזאורים החדש (`dinosaurs4.bg.js` + `dinosaur_rigs/`): מחזור היום, שני המופעים של הר הגעש (התפרצות ומטר מטאורים) והבהלה, השוחה באגם, קוקוס, משפחה מכל מין, תעלולים וצבע חדש בלחיצה, הפטרנודון, הביצה והגוזל, טלפון, ושילוב במשחק |
-| `test_space4.py`          | 18 | `TestBlackHole`, `TestWorlds`, `TestSky`, `TestDeepSky`, `TestRenderingCost`, `TestFitAndLifecycle`, `TestInGame` | רקע החלל המחודש (`space4.bg.js`): החור השחור נשאר במקומו ובגודלו, סעודת החור, שבתאי וכדור הארץ, מצעד כוכבי הלכת, גלקסיות, קבוצות כוכבים, סופרנובה, שביט, חללית ואסטרונאוטית — ותקרה למספר קריאות הקנבס לפריים |
+| `test_space4.py`          | 19 | `TestBlackHole`, `TestWorlds`, `TestSky`, `TestDeepSky`, `TestTheHolePulls`, `TestRenderingCost`, `TestFitAndLifecycle`, `TestInGame` | רקע החלל המחודש (`space4.bg.js`): החור השחור נשאר במקומו ובגודלו, סעודת החור, שבתאי וכדור הארץ, מצעד כוכבי הלכת, גלקסיות, קבוצות כוכבים, סופרנובה, שביט, חללית ואסטרונאוטית — ותקרה למספר קריאות הקנבס לפריים |
 | `test_reef4.py`           | 18 | `TestPicture`, `TestCheapToRender`, `TestCast`, `TestTaps`, `TestFitAndLifecycle`, `TestInGame` | השונית החדשה (`reef4.bg.js` + `reef_rigs/`): היום כשכבת צבע ולא כצביעה מחדש, תקציב הציור (כל יצור תמונה אחת, מעט פיקסלים בפריים, דרגות איכות), התושבים, תעלולים, מבקרים וענקים, לחיצות, טלפון, ושילוב במשחק |
 | `test_reef_station.py`    | 3  | (functions) | תחנת הניקוי של השונית: הדג המנוקד, הוורס המנקה, שלט הניאון, ולחיצה שמזמינה לקוח |
 | `test_aurora2.py`         | 11 | `TestPicture`, `TestCast`, `TestFitAndLifecycle`, `TestInGame` | עולם הקרח המצויר מחדש (`aurora2.bg.js`): שלוש השכבות, השמיים, הצלע המוארת והמוצלת של כל פסגה, הזוהר והגל שלו, הדמויות והפעולות שלהן, לחיצה על נסיכה / על הארמון (ברקים) / על השמיים, טלפון, אתחול, וטעינה במשחק |
+| `test_dubai4.py`          | 10 | `TestPicture`, `TestLife`, `TestFitAndLifecycle`, `TestInGame` | העיר שנבנתה מחדש (`dubai4.bg.js`): המפרץ הרחב, שעות היום, המים, אורות המגדלים בלילה, כל המופעים, הצי מרחוק ועד קרוב, לחיצה על הבורג', טלפון, אתחול, וטעינה במשחק |
 | `test_var_unknown.py`     | 10 | `TestVarOneUnknown` | נעלם־צורה יחיד (⃝ = N, אח"כ a ± ⃝ = ?) |
 | `test_dynamic.py`         | 9  | `TestDynamicExercises` | טעינה דינמית של `exercises/*.ex.js` |
 | `test_big_step.py`        | 6  | `TestBigStepMode` | מספרים גדולים ±1/2 (עַד 100 / TBG) |
@@ -84,6 +85,7 @@ set HEADED=1 && set SLOW_MO=600 && py -m pytest tests
 | `test_gifts.py`           | 12 | `TestGiftReward`, `TestPrizeConfig` | פרסי 🎁 — זכאות, מסך מתנה, קונפיג לכל משחק |
 | `test_success_screens.py` | 8  | `TestPraiseText`, `TestSuccessDuration` | מסכי ההצלחה — טקסט שבח + משך תצוגה |
 | `test_champion.py`        | 31 | `TestChampMultiplication`, `TestPerimeter`, `TestCompare`, `TestStagedColumnSub`, `TestTripleSum` | קטגוריית אַלּוּפָה 🏆 (הרמה הקשה) — כל תרגילי ה־mulc + פונקציות העזר הייעודיות שלהם |
+| `test_num_range.py`       | 15 | `TestCard`, `TestGenerator`, `TestDecks`, `TestPhone` | כַּרְטִיס הַטְּוָח 🎯 (`num_range.ex.js`): הדוגמה של המשתמש (65–75 → 66, 71), סימון וביטול, ✓ ריק רק מזכיר, טעות — מספר מחוץ לטווח מאדים עם הסבר, מספר חסר רק ברמז, וישר עם פס הטווח; המחולל בשתי הרמות ותור בלי חזרות; מלכה 18 קלפים (שאלה 15), אלופה — כרטיס בכל משחק; טלפון |
 |  | **284** | | |
 
 `test_champion.py` הוא בלוק רציף אחד: הוא כולל את חמש מחלקות אַלּוּפָה יחד עם תשע

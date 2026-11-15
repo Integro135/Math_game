@@ -233,6 +233,33 @@ class TestDeepSky:
         assert errs == []
 
 
+class TestTheHolePulls:
+    def test_the_hole_swallows_what_flies_by_and_everything_a_tap_makes(self, page):
+        errs = _open(page)
+        e0 = page.evaluate("_space4.eaten()")
+        # a tap on empty sky, far from the hole: a burst of bright particles leaves the spot…
+        pt = page.evaluate("""(() => { for (let i = 0; i < 400; i++){ const x = innerWidth * (0.08 + Math.random() * 0.3), y = innerHeight * (0.1 + Math.random() * 0.5);
+            if (_space4.hitAt(x, y) === null && _space4.stars().every(s => Math.hypot(s.x - x, s.y - y) > 30)) return {x, y}; } return null; })()""")
+        assert pt is not None
+        page.mouse.click(pt["x"], pt["y"])
+        page.wait_for_function("_space4.taps.last === 'sky' && _space4.particles().tapped === 12", timeout=3_000)
+        far = page.evaluate("Math.hypot(_space4.bh.x - %f, _space4.bh.y - %f) / _space4.bh.r" % (pt["x"], pt["y"]))
+        assert far > 6, "the tap was a long way from the hole"
+        # …they bend toward the hole (soon every one is nearer than where it began)…
+        page.wait_for_function(f"_space4.particles().list.length > 0 && _space4.particles().list.every(s => s.d < {far})", timeout=14_000)
+        # …and the hole takes every one of them
+        page.wait_for_function(f"_space4.eaten().tap === {e0['tap']} + 12 && _space4.particles().tapped === 0", timeout=20_000)
+        # the particles that only fly across the screen are swallowed too, and replaced
+        page.wait_for_function(f"_space4.eaten().n - _space4.eaten().tap >= {e0['n'] - e0['tap']} + 3", timeout=40_000)
+        assert page.evaluate("_space4.particles().flying") in (10, 18)
+        # a tap on the rocket throws particles as well — the hole takes those too
+        e1 = page.evaluate("_space4.eaten().tap")
+        _tap_kind(page, "rocket")
+        page.wait_for_function("_space4.particles().tapped > 0", timeout=3_000)
+        page.wait_for_function(f"_space4.eaten().tap > {e1} && _space4.particles().tapped === 0", timeout=20_000)
+        assert errs == []
+
+
 class TestRenderingCost:
     """The reason for the redesign: the 2-D layer must stay cheap. The old layer
     issued ~3,300 canvas calls a frame; this one bakes everything into sprites."""
@@ -267,9 +294,9 @@ class TestRenderingCost:
         _open(page)
         p = page.evaluate("_space4.perf()")
         if p["lite"]:
-            assert p["deepSky"] and p["dust"] == 130 and p["travellers"] == 6, "the still painting stays: it is free"
+            assert p["deepSky"] and p["dust"] == 130 and p["travellers"] == 10, "the still painting stays: it is free"
         else:
-            assert p["deepSky"] and p["dust"] == 260 and p["travellers"] == 10 and p["stars"] > 100
+            assert p["deepSky"] and p["dust"] == 260 and p["travellers"] == 18 and p["stars"] > 100
 
 
 class TestFitAndLifecycle:

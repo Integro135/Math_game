@@ -58,6 +58,7 @@ exercises/
 ├─ fair.ex.js         INTERACTIVE זֶה הוֹגֵן? ⚖️ — 2-3 friends with UNEVEN plates; tap an item (it lifts), tap another plate (it glides there) until all are equal, ✓, then how many each. ✓ while uneven = a mistake + count badges. אַלּוּפָה (mulc) + Queen's division turn.
 ├─ can_share.ex.js    INTERACTIVE אֶפְשָׁר לְחַלֵּק? 🤔 — yes/no: can 2-3 friends share n (5..14) with nothing left? Select → ✓; the verdict deals the row into equal groups with the leftover in a red ring. Balanced deck. אַלּוּפָה (mulc) + Queen's division turn.
 ├─ balance.ex.js      INTERACTIVE מֹאזְנַיִם ⚖️ — equality as BALANCE, two kinds on one animated scale: TBE `__ + 15 = 12 + __` (two rows, ANY balancing pair, the 2nd must DIFFER — "יֵשׁ הַרְבֵּה תְּשׁוּבוֹת") and TSB four numbers tapped onto two pans so `__+__ = __+__`. Try-first: pans show "?" until ✓; a wrong ✓ tilts the beam toward the heavier pan with both sums, then the scale weighs LIVE. Queen (mx) 1 card/game (kinds alternate, deck 16) + אַלּוּפָה (mulc). See §4k.
+├─ num_range.ex.js    INTERACTIVE 🎯 אֵילוּ מִסְפָּרִים בֵּין 65 לְ-75? — tap every number strictly BETWEEN two bounds 10 apart, ✓ submits; a mistake marks the out-of-range picks red with the reason, hints at a missed one without pointing at it, and opens a number line with the range as a gold band. ONE card in every Queen (mx, on top → 18 cards) and every אַלּוּפָה (mulc, inside the 15) game. See §4m.
 └─ plates.ex.js       INTERACTIVE "צַלָּחוֹת" — g plates × s items each (2..4 × 2..4, product ≤10), find the TOTAL from the WORDS; the picture is hidden until a mistake reveals it. The multiplication-story inverse of half. Mixed into אַלּוּפָה (mulc).
 ```
 
@@ -148,6 +149,7 @@ A registered type is an object of this exact shape:
 | `fair`      | `{t:TFR, k, start:[…], a, item, itemName, names}` (`start` uneven, sums to k·a) | move items until every plate is equal, then type the share. Interactive |
 | `can_share` | `{t:TCN, n, k, a:1 yes / 2 no, item, itemName}` | can it be shared with nothing left? yes/no, the verdict shows the leftover. Interactive |
 | `ice_cream` | `{t:TIC, a, b, name}`  (`a` = the budget ₪, `b` = price per ice cream 2/5/10, `name` = the shopper) | a shop story: she HAS `₪a` and every ice cream costs `₪b` — how many CAN she buy? ＋ buys one (lands in the tray WITH its price coin, so the spending is skip-countable); answer `a/b` (division as "how many groups fit"). Interactive |
+| `num_range` | `{t:TRG, lo, hi, nums:[…shuffled], a}`  (`hi` = `lo`+10, `lo` a multiple of 5; `a` = how many of `nums` lie strictly between) | tap every number BETWEEN `lo` and `hi` (a bound is never offered), ✓ submits. Queen: 5 numbers; אַלּוּפָה: 6, with the near-miss and reversed-digit traps. Interactive (§4m) |
 
 ptype constants (`game/js/data.js`):
 `TM='missing'`, `TS='sub'`, `TA='add'`, `TX='mixed'`, `TZ='triple'`,
@@ -156,7 +158,7 @@ ptype constants (`game/js/data.js`):
 `TMC='mult_chain'`, `TMK='mult_champ'`, `TPP='perimeter'`, `TCP='compare'`,
 `TTS='triple_sum'`, `THF='half'`, `TPL='plates'`, `TIC='ice_cream'`,
 `TBE='bal_eq'`, `TSB='bal_scale'`, `TDL='deal'`, `TPK='pack'`, `TFR='fair'`, `TCN='can_share'`
-(+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TWP='word_prob'`, `TVA`/`TVS`/`TRA`/`TRS`/`TH`, `TPW='part_whole'` — 🧩 the bridges' whole-and-parts card, `part_whole.ex.js`, built from the sets' facts by problems.js `_weavePartWhole`).
+(+ later: `TBC='bagel_cost'`, `TPG='polygon'`, `TWP='word_prob'`, `TVA`/`TVS`/`TRA`/`TRS`/`TH`, `TPW='part_whole'` — 🧩 the bridges' whole-and-parts card, `part_whole.ex.js`, built from the sets' facts by problems.js `_weavePartWhole`; `TRG='num_range'` — 🎯 the range card of Queen + אַלּוּפָה, §4m).
 
 ---
 
@@ -183,6 +185,7 @@ ptype constants (`game/js/data.js`):
 | `cloze.ex.js`    | `TCZ`         | `'clz','sup','mulc'`    | Interactive **cloze** (הַשְׁלֵם אֶת הַמִּלָּה): a vowelled sentence with a dashed gap + 3 vowelled options (`{t:TCZ,pre,post,opts,a}`); select → ✓ submits, the correct word DROPS into the gap. 46-sentence bank, NO-REPEAT rotation; `make('sup'/'mulc')` → 1, `make('clz')` → the bank. `aidsReveal:'always'`. |
 | `true_false.ex.js`| `TTF`        | `'tf','sup','mulc'`     | Interactive **true/false** (נָכוֹן אוֹ לֹא): a 2-line vowelled mini-story + a statement (`{t:TTF,lines,stmt,a}` — a=1 נכון / a=2 לא נכון); select → ✓ submits. False statements flip exactly ONE story detail. 46-item bank, NO-REPEAT rotation; `make('sup'/'mulc')` → 1, `make('tf')` → the bank. `aidsReveal:'always'`. |
 | `word_match.ex.js`| `TWM`        | `'wm','sup','mulc'`     | Interactive **word↔picture matching** (הַתְאֵם מִלָּה לִתְמוּנָה): 3 emoji cards + 3 vowelled word pills (`{t:TWM,pairs,a:3}`); DRAG a word onto a picture (compare-style pointer-drag + ghost) or tap-word-then-tap-picture; correct locks green, wrong shakes + `api.wrong`; all 3 → `api.solved()`. 52-pair bank, 3 popped per card (no-repeat until the bank cycles); `make('sup'/'mulc')` → 1, `make('wm')` → 4 cards. `aidsReveal:'always'`. **Ghost lifecycle** (v9.68 fix): the `.wm-ghost` is `position:fixed; z-index:9999`, so one that outlives its drag floats over the success screen — every exit funnels through `endDrag()`, the drag is pinned to its `pointerId`, `pointercancel`/`blur` abort it, a 2nd pointer is rejected while a drag is live, and `killGhost()` sweeps by class so an orphan still dies. **Grab-anchored** (v9.75): a `pointerdown` records the press offset from the pill's centre (`ox/oy`) and the ghost is placed at `finger − offset`, so the grabbed point stays under the finger (no jump-to-centre on tablet). |
+| `num_range.ex.js`| `TRG`         | `'rng','mx','mulc'`     | Interactive **range** card (🎯 אֵילוּ מִסְפָּרִים בֵּין 65 לְ-75?). `make('mx')` → **1** (5 numbers, any 10-wide range from 10–20 to 80–90, one near miss), `make('mulc')` → **1** (6 numbers, only decade-crossing ranges 15–25 … 75–85, a near miss on each side + the reversed-digits trap), `make('rng')` → 8 (tester handle). Ranges rotate through a no-repeat queue per level. `aidsReveal:'always'` (no host aid — the card opens its own number line after a mistake). See §4m. |
 | `sent_order.ex.js`| `TSO`        | `'so','sup','mulc'`     | Interactive **sentence ordering** (סַדֵּר אֶת הַמִּשְׁפָּט): a 4-5 word vowelled sentence served SCRAMBLED (`{t:TSO,words,scr,a}`; the scramble is guaranteed ≠ the answer); tap bank words in order into the strip (tap a placed word to send it back), ✓ submits (string-compare); wrong KEEPS the words for fixing, an incomplete submit only nudges. 48-sentence bank, NO-REPEAT rotation; `make('sup'/'mulc')` → 1, `make('so')` → the bank. `aidsReveal:'always'`. |
 **Bank expansion + single-answer review (2026-09).** The five reading banks grew
 by 59 items (cloze 24→36, true/false 24→36, word-match 30→42 pairs,
@@ -1054,3 +1057,60 @@ localStorage `divKind`): `half` → `ice_cream` → `deal` → `pack` → `fair`
 `can_share`. Each of those six files therefore also lists `'mx'` and answers
 `make('mx')` with a single card. Queen decks are 17. Tests:
 `tests/test_division.py::TestQueenDivision`.
+
+---
+
+## 4m. `num_range.ex.js` — 🎯 which numbers lie BETWEEN two bounds (TRG)
+
+Asked for on 2026-11-15: "between 65 and 75 — of 50, 51, 66, 71, 79 she must
+choose only 66 and 71", in Queen and אַלּוּפָה.
+
+**The card.** The question (אֵילוּ מִסְפָּרִים נִמְצָאִים בֵּין 65 לְ-75?), the two
+bounds as gold posts at the ends of a bar (the low one on the LEFT, the way the
+game's number lines run), and the candidate numbers as tiles in a shuffled row.
+A tap marks a tile (gold, a ✓ badge, `aria-pressed`), a second tap unmarks it;
+✓ submits. ✓ with nothing marked only nudges.
+
+**Right** = exactly the numbers strictly between `lo` and `hi`. A bound is never
+offered, so the card never has to decide whether 65 is "between 65 and 75".
+
+**A mistake** (`api.wrong('<the marked numbers, ascending>')`, one per ✓):
+- every marked number OUTSIDE the range turns red with a ✗, is struck through
+  and leaves play (disabled); the hint gives the reason — `50 קָטָן מִ-65`,
+  `79 גָּדוֹל מִ-75`;
+- a MISSED number is not pointed at: the hint only says one (or how many) is
+  still missing — `חָסֵר עוֹד מִסְפָּר אֶחָד` / `חֲסֵרִים עוֹד 2 מִסְפָּרִים` — and her
+  correct marks stay;
+- the NUMBER LINE opens under the tiles (`lineSVG`): a window from just below the
+  smallest number to just above the largest (ticks of 1 up to a 40-wide window,
+  else of 5; labels every 10), the range as a gold band with its bounds
+  labelled, every candidate a pin with its number above (the labels stagger over
+  three rows where pins crowd).
+
+Scoring is the host's `_tfPts` (100 / 67 / 0).
+
+**Generator** (`makeCard(level)`): `hi = lo + 10`, `lo` a multiple of 5; 2 or 3
+numbers inside, never a bound; always at least one number below the range and
+one above it.
+- Queen (`'mx'`, medium): `lo` ∈ 10, 15 … 80 — whole decades included (in 30–40
+  the tens digit decides); 5 numbers: one near miss (1–3 outside a bound), the
+  rest further away (6+).
+- אַלּוּפָה (`'mulc'`, hard): `lo` ∈ 15, 25 … 75 only — ranges that cross a decade,
+  where the tens digit alone can't decide; 6 numbers: a near miss on EACH side
+  (64, 76) and the digits of an inside number reversed (71 → 17) whenever that
+  lands outside (≈98 % of cards), the rest far.
+- The ranges rotate through a no-repeat shuffled queue per level (`nextLo`).
+
+**Recipes.** Queen (mx) splices ONE card at index 14 (question 15) after every
+other woven card, so none of them moves — Queen decks are **18**. אַלּוּפָה lists
+the type in its `_fitTypes` pool AND in the `always` list (`[TMK,TTS,TRG]`), so
+every game has one inside its 15 cards; the other 18 types rotate through the
+remaining 7 math slots (each still within three games). `'rng'` is the tester
+handle (8 cards, both levels; `modePts` 15).
+
+**Host wiring** (`core.js`): `TRG` joins every list of self-mounting types
+(`_cor` → `num1` = the count, the aid-hiding branch, the games-button
+visibility, `renderEq` → `#colx-root`, `_colxMount`, the stale-mount guard, the
+host check button, `checkAns`), gets its own hint, and a report row
+`🎯 65–75: 50 51 66 71 79` with the correct column `66, 71`. CSS namespaced
+`rg-*` (`#rg-style`). Tests: `tests/test_num_range.py` (15).

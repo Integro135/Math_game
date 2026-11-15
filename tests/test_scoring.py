@@ -236,7 +236,7 @@ class TestTryFirstScoring:
     def test_mx_no_operand_above_20_unless_round_tens(self, page):
         """In Queen (mx) mode, no operand may exceed 20 — except round-tens (TT,
         multiples of 10) and the big ±1/2 steps (TBG, big number minus 1/2)."""
-        consts = page.evaluate("({TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TBG, TH, TIC})")
+        consts = page.evaluate("({TM, TS, TA, TX, TZ, TW, TDA, TDS, TC, TT, TBG, TH, TIC, TRG})")
         TT = consts["TT"]
         TC = consts["TC"]
         TDA = consts["TDA"]
@@ -246,7 +246,7 @@ class TestTryFirstScoring:
 
         for _ in range(10):                # 10 fresh Queen sessions
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
             problems = page.evaluate("problems")
             for i, p in enumerate(problems):
                 t = p["t"]
@@ -276,6 +276,11 @@ class TestTryFirstScoring:
                     # the ice-cream shop (Queen's division turn): a is the BUDGET in
                     # shekels (₪4..₪90 by design), b the price 2/5/10, budget ÷ price whole
                     assert p["b"] in (2, 5, 10) and p["a"] % p["b"] == 0, f"TIC at idx {i}: {p}"
+                    continue
+                if t == consts["TRG"]:
+                    # the 🎯 range card: two-digit numbers by design (10..99) — they are
+                    # not operands; a = how many lie between lo and hi (10 apart)
+                    assert p["hi"] - p["lo"] == 10 and p["a"] in (2, 3), f"TRG at idx {i}: {p}"
                     continue
                 if t in (TC, TDA, TDS):
                     # TC: coins; TDA/TDS: only `r` matters and is ≤20

@@ -235,6 +235,9 @@ function makePool(m){
     // + ONE division card (the 2026-10 request): the six division kinds TAKE TURNS
     // across Queen games — a 17-card Queen
     { const dv=_nextDivision();if(dv)base.splice(Math.min(5,base.length),0,dv); }
+    // + ONE range card (🎯 אֵילוּ מִסְפָּרִים בֵּין 65 לְ-75?, the 2026-11-15 request) on TOP —
+    // an 18-card Queen; question 15, after every other woven card, so none of them moves
+    if(EX('num_range')){const rg=EX('num_range').make('mx')[0];if(rg)base.splice(Math.min(14,base.length),0,rg);}
     return base;
   }
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
@@ -286,7 +289,8 @@ function makePool(m){
       ...(EX('fair')?EX('fair').make('mulc'):[]),             // זה הוגן? — מעבירים עד שלכולן אותו מספר
       ...(EX('can_share')?EX('can_share').make('mulc'):[]),   // אפשר לחלק? — כן/לא, עם השארית
       ...(EX('mult_unknown')?EX('mult_unknown').make('mulc'):[]), // כפל בנעלם — 3×□=9; ישר קפיצות-של-a גלוי מההתחלה
-    ]),QUEEN_SUPER_COUNT-rd.length-lg.length,'mulc',{},[TMK,TTS]);   // 14 types / 10 slots → the other 12 take turns
+      ...(EX('num_range')?EX('num_range').make('mulc'):[]),   // 🎯 אילו מספרים בין 65 ל-75? — מסמנים את כל המספרים שבטווח
+    ]),QUEEN_SUPER_COUNT-rd.length-lg.length,'mulc',{},[TMK,TTS,TRG]);   // 10 math slots: ×, __+__+__ and the range card every game, the other 18 types take turns in the remaining 7
     // the אַלּוּפָה game OPENS on its flagship multiplication card (TMK): keep a
     // mult_champ problem at slot 0 (the rest — perimeter / column-sub / compare /
     // word-problems — stay mixed through the deck).
@@ -324,6 +328,7 @@ function makePool(m){
   if(m==='cansh')return EX('can_share')?EX('can_share').make('cansh'):[]; // can-it-be-shared only (internal handle)
   if(m==='bal')return EX('balance')?EX('balance').make('bal'):[];     // balance-scale equality only (internal handle)
   if(m==='mulu')return EX('mult_unknown')?EX('mult_unknown').make('mulu'):[]; // mult-with-unknown only (internal handle)
+  if(m==='rng')return EX('num_range')?EX('num_range').make('rng'):[];   // range cards only (internal handle)
   // standard עד5/עד10/עד20: union of the basic types, TD every 4th slot,
   // then the coins type seeds 1-2 coin problems
   const pool=[
@@ -565,4 +570,4 @@ function makeBridge20Pool(){
   return set;
 }
 
-function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='rhy'?15:mode==='lang'?15:mode==='logic'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='bal'?15:mode==='deal'?15:mode==='pack'?15:mode==='fair'?15:mode==='cansh'?15:mode==='mulc'?20:mode||5;}
+function modePts(){return mode==='mx'?20:mode==='br'?15:mode==='b20'?15:mode==='sup'?15:mode==='big'?10:mode==='poly'?15:mode==='mul'?15:mode==='perim'?15:mode==='cmp'?15:mode==='wp'?20:mode==='wc'?20:mode==='story'?15:mode==='clz'?15:mode==='tf'?15:mode==='wm'?15:mode==='so'?15:mode==='rhy'?15:mode==='lang'?15:mode==='logic'?15:mode==='trip'?15:mode==='hlf'?15:mode==='plt'?15:mode==='ice'?15:mode==='mulu'?15:mode==='bal'?15:mode==='deal'?15:mode==='pack'?15:mode==='fair'?15:mode==='cansh'?15:mode==='rng'?15:mode==='mulc'?20:mode||5;}

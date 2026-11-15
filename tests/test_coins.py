@@ -193,7 +193,7 @@ class TestChainAndCoinAids:
         """The old ordered phase structure was removed. makeMxPool() now builds
         the Queen pool as ONE flat shuffle of every contributing type's mx quota
         (problems.js: shuffle([...chain, ...missing, ...sub, ...add, ...double,
-        ...tens, ...coins, ...big_step])). New contract: exactly 17 problems and
+        ...tens, ...coins, ...big_step])). New contract: exactly 18 problems and
         NO position-based answer cap (the first 5 slots are not constrained to a
         ≤10 answer). Verify the size contract and the absence of the old cap
         across several fresh shuffles."""
@@ -201,11 +201,11 @@ class TestChainAndCoinAids:
         any_early_above_10 = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, b:p.b, c:p.c, r:p.r}))")
-            assert len(problems) == 17, \
-                f"Queen (mx) must present 17 problems (shuffle + coverage-preserving cap), got {len(problems)}"
+            assert len(problems) == 18, \
+                f"Queen (mx) must present 18 problems (shuffle + coverage-preserving cap), got {len(problems)}"
             consts = page.evaluate("({TA,TS,TM,TX,TZ,TW})")
             for p in problems[:5]:               # the former "phase 1" slots
                 ans = None
@@ -228,9 +228,9 @@ class TestChainAndCoinAids:
         Queen pool (chain TX/TZ/TW, TM, TS, TA, TDA/TDS, TT, TC, TBG)."""
         consts = page.evaluate("({TM,TS,TA,TX,TZ,TW,TDA,TDS,TC,TT,TBG})")
         page.evaluate("setMode('mx'); restart()")
-        page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+        page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
         types = page.evaluate("[...problems].map(p => p.t)")
-        assert len(types) == 17
+        assert len(types) == 18
         # chain family (TX/TZ/TW) must appear; each other type must appear ≥1
         chain = {consts["TX"], consts["TZ"], consts["TW"]}
         assert any(t in chain for t in types), "Chain problems must be present in mx"
@@ -269,7 +269,7 @@ class TestChainAndCoinAids:
         seen_small_first = False
         for _ in range(8):
             page.evaluate("restart()")
-            page.wait_for_function("problems.length === 17", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
             problems = page.evaluate(
                 "[...problems].map(p => ({t:p.t, a:p.a, r:p.r}))")
             for p in problems[-4:]:

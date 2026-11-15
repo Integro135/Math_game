@@ -1521,7 +1521,7 @@ window.BACKGROUNDS.space4={
       {x:W*.30,y:H*.80,scale:M*.055,tilt:.60,ang:4.0,spin:.030, arms:3,hueA:'255,214,180',hueB:'205,205,255'},
     ];
     for(const g of GALAXIES){g.x2=0;g.boostT=null;g.next=0;g.spr=bakeGalaxy(g);const D=g.scale*2.7;g.cv=mk(D,D);}
-    TIDAL=[];COMETS=[spawnComet(true)];nova=null;
+    TIDAL=[];COMETS=[spawnComet(true)];nova=null;TAPP=[];GULPS=[];
     // the heroes
     if(!MAPS){MAPS=paintEarthMaps();SATMAP=paintSaturnMap();MOONMAP=paintMoonMap();}
     const sr=M*.136;
@@ -1570,7 +1570,7 @@ window.BACKGROUNDS.space4={
       if(Math.hypot(x-BH.x,y-BH.y)<BH.r*3.4)continue;
       NEAR.push({x,y,k:.45+Math.random()*.6,spr:(Math.random()*6)|0,tw:Math.random()*TAU,spd:.5+Math.random()*1.6});
     }
-    TRAVELERS=Array.from({length:few?6:10},()=>spawnTraveler(true));
+    TRAVELERS=Array.from({length:few?10:18},()=>spawnTraveler(true));          // (the particles a tap made stay: this also runs when the quality tier changes)
     PLANET.rocks=few?[]:Array.from({length:16},()=>{const k=1.3+Math.random()*.95;return{ang:Math.random()*TAU,k,spd:.55*Math.pow(1.62/k,1.5),size:.8+Math.random()*1.1};});
     dustN=few?NP>>1:NP;
   }
@@ -1728,25 +1728,71 @@ window.BACKGROUNDS.space4={
       if(f>0){ctx.globalAlpha=f*.7;ctx.drawImage(g.cv.c,g.x-D/2,g.y-D/2,D,D);ctx.globalAlpha=1;}
     }
   }
-  // travellers: little wandering lights the hole pulls in; a tap on empty sky scatters a burst of them
+  /* ── PARTICLES: lights that fly across the whole screen — and THE HOLE TAKES THEM.
+     Every one feels the hole from anywhere on the screen (an inverse-square pull
+     plus a sideways swirl, so the fall is a spiral and not a straight line); the
+     streak behind it shows its path bending; close in it heats from blue-white to
+     gold, winds round the hole and is gone in a small flash. Its TRAIL is the
+     last six places it has been, so the bend of its path is there to see.
+     A tap that makes particles (empty sky, the rocket, the astronaut, a galaxy)
+     throws a burst of bright ones from the spot — they fall in too, and the
+     longer one lingers the harder the hole pulls it, so every one is taken.
+     Drawn as three batched paths (far · hot · tapped), one for the heads, and a
+     glow blit per flash.                                                        */
+  const EATEN={n:0,tap:0};
+  let TAPP=[],GULPS=[];
   function spawnTraveler(anywhere){
-    const speed=.3+Math.random()*1.6;let x,y,ang;
-    if(anywhere){x=Math.random()*W;y=Math.random()*H;ang=Math.random()*TAU;}
+    const sp=(30+Math.random()*80)*M/800;let x,y,ang;
+    if(anywhere){x=Math.random()*W;y=Math.random()*H*.9;ang=Math.random()*TAU;}
     else{const e=(Math.random()*4)|0;
-      if(e===0){x=-10;y=Math.random()*H;ang=rnd(-1,1);}else if(e===1){x=W+10;y=Math.random()*H;ang=Math.PI+rnd(-1,1);}
-      else if(e===2){x=Math.random()*W;y=-10;ang=Math.PI/2+rnd(-1,1);}else{x=Math.random()*W;y=H+10;ang=-Math.PI/2+rnd(-1,1);}}
-    return{x,y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,r:1+Math.random()*1.4};
+      if(e===0){x=-10;y=Math.random()*H*.9;ang=rnd(-.7,.7);}else if(e===1){x=W+10;y=Math.random()*H*.9;ang=Math.PI+rnd(-.7,.7);}
+      else if(e===2){x=Math.random()*W;y=-10;ang=Math.PI/2+rnd(-.8,.8);}else{x=Math.random()*W;y=H*.92;ang=-Math.PI/2+rnd(-.8,.8);}}
+    return{x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,r:1.6+Math.random()*1.4,d:9,t0:lastT,tr:new Float32Array(12),n:0,tt:0};
   }
-  function drawTravelers(){
-    ctx.fillStyle='rgba(232,240,255,.85)';ctx.beginPath();
+  // a burst of bright particles from a tap
+  function tapBurst(x,y,n,speed){
+    for(let i=0;i<n&&TAPP.length<36;i++){const a=Math.random()*TAU,v=speed*(.5+Math.random()*.7)*M/800;TAPP.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:2.4+Math.random()*1.4,d:9,t0:lastT,tr:new Float32Array(12),n:0,tt:0});}
+  }
+  // one step under the hole's pull (k = how hard); true when the hole has taken it
+  function fall(s,dt,k){
+    const dx=BH.x-s.x,dy=BH.y-s.y,d=Math.hypot(dx,dy)||1,r=BH.r,u=r/d;
+    if(d<r*1.12)return true;
+    const a=1500*(M/800)*u*u*k*(1+SURGE*2),sw=d<r*9?a*.55:0;                      // toward the hole — and round it, the way its disk turns
+    s.vx+=(dx/d*a-dy/d*sw)*dt;s.vy+=(dy/d*a+dx/d*sw)*dt;
+    if(d<r*3.4){const q=1-Math.min(1,1.5*dt);s.vx=s.vx*q+dx/d*a*dt*.8;s.vy=s.vy*q+dy/d*a*dt*.8;}   // close in, nothing slings back out
+    const sp=Math.hypot(s.vx,s.vy),cap=900*M/800;if(sp>cap){s.vx*=cap/sp;s.vy*=cap/sp;}
+    s.tt+=dt;if(s.tt>.05){s.tt=0;const q=s.tr;for(let i=11;i>1;i--)q[i]=q[i-2];q[0]=s.x;q[1]=s.y;if(s.n<6)s.n++;}      // remember where it has been
+    s.x+=s.vx*dt;s.y+=s.vy*dt;s.d=d/r;
+    return false;
+  }
+  function gulp(s,tap){EATEN.n++;if(tap)EATEN.tap++;if(GULPS.length<8)GULPS.push({x:s.x,y:s.y,t0:lastT});}
+  function drawTravelers(t,dt){
     for(let i=0;i<TRAVELERS.length;i++){
       const s=TRAVELERS[i];
-      const g=bhPull(s,.5);
-      s.x+=s.vx;s.y+=s.vy;
-      if(g<0||s.x<-30||s.x>W+30||s.y<-30||s.y>H+30){TRAVELERS[i]=spawnTraveler(false);continue;}
-      ctx.rect(s.x-s.r/2,s.y-s.r/2,s.r,s.r);
+      if(fall(s,dt,1)){gulp(s,false);TRAVELERS[i]=spawnTraveler(false);continue;}
+      if(s.x<-40||s.x>W+40||s.y<-40||s.y>H+20||t-s.t0>70)TRAVELERS[i]=spawnTraveler(false);
     }
+    for(let i=TAPP.length-1;i>=0;i--){
+      const s=TAPP[i],age=Math.max(0,t-s.t0-1.2);
+      if(fall(s,dt,2.4*(1+age)*(1+age))){gulp(s,true);TAPP.splice(i,1);}
+      else if(t-s.t0>24)TAPP.splice(i,1);
+    }
+    const trails=(list,pick,glowCol,col,lw)=>{                // each particle's trail, stroked twice: a wide soft glow under a bright core
+      ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+      for(const s of list){if(!pick(s))continue;const q=s.tr;ctx.moveTo(s.x,s.y);for(let j=0;j<s.n;j++)ctx.lineTo(q[j*2],q[j*2+1]);}
+      ctx.strokeStyle=glowCol;ctx.lineWidth=lw*3.2;ctx.stroke();ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke();
+    };
+    trails(TRAVELERS,s=>s.d>=4.5,'rgba(150,200,255,.16)','rgba(214,232,255,.9)',1.5);
+    trails(TRAVELERS,s=>s.d<4.5,'rgba(255,190,90,.22)','rgba(255,224,150,.98)',1.9);             // heated, close to the hole
+    if(TAPP.length)trails(TAPP,s=>true,'rgba(120,255,240,.22)','rgba(200,255,250,.98)',2.4);
+    ctx.fillStyle='rgba(255,255,255,.95)';ctx.beginPath();
+    for(const s of TRAVELERS)ctx.rect(s.x-s.r/2,s.y-s.r/2,s.r,s.r);
+    for(const s of TAPP)ctx.rect(s.x-s.r/2,s.y-s.r/2,s.r,s.r);
     ctx.fill();
+    for(let i=GULPS.length-1;i>=0;i--){                      // the flash where one was swallowed
+      const q=GULPS[i],k=(t-q.t0)/.4;if(k>=1){GULPS.splice(i,1);continue;}
+      glow('255,232,180',q.x,q.y,BH.r*(.3+k*.6),(1-k)*.9);
+    }
   }
 
   // ── SATURN: the far rings, the turning body, the near rings, a little orbiting gravel
@@ -1988,7 +2034,7 @@ window.BACKGROUNDS.space4={
   }
   // ── sparks: one small pool for every burst (a tap on the rocket, the astronaut, a galaxy…)
   const SPARKS=[];
-  function burst(x,y,n,sp){for(let i=0;i<n&&SPARKS.length<48;i++){const a=Math.random()*TAU,v=sp*(.4+Math.random()*.6);SPARKS.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t0:lastT,life:.7+Math.random()*.6});}}
+  function burst(x,y,n,sp){tapBurst(x,y,Math.ceil(n*.6),sp*1.1);for(let i=0;i<n&&SPARKS.length<48;i++){const a=Math.random()*TAU,v=sp*(.4+Math.random()*.6);SPARKS.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t0:lastT,life:.7+Math.random()*.6});}}
   function drawSparks(t,dt){
     if(!SPARKS.length)return;
     ctx.fillStyle='rgba(255,240,190,.92)';ctx.beginPath();
@@ -2168,11 +2214,8 @@ window.BACKGROUNDS.space4={
     if(!nova){                       // a bright star: it goes supernova
       for(const s of NEAR)if(Math.hypot(x-s.x,y-s.y)<=22){nova=buildNova(s.x,s.y,lastT);TAPS.last='star';factEl.style.opacity='0';return;}
     }
-    TAPS.last='sky';                 // empty sky: a burst of travellers from the spot
-    for(let i=0;i<6;i++){
-      const s=TRAVELERS[(Math.random()*TRAVELERS.length)|0],a=Math.random()*TAU,sp=1.6+Math.random()*2.2;
-      s.x=x;s.y=y;s.vx=Math.cos(a)*sp;s.vy=Math.sin(a)*sp;
-    }
+    TAPS.last='sky';                 // empty sky: a burst of bright particles from the spot — the hole pulls every one of them in
+    tapBurst(x,y,12,120);
     factEl.style.opacity='0';
   };
   document.addEventListener('click',skyClick);
@@ -2202,7 +2245,7 @@ window.BACKGROUNDS.space4={
     }
     updateDust(dt);drawDust2D();          // the infalling grains — simulated in 3-D, drawn crisp here
     drawNova(t);
-    drawTravelers();
+    drawTravelers(t,dt);
     drawGalaxies(t,dt);
     updatePassers(t,dt);
     for(const p of PASSERS)drawPasser(p,t,dt);   // passing worlds — behind Saturn & Earth
@@ -2248,6 +2291,8 @@ window.BACKGROUNDS.space4={
     comets:()=>COMETS.filter(c=>c.delay<=0).map(c=>XY(c.x,c.y)),
     nova:()=>nova?{x:nova.x,y:nova.y}:null,
     rock:()=>!!ROCK,tidal:()=>TIDAL.length,
+    // the particles: how many the hole has swallowed (all · those a tap made) · how many are in flight
+    eaten:()=>({n:EATEN.n,tap:EATEN.tap}),particles:()=>({flying:TRAVELERS.length,tapped:TAPP.length,list:TAPP.map(s=>({x:s.x,y:s.y,d:s.d}))}),
     // test hooks: start things now
     startNova(){const s=NEAR[0];nova=buildNova(s.x,s.y,lastT);return XY(s.x,s.y);},
     startComet(x,y){COMETS[0]={x,y,vx:1.2,vy:.2,delay:0};return XY(x,y);},

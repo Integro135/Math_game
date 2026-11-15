@@ -10,7 +10,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 /* ── Data ── */
-const TM='missing',TMA='missing_add',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TRS='tri_sub',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order',TRH='rhyme',TLG='logic',TBE='bal_eq',TSB='bal_scale',TDL='deal',TPK='pack',TFR='fair',TCN='can_share',TPW='part_whole';
+const TM='missing',TMA='missing_add',TS='sub',TA='add',TX='mixed',TZ='triple',TW='twin_sub',TDA='dbl_add',TDS='dbl_sub',TC='coins',TT='tens',TCA='col_add',TCS='col_sub',TBG='big_step',TCM='coin_mul',TBC='bagel_cost',TVA='var_add',TVS='var_sub',TRA='tri_add',TRS='tri_sub',TH='hundreds',TPG='polygon',TMC='mult_chain',TMK='mult_champ',TPP='perimeter',TCP='compare',TWP='word_prob',TTS='triple_sum',THF='half',TPL='plates',TIC='ice_cream',TMU='mult_unknown',TWC='word_chain',TSQ='story_quiz',TCZ='cloze',TTF='true_false',TWM='word_match',TSO='sent_order',TRH='rhyme',TLG='logic',TBE='bal_eq',TSB='bal_scale',TDL='deal',TPK='pack',TFR='fair',TCN='can_share',TPW='part_whole',TRG='num_range';
 const gameLen=()=>problems.length;
 /* the GIVEN first number of a sum chain g + __ + __ = r (TRA, 2026-11-02: the game
    fills one addend, the child chooses the other two): g stays 2..9 and leaves the
@@ -64,9 +64,10 @@ const EXERCISE_INDEX=[
   {file:'part_whole',modes:['br','b20']},   // 🧩 שָׁלֵם וַחֲלָקִים — the whole + parts template AND the bars-and-circles drawing as an EXERCISE, every 3rd card of the bridges (problems.js _weavePartWhole)
   {file:'can_share', modes:['cansh','mx','mulc']},  // אֶפְשָׁר לְחַלֵּק? — yes/no: can k friends share n with nothing left? The verdict shows the groups + the leftover
   {file:'mult_unknown',modes:['mulu','mulc']},   // כֶּפֶל בְּנֶעְלָם — 3 × □ = 9, find the hidden factor; the SKIP-COUNTING number line (jumps of a) is shown from the START. Mixed into אַלּוּפָה. 'mulu' is an INTERNAL handle only.
+  {file:'num_range', modes:['rng','mx','mulc']},   // 🎯 אֵילוּ מִסְפָּרִים בֵּין 65 לְ-75? — tap every number strictly BETWEEN two bounds (10 apart), ✓ submits; a mistake opens a number line with the range as a gold band. One card in EVERY Queen game (on top: 18) and EVERY אַלּוּפָה game (inside the 15). 'rng' is an INTERNAL handle only.
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
-const EXERCISE_OF_TYPE={[TDL]:'deal',[TPK]:'pack',[TFR]:'fair',[TCN]:'can_share',[TPW]:'part_whole',[TBE]:'balance',[TSB]:'balance',[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain',[TSQ]:'story_quiz',[TCZ]:'cloze',[TTF]:'true_false',[TWM]:'word_match',[TSO]:'sent_order',[TRH]:'rhyme',[TLG]:'logic'};
+const EXERCISE_OF_TYPE={[TDL]:'deal',[TPK]:'pack',[TFR]:'fair',[TCN]:'can_share',[TPW]:'part_whole',[TBE]:'balance',[TSB]:'balance',[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain',[TSQ]:'story_quiz',[TCZ]:'cloze',[TTF]:'true_false',[TWM]:'word_match',[TSO]:'sent_order',[TRH]:'rhyme',[TLG]:'logic',[TRG]:'num_range'};
 
 /* ── Difficulty configuration ───────────────────────────────────────────────
    The mode picker in the settings modal is RENDERED from this config

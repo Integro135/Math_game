@@ -42,7 +42,7 @@ IN_GAME = [
     ("savanna2",              "savanna",   "_sav2"),
     ("unicorns4",             "girls",     "_uni4"),
     ("dinosaurs4",            "dinosaurs", "_dino4"),
-    ("dubai3",                "dubai",     "_dubai3"),
+    ("dubai4",                "dubai",     "_dubai4"),
 ]
 # ─────────────────────────────────────────────────────────────────────────────
 BG_DIR     = Path(r"c:\Code\subtraction_game\backgrounds")

@@ -21,7 +21,7 @@ except Exception: pass
 CASES = [
     ("reef2 FULL quality (Q2)",    "reef",      "window._reef2"),
     ("reef2 MINIMAL quality (Q0)", "reef",      "window._reef2"),
-    ("dubai3",       "dubai",     "window._dubai3"),
+    ("dubai4",       "dubai",     "window._dubai4"),
     ("dinosaurs3",   "dinosaurs", "window._dino3"),
     ("aurora",       "frozen",    "window._aurora"),
 ]
