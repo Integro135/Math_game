@@ -4,7 +4,7 @@ the dust, the feeding frenzy). Between it and the moving layer lies THE DEEP SKY
 a still painting on a canvas of its own (the Milky Way, nebulae, far galaxies,
 thousands of stars) that costs nothing per frame and keeps clear of the hole. The
 moving layer — worlds painted per pixel from noise with a real night side, the Sun,
-galaxies, comets, the rocket and the astronaut — is drawn from baked sprites, and a
+galaxies, comets, the starship and the astronaut — is drawn from baked sprites, and a
 test holds the frame's canvas-call count down. The scene tests run on the
 standalone space4.html harness (window._space4 hooks); the last class opens the
 real game."""
@@ -40,6 +40,12 @@ def _open(page, counter=False):
 
 def _plain(s):
     return NIQQUD.sub("", s)
+
+
+def _ship_ready(page):
+    """The starship is a baked sprite sheet (backgrounds/space4.ship.js) the scene loads beside itself;
+    it never comes before the sheet is in."""
+    page.wait_for_function("_space4.ship().ready", timeout=15_000)
 
 
 def _tap(page, find, kind, tries=5):
@@ -214,21 +220,62 @@ class TestSky:
         assert "שביט" in _plain(page.evaluate("_space4.fact"))
         assert errs == []
 
-    def test_the_rocket_loops_and_the_astronaut_somersaults(self, page):
+    def test_the_astronaut_somersaults(self, page):
         errs = _open(page)
-        r0 = page.evaluate("_space4.rocket()")
-        page.wait_for_function(f"Math.hypot(_space4.rocket().x - {r0['x']}, _space4.rocket().y - {r0['y']}) > 20", timeout=10_000)   # she is on patrol
-        _tap_kind(page, "rocket")
-        assert page.evaluate("_space4.rocket().looping") and "חללית" in _plain(page.evaluate("_space4.fact"))
         _tap_kind(page, "astro")
         assert page.evaluate("_space4.astronaut().spinning") and "אסטרונאוטית" in _plain(page.evaluate("_space4.fact"))
-        page.wait_for_function("!_space4.rocket().looping && !_space4.astronaut().spinning", timeout=5_000)
-        # the rocket never flies into the hole's neighbourhood
-        bh = page.evaluate("_space4.bh")
-        for _ in range(6):
-            page.wait_for_timeout(700)
-            r = page.evaluate("_space4.rocket()")
-            assert ((r["x"] - bh["x"]) ** 2 + (r["y"] - bh["y"]) ** 2) ** 0.5 > bh["r"] * 3.2
+        page.wait_for_function("!_space4.astronaut().spinning", timeout=5_000)
+        assert errs == []
+
+    def test_the_starship_comes_by_itself(self, page):
+        """2026-11-23: the starship (it replaced the patrolling rocket) is not always there — it is
+        away between visits, and the first visit comes on its own a few seconds after the scene opens."""
+        errs = _open(page)
+        page.wait_for_function("_space4.ship().visits >= 1 && _space4.ship().state !== 'away'", timeout=25_000)
+        assert errs == []
+
+    def test_the_starship_lands_on_every_world_and_warps_out(self, page):
+        """A visit: it warps in, flies to each world on screen in turn (nearest first), sets down on
+        top of it (a flag is planted), lifts off for the next, and warps out at the end — never
+        straying into the hole's neighbourhood. A tap while it flies: a barrel roll; landed: a hop."""
+        errs = _open(page)
+        _ship_ready(page)
+        stops = page.evaluate("_space4.shipVisit(false)")
+        assert stops >= 1
+        page.wait_for_function("_space4.ship().state === 'fly'", timeout=5_000)
+        _tap_kind(page, "ship")
+        assert page.evaluate("_space4.ship().rolling") and "חללית" in _plain(page.evaluate("_space4.fact"))
+        page.wait_for_function("_space4.ship().state === 'landed'", timeout=15_000)
+        _tap_kind(page, "ship")
+        assert page.evaluate("_space4.ship().hopping")
+        assert page.evaluate("_space4.ship().flags") >= 1
+        assert page.evaluate("_space4.ship().yaw") in (15, 165), "landed, it shows its cruising three-quarter view (or its mirror)"
+        page.wait_for_function("_space4.ship().state === 'away'", timeout=70_000)
+        sh = page.evaluate("_space4.ship()")
+        assert 1 <= sh["landings"] and 1 <= len(sh["landedOn"]) <= stops, sh
+        assert len(set(sh["landedOn"])) == len(sh["landedOn"]), f"one landing per world: {sh['landedOn']}"
+        assert sh["dives"] == 0 and sh["minHole"] > 3.2, sh
+        assert errs == []
+
+    def test_the_starship_is_a_baked_sheet_of_a_3d_model(self, page):
+        """2026-11-23 (later): the ship is a 3-D model ray-marched offline (space4_ship_bake.html →
+        space4.ship.js): four yaws (the game mirrors them for the other half of a turn) and the
+        landing legs as a frame of their own. The scene loads the sheet from beside its own file."""
+        errs = _open(page)
+        _ship_ready(page)
+        m = page.evaluate("(() => { const m = window.SPACE4_SHIP; return {yaws: m.yaws, legs: m.legs, cw: m.cw, ch: m.ch, ppu: m.ppu, el: m.el, webp: m.src.startsWith('data:image/webp;base64,'), kb: Math.round(m.src.length/1024)}; })()")
+        assert m["yaws"] == [15, 40, 65, 90] and m["legs"] == 4 and m["webp"], m
+        assert m["cw"] == round(2.4 * m["ppu"]) and m["kb"] < 200, m
+        assert errs == []
+
+    def test_the_starship_sometimes_falls_into_the_hole(self, page):
+        """…and sometimes the tour ends in the black hole: a tightening spiral, and it is gone."""
+        errs = _open(page)
+        _ship_ready(page)
+        assert page.evaluate("_space4.shipVisit(true)") >= 1
+        page.wait_for_function("_space4.ship().state === 'spiral'", timeout=70_000)
+        page.wait_for_function("_space4.ship().dives === 1 && _space4.ship().state === 'away'", timeout=8_000)
+        assert page.evaluate("_space4.ship().landings") >= 1
         assert errs == []
 
     def test_empty_sky_scatters_travellers_and_hides_the_bubble(self, page):
@@ -289,14 +336,20 @@ class TestTheHolePulls:
         assert far > 6, "the tap was a long way from the hole"
         # …they bend toward the hole (soon every one is nearer than where it began)…
         page.wait_for_function(f"_space4.particles().list.length > 0 && _space4.particles().list.every(s => s.d < {far})", timeout=14_000)
+        # …one that is caught does not vanish at the rim (2026-11-23: it used to, in a flash that read as an explosion on
+        # the hole): it is still there deep inside the shadow, well under one shadow radius from the centre, falling in…
+        page.wait_for_function("_space4.particles().list.some(s => s.d < 0.8)", timeout=20_000)
         # …and the hole takes every one of them
         page.wait_for_function(f"_space4.eaten().tap === {e0['tap']} + 12 && _space4.particles().tapped === 0", timeout=20_000)
         # the particles that only fly across the screen are swallowed too, and replaced
         page.wait_for_function(f"_space4.eaten().n - _space4.eaten().tap >= {e0['n'] - e0['tap']} + 3", timeout=40_000)
         assert page.evaluate("_space4.particles().flying") in (10, 18)
-        # a tap on the rocket throws particles as well — the hole takes those too
+        # a tap on the starship throws particles as well — the hole takes those too
         e1 = page.evaluate("_space4.eaten().tap")
-        _tap_kind(page, "rocket")
+        _ship_ready(page)
+        page.evaluate("_space4.shipVisit(false)")
+        page.wait_for_function("_space4.ship().state === 'landed'", timeout=15_000)
+        _tap_kind(page, "ship")
         page.wait_for_function("_space4.particles().tapped > 0", timeout=3_000)
         page.wait_for_function(f"_space4.eaten().tap > {e1} && _space4.particles().tapped === 0", timeout=20_000)
         assert errs == []
@@ -319,6 +372,24 @@ class TestRenderingCost:
         assert per.get("fill", 0) + per.get("stroke", 0) < 60, "paths are batched: a few dozen fills and strokes a frame"
         assert per.get("createRadialGradient", 0) + per.get("createLinearGradient", 0) < 1, "no gradients are built per frame — everything soft is a baked sprite"
         assert per.get("clip", 0) < 1 and per.get("drawImage", 0) < 140
+        assert errs == []
+
+    def test_the_starships_visit_stays_cheap(self, page):
+        """While the starship flies, lands and lifts off the frame stays within the same budget: its
+        hull, flames, beam and lights are baked sprites, its trail four strokes — no gradient per frame."""
+        errs = _open(page, counter=True)
+        _ship_ready(page)
+        page.evaluate("_space4.shipVisit(false)")
+        page.wait_for_timeout(600)
+        page.evaluate("(() => { const C = window.__cc; C.frames = 0; C.calls = {}; C.total = 0; })()")
+        page.wait_for_function("window.__cc.frames >= 150", timeout=30_000)
+        c = page.evaluate("window.__cc")
+        f = c["frames"]
+        per = {k: v / f for k, v in c["calls"].items()}
+        assert page.evaluate("_space4.ship().state") != "away"
+        assert c["total"] / f < 900, f"{c['total'] / f:.0f} canvas calls a frame: {per}"
+        assert per.get("fill", 0) + per.get("stroke", 0) < 60 and per.get("drawImage", 0) < 140, per
+        assert per.get("createRadialGradient", 0) + per.get("createLinearGradient", 0) < 1 and per.get("clip", 0) < 1, per
         assert errs == []
 
     def test_the_parade_of_every_world_stays_cheap_too(self, page):
@@ -349,7 +420,7 @@ class TestFitAndLifecycle:
         assert bh["x"] == pytest.approx(390 * 0.90) and bh["y"] == pytest.approx(844 * 0.36) and bh["r"] == pytest.approx(390 * 0.075)
         T = page.evaluate("_space4.targets()")
         kinds = {q["kind"] for q in T}
-        assert {"bh", "planet", "earth", "galaxy", "cons", "sun", "rocket", "astro", "orbiter"} <= kinds
+        assert {"bh", "planet", "earth", "galaxy", "cons", "sun", "astro", "orbiter"} <= kinds
         # a resize re-lays the scene for the new window
         page.set_viewport_size({"width": 1280, "height": 800})
         page.wait_for_function("Math.abs(_space4.bh.x - 1280 * 0.9) < 1 && Math.abs(_space4.bh.r - 800 * 0.075) < 1", timeout=8_000)

@@ -52,7 +52,8 @@
    The cast: SATURN and EARTH (with the Moon and two satellites) roam the frame on
    slow curved paths that keep clear of the hole; the other planets, Pluto and an
    asteroid drift past one or two at a time; three galaxies turn; comets cross
-   with their tails away from the Sun; a little ROCKET patrols and an ASTRONAUT
+   with their tails away from the Sun; now and then a STARSHIP warps in, lands on every
+   world on screen in turn and warps out — or falls into the black hole; an ASTRONAUT
    floats beside the Earth; a star now and then goes supernova.
 
    Taps (on the bare sky — the game's own layers are ignored): any object → its
@@ -60,7 +61,7 @@
    (the disk and jets flare, every grain is yanked in, a space rock spirals in
    and is pulled into a streak) · Saturn / Earth / a passing world → it spins up ·
    the Moon or a satellite → an extra lap · a galaxy → it whirls · a constellation
-   → it lights up · a bright star → a supernova · the rocket → a loop · the
+   → it lights up · a bright star → a supernova · the starship → a loop the loop (a hop when landed) · the
    astronaut → a somersault · the Sun → a flare · empty sky → a burst of
    travellers.
 
@@ -70,6 +71,20 @@
    Hooks: window._space4. The previous scene (space2.bg.js) stays, unloaded. */
 (function(){
 'use strict';
+// where this file was loaded from — the starship's sprite sheet (space4.ship.js) sits beside it
+const SHIP_BASE=((document.currentScript&&document.currentScript.src)||'').replace(/[^\/]*$/,'');
+let SHIP_SHEET=null,shipSheetAsked=false;                  // {m: the sheet's numbers, mips: [{c, s}] the sheet at full, half and quarter size}
+function loadShipSheet(){
+  if(SHIP_SHEET||shipSheetAsked)return;shipSheetAsked=true;
+  const go=()=>{const m=window.SPACE4_SHIP;if(!m)return;const im=new Image();
+    im.onload=()=>{const mips=[{c:im,s:1}];                  // smaller copies, so a small ship is drawn from a sheet near its own size (no shimmer)
+      for(const k of[.5,.25]){const c=document.createElement('canvas');c.width=Math.ceil(im.width*k);c.height=Math.ceil(im.height*k);
+        const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(mips[mips.length-1].c,0,0,c.width,c.height);mips.push({c,s:k});}
+      SHIP_SHEET={m,mips};};
+    im.src=m.src;};
+  if(window.SPACE4_SHIP)go();
+  else{const sc=document.createElement('script');sc.src=SHIP_BASE+'space4.ship.js';sc.onload=go;document.head.appendChild(sc);}
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SHADERS (shared with blackhole.html, adapted: off-axis camera, hole rotation,
@@ -1521,7 +1536,7 @@ window.BACKGROUNDS.space4={
       {x:W*.30,y:H*.80,scale:M*.055,tilt:.60,ang:4.0,spin:.030, arms:3,hueA:'255,214,180',hueB:'205,205,255'},
     ];
     for(const g of GALAXIES){g.x2=0;g.boostT=null;g.next=0;g.spr=bakeGalaxy(g);const D=g.scale*2.7;g.cv=mk(D,D);}
-    TIDAL=[];COMETS=[spawnComet(true)];nova=null;TAPP=[];GULPS=[];
+    TIDAL=[];COMETS=[spawnComet(true)];nova=null;TAPP=[];
     // the heroes
     if(!MAPS){MAPS=paintEarthMaps();SATMAP=paintSaturnMap();MOONMAP=paintMoonMap();}
     const sr=M*.136;
@@ -1732,15 +1747,21 @@ window.BACKGROUNDS.space4={
      Every one feels the hole from anywhere on the screen (an inverse-square pull
      plus a sideways swirl, so the fall is a spiral and not a straight line); the
      streak behind it shows its path bending; close in it heats from blue-white to
-     gold, winds round the hole and is gone in a small flash. Its TRAIL is the
-     last six places it has been, so the bend of its path is there to see.
-     A tap that makes particles (empty sky, the rocket, the astronaut, a galaxy)
+     gold and winds round the hole. Inside 1.5 shadow radii it is CAUGHT (2026-11-23:
+     it used to vanish at the rim in a flash, which read as an explosion ON the hole
+     — nothing that falls into a black hole does that): it keeps winding DOWN INTO
+     the dark disc, faster round and slower inward, reddening and dimming all the
+     way (the light of anything near the horizon is stretched red and fades), and is
+     gone without a flash once it is deep inside. Its TRAIL is the last six places
+     it has been, so the bend of its path is there to see.
+     A tap that makes particles (empty sky, the starship, the astronaut, a galaxy)
      throws a burst of bright ones from the spot — they fall in too, and the
      longer one lingers the harder the hole pulls it, so every one is taken.
-     Drawn as three batched paths (far · hot · tapped), one for the heads, and a
-     glow blit per flash.                                                        */
+     Drawn as three batched paths (far · hot · tapped) and one for the heads, plus
+     three more (trail + head each) for the caught ones, by how far they have faded. */
   const EATEN={n:0,tap:0};
-  let TAPP=[],GULPS=[];
+  let TAPP=[];
+  const CATCH=1.5,GONE=.5;                                   // caught inside 1.5 r · gone at 0.5 r, deep in the shadow
   function spawnTraveler(anywhere){
     const sp=(30+Math.random()*80)*M/800;let x,y,ang;
     if(anywhere){x=Math.random()*W;y=Math.random()*H*.9;ang=Math.random()*TAU;}
@@ -1756,16 +1777,28 @@ window.BACKGROUNDS.space4={
   // one step under the hole's pull (k = how hard); true when the hole has taken it
   function fall(s,dt,k){
     const dx=BH.x-s.x,dy=BH.y-s.y,d=Math.hypot(dx,dy)||1,r=BH.r,u=r/d;
-    if(d<r*1.12)return true;
+    const rec=()=>{s.tt+=dt;if(s.tt>(s.cw?.014:d<r*4.5?.025:.05)){s.tt=0;const q=s.tr;for(let i=11;i>1;i--)q[i]=q[i-2];q[0]=s.x;q[1]=s.y;if(s.n<6)s.n++;}};   // remember where it has been
+    if(s.cw){                                                  // CAUGHT: it winds down into the shadow — round and round, ever dimmer — and never comes out
+      const rho=d/r;if(rho<GONE)return true;
+      s.ca+=s.cw*dt*(CATCH/rho)*(1+SURGE);                      // faster round as it sinks…
+      const nr=(rho-dt*(.5+.6*rho)*(1+SURGE))*r;                // …and slower inward: to us it seems to hang near the horizon as its light fades
+      rec();s.x=BH.x+Math.cos(s.ca)*nr;s.y=BH.y+Math.sin(s.ca)*nr;s.d=nr/r;
+      return false;
+    }
+    if(d<r*CATCH){                                             // it crosses the point of no return, keeping the way it was turning
+      const cr=dx*s.vy-dy*s.vx,vt=Math.abs(cr)/d;              // (toward the hole) × velocity: which way round, and how fast
+      s.cw=(cr>=0?-1:1)*clamp(vt/d,2,3.6);s.ca=Math.atan2(-dy,-dx);
+      return false;
+    }
     const a=1500*(M/800)*u*u*k*(1+SURGE*2),sw=d<r*9?a*.55:0;                      // toward the hole — and round it, the way its disk turns
     s.vx+=(dx/d*a-dy/d*sw)*dt;s.vy+=(dy/d*a+dx/d*sw)*dt;
     if(d<r*3.4){const q=1-Math.min(1,1.5*dt);s.vx=s.vx*q+dx/d*a*dt*.8;s.vy=s.vy*q+dy/d*a*dt*.8;}   // close in, nothing slings back out
     const sp=Math.hypot(s.vx,s.vy),cap=900*M/800;if(sp>cap){s.vx*=cap/sp;s.vy*=cap/sp;}
-    s.tt+=dt;if(s.tt>.05){s.tt=0;const q=s.tr;for(let i=11;i>1;i--)q[i]=q[i-2];q[0]=s.x;q[1]=s.y;if(s.n<6)s.n++;}      // remember where it has been
+    rec();
     s.x+=s.vx*dt;s.y+=s.vy*dt;s.d=d/r;
     return false;
   }
-  function gulp(s,tap){EATEN.n++;if(tap)EATEN.tap++;if(GULPS.length<8)GULPS.push({x:s.x,y:s.y,t0:lastT});}
+  function gulp(s,tap){EATEN.n++;if(tap)EATEN.tap++;}
   function drawTravelers(t,dt){
     for(let i=0;i<TRAVELERS.length;i++){
       const s=TRAVELERS[i];
@@ -1782,18 +1815,26 @@ window.BACKGROUNDS.space4={
       for(const s of list){if(!pick(s))continue;const q=s.tr;ctx.moveTo(s.x,s.y);for(let j=0;j<s.n;j++)ctx.lineTo(q[j*2],q[j*2+1]);}
       ctx.strokeStyle=glowCol;ctx.lineWidth=lw*3.2;ctx.stroke();ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke();
     };
-    trails(TRAVELERS,s=>s.d>=4.5,'rgba(150,200,255,.16)','rgba(214,232,255,.9)',1.5);
-    trails(TRAVELERS,s=>s.d<4.5,'rgba(255,190,90,.22)','rgba(255,224,150,.98)',1.9);             // heated, close to the hole
-    if(TAPP.length)trails(TAPP,s=>true,'rgba(120,255,240,.22)','rgba(200,255,250,.98)',2.4);
+    trails(TRAVELERS,s=>!s.cw&&s.d>=4.5,'rgba(150,200,255,.16)','rgba(214,232,255,.9)',1.5);
+    trails(TRAVELERS,s=>!s.cw&&s.d<4.5,'rgba(255,190,90,.22)','rgba(255,224,150,.98)',1.9);     // heated, close to the hole
+    if(TAPP.length)trails(TAPP,s=>!s.cw,'rgba(120,255,240,.22)','rgba(200,255,250,.98)',2.4);
     ctx.fillStyle='rgba(255,255,255,.95)';ctx.beginPath();
-    for(const s of TRAVELERS)ctx.rect(s.x-s.r/2,s.y-s.r/2,s.r,s.r);
-    for(const s of TAPP)ctx.rect(s.x-s.r/2,s.y-s.r/2,s.r,s.r);
+    for(const s of TRAVELERS)if(!s.cw)ctx.rect(s.x-s.r/2,s.y-s.r/2,s.r,s.r);
+    for(const s of TAPP)if(!s.cw)ctx.rect(s.x-s.r/2,s.y-s.r/2,s.r,s.r);
     ctx.fill();
-    for(let i=GULPS.length-1;i>=0;i--){                      // the flash where one was swallowed
-      const q=GULPS[i],k=(t-q.t0)/.4;if(k>=1){GULPS.splice(i,1);continue;}
-      glow('255,232,180',q.x,q.y,BH.r*(.3+k*.6),(1-k)*.9);
+    // the caught ones, in three steps of fading: gold → orange → a deep red ember, thinner and fainter each step
+    const caught=[];for(const s of TRAVELERS)if(s.cw)caught.push(s);for(const s of TAPP)if(s.cw)caught.push(s);
+    if(caught.length)for(let b=0;b<3;b++){
+      const C=FALLC[b],inB=s=>Math.min(2,Math.max(0,((CATCH-s.d)/(CATCH-GONE)*3)|0))===b;
+      if(!caught.some(inB))continue;
+      trails(caught,inB,C[0],C[1],C[2]);
+      ctx.fillStyle=C[3];ctx.beginPath();for(const s of caught)if(inB(s)){const z=s.r*C[4];ctx.rect(s.x-z/2,s.y-z/2,z,z);}ctx.fill();
     }
   }
+  //            glow under the trail        the trail            width  the head          its size
+  const FALLC=[['rgba(255,170,70,.2)','rgba(255,206,120,.85)',1.7,'rgba(255,232,190,.9)',.85],
+               ['rgba(255,110,50,.13)','rgba(255,140,74,.52)',1.3,'rgba(255,170,110,.55)',.62],
+               ['rgba(200,60,40,.07)','rgba(196,70,52,.24)',.9,'rgba(210,90,70,.26)',.42]];
 
   // ── SATURN: the far rings, the turning body, the near rings, a little orbiting gravel
   function drawSaturn(t,dt){
@@ -2032,7 +2073,7 @@ window.BACKGROUNDS.space4={
     ctx.save();ctx.translate(x,y);ctx.rotate(a+ROCK.dir*Math.PI/2);ctx.globalAlpha=Math.min(1,(1-p)*3);
     ctx.drawImage(rockSpr.c,-z*1.4*st,-z,z*2.8*st,z*2);ctx.restore();ctx.globalAlpha=1;
   }
-  // ── sparks: one small pool for every burst (a tap on the rocket, the astronaut, a galaxy…)
+  // ── sparks: one small pool for every burst (a tap on the starship, the astronaut, a galaxy…)
   const SPARKS=[];
   function burst(x,y,n,sp){tapBurst(x,y,Math.ceil(n*.6),sp*1.1);for(let i=0;i<n&&SPARKS.length<48;i++){const a=Math.random()*TAU,v=sp*(.4+Math.random()*.6);SPARKS.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t0:lastT,life:.7+Math.random()*.6});}}
   function drawSparks(t,dt){
@@ -2047,36 +2088,59 @@ window.BACKGROUNDS.space4={
     ctx.fill();
   }
 
-  /* ── THE CREW: a little rocket on patrol and an astronaut floating by the Earth.
-     Both are baked sprites; a frame is one rotated blit each (plus the rocket's
-     flickering flame and a short exhaust trail drawn as one path).              */
-  let ROCKET=null,ASTRO=null;
+  /* ── THE CREW: the STARSHIP (2026-11-23 — it replaced the little patrolling rocket) and an
+     astronaut floating by the Earth.
+     THE STARSHIP is not always there: now and then it WARPS IN at the far (left) edge or the
+     top and makes a TOUR of every world on screen — Saturn, the Earth and the passing worlds,
+     nearest first. At each one it comes down over the top, slows to a hover, lowers its
+     landing legs and SETS DOWN on it under a soft landing beam (puffs of dust, a gold ring
+     round the world, a little flag planted beside it), rests a moment with its lights
+     blinking, then lifts off for the next. After the last world it warps out — or, sometimes,
+     THE BLACK HOLE catches it: it falls in along a tightening spiral, stretched longer and
+     thinner, and the disk flares as it is swallowed. A tap: a loop the loop (a hop if landed).
+     While landed it rides its world (the worlds drift and roam).
+     ART (2026-11-23, later — the user: "it must look much better"): the ship is a 3-D MODEL,
+     ray-marched OFFLINE with real light (backgrounds/space4_ship_bake.html, run by
+     _bake_space4_ship.py) into a small sprite sheet, backgrounds/space4.ship.js — a wide pearl
+     lifting body with a slim nose, a glass bubble cockpit with a little pilot in it, delta
+     wings that run rose → violet to the engine pods at their tips, a fin on each pod. The
+     sheet holds the ship at four yaws (15° the cruising three-quarter view … 90° nose-on);
+     the game draws the frame nearest S.yaw and mirrors it past 90°, so the ship really TURNS
+     when it changes direction. Its landing legs are a frame of their own, drawn under the
+     hull and grown from the belly. Everything live is placed by projecting the model's own
+     points the way the bake's camera does (prj): three ion flames behind the stern and the
+     pods, engine glows, blinking fin lights, the nose lamp, the cabin glow, the landing
+     beam. A frame is about fifteen blits and a few batched paths — no gradient is built
+     per frame, and the scene never reads the sheet's pixels.                           */
+  let SHIP=null,ASTRO=null;
+  const SHIP_U=90,SHIP_LEN=180,SHIP_FOOT=40,SHIP_TOP=50;      // sprite units: 90 to a model unit (the ship is 2 long) · centre → feet · centre → fin tips
+  // a point of the model (x forward, y up, z = the right wing) → sprite units from the ship's centre, at a yaw (radians)
+  function prj(x,y,z,psi){const m=SHIP_SHEET.m,e=m.el*Math.PI/180,c=Math.cos(psi),sn=Math.sin(psi);
+    return[(x*c-z*sn)*SHIP_U,-(y*Math.cos(e)-(x*sn+z*c)*Math.sin(e))*SHIP_U];}
+  // the ion flame (pointing -x from the nozzle), a small downward jet, the landing beam, the warp streak
+  function bakeShipFx(){
+    const ion=len=>{const s=mk(len+6,26),h=s.g;
+      h.fillStyle=lg(h,len+6,0,0,0,[[0,'rgba(255,255,255,1)'],[.16,'rgba(196,246,255,.96)'],[.48,'rgba(140,176,255,.62)'],[.8,'rgba(226,128,255,.26)'],[1,'rgba(255,120,220,0)']]);
+      h.beginPath();h.moveTo(len+6,5.5);h.quadraticCurveTo(len*.55,4,0,13);h.quadraticCurveTo(len*.55,22,len+6,20.5);h.closePath();h.fill();
+      h.fillStyle=lg(h,len+6,0,len*.42,0,[[0,'rgba(255,255,255,.96)'],[1,'rgba(255,255,255,0)']]);
+      h.beginPath();h.moveTo(len+6,9.4);h.quadraticCurveTo(len*.74,10,len*.42,13);h.quadraticCurveTo(len*.74,16,len+6,16.6);h.closePath();h.fill();return s;};
+    const jet=mk(14,30),j=jet.g;j.fillStyle=lg(j,0,0,0,30,[[0,'rgba(255,255,255,.95)'],[.3,'rgba(176,236,255,.8)'],[1,'rgba(160,140,255,0)']]);
+    j.beginPath();j.moveTo(3,0);j.quadraticCurveTo(5,16,7,30);j.quadraticCurveTo(9,16,11,0);j.closePath();j.fill();
+    const beam=mk(64,100),b=beam.g;b.fillStyle=lg(b,0,0,0,100,[[0,'rgba(220,244,255,.55)'],[.6,'rgba(200,226,255,.18)'],[1,'rgba(200,226,255,0)']]);
+    b.beginPath();b.moveTo(25,0);b.lineTo(39,0);b.lineTo(64,100);b.lineTo(0,100);b.closePath();b.fill();
+    const warp=mk(256,14),w=warp.g;w.fillStyle=lg(w,0,0,256,0,[[0,'rgba(170,220,255,0)'],[.7,'rgba(210,236,255,.55)'],[1,'rgba(255,255,255,1)']]);
+    w.beginPath();w.moveTo(0,7);w.lineTo(256,2);w.lineTo(256,12);w.closePath();w.fill();
+    return{fl:[ion(52),ion(64)],jet,beam,warp};
+  }
   function buildCrew(){
     const k=clamp(M/800,.62,1.15);
-    const spr=mk(96,52),g=spr.g;                            // THE ROCKET, nose toward +x: a polished hull, a red nose and fins, a brass porthole
-    g.fillStyle=lg(g,6,0,20,0,[[0,'#3a4258'],[.5,'#9aa4bc'],[1,'#5a6480']]);g.beginPath();g.moveTo(20,17);g.lineTo(7,11);g.quadraticCurveTo(4,26,7,41);g.lineTo(20,35);g.closePath();g.fill();   // the engine bell
-    g.fillStyle='rgba(255,190,90,.7)';g.beginPath();g.ellipse(8,26,2.4,11,0,0,TAU);g.fill();
-    for(const sy of[1,-1]){g.save();g.translate(0,26);g.scale(1,sy);                // two swept fins, lit along the leading edge
-      g.fillStyle=lg(g,0,-26,0,-9,[[0,'#ff8a9a'],[.5,'#e8405c'],[1,'#a82240']]);g.beginPath();g.moveTo(44,-12);g.quadraticCurveTo(34,-22,22,-26);g.lineTo(12,-24);g.quadraticCurveTo(18,-18,20,-11);g.closePath();g.fill();
-      g.strokeStyle='rgba(255,220,226,.8)';g.lineWidth=1;g.beginPath();g.moveTo(44,-12);g.quadraticCurveTo(34,-22,22,-26);g.stroke();g.restore();}
-    const hull=()=>{g.beginPath();g.moveTo(18,13);g.bezierCurveTo(42,8.6,72,10,94.6,26);g.bezierCurveTo(72,42,42,43.4,18,39);g.closePath();};
-    g.fillStyle=lg(g,0,10,0,42,[[0,'#ffffff'],[.28,'#f2f5fb'],[.62,'#c9d2e6'],[1,'#8792b0']]);hull();g.fill();
-    g.save();hull();g.clip();
-    g.fillStyle=lg(g,0,10,0,42,[[0,'#ff97a6'],[.4,'#ea4862'],[1,'#9c1e3c']]);g.fillRect(70,6,28,40);g.fillRect(23,6,6,40);          // the nose cone, a band round the tail
-    g.strokeStyle='rgba(90,104,140,.45)';g.lineWidth=.8;g.beginPath();g.moveTo(34,8);g.lineTo(34,44);g.moveTo(62,8);g.lineTo(62,44);g.stroke();   // panel seams and their rivets
-    g.fillStyle='rgba(90,104,140,.55)';for(const x of[34,62])for(let y=14;y<40;y+=5){g.beginPath();g.arc(x+2,y,.6,0,TAU);g.fill();}
-    g.fillStyle=lg(g,0,10,0,20,[[0,'rgba(255,255,255,.9)'],[1,'rgba(255,255,255,0)']]);g.beginPath();g.ellipse(52,14.6,38,3,.02,0,TAU);g.fill();                    // the light along its back
-    g.fillStyle=lg(g,0,32,0,43,[[0,'rgba(30,40,80,0)'],[1,'rgba(30,40,80,.4)']]);g.fillRect(16,32,80,12);
-    g.restore();
-    g.fillStyle=lg(g,38,16,58,36,[[0,'#ffe9a8'],[.5,'#d8a23c'],[1,'#8a5a14']]);g.beginPath();g.arc(48,26,9.6,0,TAU);g.fill();                                        // the porthole: a brass ring, deep glass, a glint
-    g.fillStyle=rg(g,45,23,1,8,[[0,'#dff6ff'],[.5,'#62b6ee'],[1,'#1f4f9a']]);g.beginPath();g.arc(48,26,7,0,TAU);g.fill();
-    g.fillStyle='rgba(255,255,255,.85)';g.beginPath();g.ellipse(45.4,22.8,2.6,1.4,-.6,0,TAU);g.fill();g.fillStyle='rgba(255,255,255,.5)';g.beginPath();g.arc(50.6,29,.9,0,TAU);g.fill();
-    g.fillStyle='#8a5a14';for(let i=0;i<6;i++){const a=i/6*TAU+.3;g.beginPath();g.arc(48+Math.cos(a)*8.3,26+Math.sin(a)*8.3,.6,0,TAU);g.fill();}
-    const flame=len=>{const s=mk(len+4,22),h=s.g;h.fillStyle=lg(h,len+4,0,0,0,[[0,'rgba(210,236,255,.98)'],[.16,'rgba(255,255,255,.98)'],[.4,'rgba(255,224,120,.95)'],[.74,'rgba(255,130,56,.7)'],[1,'rgba(255,80,40,0)']]);
-      h.beginPath();h.moveTo(len+4,4);h.quadraticCurveTo(len*.5,1,0,11);h.quadraticCurveTo(len*.5,21,len+4,18);h.closePath();h.fill();
-      h.fillStyle=lg(h,len+4,0,len*.4,0,[[0,'rgba(170,214,255,.9)'],[1,'rgba(170,214,255,0)']]);h.beginPath();h.moveTo(len+4,7.6);h.quadraticCurveTo(len*.7,8,len*.4,11);h.quadraticCurveTo(len*.7,14,len+4,14.4);h.closePath();h.fill();return s;};
-    ROCKET={k,x:W*.44,y:H*.6,a:0,leg:null,trail:[],lastTrail:0,loopT:null,spr,fl:[flame(22),flame(30)]};
-    newLeg(ROCKET);
+    const len=clamp(M*.2,90,190);
+    loadShipSheet();
+    SHIP={len,kC:len/SHIP_LEN,k:len/SHIP_LEN,fx:bakeShipFx(),x:-999,y:-999,th:0,face:1,yaw:15,
+          state:'away',next:lastT+6+Math.random()*4,tour:[],stop:0,leg:null,ph0:0,w:null,dive:false,visitT:null,
+          legK:0,thr:0,jets:0,beam:0,beamLen:0,trail:[],lastTrail:0,warp:null,rollT:null,hopT:null,touchT:null,leftT:null,
+          puffs:[],flags:[],visits:0,landings:0,dives:0,landedOn:[],spiral:null,minHole:1e9};
+    // (the astronaut, unchanged)
     const as=mk(60,76),h=as.g;                              // THE ASTRONAUT, floating with one arm up: a soft white suit, a gold visor with the Earth in it
     h.fillStyle=lg(h,10,0,50,0,[[0,'#8e98b4'],[.5,'#c9d1e2'],[1,'#7f8aa8']]);h.beginPath();h.roundRect(11,19,38,36,9);h.fill();                                       // the life-support pack
     h.fillStyle='#6f7a98';h.fillRect(14,24,4,10);h.fillRect(42,24,4,10);
@@ -2103,37 +2167,218 @@ window.BACKGROUNDS.space4={
     h.strokeStyle='rgba(150,162,192,.8)';h.lineWidth=1;h.beginPath();h.ellipse(30,16,10.8,9,0,0,TAU);h.stroke();
     ASTRO={k,spr:as,ph:Math.random()*TAU,spinT:null,x:0,y:0};
   }
-  // a waypoint clear of the hole and of the Sun's limb
-  function crewPoint(){for(let i=0;i<20;i++){const x=rnd(.07,.74)*W,y=rnd(.12,.8)*H;if(Math.hypot(x-BH.x,y-BH.y)>BH.r*4.8)return{x,y};}return{x:W*.3,y:H*.5};}
-  const bez=(L,u,k)=>{const v=1-u;return v*v*v*L.p0[k]+3*v*v*u*L.p1[k]+3*v*u*u*L.p2[k]+u*u*u*L.p3[k];};
-  // the rocket flies smooth legs (cubic curves, each leaving along the heading it arrived on);
-  // a leg whose curve would swing near the hole is thrown away and another is drawn
-  function newLeg(r){
-    const p0={x:r.x,y:r.y},d0=r.leg?r.leg.d1:{x:1,y:0};
-    for(let tries=0;tries<12;tries++){
-      const p3=crewPoint(),L=Math.hypot(p3.x-p0.x,p3.y-p0.y)||1,a1=Math.atan2(p3.y-p0.y,p3.x-p0.x)+rnd(-.9,.9),d1={x:Math.cos(a1),y:Math.sin(a1)};
-      const leg={p0,p1:{x:p0.x+d0.x*L*.4,y:p0.y+d0.y*L*.4},p2:{x:p3.x-d1.x*L*.4,y:p3.y-d1.y*L*.4},p3,d1,u:0,dur:Math.max(4,L/(W/20))};
-      let ok=L>M*.2;
-      for(let i=1;i<10&&ok;i++){const x=bez(leg,i/10,'x'),y=bez(leg,i/10,'y');if(Math.hypot(x-BH.x,y-BH.y)<BH.r*3.8||y>H*.88||y<H*.04||x<W*.02)ok=false;}
-      if(ok||tries===11){r.leg=leg;return;}
+  // ── where the ship sets down on a world right now: the point on top of it (Saturn: its tilted pole),
+  //    the outward normal there, and the world's centre / size (null = that world isn't on screen)
+  function landSpot(w){
+    if(w.kind==='saturn'){if(!saturnOn())return null;const p=PLANET,ry=p.r*.9,th=RING_ROT;
+      return{x:p.x+ry*Math.sin(th),y:p.y-ry*Math.cos(th),n:-Math.PI/2+th,cx:p.x,cy:p.y,r:p.r,rt:ry};}
+    if(w.kind==='earth'){if(!earthOn())return null;const e=EARTH;return{x:e.x,y:e.y-e.r,n:-Math.PI/2,cx:e.x,cy:e.y,r:e.r,rt:e.r};}
+    const p=w.ref;if(PASSERS.indexOf(p)<0||p.g<1)return null;
+    const x=p.x+(p.ox||0),y=p.y+(p.oy||0),rt=p.w.id==='jupiter'?p.r*.935:p.w.id==='asteroid'?p.r*.72:p.r;
+    return{x,y:y-rt,n:-Math.PI/2,cx:x,cy:y,r:p.r,rt};
+  }
+  const landK=s=>clamp(s.r*1.7,M*.09,M*.15)/SHIP_LEN;          // the ship scales to the world it lands on
+  // how high it hovers before it sets down: 70 units, less when the world is near the top of the frame
+  const hovFor=(s,k)=>clamp(s.y-H*.012-(SHIP_FOOT+SHIP_TOP)*k,12*k,70*k);
+  const spotOk=s=>!!s&&s.x>W*.05&&s.x<W*.95&&s.y<H*.9&&s.y-H*.008-(SHIP_FOOT+SHIP_TOP+12)*landK(s)>0&&Math.hypot(s.x-BH.x,s.y-BH.y)>BH.r*3.6;
+  function worldsNow(){
+    const L=[];if(saturnOn())L.push({kind:'saturn',name:'saturn'});if(earthOn())L.push({kind:'earth',name:'earth'});
+    for(const p of PASSERS)L.push({kind:'passer',ref:p,name:p.w.id});
+    return L.filter(w=>spotOk(landSpot(w)));
+  }
+  const easeIO=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,easeO=u=>1-Math.pow(1-u,3),easeI=u=>u*u*u,smooth=u=>u*u*(3-2*u);
+  const bezAt=(x0,y0,p1,p2,p3,u)=>{const v=1-u;return{x:v*v*v*x0+3*v*v*u*p1.x+3*v*u*u*p2.x+u*u*u*p3.x,y:v*v*v*y0+3*v*v*u*p1.y+3*v*u*u*p2.y+u*u*u*p3.y};};
+  const inFrame=p=>({x:clamp(p.x,W*.02,W*.98),y:clamp(p.y,H*.03,H*.97)});
+  // a cubic leg from where the ship is to a MOVING end: the start and its control point are fixed when the
+  // leg begins, the end (and the control point beside it) follow the target each frame — so the ship homes
+  // in on a drifting world. A leg that would swing through the hole's neighbourhood is bent away from it.
+  function legTo(S,endFn,t,dur,ease){
+    const e0=endFn(),L=Math.max(1,Math.hypot(e0.x-S.x,e0.y-S.y)),h=S.th+(S.face<0?Math.PI:0);
+    let p1={x:S.x+Math.cos(h)*L*.35,y:S.y+Math.sin(h)*L*.35};
+    for(let tries=0;tries<3;tries++){let bad=false;
+      for(let i=1;i<10&&!bad;i++){const q=bezAt(S.x,S.y,p1,e0.p2||e0,e0,i/10);if(Math.hypot(q.x-BH.x,q.y-BH.y)<BH.r*3.4)bad=true;}
+      if(!bad)break;const ax=S.x-BH.x,ay=S.y-BH.y,al=Math.hypot(ax,ay)||1;p1={x:p1.x+ax/al*BH.r*3,y:p1.y+ay/al*BH.r*3};}
+    S.leg={x0:S.x,y0:S.y,p1,endFn,t0:t,dur,ease,L,k0:S.k};
+  }
+  // the hover point over a world (where a leg ends) and the control point above it, so the ship comes DOWN onto it
+  function hoverEnd(w,L){
+    const s=landSpot(w);if(!s)return null;const k=landK(s),nx=Math.cos(s.n),ny=Math.sin(s.n),up=SHIP_FOOT*k+hovFor(s,k);
+    return{x:s.x+nx*up,y:s.y+ny*up,p2:inFrame({x:s.x+nx*(up+L*.45),y:s.y+ny*(up+L*.45)}),s,k};
+  }
+  function goToStop(S,t){
+    while(S.stop<S.tour.length){
+      const w=S.tour[S.stop],s=landSpot(w);
+      if(spotOk(s)){
+        S.w=w;S.state='fly';const L0=Math.max(1,Math.hypot(s.x-S.x,s.y-S.y));
+        legTo(S,()=>hoverEnd(w,L0),t,clamp(L0/(M*.3),2,5.5),S.stop===0?easeO:easeIO);
+        return;}
+      S.stop++;
+    }
+    // the tour is over: warp out at the edge — or, sometimes, fall into the hole
+    S.w=null;
+    if(S.dive){
+      const a0=Math.atan2(S.y-BH.y,S.x-BH.x),h=S.th+(S.face<0?Math.PI:0),cr=Math.cos(a0)*Math.sin(h)-Math.sin(a0)*Math.cos(h);
+      const sp={a0,dir:cr>0?1:-1},q0=spiralPos(sp,0),q1=spiralPos(sp,.01),tx=q1.x-q0.x,ty=q1.y-q0.y,tl=Math.hypot(tx,ty)||1,L0=Math.max(1,Math.hypot(q0.x-S.x,q0.y-S.y));
+      S.spiral=sp;S.state='todive';
+      legTo(S,()=>({x:q0.x,y:q0.y,p2:{x:q0.x-tx/tl*L0*.4,y:q0.y-ty/tl*L0*.4}}),t,clamp(L0/(M*.32),1.6,4.5),easeIO);
+    }else{
+      const top=Math.random()<.5,ex=top?rnd(.12,.6)*W:W*.035,ey=top?H*.045:rnd(.14,.6)*H;
+      S.state='leave';legTo(S,()=>({x:ex,y:ey}),t,clamp(Math.hypot(ex-S.x,ey-S.y)/(M*.34),1.6,4),easeI);
     }
   }
-  function drawRocket(t,dt){
-    const r=ROCKET,L=r.leg;
-    L.u+=dt/L.dur;
-    if(L.u>=1){r.x=L.p3.x;r.y=L.p3.y;newLeg(r);return drawRocket(t,0);}
-    const u=L.u,nx=bez(L,u,'x'),ny=bez(L,u,'y'),ax=bez(L,Math.min(1,u+.01),'x')-nx,ay=bez(L,Math.min(1,u+.01),'y')-ny;
-    r.x=nx;r.y=ny;if(ax||ay)r.a=Math.atan2(ay,ax);
-    let roll=0;if(r.loopT!==null){const p=(t-r.loopT)/1.1;if(p>=1)r.loopT=null;else roll=TAU*p*p*(3-2*p);}
-    const a=r.a+roll,cs=Math.cos(a),sn=Math.sin(a),k=r.k;
-    if(t-r.lastTrail>.07){r.lastTrail=t;r.trail.push(nx-cs*44*k,ny-sn*44*k);if(r.trail.length>18)r.trail.splice(0,2);}
-    ctx.fillStyle='rgba(255,220,160,.5)';ctx.beginPath();     // the exhaust trail: one path
-    for(let i=0,n=r.trail.length/2;i<n;i++){const z=(1.2+i*.34)*k;ctx.rect(r.trail[i*2]-z/2,r.trail[i*2+1]-z/2,z,z);}
-    ctx.fill();
-    ctx.setTransform(DPR2*cs*k,DPR2*sn*k,-DPR2*sn*k,DPR2*cs*k,DPR2*nx,DPR2*ny);
-    const fl=r.fl[((t*14)|0)&1];ctx.drawImage(fl.c,-48+12-fl.w,-fl.h/2,fl.w,fl.h);
-    ctx.drawImage(r.spr.c,-48,-26,96,52);
-    ctx.setTransform(DPR2,0,0,DPR2,0,0);
+  // the fall into the hole: a tightening spiral (p 0 → 1), squeezed on the hole's right so it stays on screen
+  function spiralPos(sp,p){const a=sp.a0+sp.dir*(1.1*p+6.4*p*p),d=BH.r*(4.2-3.2*Math.pow(p,1.4)),f=.78-.22*Math.cos(a);
+    return{x:BH.x+Math.cos(a)*d*f,y:BH.y+Math.sin(a)*d*.8,a};}
+  // a new visit (the scheduler's and the hooks' entry): it warps in at the left edge or the top
+  function startVisit(t,dive){
+    const S=SHIP,tour=SHIP_SHEET?worldsNow():[];
+    if(!tour.length){S.next=t+6;return 0;}
+    const top=Math.random()<.4,e=top?{x:rnd(.1,.55)*W,y:H*.05}:{x:W*.035,y:rnd(.18,.64)*H};
+    const order=[],rest=tour.slice();let px=e.x,py=e.y;
+    while(rest.length&&order.length<4){let bi=0,bd=1e9;rest.forEach((w,i)=>{const s=landSpot(w),d=Math.hypot(s.x-px,s.y-py);if(d<bd){bd=d;bi=i;}});
+      const w=rest.splice(bi,1)[0],s=landSpot(w);order.push(w);px=s.x;py=s.y;}
+    S.tour=order;S.stop=0;S.dive=dive==null?Math.random()<.38:!!dive;
+    const s0=landSpot(order[0]),dx=s0.x-e.x,dy=s0.y-e.y;
+    S.x=e.x;S.y=e.y;S.face=dx>=0?1:-1;S.yaw=S.face>0?15:165;S.th=clamp(Math.atan2(dy*S.face,dx*S.face),-.8,.8);
+    S.k=S.kC;S.trail.length=0;S.flags=[];S.puffs.length=0;S.leftT=null;S.rollT=S.hopT=S.touchT=null;S.spiral=null;S.minHole=1e9;S.landedOn=[];
+    S.warp={x:e.x,y:e.y,a:Math.atan2(dy,dx),t0:t};S.visits++;S.visitT=t;S.leg=null;
+    goToStop(S,t);
+    return order.length;
+  }
+  function touchDown(S,t,s){
+    S.touchT=t;S.landings++;S.landedOn.push(S.w.name);
+    const tx=-Math.sin(s.n),ty=Math.cos(s.n),half=SHIP_LEN*S.k*.22;
+    for(let i=0;i<6;i++){const side=i%2?1:-1,v=(18+Math.random()*26)*S.k*1.6;
+      S.puffs.push({x:s.x+tx*side*half,y:s.y+ty*side*half,vx:tx*side*v+Math.cos(s.n)*6,vy:ty*side*v+Math.sin(s.n)*6,t0:t});}
+    if(!S.flags.some(f=>f.w===S.w))S.flags.push({w:S.w,side:-S.face,t0:t,col:['255,128,196','124,214,255','255,206,110'][S.flags.length%3]});
+  }
+  function updateShip(t,dt){
+    const S=SHIP;
+    if(S.state==='away'){if(t>=S.next&&!stopped&&SHIP_SHEET)startVisit(t);return;}
+    let x=S.x,y=S.y,thT=null,legK=0,thr=1,jets=0,beam=0;
+    const hdg=()=>{const vx=x-S.x,vy=y-S.y;if(Math.abs(vx)>.25*dt*60)S.face=vx>0?1:-1;
+      return(vx||vy)?clamp(Math.atan2(vy*S.face,vx*S.face),-1,1):S.th;};
+    if(S.state==='fly'||S.state==='leave'||S.state==='todive'){
+      if(S.state==='fly'&&!spotOk(landSpot(S.w))){S.stop++;goToStop(S,t);return;}   // the world left the frame (or neared the hole): on to the next
+      const L=S.leg,u=Math.min(1,(t-L.t0)/L.dur),e=L.ease(u),end=L.endFn(),p=bezAt(L.x0,L.y0,L.p1,end.p2||end,end,e);
+      x=p.x;y=p.y;thT=hdg();
+      if(S.state==='fly'){S.k=L.k0+(end.k-L.k0)*smooth(e);if(e>.7)thT+=((end.s.n+Math.PI/2)-thT)*smooth((e-.7)/.3);thr=1-.55*smooth(Math.max(0,(e-.6)/.4));}
+      else{S.k+=((S.state==='leave'?S.kC:S.kC*.9)-S.k)*Math.min(1,dt*2);thr=1.15;}
+      if(u>=1){
+        if(S.state==='fly'){S.state='descend';S.ph0=t;}
+        else if(S.state==='leave'){S.warp={x,y,a:Math.atan2(y-S.y,x-S.x),t0:t,out:true};S.state='away';S.leftT=t;S.next=t+18+Math.random()*16;S.x=-999;S.y=-999;return;}
+        else{S.state='spiral';S.ph0=t;}
+      }
+    }
+    else if(S.state==='descend'||S.state==='landed'||S.state==='liftoff'){
+      const s=landSpot(S.w);
+      if(!s){S.stop++;goToStop(S,t);return;}
+      const nx=Math.cos(s.n),ny=Math.sin(s.n),k=landK(s),hov=hovFor(s,k),foot=SHIP_FOOT*k;S.k=k;thT=s.n+Math.PI/2;
+      let up=foot;
+      if(S.state==='descend'){const q=Math.min(1,(t-S.ph0)/1.4),e=easeO(q);
+        up=foot+hov*(1-e);legK=smooth(Math.min(1,q*1.5));thr=.18;jets=1-q*.4;beam=Math.min(1,q*3)*Math.max(0,1-Math.max(0,q-.8)*5);
+        if(q>=1){S.state='landed';S.ph0=t;touchDown(S,t,s);}}
+      else if(S.state==='landed'){const q=(t-S.ph0)/2.3;
+        if(S.hopT!==null){const p=(t-S.hopT)/.7;if(p>=1)S.hopT=null;else up+=Math.sin(Math.PI*p)*Math.max(hov,30*k)*.6;}
+        legK=1;thr=0;if(q>=1){S.state='liftoff';S.ph0=t;}}
+      else{const q=Math.min(1,(t-S.ph0)/1.05),e=easeI(q);
+        up=foot+hov*1.2*e;legK=1-smooth(Math.min(1,q*1.6));thr=.3+.7*e;jets=1-q*.6;
+        if(q>=1){S.x=s.x+nx*up;S.y=s.y+ny*up;S.stop++;goToStop(S,t);return;}}
+      x=s.x+nx*up;y=s.y+ny*up;S.beamLen=(up-18*k)/k+6;
+    }
+    else if(S.state==='spiral'){                               // caught: a tightening spiral, faster and faster, stretched
+      const p=Math.min(1,(t-S.ph0)/2.7),q=spiralPos(S.spiral,p),a=q.a;
+      x=q.x;y=q.y;thT=hdg();thr=1.3;S.k+=(S.kC*.9*(1-.45*p)-S.k)*Math.min(1,dt*3);
+      if(p>=1){TIDAL.push({ang:a,t0:t,big:26});bhFrenzyT=t;S.dives++;S.state='away';S.leftT=t;S.spiral=null;S.next=t+22+Math.random()*14;S.x=-999;S.y=-999;return;}
+    }
+    if(S.state!=='spiral'&&S.state!=='todive')S.minHole=Math.min(S.minHole,Math.hypot(x-BH.x,y-BH.y)/BH.r);
+    if(thT!==null){const d=Math.atan2(Math.sin(thT-S.th),Math.cos(thT-S.th));S.th+=d*Math.min(1,dt*(S.state==='spiral'?10:5));}
+    S.yaw+=clamp((S.face>0?15:165)-S.yaw,-dt*340,dt*340);      // a change of direction is a real turn: 150° in under half a second
+    S.x=x;S.y=y;S.legK=legK;S.thr=thr;S.jets=jets;S.beam=beam;
+  }
+  function drawShip(t,dt){
+    const S=SHIP,fx=S.fx;
+    updateShip(t,dt);
+    // the warp flash where it came in / went out
+    if(S.warp){const q=(t-S.warp.t0)/.7;
+      if(q>=1)S.warp=null;else{const a=S.warp.a,c=Math.cos(a),s=Math.sin(a),L=M*.5*(1-q*.4),al=(1-q)*(1-q),z=1-q*.5;
+        ctx.globalAlpha=al;ctx.setTransform(DPR2*c,DPR2*s,-DPR2*s,DPR2*c,DPR2*S.warp.x,DPR2*S.warp.y);
+        ctx.drawImage(fx.warp.c,-L,-7*z,L,14*z);
+        ctx.setTransform(DPR2,0,0,DPR2,0,0);ctx.globalAlpha=1;glow('200,230,255',S.warp.x,S.warp.y,M*.09*(1-q*.3),.9*al);}}
+    // the flags it planted (they ride their worlds, and fade once the ship has gone)
+    if(S.flags.length){const fade=S.leftT!=null?Math.max(0,1-(t-S.leftT)/3.5):1;
+      if(fade<=0)S.flags=[];else{
+        ctx.strokeStyle='rgba(235,228,255,'+(.9*fade).toFixed(3)+')';ctx.lineWidth=Math.max(1,M*.0024);ctx.lineCap='round';ctx.beginPath();
+        const pens=[];
+        for(const f of S.flags){const s=landSpot(f.w);if(!s)continue;const pop=Math.min(1,(t-f.t0)/.45),gr=pop<1?1+Math.sin(pop*Math.PI)*.25:1;
+          const off=clamp(SHIP_LEN*landK(s)*.58/s.rt,.32,1.2)*f.side,a=s.n+off,bx=s.cx+Math.cos(a)*s.rt*.96,by=s.cy+Math.sin(a)*s.rt*.96;
+          const hgt=M*.034*pop*gr,tx=bx+Math.cos(a)*hgt,ty=by+Math.sin(a)*hgt;ctx.moveTo(bx,by);ctx.lineTo(tx,ty);pens.push({tx,ty,a,hgt,col:f.col,ph:f.t0});}
+        ctx.stroke();
+        for(const p of pens){const wv=1+Math.sin(t*5+p.ph*3)*.18,ux=Math.cos(p.a),uy=Math.sin(p.a),px=-uy*wv,py=ux*wv,L=p.hgt*.62,hh=p.hgt*.34;
+          ctx.fillStyle='rgba('+p.col+','+(.95*fade).toFixed(3)+')';ctx.beginPath();ctx.moveTo(p.tx,p.ty);
+          ctx.quadraticCurveTo(p.tx+px*L*.5-ux*hh*.2,p.ty+py*L*.5-uy*hh*.2,p.tx+px*L-ux*hh*.5,p.ty+py*L-uy*hh*.5);ctx.lineTo(p.tx-ux*hh,p.ty-uy*hh);ctx.closePath();ctx.fill();}
+      }}
+    // the touchdown dust
+    for(let i=S.puffs.length-1;i>=0;i--){const p=S.puffs[i],q=(t-p.t0)/.9;if(q>=1){S.puffs.splice(i,1);continue;}
+      p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.95;p.vy*=.95;glow('236,228,255',p.x,p.y,S.len*.11*(.5+q),.55*(1-q));}
+    // the gold ring round the world it just touched
+    if(S.touchT!==null){const q=(t-S.touchT)/.8,s=S.w&&landSpot(S.w);if(q>=1||!s)S.touchT=null;else{
+      ctx.strokeStyle='rgba(255,214,120,'+(.75*(1-q)).toFixed(3)+')';ctx.lineWidth=2*(1-q)+.5;ctx.beginPath();ctx.ellipse(s.cx,s.cy,s.r*(1.12+q*.5),s.r*(1.12+q*.5),0,0,TAU);ctx.stroke();}}
+    // the ion trail: a thin bright streak over a soft glow, in four stretches by age (cyan → violet → rose), each fainter and finer
+    if(S.state!=='away'&&S.state!=='landed'&&t-S.lastTrail>.03&&Math.abs(S.yaw-90)>50){S.lastTrail=t;const h=S.th+(S.yaw>90?Math.PI:0),bx=-SHIP_U*.9*Math.abs(Math.cos(S.yaw*Math.PI/180))*S.k;   // (not in mid-turn: the stern swings round)
+      S.trail.push(S.x+Math.cos(h)*bx,S.y+Math.sin(h)*bx,t);if(S.trail.length>120)S.trail.splice(0,3);}
+    while(S.trail.length&&t-S.trail[2]>1.1)S.trail.splice(0,3);
+    if(S.trail.length>3){const TC=['170,240,255','176,206,255','210,176,255','255,170,226'],n=S.trail.length/3;
+      ctx.lineCap='butt';ctx.lineJoin='round';
+      for(let b=0;b<4;b++){let started=false;ctx.beginPath();
+        for(let i=n-1;i>=0;i--){const age=t-S.trail[i*3+2],bk=Math.min(3,(age/1.1*4)|0);if(bk<b)continue;if(bk>b)break;
+          if(!started){const j=Math.min(n-1,i+1);ctx.moveTo(S.trail[j*3],S.trail[j*3+1]);started=true;}ctx.lineTo(S.trail[i*3],S.trail[i*3+1]);}
+        if(!started)continue;
+        const f=1-b*.22;
+        ctx.strokeStyle='rgba('+TC[b]+','+(.17*f).toFixed(3)+')';ctx.lineWidth=S.len*.075*f;ctx.stroke();
+        ctx.strokeStyle='rgba('+TC[b]+','+(.8*f).toFixed(3)+')';ctx.lineWidth=Math.max(1,S.len*.018*f);ctx.stroke();}}
+    if(S.state==='away')return;
+    // THE SHIP — in its own frame: the frame of the sheet nearest its yaw (mirrored past 90°), looped on a tap, stretched in the spiral
+    const m=SHIP_SHEET.m,mir=S.yaw>90?-1:1,yq=mir<0?180-S.yaw:S.yaw;
+    let fi=0;for(let i=1;i<m.yaws.length;i++)if(Math.abs(m.yaws[i]-yq)<Math.abs(m.yaws[fi]-yq))fi=i;
+    const psi=m.yaws[fi]*Math.PI/180;
+    let loop=0,ky=1,st=1,al=1;
+    if(S.rollT!==null){const p=(t-S.rollT)/1.1;if(p>=1)S.rollT=null;else loop=-mir*TAU*easeIO(p);}      // a tap: a loop the loop
+    if(S.state==='spiral'){const p=Math.min(1,(t-S.ph0)/2.7);st=1+p*p*2.8;ky/=1+p*.9;al=Math.min(1,(1-p)*3);}
+    if(S.touchT!==null)ky*=1-.07*Math.sin(Math.min(1,(t-S.touchT)/.35)*Math.PI);
+    const kin=S.visitT!==null?Math.min(1,.15+.85*easeO(Math.min(1,(t-S.visitT)/.45))):1;   // it pops out of the warp
+    const bob=(S.state==='landed'||S.state==='descend')?0:Math.sin(t*2.4)*S.len*.012;
+    const k=S.k*kin,rot=S.th+loop,c=Math.cos(rot),s=Math.sin(rot),fk=mir*st,X=S.x-s*bob,Y=S.y+c*bob;
+    const base=()=>ctx.setTransform(DPR2*c*k*fk,DPR2*s*k*fk,-DPR2*s*k*ky,DPR2*c*k*ky,DPR2*X,DPR2*Y);
+    const lt=(q,col,z)=>ctx.drawImage(glowSpr(col).c,q[0]-z,q[1]-z,z*2,z*2);
+    glow('206,186,255',X,Y,SHIP_LEN*k*.62,.16*al);
+    ctx.globalAlpha=al;base();
+    const belly=prj(.1,-.19,0,psi);
+    if(S.beam>0&&S.beamLen>4){ctx.globalAlpha=al*S.beam*.9;ctx.drawImage(fx.beam.c,belly[0]-26,belly[1],52,S.beamLen);ctx.globalAlpha=al;}
+    // the sheet, at the size nearest the one it is drawn at
+    const need=DPR2*k*SHIP_U/m.ppu;let mip=SHIP_SHEET.mips[0];for(const q of SHIP_SHEET.mips)if(q.s>=need)mip=q;
+    const cw=m.cw*mip.s,ch=m.ch*mip.s,dw=m.cellW*SHIP_U,dh=m.cellH*SHIP_U;
+    if(S.legK>0){const py=prj(0,-.12,0,psi)[1];                 // the landing legs: their own frame, grown from the belly, under the hull
+      ctx.globalAlpha=al*Math.min(1,S.legK*2.5);ctx.translate(0,py);ctx.scale(1,S.legK);
+      ctx.drawImage(mip.c,m.legs*cw,0,cw,ch,-dw/2,-dh/2-py,dw,dh);ctx.globalAlpha=al;base();}
+    if(S.jets>0){ctx.globalAlpha=al*S.jets*(.75+.25*Math.sin(t*40));                        // the little jets that hold it up as it sets down
+      for(const q of[prj(.3,-.17,0,psi),prj(-.4,-.13,.5,psi)])ctx.drawImage(fx.jet.c,q[0]-6,q[1],12,26*S.jets);ctx.globalAlpha=al;}
+    if(S.thr>0){                                                // three ion flames — the stern and the two pods — along the way the engines point
+      const o=prj(0,0,0,psi),b=prj(-1,0,0,psi),ex=b[0]-o[0],ey=b[1]-o[1],fa=Math.atan2(ey,ex)-Math.PI,fs=Math.hypot(ex,ey)/SHIP_U;
+      const fl=fx.fl[((t*16)|0)&1],thr=Math.min(1.3,S.thr),flick=.92+.08*Math.sin(t*31);
+      for(const[nx,ny,nz,z]of[[-.86,-.13,-.82,.62],[-.84,.06,0,1.15],[-.86,-.13,.82,.62]]){const q=prj(nx,ny,nz,psi),w=fl.w*thr*flick*z*(.25+.75*fs),hh=26*z*(.7+.3*Math.min(1,thr));
+        ctx.globalAlpha=al*Math.min(1,thr*1.4);lt(q,'150,236,255',16*z*(.6+.4*thr));
+        ctx.translate(q[0],q[1]);ctx.rotate(fa);ctx.drawImage(fl.c,-w,-hh/2,w,hh);base();}
+      ctx.globalAlpha=al;}
+    ctx.drawImage(mip.c,fi*cw,0,cw,ch,-dw/2,-dh/2,dw,dh);
+    // running lights: the fin tips blink in turn (rose · cyan), the nose lamp twinkles, the belly lamp as it lands, the cabin glows while it rests
+    const bl=(t*1.3)%1;
+    ctx.globalAlpha=al*(bl<.18?1:.22);lt(prj(-.86,.22,.93,psi),'255,120,200',9);
+    ctx.globalAlpha=al*(bl>.5&&bl<.68?1:.22);lt(prj(-.86,.22,-.93,psi),'120,230,255',9);
+    ctx.globalAlpha=al*(.5+.4*Math.sin(t*3.1));lt(prj(.99,-.02,0,psi),'255,236,190',8);
+    if(S.legK>0){ctx.globalAlpha=al*S.legK*.9;lt(belly,'255,250,230',11);}
+    if(S.state==='landed'){ctx.globalAlpha=al*(.3+.22*Math.sin(t*4));lt(prj(.32,.2,0,psi),'160,230,255',26);}
+    ctx.globalAlpha=1;ctx.setTransform(DPR2,0,0,DPR2,0,0);
   }
   function drawAstro(t){
     const s=ASTRO,an=t*.1+s.ph,k=s.k;
@@ -2146,7 +2391,7 @@ window.BACKGROUNDS.space4={
   }
 
   // ── what a tap can reach, small things first. Each target carries its Hebrew name + fact.
-  const FACT_ROCKET=['חֲלָלִית','הַחֲלָלִית טָסָה בֶּחָלָל בְּעֶזְרַת מָנוֹעַ רָקֵטִי — הָאֵשׁ נִדְחֶפֶת אֲחוֹרָה, וְהַחֲלָלִית נִדְחֶפֶת קָדִימָה!'];
+  const FACT_SHIP=['חֲלָלִית','חֲלָלִיּוֹת אֲמִתִּיּוֹת כְּבָר נָחֲתוּ עַל הַיָּרֵחַ, עַל מַאְדִּים וַאֲפִלּוּ עַל שָׁבִיט — הֵן מְאַטּוֹת בְּעֶזְרַת מְנוֹעִים וְיוֹרְדוֹת לְאַט עַל רַגְלַיִם!'];
   const FACT_ASTRO=['אַסְטְרוֹנָאוּטִית','בֶּחָלָל אֵין אֲוִיר וְאֵין כְּבִידָה שֶׁמּוֹשֶׁכֶת לְמַטָּה — לָכֵן הָאַסְטְרוֹנָאוּטִית מְרַחֶפֶת, וַחֲלִיפַת הֶחָלָל שׁוֹמֶרֶת עָלֶיהָ.'];
   const earthOn=()=>EARTH.mv.state!=='wait',saturnOn=()=>PLANET.mv.state!=='wait';
   function hitTargets(){
@@ -2158,7 +2403,7 @@ window.BACKGROUNDS.space4={
     if(nova)add(nova.x,nova.y,70,FACT.nova,'nova');
     for(const p of PASSERS)T.push({x:p.x+(p.ox||0),y:p.y+(p.oy||0),r:Math.max(p.r*1.4,18),name:p.w.name,fact:p.w.fact,kind:'passer',o:p});
     for(const c of COMETS)if(c.delay<=0)add(c.x,c.y,40,FACT.comet,'comet');
-    add(ROCKET.x,ROCKET.y,42*ROCKET.k,FACT_ROCKET,'rocket');
+    if(SHIP.state!=='away'&&SHIP.state!=='spiral')add(SHIP.x,SHIP.y,SHIP_LEN*SHIP.k*.4,FACT_SHIP,'ship');
     if(earthOn()){add(EARTH.x,EARTH.y-EARTH.r*1.1,EARTH.r*.45,FACT.aurora,'earth');add(EARTH.x,EARTH.y,EARTH.r*1.15,FACT.earth,'earth');}
     if(saturnOn())add(PLANET.x,PLANET.y,PLANET.r*2.2,FACT.saturn,'planet');
     add(BH.x,BH.y,BH.r*3.2,FACT.bh,'bh');
@@ -2192,7 +2437,7 @@ window.BACKGROUNDS.space4={
       else if(tg.kind==='planet')PLANET.boostT=lastT;
       else if(tg.kind==='passer')tg.o.boostT=lastT;
       else if(tg.kind==='cons')tg.o.litT=lastT;
-      else if(tg.kind==='rocket'){if(ROCKET.loopT===null)ROCKET.loopT=lastT;burst(tg.x,tg.y,12,110);}
+      else if(tg.kind==='ship'){if(SHIP.state==='landed'){if(SHIP.hopT===null)SHIP.hopT=lastT;}else if(SHIP.rollT===null)SHIP.rollT=lastT;burst(tg.x,tg.y,12,110);}
       else if(tg.kind==='astro'){if(ASTRO.spinT===null)ASTRO.spinT=lastT;burst(tg.x,tg.y,10,90);}
       else if(tg.kind==='sun'){if(flareT===null)sunFlare(lastT);}
       factEl.innerHTML=`<b style="color:#FFD27D">${tg.name}</b><br>${tg.fact}`;
@@ -2256,7 +2501,7 @@ window.BACKGROUNDS.space4={
     updateMover(EARTH.mv,EARTH,t,dt);
     if(saturnOn())drawSaturn(t,dt);
     if(earthOn()){drawEarth(t,dt);drawAstro(t);}
-    drawRocket(t,dt);
+    drawShip(t,dt);
     drawComets(t,dt);
     drawShoot(t);
     drawTidal(t);
@@ -2290,7 +2535,13 @@ window.BACKGROUNDS.space4={
     galaxies:()=>GALAXIES.map(g=>({x:g.x,y:g.y,r:g.scale,boost:clickEnv(g.boostT,lastT,3)})),
     constellations:()=>CONS.map(c=>({name:c.cn.name,x:c.cn.hit.x,y:c.cn.hit.y,lit:clickEnv(c.litT,lastT,3)})),
     stars:()=>NEAR.map(s=>XY(s.x,s.y)),
-    rocket:()=>({x:ROCKET.x,y:ROCKET.y,a:ROCKET.a,looping:ROCKET.loopT!==null}),
+    // the starship: ready = its sprite sheet is in (it never comes before) · where it is, what it is doing ('away' between visits · fly · descend · landed · liftoff · leave ·
+    // todive · spiral), the worlds it landed on this visit, and the closest it came to the hole (in hole radii) outside a dive
+    ship:()=>({ready:!!SHIP_SHEET,x:SHIP.x,y:SHIP.y,state:SHIP.state,k:SHIP.k,face:SHIP.face,yaw:SHIP.yaw,visits:SHIP.visits,landings:SHIP.landings,dives:SHIP.dives,
+               landedOn:SHIP.landedOn.slice(),stops:SHIP.tour.length,stop:SHIP.stop,dive:SHIP.dive,minHole:SHIP.minHole,
+               rolling:SHIP.rollT!==null,hopping:SHIP.hopT!==null,flags:SHIP.flags.length}),
+    // test hook: a visit now (dive: true → it ends in the hole, false → it warps out); returns how many worlds it will visit
+    shipVisit(dive){return startVisit(lastT,dive);},
     astronaut:()=>({x:ASTRO.x,y:ASTRO.y,spinning:ASTRO.spinT!==null,on:earthOn()}),
     comets:()=>COMETS.filter(c=>c.delay<=0).map(c=>XY(c.x,c.y)),
     nova:()=>nova?{x:nova.x,y:nova.y}:null,

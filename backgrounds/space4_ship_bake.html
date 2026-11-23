@@ -1,0 +1,265 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>space4 — the starship's bake studio</title>
+<style>html,body{margin:0;background:#0b0a1c;color:#ccd;font:13px sans-serif}canvas{display:block}</style></head>
+<body><canvas id="gl"></canvas>
+<script>
+/* ── THE STARSHIP'S BAKE STUDIO (a dev tool — the game never loads this page) ──────────────
+   The 🌌 scene's starship (backgrounds/space4.bg.js) is a 3-D MODEL — a signed-distance
+   field: a wide pearl lifting body drawn out into a slim nose, a glass bubble cockpit with a
+   little pilot in it, delta wings that run rose → violet to the engine pods at their tips, a
+   fin on each pod, three landing legs — RAY-MARCHED here with real lighting (a key light, a cool sky above and the
+   Sun's warm glow below, soft shadows, ambient occlusion, a reflected nebula, fresnel glass)
+   and saved as a small SPRITE SHEET. The game only blits those frames, so the ship costs one
+   drawImage a frame however rich it looks. Frames: the ship at four yaws (15° = the cruising
+   three-quarter view … 90° = nose-on; the game mirrors them for the other half of a turn) and
+   the landing legs alone (the ship holding them out, so they slide out from under it).
+
+   Run by backgrounds/_bake_space4_ship.py (Playwright):   window.bakeShip({ppu, ss, yaws, q})
+   → {src (a webp data URL), cw, ch, …} → written into backgrounds/space4.ship.js.
+   window.previewShip({ppu, ss, yaw, mode}) → one frame as a PNG data URL, to look at.
+
+   Model units: the ship is 2 long (x: tail −1 … nose +1), y up, z = its right wing. The
+   camera is orthographic, looking along −z from 22° above. The game projects the same way
+   (prj() in space4.bg.js) to place the flames, lights and legs — keep EL and the part
+   positions there in step with the ones here.                                              */
+const FS = `#version 300 es
+precision highp float;
+uniform vec2 uRes, uJit;
+uniform float uYaw, uMode, uPpu;      // uMode: 0 the ship, legs up · 1 the legs alone (the ship holds them out) · 2 the ship with its legs down
+out vec4 outC;
+const float EL = 0.3839724;           // the camera's elevation, 22°
+const vec3 ACC1 = vec3(1.0, 0.17, 0.52), ACC2 = vec3(0.40, 0.21, 0.95), GOLD = vec3(1.0, 0.72, 0.24), CYAN = vec3(0.40, 0.90, 1.0);
+const vec3 KEYW = vec3(-0.2996, 0.7990, 0.5194);          // the key light (world), from above, a little left, toward the camera
+float cy, sy;                                             // cos / sin of the yaw
+vec3 toShip(vec3 v){ return vec3(v.x*cy + v.z*sy, v.y, -v.x*sy + v.z*cy); }
+vec3 toWorld(vec3 v){ return vec3(v.x*cy - v.z*sy, v.y, v.x*sy + v.z*cy); }
+mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+float sdEll(vec3 p, vec3 r){ float k0 = length(p/r), k1 = length(p/(r*r)); return k0*(k0 - 1.0)/k1; }
+float smin(float a, float b, float k){ float h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0); return mix(b, a, h) - k*h*(1.0 - h); }
+float sdCap(vec3 p, vec3 a, vec3 b, float r){ vec3 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba)/dot(ba, ba), 0.0, 1.0); return length(pa - ba*h) - r; }
+float sdBox(vec3 p, vec3 b){ vec3 q = abs(p) - b; return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0); }
+
+// ── the parts ──
+float dHullOnly(vec3 p){
+  float d = sdEll(p - vec3(-0.02, 0.0, 0.0), vec3(0.90, 0.20, 0.36));                 // a wide, flat lifting body…
+  d = smin(d, sdEll(p - vec3(0.52, -0.02, 0.0), vec3(0.48, 0.12, 0.17)), 0.22);       // …drawn out into a slim nose…
+  d = smin(d, sdEll(p - vec3(-0.42, 0.09, 0.0), vec3(0.44, 0.15, 0.24)), 0.14);       // …with a raised engine deck aft
+  return max(d, -(p.x + 0.86));                                                       // the flat stern
+}
+float wingS(float az){ return clamp((az - 0.25)/0.55, 0.0, 1.0); }                    // 0 at the wing's root … 1 at its tip
+float dWing(vec3 p){                                                                  // a delta wing: swept, tapered, drooping a little to its pod
+  float az = abs(p.z), s = wingS(az);
+  vec3 w = vec3(p.x - mix(-0.20, -0.62, s), p.y + 0.02 + 0.10*s, az - 0.53);
+  return sdBox(w, vec3(mix(0.47, 0.17, s), mix(0.032, 0.010, s), 0.29)) - 0.012;
+}
+float dHull(vec3 p){ return smin(dHullOnly(p), dWing(p)*0.6, 0.06); }                 // wings and body are one skin
+float dCanopy(vec3 p){ return sdEll(p - vec3(0.32, 0.14, 0.0), vec3(0.36, 0.17, 0.20)); }
+vec3 nq(vec3 p){ return vec3(p.x + 0.56, p.y + 0.13, abs(p.z) - 0.82); }              // a pod's own frame (at the wing tip)
+float dNac(vec3 p){
+  vec3 q = nq(p);
+  float d = sdCap(q, vec3(-0.26, 0.0, 0.0), vec3(0.16, 0.0, 0.0), 0.085);
+  d = smin(d, sdEll(q - vec3(0.22, 0.0, 0.0), vec3(0.21, 0.068, 0.068)), 0.05);
+  return max(d, -(q.x + 0.30));                                                       // the flat rear, where the exhaust glows
+}
+float dFin(vec3 p){                                                                   // a fin on each pod: canted outward, swept back
+  vec3 f = vec3(p.x + 0.66, p.y + 0.05, abs(p.z) - 0.83);
+  f.yz = rot(0.34)*f.yz;
+  f.x += 0.70*f.y;
+  return sdBox(f - vec3(0.0, 0.14, 0.0), vec3(0.15 - 0.30*f.y, 0.15, 0.010)) - 0.008;
+}
+float dLegs(vec3 p){
+  float d = sdCap(p, vec3(0.46, -0.12, 0.0), vec3(0.50, -0.40, 0.0), 0.021);
+  d = min(d, sdEll(p - vec3(0.50, -0.415, 0.0), vec3(0.078, 0.017, 0.078)));
+  vec3 q = vec3(p.x, p.y, abs(p.z));
+  d = min(d, sdCap(q, vec3(-0.42, -0.11, 0.60), vec3(-0.46, -0.40, 0.66), 0.021));
+  d = min(d, sdCap(q, vec3(-0.30, -0.10, 0.58), vec3(-0.44, -0.29, 0.64), 0.012));    // a brace
+  return min(d, sdEll(q - vec3(-0.46, -0.415, 0.66), vec3(0.078, 0.017, 0.078)));
+}
+vec2 U(vec2 a, vec2 b){ return a.x < b.x ? a : b; }
+vec2 map(vec3 p){
+  vec2 r = vec2(dHull(p), 1.0);
+  r = U(r, vec2(dCanopy(p), 2.0));
+  r = U(r, vec2(dNac(p), 3.0));
+  r = U(r, vec2(dFin(p)*0.7, 6.0));
+  if(uMode > 0.5) r = U(r, vec2(dLegs(p), 8.0));
+  return r;
+}
+vec3 nrm(vec3 p){ vec2 e = vec2(0.0007, -0.0007);
+  return normalize(e.xyy*map(p + e.xyy).x + e.yyx*map(p + e.yyx).x + e.yxy*map(p + e.yxy).x + e.xxx*map(p + e.xxx).x); }
+float shadow(vec3 ro, vec3 rd){ float res = 1.0, t = 0.02;
+  for(int i = 0; i < 44; i++){ float h = map(ro + rd*t).x; res = min(res, 9.0*h/t); t += clamp(h, 0.012, 0.08); if(res < 0.02 || t > 1.8) break; }
+  return clamp(res, 0.0, 1.0); }
+float occ(vec3 p, vec3 n){ float o = 0.0, s = 1.0;
+  for(int i = 1; i <= 5; i++){ float h = 0.03*float(i); o += (h - map(p + n*h).x)*s; s *= 0.62; }
+  return clamp(1.0 - 2.4*o, 0.0, 1.0); }
+
+// ── the light ──
+vec3 env(vec3 r){                                                              // what the ship reflects: deep space, a nebula, the Sun below
+  vec3 c = mix(vec3(0.03, 0.03, 0.10), vec3(0.10, 0.08, 0.26), smoothstep(-0.3, 1.0, r.y));
+  c += vec3(1.0, 0.42, 0.80)*0.50*exp(-pow((r.y - 0.22)/0.20, 2.0))*(0.55 + 0.45*sin(r.x*4.0 + r.z*2.0 + 1.0));
+  c += vec3(0.35, 0.80, 1.0)*0.45*exp(-pow((r.y - 0.62)/0.16, 2.0))*(0.55 + 0.45*sin(r.x*3.0 - r.z*2.5 - 0.8));
+  c += vec3(1.0, 0.60, 0.26)*1.3*smoothstep(-0.05, -0.85, r.y);
+  c += vec3(1.0)*2.2*smoothstep(0.90, 0.985, dot(r, KEYW));
+  c += vec3(0.8, 0.9, 1.0)*1.2*smoothstep(0.93, 0.99, dot(r, normalize(vec3(0.75, 0.35, 0.55))));
+  return c;
+}
+vec3 hemi(vec3 nw){ return mix(vec3(0.95, 0.52, 0.30)*0.55, vec3(0.42, 0.46, 0.80)*0.62, 0.5 + 0.5*nw.y); }
+const vec3 VW = vec3(0.0, 0.3746066, 0.9271839);                               // toward the camera (world)
+vec3 lit(vec3 p, vec3 n, vec3 alb, float gloss, float f0, float metal){
+  vec3 nw = toWorld(n), Ls = toShip(KEYW);
+  float ndl = max(dot(n, Ls), 0.0), sh = shadow(p + n*0.004, Ls), ao = occ(p, n);
+  float ndv = max(dot(nw, VW), 0.0), fr = f0 + (1.0 - f0)*pow(1.0 - ndv, 5.0);
+  float sp = pow(max(dot(nw, normalize(KEYW + VW)), 0.0), gloss)*(gloss + 8.0)/40.0;
+  vec3 diff = alb*(ndl*sh*vec3(1.15, 1.10, 1.05) + hemi(nw)*ao*0.7)*(1.0 - metal);
+  vec3 c = diff + mix(vec3(1.0), alb, metal)*(sp*sh*1.2 + env(reflect(-VW, nw))*fr*ao);
+  return c + vec3(1.0, 0.55, 0.30)*0.35*pow(1.0 - ndv, 3.0)*smoothstep(0.2, -0.6, nw.y);   // the Sun's rim light from below
+}
+// ── inside the cockpit: the pilot's helmet and shoulders, the cabin (the hull itself), a dash ──
+const vec3 HELM = vec3(0.27, 0.222, 0.0);
+vec2 mapIn(vec3 p){
+  vec2 r = vec2(length(p - HELM) - 0.076, 1.0);
+  r = U(r, vec2(sdEll(p - vec3(0.25, 0.10, 0.0), vec3(0.10, 0.085, 0.12)), 2.0));
+  r = U(r, vec2(dHullOnly(p) + 0.012, 3.0));
+  r = U(r, vec2(sdBox(p - vec3(0.47, 0.165, 0.0), vec3(0.04, 0.03, 0.12)) - 0.012, 4.0));
+  return r;
+}
+vec3 nrmIn(vec3 p){ vec2 e = vec2(0.0007, -0.0007);
+  return normalize(e.xyy*mapIn(p + e.xyy).x + e.yyx*mapIn(p + e.yyx).x + e.yxy*mapIn(p + e.yxy).x + e.xxx*mapIn(p + e.xxx).x); }
+vec3 cabin(vec3 ro, vec3 rd){
+  float t = 0.004; vec2 h = vec2(1.0, 0.0);
+  for(int i = 0; i < 60; i++){ h = mapIn(ro + rd*t); if(h.x < 0.0006 || t > 0.9) break; t += h.x; }
+  if(h.x > 0.0006) return vec3(0.03, 0.05, 0.12);
+  vec3 p = ro + rd*t, n = nrmIn(p), nw = toWorld(n), a;
+  float ndl = max(dot(n, toShip(KEYW)), 0.0);
+  if(h.y < 1.5){                                                               // the helmet: white, a dark visor that looks ahead, a pink band over the top
+    vec3 d = normalize(p - HELM);
+    float vis = smoothstep(0.18, 0.26, dot(d, normalize(vec3(0.9, 0.05, 0.0))))*smoothstep(0.62, 0.50, abs(d.y - 0.05));
+    a = mix(vec3(0.96, 0.96, 1.0), vec3(0.05, 0.08, 0.20), vis);
+    a = mix(a, ACC1, smoothstep(0.035, 0.02, abs(d.z))*smoothstep(0.2, 0.5, d.y)*(1.0 - vis));
+    vec3 c = a*(0.35 + ndl*0.95) + vec3(1.0)*pow(max(dot(nw, normalize(KEYW + VW)), 0.0), 60.0)*1.5;
+    return c + vis*env(reflect(-VW, nw))*0.5;
+  }
+  if(h.y < 2.5) a = vec3(0.92, 0.93, 1.0);
+  else if(h.y < 3.5) a = vec3(0.10, 0.13, 0.24);
+  else { a = vec3(0.07, 0.09, 0.16); a += CYAN*1.6*step(0.6, fract(p.z*22.0))*step(0.172, p.y)*step(p.x, 0.49); }
+  return a*(0.30 + ndl*0.8) + vec3(1.0, 0.72, 0.45)*0.05;
+}
+
+void main(){
+  cy = cos(uYaw); sy = sin(uYaw);
+  vec2 s = (gl_FragCoord.xy + uJit - uRes*0.5)/uPpu;
+  vec3 fw = vec3(0.0, -sin(EL), -cos(EL)), up = vec3(0.0, cos(EL), -sin(EL));
+  vec3 ro = toShip(vec3(s.x, 0.0, 0.0) + up*s.y - fw*3.0), rd = toShip(fw);
+  float t = 0.0; vec2 h = vec2(1.0, 0.0);
+  for(int i = 0; i < 150; i++){ h = map(ro + rd*t); if(h.x < 0.0005 || t > 6.0) break; t += h.x*0.9; }
+  if(h.x > 0.0005 || (uMode > 0.5 && uMode < 1.5 && h.y < 7.5)){ outC = vec4(0.0); return; }
+  vec3 p = ro + rd*t, n = nrm(p), nw = toWorld(n), col;
+  float ndv = max(dot(nw, VW), 0.0), id = h.y;
+  if(id < 1.5){                                                                // THE BODY: a pearl hull; wings that run rose → violet to their tips
+    float az = abs(p.z), ws = wingS(az), wingK = smoothstep(0.37, 0.43, az);
+    vec3 alb = vec3(0.93, 0.93, 0.97);
+    alb *= mix(vec3(1.0), 0.90 + 0.10*cos(6.2832*(ndv*1.4 + vec3(0.0, 0.33, 0.67))), 0.7);       // the pearl's sheen
+    // the hull: a stripe (violet aft → rose forward) under a gold pin line, two seams, three warm portholes, a gold nose tip
+    float yc = -0.050 - 0.02*p.x, onSide = step(p.x, 0.80)*step(-0.80, p.x)*(1.0 - wingK);
+    float band = smoothstep(0.022, 0.018, abs(p.y - yc))*onSide, pin = smoothstep(0.0065, 0.0045, abs(p.y - yc - 0.032))*onSide;
+    vec3 hullA = mix(alb, mix(ACC2, ACC1, smoothstep(-0.7, 0.7, p.x)), band);
+    float seam = smoothstep(0.004, 0.002, abs(p.x + 0.60)) + smoothstep(0.004, 0.002, abs(p.x - 0.10));
+    hullA *= 1.0 - 0.16*clamp(seam, 0.0, 1.0)*(1.0 - band);
+    float tip = smoothstep(0.952, 0.958, p.x), gold = clamp(pin + tip, 0.0, 1.0), win = 0.0, rim = 0.0, hi = 0.0;
+    if(abs(n.z) > 0.30 && az < 0.40) for(int i = 0; i < 3; i++){
+      vec2 c = vec2(-0.40 + 0.17*float(i), 0.045); float d = length(p.xy - c);
+      win = max(win, smoothstep(0.036, 0.032, d)); rim = max(rim, smoothstep(0.049, 0.045, d)*smoothstep(0.032, 0.036, d));
+      hi = max(hi, smoothstep(0.013, 0.007, length(p.xy - c - vec2(-0.011, 0.012))));
+    }
+    // the wings: the colour runs from rose at the root to violet at the tip; a pearl leading edge, a gold line at the root
+    float xc = mix(-0.20, -0.62, ws), hc = mix(0.47, 0.17, ws), u = (p.x - (xc - hc))/(2.0*hc);   // 0 at the trailing edge … 1 at the leading edge
+    vec3 wingA = mix(ACC1, ACC2, smoothstep(0.05, 0.95, ws)*0.85 + 0.15*(1.0 - u));
+    wingA = mix(wingA, alb, smoothstep(0.86, 0.93, u));
+    float wgold = smoothstep(0.014, 0.008, abs(az - 0.455))*step(0.02, n.y) + smoothstep(0.80, 0.83, u)*(1.0 - smoothstep(0.86, 0.89, u));
+    gold = clamp(mix(gold + rim, wgold, wingK), 0.0, 1.0);
+    alb = mix(mix(hullA, wingA, wingK), GOLD, gold);
+    col = lit(p, n, alb, mix(90.0, 140.0, gold), mix(0.06, 0.35, gold), gold*0.45);
+    col = mix(col, vec3(1.0, 0.60, 0.20)*1.25 + hi*2.2, win*(1.0 - wingK));
+    col = mix(col, CYAN*2.4 + 0.3, wingK*smoothstep(0.045, 0.025, u)*step(0.0, n.y + 0.4));       // a light strip down the trailing edge
+    float stern = smoothstep(-0.852, -0.858, p.x);                              // the stern: dark, three glowing engine ports
+    float port = max(smoothstep(0.085, 0.065, length(p.yz - vec2(0.09, 0.0))), smoothstep(0.07, 0.05, length(vec2(p.y - 0.03, az - 0.17))));
+    col = mix(col, mix(vec3(0.03, 0.04, 0.08), CYAN*3.0 + 1.0, port), stern);
+  } else if(id < 2.5){                                                         // THE COCKPIT: glass over the cabin, a gold collar where it meets the hull
+    float edge = smoothstep(0.022, 0.012, dHull(p));
+    float fr = 0.05 + 0.95*pow(1.0 - ndv, 4.0);
+    float sp = pow(max(dot(nw, normalize(KEYW + VW)), 0.0), 220.0)*6.0;
+    vec3 glass = cabin(p, rd)*(1.0 - fr)*vec3(0.62, 0.84, 1.0) + env(reflect(-VW, nw))*fr*1.15 + sp;
+    glass += vec3(0.25, 0.55, 0.9)*0.10;
+    col = mix(glass, lit(p, n, GOLD, 140.0, 0.35, 0.45), edge);
+  } else if(id < 3.5){                                                         // A POD: pearl, a gold-ringed rose cone, a cyan light band, a dark rim round its glowing exhaust
+    vec3 q = nq(p); float r = length(q.yz);
+    vec3 alb = vec3(0.93, 0.93, 0.97);
+    float cone = smoothstep(0.20, 0.21, q.x), ring = smoothstep(0.185, 0.19, q.x)*(1.0 - cone);
+    alb = mix(alb, ACC1, cone); alb = mix(alb, GOLD, ring);
+    float back = smoothstep(-0.285, -0.297, q.x), rimK = smoothstep(-0.22, -0.24, q.x);
+    alb = mix(alb, vec3(0.13, 0.14, 0.19), rimK);
+    col = lit(p, n, alb, mix(90.0, 140.0, ring), mix(0.06, 0.4, max(ring, rimK)), max(ring*0.45, rimK*0.8));
+    col = mix(col, CYAN*2.4 + 0.3, smoothstep(0.012, 0.008, abs(q.x + 0.10)));
+    col = mix(col, mix(vec3(0.02, 0.03, 0.06), CYAN*3.0 + 1.0, smoothstep(0.072, 0.050, r)), back);
+  } else if(id < 6.5){                                                         // a fin: rose → violet, its tip lit
+    float hgt = smoothstep(-0.04, 0.24, p.y);
+    col = lit(p, n, mix(ACC1, ACC2, hgt), 110.0, 0.08, 0.15);
+    col = mix(col, CYAN*2.2 + 0.4, smoothstep(0.222, 0.236, p.y));
+  } else {                                                                     // a landing leg
+    col = lit(p, n, vec3(0.62, 0.64, 0.74), 90.0, 0.35, 0.6);
+    col = mix(col, lit(p, n, GOLD, 120.0, 0.5, 0.85), smoothstep(-0.395, -0.402, p.y));
+  }
+  col *= 0.53;
+  col = (col*(2.51*col + 0.03))/(col*(2.43*col + 0.59) + 0.14);               // filmic tone curve
+  outC = vec4(pow(clamp(col, 0.0, 1.0), vec3(0.4545)), 1.0);
+}`;
+const VS = `#version 300 es
+in vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }`;
+const CELL_W = 2.4, CELL_H = 1.7;                       // a frame, in model units (the ship's origin at its centre)
+const glc = document.getElementById('gl');
+const gl = glc.getContext('webgl2', {alpha: true, premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true});
+function prog(){
+  const mk = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  const p = gl.createProgram(); gl.attachShader(p, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  gl.useProgram(p);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(p, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  return p;
+}
+const P = prog(), UL = n => gl.getUniformLocation(P, n);
+// one frame, ss × ss samples a pixel → ImageData (straight alpha)
+function renderFrame(ppu, ss, yawDeg, mode){
+  const w = Math.round(CELL_W*ppu), h = Math.round(CELL_H*ppu);
+  glc.width = w; glc.height = h; gl.viewport(0, 0, w, h);
+  gl.uniform2f(UL('uRes'), w, h); gl.uniform1f(UL('uPpu'), ppu); gl.uniform1f(UL('uYaw'), yawDeg*Math.PI/180); gl.uniform1f(UL('uMode'), mode);
+  const acc = new Float32Array(w*h*4), px = new Uint8Array(w*h*4);
+  for(let j = 0; j < ss; j++) for(let i = 0; i < ss; i++){
+    gl.uniform2f(UL('uJit'), (i + 0.5)/ss - 0.5, (j + 0.5)/ss - 0.5);
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    for(let k = 0; k < acc.length; k++) acc[k] += px[k];
+  }
+  const im = new ImageData(w, h), d = im.data, n = ss*ss;
+  for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+    const s = ((h - 1 - y)*w + x)*4, o = (y*w + x)*4, a = acc[s + 3]/n;      // GL rows run bottom-up
+    if(a <= 0) continue;
+    const k = 255/a;                                                           // (the samples are premultiplied: colour × coverage)
+    d[o] = acc[s]/n*k; d[o + 1] = acc[s + 1]/n*k; d[o + 2] = acc[s + 2]/n*k; d[o + 3] = a;
+  }
+  return im;
+}
+window.previewShip = ({ppu = 380, ss = 2, yaw = 15, mode = 2} = {}) => {
+  const im = renderFrame(ppu, ss, yaw, mode), c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+  c.getContext('2d').putImageData(im, 0, 0); return c.toDataURL('image/png');
+};
+window.bakeShip = ({ppu = 150, ss = 4, yaws = [15, 40, 65, 90], q = 0.92} = {}) => {
+  const cw = Math.round(CELL_W*ppu), ch = Math.round(CELL_H*ppu), n = yaws.length + 1;
+  const c = document.createElement('canvas'); c.width = cw*n; c.height = ch; const g = c.getContext('2d');
+  yaws.forEach((y, i) => g.putImageData(renderFrame(ppu, ss, y, 0), i*cw, 0));
+  g.putImageData(renderFrame(ppu, ss, yaws[0], 1), yaws.length*cw, 0);         // the legs alone, at the cruising yaw
+  return {src: c.toDataURL('image/webp', q), png: c.toDataURL('image/png'), cw, ch, ppu, yaws, legs: yaws.length, el: 22, cellW: CELL_W, cellH: CELL_H};
+};
+window.shipReady = true;
+</script></body></html>
