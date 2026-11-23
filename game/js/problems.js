@@ -191,7 +191,8 @@ function _capPool(pool,n,minKeep){
   return out.length>n?out.slice(0,n):out;
 }
 
-// הִגָּיוֹן 🧠 cards in Superman + אַלּוּפָה: two per game, INSIDE the 15-card deck.
+// הִגָּיוֹן 🧠 cards in Superman + אַלּוּפָה: two per game, INSIDE the 15-card deck
+// (in אַלּוּפָה the second one — the 14th question — is a logic PUZZLE, dist/seat).
 // They are spliced into the arithmetic base at base index 4 and 10 BEFORE the
 // reading cards go in at every 4th slot — which lands them at the 6th and 14th
 // question (final index 5 and 13), between the reading cards:
@@ -238,6 +239,10 @@ function makePool(m){
     // + ONE range card (🎯 אֵילוּ מִסְפָּרִים בֵּין 65 לְ-75?, the 2026-11-15 request) on TOP —
     // an 18-card Queen; question 15, after every other woven card, so none of them moves
     if(EX('num_range')){const rg=EX('num_range').make('mx')[0];if(rg)base.splice(Math.min(14,base.length),0,rg);}
+    // + ONE logic PUZZLE (🧠 חִידַת חֲלֻקָּה / מִי יוֹשֵׁב אֵיפֹה?, the 2026-11-22 request, the two
+    // kinds take turns) on TOP — a 19-card Queen; question 17, after every other
+    // woven card (so none of them moves) and with two quick cards still after it
+    if(EX('logic')){const pz=EX('logic').make('mx')[0];if(pz)base.splice(Math.min(16,base.length),0,pz);}
     return base;
   }
   if(m==='br')return makeBridgePool();               // bridge-10 curriculum
@@ -395,11 +400,17 @@ function makeMxPool(){
 //    number and asks for two — a sum chain 5 + __ + __ = 16 (TRA) on one build, a
 //    count-back chain 16 − __ − __ = 8 (TRS) on the next (_sprinkleUnknowns `chain`). The part–whole board (שָׁלֵם–חֵלֶק + פַּסִּים וְעִגּוּלִים) is
 //    the bridges' third aid for them (aids/part_whole.js).
-//    SET 1 — the +9 and +8 ladders (9+6 … 9+9, 8+6 … 8+8) with −9 / −8 count-backs.
-//    SET 2 — COUNT-BACKS from 14 … 18 (14−7 … 18−9), two additions to finish.
+//    2026-11-16: the 🎯 RANGE card (num_range.ex.js, אֵילוּ מִסְפָּרִים בֵּין 7 לְ-13?) is the
+//    15th card of every set (_withRangeCard). To keep 15, sets 1–5 each dropped their
+//    easiest fact — a 14: 8+6, 14−7, 6+8, 8+6, 5+9 — so the arithmetic is 12 in every set.
+//    2026-11-22: + ONE 🧠 logic PUZZLE on top as question 16 (_withLogicPuzzle) — the
+//    first card past the 15 cap: the 12 facts can't shrink again without losing the
+//    chain slot (the 3rd unknown, arithmetic index 11), so the set grew to 16.
+//    SET 1 — the +9 and +8 ladders (9+6 … 9+9, 8+7, 8+8) with −9 / −8 count-backs.
+//    SET 2 — COUNT-BACKS from 14 … 18 (14−8 … 18−9), two additions to finish.
 //    SET 3 — DOUBLES & near-doubles: 7+7, 8+8, 9+9, 7+8, 8+9 … with inverses.
 //    SET 4 — +7 and +6: 7+8, 7+9, 6+8, 6+9, turned around, with inverses.
-//    SET 5 — the +9 SHORTCUT: 5+9 … 9+9 (→14–18), −9 count-backs, then 9+6..8.
+//    SET 5 — the +9 SHORTCUT: 6+9 … 9+9 (→15–18), −9 count-backs, then 9+6..8.
 //    SET 6 — FACT FAMILIES: 9|8|17, 8|7|15, 9|6|15 four ways (a+b, b+a, s−b, s−a).
 let _brTurn=0;
 try{const _s=localStorage.getItem('brTurn');if(_s!=null)_brTurn=(+_s)||0;}catch(e){}
@@ -408,13 +419,13 @@ function _bridgeSet1(){
   return[
     A(9,6),A(9,7),A(9,8),A(9,9),                       // the +9 ladder (→15–18)
     S(15,9),S(16,9),S(17,9),S(18,9),                   // −9 count-backs
-    A(8,6),A(8,7),A(8,8),S(16,8),S(17,8),              // the +8 ladder (→14–16), −8
+    A(8,7),A(8,8),S(16,8),S(17,8),                     // the +8 ladder (→15–16), −8
   ];
 }
 function _bridgeSet2(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    S(14,7),S(14,8),                                   // from 14
+    S(14,8),                                           // from 14
     S(15,6),S(15,7),S(15,8),                           // from 15
     S(16,7),S(16,8),S(16,9),                           // from 16
     S(17,8),S(17,9),S(18,9),                           // from 17 / 18
@@ -428,7 +439,6 @@ function _bridgeSet3(){
     A(8,8),S(16,8),A(9,9),S(18,9),                     // doubles + inverses
     A(7,8),A(8,7),S(15,8),S(15,7),                     // 7 | 8 | 15
     A(8,9),A(9,8),S(17,9),S(17,8),                     // 8 | 9 | 17
-    A(6,8),                                            // 6+8=14 (near 7+7) to finish
   ];
 }
 // SET 4 — +7 and +6 (their splits are less automatic than +9's).
@@ -437,14 +447,14 @@ function _bridgeSet4(){
   return[
     A(7,8),A(7,9),S(14,7),S(15,7),S(16,7),             // +7 and −7
     A(6,8),A(6,9),S(14,6),S(15,6),                     // +6 and −6
-    A(8,7),A(9,7),A(8,6),A(9,6),                       // turned around (big + 7 / 6)
+    A(8,7),A(9,7),A(9,6),                              // turned around (big + 7 / 6)
   ];
 }
 // SET 5 — the +9 SHORTCUT (make ten and step one more), high end only.
 function _bridgeSet5(){
   const A=(a,b)=>({t:TA,a,b}),S=(a,b)=>({t:TS,a,b});
   return[
-    A(5,9),A(6,9),A(7,9),A(8,9),A(9,9),                // → 14–18
+    A(6,9),A(7,9),A(8,9),A(9,9),                       // → 15–18
     S(14,9),S(15,9),S(16,9),S(17,9),S(18,9),           // −9 count-backs
     A(9,6),A(9,7),A(9,8),                              // 9 first
   ];
@@ -486,8 +496,25 @@ function _weavePartWhole(set){
   }
   return set;
 }
+// 2026-11-16: ONE range card (🎯 num_range.ex.js — which numbers lie between two bounds,
+// here a range ACROSS the ten the game bridges: 7–13, 16–23) as question 15, after every
+// woven card, so none of them moves: the 15th card of both bridges (the 🧠 puzzle follows it)
+function _withRangeCard(set,mode){
+  const rg=EX('num_range')?EX('num_range').make(mode)[0]:null;
+  if(rg)set.splice(Math.min(14,set.length),0,rg);
+  return set;
+}
+// 2026-11-22: ONE logic PUZZLE (🧠 logic.ex.js — חִידַת חֲלֻקָּה / מִי יוֹשֵׁב אֵיפֹה?, the two kinds
+// take turns, like Queen's) ON TOP of every bridge set, as question 16 — right after the
+// 🎯 range card, so no other card moves: the last card of גָּשֵׁר 10 (16), the 16th of 19 in
+// גָּשֵׁר 20. The curriculum order of the facts is untouched.
+function _withLogicPuzzle(set,mode){
+  const pz=EX('logic')?EX('logic').make(mode)[0]:null;
+  if(pz)set.splice(Math.min(15,set.length),0,pz);
+  return set;
+}
 function makeBridgePool(){
-  const set=_weavePartWhole(_withBridgeScales(_sprinkleEquations(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length](),_brTurn%2?'sub':'add')),'br'));
+  const set=_withLogicPuzzle(_withRangeCard(_weavePartWhole(_withBridgeScales(_sprinkleEquations(_sprinkleUnknowns(_BRIDGE_SETS[_brTurn%_BRIDGE_SETS.length](),_brTurn%2?'sub':'add')),'br')),'br'),'br');   // 12 + 2 balance + 1 range + 1 logic puzzle = 16
   _brTurn=(_brTurn+1)%_BRIDGE_SETS.length;
   try{localStorage.setItem('brTurn',String(_brTurn));}catch(e){}
   return set;
@@ -562,7 +589,7 @@ function _bridge20Set5(){
 // instead of being a separate set — so it recurs throughout bridge-20 too.
 const _BRIDGE20_SETS=[_bridge20Set1,_bridge20Set2,_bridge20Set3,_bridge20Set4,_bridge20Set5];
 function makeBridge20Pool(){
-  const set=_weavePartWhole(_withBridgeScales(_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length](),_b20Turn%2?'sub':'add'),'b20'));   // 15 + 2 balance cards
+  const set=_withLogicPuzzle(_withRangeCard(_weavePartWhole(_withBridgeScales(_sprinkleUnknowns(_BRIDGE20_SETS[_b20Turn%_BRIDGE20_SETS.length](),_b20Turn%2?'sub':'add'),'b20')),'b20'),'b20');   // 15 + 2 balance + 1 range + 1 logic puzzle = 19
   _b20Turn=(_b20Turn+1)%_BRIDGE20_SETS.length;
   try{localStorage.setItem('b20Turn',String(_b20Turn));}catch(e){}
   // NOTE: no polygon weaving here — the bridge-20 curriculum order MUST stay

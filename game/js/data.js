@@ -51,7 +51,7 @@ const EXERCISE_INDEX=[
   {file:'true_false',modes:['tf','lang','sup','mulc']},     // נָכוֹן אוֹ לֹא — a 2-line nikud story + a statement; pick נכון/לא נכון → ✓ submits. Reading slots + "שפה". 'tf' is an INTERNAL handle only.
   {file:'word_match',modes:['wm','lang','sup','mulc']},     // הַתְאֵם מִלָּה לִתְמוּנָה — DRAG (or tap-tap) 3 vowelled words onto 3 pictures. Reading slots + "שפה". 'wm' is an INTERNAL handle only.
   {file:'sent_order',modes:['so','lang','sup','mulc']},     // סַדֵּר אֶת הַמִּשְׁפָּט — scrambled word pills tapped into order, ✓ submits. Reading slots + "שפה". 'so' is an INTERNAL handle only.
-  {file:'logic',     modes:['logic','sup','mulc']},     // הִגָּיוֹן 🧠 (also 2 cards per Superman / אַלּוּפָה game, 6th + 14th question) — logic questions (מִי אֲנִי / מִי לֹא שַׁיָּךְ / ordering / patterns / אִם-אָז / analogies / cause→effect), multiple choice + ✓; a wrong pick is CROSSED OUT and (who) its ruling-out clue lights up. Its own game ('logic', medium tier).
+  {file:'logic',     modes:['logic','sup','mulc','mx','br','b20']},     // הִגָּיוֹן 🧠 (also 2 cards per Superman / אַלּוּפָה game, 6th + 14th question) — logic questions (מִי אֲנִי / מִי לֹא שַׁיָּךְ / ordering / patterns / אִם-אָז / analogies / cause→effect), multiple choice + ✓; a wrong pick is CROSSED OUT and (who) its ruling-out clue lights up. Its own game ('logic', medium tier). + two interactive PUZZLE kinds (2026-11-22): חִידַת חֲלֻקָּה (share items by everyone's requests) / מִי יוֹשֵׁב אֵיפֹה? (seat friends by their requests) — 4 of the 15 הִגָּיוֹן cards, the 14th אַלּוּפָה question, and ONE card on top of every Queen (mx), גָּשֵׁר 10 and גָּשֵׁר 20 game (bridges: question 16, right after the 🎯 range card).
   {file:'rhyme',     modes:['rhy','lang','sup','mulc']},    // אֵיזוֹ מִלָּה מִתְחָרֶזֶת — a picture+word CUE and 3 picture+word options, exactly one rhymes; select → ✓ submits, a mistake reveals the rhyme ending. PHONOLOGICAL awareness (not reading-for-meaning). Reading slots + "שפה". 'rhy' is an INTERNAL handle only.
   {file:'triple_sum',modes:['trip','mx','sup','mulc']},  // __+__+__ = N (target VARIES 6..12) — three CHOSEN addends; 0 and 10 are disallowed (a 0/10 answer is praised with NO penalty but must be re-tried with other numbers). Woven into Queen/Superman/אַלּוּפָה. 'trip' is an INTERNAL handle only.
   {file:'half',      modes:['hlf','mx','mulc']},      // "כַּמָּה זֶה חֵצִי" — share 4/6/8/10 items EQUALLY between two friends; the split (golden lines) opens only after a MISTAKE — before that the picture is locked (try-first). First DIVISION intuition, mixed into אַלּוּפָה. 'hlf' is an INTERNAL handle only.
@@ -64,7 +64,7 @@ const EXERCISE_INDEX=[
   {file:'part_whole',modes:['br','b20']},   // 🧩 שָׁלֵם וַחֲלָקִים — the whole + parts template AND the bars-and-circles drawing as an EXERCISE, every 3rd card of the bridges (problems.js _weavePartWhole)
   {file:'can_share', modes:['cansh','mx','mulc']},  // אֶפְשָׁר לְחַלֵּק? — yes/no: can k friends share n with nothing left? The verdict shows the groups + the leftover
   {file:'mult_unknown',modes:['mulu','mulc']},   // כֶּפֶל בְּנֶעְלָם — 3 × □ = 9, find the hidden factor; the SKIP-COUNTING number line (jumps of a) is shown from the START. Mixed into אַלּוּפָה. 'mulu' is an INTERNAL handle only.
-  {file:'num_range', modes:['rng','mx','mulc']},   // 🎯 אֵילוּ מִסְפָּרִים בֵּין 65 לְ-75? — tap every number strictly BETWEEN two bounds (10 apart), ✓ submits; a mistake opens a number line with the range as a gold band. One card in EVERY Queen game (on top: 18) and EVERY אַלּוּפָה game (inside the 15). 'rng' is an INTERNAL handle only.
+  {file:'num_range', modes:['rng','mx','mulc','br','b20']},   // 🎯 אֵילוּ מִסְפָּרִים בֵּין 65 לְ-75? — tap every number strictly BETWEEN two bounds (10 apart), ✓ submits; a mistake opens a number line with the range as a gold band. One card in EVERY Queen game (on top: 18) and EVERY אַלּוּפָה game (inside the 15). 'rng' is an INTERNAL handle only.
 ];
 /* exercise types that bring their own interactive UI (mount/cleanup) */
 const EXERCISE_OF_TYPE={[TDL]:'deal',[TPK]:'pack',[TFR]:'fair',[TCN]:'can_share',[TPW]:'part_whole',[TBE]:'balance',[TSB]:'balance',[TCA]:'column_add',[TCS]:'column_sub',[TCM]:'coin_mul',[TBC]:'bagel_cost',[TPG]:'polygon',[TMC]:'mult_chain',[TMK]:'mult_champ',[TPP]:'perimeter',[TCP]:'compare',[TWP]:'word_prob',[TTS]:'triple_sum',[THF]:'half',[TPL]:'plates',[TIC]:'ice_cream',[TMU]:'mult_unknown',[TWC]:'word_chain',[TSQ]:'story_quiz',[TCZ]:'cloze',[TTF]:'true_false',[TWM]:'word_match',[TSO]:'sent_order',[TRH]:'rhyme',[TLG]:'logic',[TRG]:'num_range'};
@@ -192,6 +192,17 @@ const SUCCESS_FILES=[
   'success-pumpkin-carriage',
   'success-magic-mirror',
   'success-seahorse-ride',
+  // 2026-11-23: ten more (added, none retired)
+  'success-swan-heart',
+  'success-hummingbird-flower',
+  'success-enchanted-rose',
+  'success-potion-bottle',
+  'success-ice-skater',
+  'success-sparkler-heart',
+  'success-bead-bracelet',
+  'success-cotton-candy',
+  'success-space-kitten',
+  'success-giraffe-star',
 ];
 
 /* ── Special reward screens (success_screens/<sub>/<name>.js) ────────────────

@@ -1,8 +1,16 @@
 /* ── "הִגָּיוֹן 🧠" — logic questions (logical thinking, in vowelled Hebrew) ─────
    Its own game category (mode 'logic', medium tier) AND woven into Superman +
-   אַלּוּפָה (two cards per game, at the 6th and 14th question). Seven KINDS,
-   each a multiple-choice card: TAP an option to select, press ✓ to SUBMIT (the
-   story_quiz / cloze / rhyme flow).
+   אַלּוּפָה (two cards per game, at the 6th and 14th question) AND Queen (one
+   PUZZLE card per game). Seven multiple-choice KINDS (below) — TAP an option to
+   select, press ✓ to SUBMIT (the story_quiz / cloze / rhyme flow) — plus two
+   interactive PUZZLE kinds (2026-11-22, see "PUZZLES" further down):
+     dist  חִידַת חֲלֻקָּה      share N items so every friend's request holds
+     seat  מִי יוֹשֵׁב אֵיפֹה?   seat friends on numbered chairs by their requests
+   Where puzzles appear: 4 of the 15 הִגָּיוֹן cards (2 dist + 2 seat); the 14th
+   question of every אַלּוּפָה game (it REPLACES that quick-choice logic card);
+   ONE card on top of every Queen game, and (2026-11-22, later) ONE card on top
+   of every גָּשֵׁר 10 / גָּשֵׁר 20 game, right after the 🎯 range card. The kinds
+   alternate dist/seat across games. Superman keeps two quick-choice cards.
 
      who   מִי אֲנִי?          2–3 clues ("יֵשׁ לִי אַרְבַּע רַגְלַיִם. אֲנִי עוֹשֶׂה מְיָאוּ.")
                                + 3 picture options. Every distractor FITS some
@@ -347,6 +355,222 @@ window.EXERCISES.types.logic=(()=>{
      why:'כְּשֶׁהַשֶּׁמֶשׁ שׁוֹקַעַת — נִהְיָה חֹשֶׁךְ וּמַגִּיעַ הַלַּיְלָה!'},
   ];
 
+  /* ── PUZZLES (2026-11-22) — multi-step deduction with an INTERACTIVE build ────
+     dist  חִידַת חֲלֻקָּה — share `total` items between three friends so EVERY
+           request holds ("לְרוֹעִי צְרִיכוֹת לִהְיוֹת 10 עוּגִיּוֹת יוֹתֵר מִלְּאָבִיב").
+           + / − per friend moves one item from / back to the pile.
+     seat  מִי יוֹשֵׁב אֵיפֹה? — seat 3–5 friends on NUMBERED chairs in a row (chair 1
+           on the right) so every request holds: לְיַד / לֹא לְיַד / רָחוֹק / בֵּין /
+           בְּקָצֶה הַשּׁוּרָה / לֹא בַּקָּצֶה / בָּאֶמְצַע / בְּכִסֵּא מִסְפָּר N.
+     The check is CONSTRAINT-BASED: on ✓ every request is marked ✓ or ✗ (the ✗ ones
+     pulse) — any arrangement meeting all of them is right, so a seating and its
+     mirror both pass. Every puzzle still has exactly ONE solution (seat: up to the
+     mirror) and every person is pinned down — tests brute-force both.
+     Constraints name people by their (vowelled) NAME, exactly as in `who`; makeOne
+     resolves them to indexes. A person-led clue's FIRST name is its subject (test).
+     Ops — dist: free(a) exact(a,k) more(a,b,k) less(a,b,k) same(a,b) double(a,b)
+           seat: next(a,b) notnext(a,b) far(a,b) between(a,b,c) end(a) notend(a)
+                 middle(a) chair(a,k)   (`far` = not side by side; used only where the
+                 solution puts the pair at the two ENDS, so "far" can't be misread)
+     After the 2nd mistake the 💡 `tip` opens and core offers the skip button (p.skip). */
+  const P=(n,g)=>({n,g});                 // a person: vowelled name + gender (👦/👧)
+  const C=(t,...c)=>({t,c});              // a request: its text + its constraint
+  const DIST=[
+    {item:{e:'🍪',w:'עוּגִיּוֹת',g:'f'},total:23,
+     intro:'יֵשׁ 23 עוּגִיּוֹת. צָרִיךְ לְחַלֵּק אֶת כֻּלָּן בֵּין יוֹסִי, אָבִיב וְרוֹעִי.',
+     who:[P('יוֹסִי','m'),P('אָבִיב','m'),P('רוֹעִי','m')],
+     clues:[C('לְיוֹסִי לֹא אִכְפַּת כַּמָּה עוּגִיּוֹת יִהְיוּ לוֹ.','free','יוֹסִי'),
+            C('לְרוֹעִי צְרִיכוֹת לִהְיוֹת 10 עוּגִיּוֹת יוֹתֵר מִלְּאָבִיב.','more','רוֹעִי','אָבִיב',10),
+            C('לְאָבִיב צְרִיכוֹת לִהְיוֹת 5 עוּגִיּוֹת יוֹתֵר מִלְּיוֹסִי.','more','אָבִיב','יוֹסִי',5)],
+     sol:[1,6,16],
+     tip:'תְּנִי לְיוֹסִי עוּגִיָּה אַחַת, וְאָז חַשְּׁבִי כַּמָּה לְאָבִיב וּלְרוֹעִי.',
+     why:'יוֹסִי 1, אָבִיב 1+5=6, רוֹעִי 6+10=16 — וּבְיַחַד 1+6+16=23!'},
+    {item:{e:'🍬',w:'סֻכָּרִיּוֹת',g:'f'},total:13,
+     intro:'יֵשׁ 13 סֻכָּרִיּוֹת. צָרִיךְ לְחַלֵּק אֶת כֻּלָּן בֵּין נוֹעָה, דָּנָה וּמִיכַל.',
+     who:[P('נוֹעָה','f'),P('דָּנָה','f'),P('מִיכַל','f')],
+     clues:[C('לְמִיכַל לֹא אִכְפַּת כַּמָּה סֻכָּרִיּוֹת יִהְיוּ לָהּ.','free','מִיכַל'),
+            C('נוֹעָה רוֹצָה 2 סֻכָּרִיּוֹת יוֹתֵר מִמִּיכַל.','more','נוֹעָה','מִיכַל',2),
+            C('דָּנָה רוֹצָה אוֹתוֹ מִסְפָּר סֻכָּרִיּוֹת כְּמוֹ נוֹעָה.','same','דָּנָה','נוֹעָה')],
+     sol:[5,5,3],
+     tip:'תְּנִי לְמִיכַל 3 סֻכָּרִיּוֹת, וְאָז חַשְּׁבִי כַּמָּה לְנוֹעָה וּלְדָנָה.',
+     why:'מִיכַל 3, נוֹעָה 3+2=5, דָּנָה כְּמוֹ נוֹעָה 5 — וּבְיַחַד 3+5+5=13!'},
+    {item:{e:'🎈',w:'בַּלּוֹנִים',g:'m'},total:10,
+     intro:'יֵשׁ 10 בַּלּוֹנִים. צָרִיךְ לְחַלֵּק אֶת כֻּלָּם בֵּין אוֹרִי, גַּל וְתוֹם.',
+     who:[P('אוֹרִי','m'),P('גַּל','m'),P('תּוֹם','m')],
+     clues:[C('אוֹרִי רוֹצֶה בְּדִיּוּק 3 בַּלּוֹנִים.','exact','אוֹרִי',3),
+            C('גַּל רוֹצֶה בַּלּוֹן אֶחָד יוֹתֵר מֵאוֹרִי.','more','גַּל','אוֹרִי',1),
+            C('לְתוֹם לֹא אִכְפַּת — הוּא יִקַּח מָה שֶׁנִּשְׁאַר.','free','תּוֹם')],
+     sol:[3,4,3],
+     tip:'קֹדֶם תְּנִי לְאוֹרִי וּלְגַל, וְאֶת מָה שֶׁנִּשְׁאַר — לְתוֹם.',
+     why:'אוֹרִי 3, גַּל 3+1=4, וְתוֹם לוֹקֵחַ אֶת הַשְּׁאָר: 10−3−4=3!'},
+    {item:{e:'⭐',w:'מַדְבֵּקוֹת',g:'f'},total:17,
+     intro:'יֵשׁ 17 מַדְבֵּקוֹת. צָרִיךְ לְחַלֵּק אֶת כֻּלָּן בֵּין תָּמָר, שִׁירָה וְרוֹנִי.',
+     who:[P('תָּמָר','f'),P('שִׁירָה','f'),P('רוֹנִי','f')],
+     clues:[C('לְתָמָר לֹא אִכְפַּת כַּמָּה מַדְבֵּקוֹת יִהְיוּ לָהּ.','free','תָּמָר'),
+            C('שִׁירָה רוֹצָה פִּי 2 מַדְבֵּקוֹת מִתָּמָר.','double','שִׁירָה','תָּמָר'),
+            C('רוֹנִי רוֹצָה 3 מַדְבֵּקוֹת פָּחוֹת מִשִּׁירָה.','less','רוֹנִי','שִׁירָה',3)],
+     sol:[4,8,5],
+     tip:'תְּנִי לְתָמָר 4 מַדְבֵּקוֹת, וְאָז חַשְּׁבִי כַּמָּה לְשִׁירָה וּלְרוֹנִי.',
+     why:'תָּמָר 4, שִׁירָה פִּי 2: 4+4=8, רוֹנִי 8−3=5 — וּבְיַחַד 4+8+5=17!'},
+    {item:{e:'🍎',w:'תַּפּוּחִים',g:'m'},total:9,
+     intro:'יֵשׁ 9 תַּפּוּחִים. צָרִיךְ לְחַלֵּק אֶת כֻּלָּם בֵּין אִיתַי, עוֹמֶר וּבֶן.',
+     who:[P('אִיתַי','m'),P('עוֹמֶר','m'),P('בֶּן','m')],
+     clues:[C('אִיתַי וְעוֹמֶר רוֹצִים אוֹתוֹ מִסְפָּר תַּפּוּחִים.','same','אִיתַי','עוֹמֶר'),
+            C('בֶּן רוֹצֶה 3 תַּפּוּחִים יוֹתֵר מֵאִיתַי.','more','בֶּן','אִיתַי',3)],
+     sol:[2,2,5],
+     tip:'נַסִּי לָתֵת לְאִיתַי 2 תַּפּוּחִים — וְאָז כַּמָּה לְעוֹמֶר וּלְבֶן?',
+     why:'אִיתַי 2, עוֹמֶר כְּמוֹ אִיתַי 2, בֶּן 2+3=5 — וּבְיַחַד 2+2+5=9!'},
+    {item:{e:'🍓',w:'תּוּתִים',g:'m'},total:21,
+     intro:'יֵשׁ 21 תּוּתִים. צָרִיךְ לְחַלֵּק אֶת כֻּלָּם בֵּין דָּנִי, יָעֵל וְהִילָה.',
+     who:[P('דָּנִי','m'),P('יָעֵל','f'),P('הִילָה','f')],
+     clues:[C('לְדָנִי לֹא אִכְפַּת כַּמָּה תּוּתִים יִהְיוּ לוֹ.','free','דָּנִי'),
+            C('יָעֵל רוֹצָה 4 תּוּתִים יוֹתֵר מִדָּנִי.','more','יָעֵל','דָּנִי',4),
+            C('הִילָה רוֹצָה 4 תּוּתִים יוֹתֵר מִיָּעֵל.','more','הִילָה','יָעֵל',4)],
+     sol:[3,7,11],
+     tip:'תְּנִי לְדָנִי 3 תּוּתִים, וְאָז חַשְּׁבִי כַּמָּה לְיָעֵל וּלְהִילָה.',
+     why:'דָּנִי 3, יָעֵל 3+4=7, הִילָה 7+4=11 — וּבְיַחַד 3+7+11=21!'},
+    {item:{e:'🐚',w:'צְדָפִים',g:'m'},total:13,
+     intro:'יֵשׁ 13 צְדָפִים. צָרִיךְ לְחַלֵּק אֶת כֻּלָּם בֵּין אָדָם, לִיאוֹר וּמָאיָה.',
+     who:[P('אָדָם','m'),P('לִיאוֹר','m'),P('מָאיָה','f')],
+     clues:[C('לִיאוֹר רוֹצֶה אוֹתוֹ מִסְפָּר צְדָפִים כְּמוֹ אָדָם.','same','לִיאוֹר','אָדָם'),
+            C('מָאיָה רוֹצָה 2 צְדָפִים פָּחוֹת מֵאָדָם.','less','מָאיָה','אָדָם',2)],
+     sol:[5,5,3],
+     tip:'תְּנִי לְמָאיָה 3 צְדָפִים — וְאָז כַּמָּה לְאָדָם וּלְלִיאוֹר?',
+     why:'אָדָם 5, לִיאוֹר כְּמוֹ אָדָם 5, מָאיָה 5−2=3 — וּבְיַחַד 5+5+3=13!'},
+    {item:{e:'🍩',w:'סֻפְגָּנִיּוֹת',g:'f'},total:11,
+     intro:'יֵשׁ 11 סֻפְגָּנִיּוֹת. צָרִיךְ לְחַלֵּק אֶת כֻּלָּן בֵּין רוֹעִי, אָבִיב וְיוֹסִי.',
+     who:[P('רוֹעִי','m'),P('אָבִיב','m'),P('יוֹסִי','m')],
+     clues:[C('רוֹעִי רוֹצֶה בְּדִיּוּק 2 סֻפְגָּנִיּוֹת.','exact','רוֹעִי',2),
+            C('אָבִיב רוֹצֶה פִּי 2 סֻפְגָּנִיּוֹת מֵרוֹעִי.','double','אָבִיב','רוֹעִי'),
+            C('לְיוֹסִי לֹא אִכְפַּת — הוּא יִקַּח מָה שֶׁנִּשְׁאַר.','free','יוֹסִי')],
+     sol:[2,4,5],
+     tip:'קֹדֶם תְּנִי לְרוֹעִי וּלְאָבִיב, וְאֶת מָה שֶׁנִּשְׁאַר — לְיוֹסִי.',
+     why:'רוֹעִי 2, אָבִיב פִּי 2: 2+2=4, וְיוֹסִי לוֹקֵחַ אֶת הַשְּׁאָר: 11−2−4=5!'},
+    {item:{e:'✏️',w:'עֶפְרוֹנוֹת',g:'m'},total:16,
+     intro:'יֵשׁ 16 עֶפְרוֹנוֹת. צָרִיךְ לְחַלֵּק אֶת כֻּלָּם בֵּין רָחֵל, לִילָךְ וְרוֹמִי.',
+     who:[P('רָחֵל','f'),P('לִילָךְ','f'),P('רוֹמִי','f')],
+     clues:[C('לִילָךְ רוֹצָה 6 עֶפְרוֹנוֹת יוֹתֵר מֵרָחֵל.','more','לִילָךְ','רָחֵל',6),
+            C('רוֹמִי רוֹצָה 2 עֶפְרוֹנוֹת פָּחוֹת מִלִּילָךְ.','less','רוֹמִי','לִילָךְ',2)],
+     sol:[2,8,6],
+     tip:'תְּנִי לְרָחֵל 2 עֶפְרוֹנוֹת, וְאָז חַשְּׁבִי כַּמָּה לְלִילָךְ וּלְרוֹמִי.',
+     why:'רָחֵל 2, לִילָךְ 2+6=8, רוֹמִי 8−2=6 — וּבְיַחַד 2+8+6=16!'},
+    {item:{e:'💎',w:'יַהֲלוֹמִים',g:'m'},total:16,
+     intro:'יֵשׁ 16 יַהֲלוֹמִים. צָרִיךְ לְחַלֵּק אֶת כֻּלָּם בֵּין נֹגָה, אֲבִיגַיִל וְעִדּוֹ.',
+     who:[P('נֹגָה','f'),P('אֲבִיגַיִל','f'),P('עִדּוֹ','m')],
+     clues:[C('אֲבִיגַיִל רוֹצָה פִּי 2 יַהֲלוֹמִים מִנֹּגָה.','double','אֲבִיגַיִל','נֹגָה'),
+            C('עִדּוֹ רוֹצֶה אוֹתוֹ מִסְפָּר יַהֲלוֹמִים כְּמוֹ נֹגָה.','same','עִדּוֹ','נֹגָה')],
+     sol:[4,8,4],
+     tip:'תְּנִי לְנֹגָה 4 יַהֲלוֹמִים — וְאָז כַּמָּה לַאֲבִיגַיִל וּלְעִדּוֹ?',
+     why:'נֹגָה 4, אֲבִיגַיִל פִּי 2: 4+4=8, עִדּוֹ כְּמוֹ נֹגָה 4 — וּבְיַחַד 4+8+4=16!'},
+  ];
+  /* seat: `who` is listed in a SCRAMBLED order (the intro never reads out the
+     answer); `sol` = the names chair 1 → chair n */
+  const SEAT=[
+    {intro:'אַרְבָּעָה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: רוֹעִי, רוֹמִי, רָחֵל וְלִילָךְ.',
+     who:[P('רוֹעִי','m'),P('רוֹמִי','f'),P('רָחֵל','f'),P('לִילָךְ','f')],
+     clues:[C('רוֹעִי רוֹצֶה לָשֶׁבֶת לְיַד רוֹמִי.','next','רוֹעִי','רוֹמִי'),
+            C('רוֹמִי רוֹצָה לָשֶׁבֶת רָחוֹק מֵרָחֵל.','far','רוֹמִי','רָחֵל'),
+            C('רָחֵל רוֹצָה לָשֶׁבֶת לְיַד לִילָךְ.','next','רָחֵל','לִילָךְ'),
+            C('לִילָךְ רוֹצָה לָשֶׁבֶת לְיַד רוֹעִי.','next','לִילָךְ','רוֹעִי')],
+     sol:['רוֹמִי','רוֹעִי','לִילָךְ','רָחֵל'],
+     tip:'רוֹעִי יוֹשֵׁב בֵּין רוֹמִי לְבֵין לִילָךְ.',
+     why:'רוֹמִי, רוֹעִי, לִילָךְ, רָחֵל — רוֹמִי וְרָחֵל בִּשְׁנֵי הַקְּצָווֹת, רְחוֹקוֹת זוֹ מִזּוֹ!'},
+    {intro:'שְׁלוֹשָׁה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: תָּמָר, יוֹסִי וְנוֹעָה.',
+     who:[P('תָּמָר','f'),P('יוֹסִי','m'),P('נוֹעָה','f')],
+     clues:[C('יוֹסִי רוֹצֶה לָשֶׁבֶת בְּכִסֵּא מִסְפָּר 1.','chair','יוֹסִי',1),
+            C('נוֹעָה לֹא רוֹצָה לָשֶׁבֶת לְיַד יוֹסִי.','notnext','נוֹעָה','יוֹסִי')],
+     sol:['יוֹסִי','תָּמָר','נוֹעָה'],
+     tip:'נוֹעָה צְרִיכָה לָשֶׁבֶת בַּקָּצֶה הַשֵּׁנִי — רָחוֹק מִיּוֹסִי.',
+     why:'יוֹסִי בְּכִסֵּא 1, תָּמָר בָּאֶמְצַע, וְנוֹעָה בַּקָּצֶה הַשֵּׁנִי — לֹא לְיַד יוֹסִי!'},
+    {intro:'אַרְבָּעָה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: מָאיָה, אָבִיב, בֶּן וְשִׁירָה.',
+     who:[P('מָאיָה','f'),P('אָבִיב','m'),P('בֶּן','m'),P('שִׁירָה','f')],
+     clues:[C('שִׁירָה רוֹצָה לָשֶׁבֶת בֵּין אָבִיב לְבֵין בֶּן.','between','שִׁירָה','אָבִיב','בֶּן'),
+            C('מָאיָה רוֹצָה לָשֶׁבֶת לְיַד בֶּן.','next','מָאיָה','בֶּן')],
+     sol:['אָבִיב','שִׁירָה','בֶּן','מָאיָה'],
+     tip:'שִׁירָה בָּאֶמְצַע, וְאָבִיב וּבֶן מִשְּׁנֵי הַצְּדָדִים שֶׁלָּהּ.',
+     why:'אָבִיב, שִׁירָה, בֶּן, מָאיָה — שִׁירָה בֵּין אָבִיב לְבֶן, וּמָאיָה לְיַד בֶּן!'},
+    {intro:'אַרְבָּעָה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: יָעֵל, עִדּוֹ, הִילָה וְדָנִי.',
+     who:[P('יָעֵל','f'),P('עִדּוֹ','m'),P('הִילָה','f'),P('דָּנִי','m')],
+     clues:[C('עִדּוֹ רוֹצֶה לָשֶׁבֶת בְּקָצֶה הַשּׁוּרָה.','end','עִדּוֹ'),
+            C('דָּנִי רוֹצֶה לָשֶׁבֶת לְיַד עִדּוֹ.','next','דָּנִי','עִדּוֹ'),
+            C('יָעֵל לֹא רוֹצָה לָשֶׁבֶת לְיַד דָּנִי.','notnext','יָעֵל','דָּנִי')],
+     sol:['עִדּוֹ','דָּנִי','הִילָה','יָעֵל'],
+     tip:'עִדּוֹ בַּקָּצֶה, וְדָנִי מִיָּד לְיָדוֹ.',
+     why:'עִדּוֹ, דָּנִי, הִילָה, יָעֵל — יָעֵל בַּקָּצֶה הַשֵּׁנִי, רָחוֹק מִדָּנִי!'},
+    {intro:'חֲמִשָּׁה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: אִיתַי, לִיאוֹר, תּוֹם, אֲבִיגַיִל וְרוֹנִי.',
+     who:[P('אִיתַי','m'),P('לִיאוֹר','m'),P('תּוֹם','m'),P('אֲבִיגַיִל','f'),P('רוֹנִי','f')],
+     clues:[C('רוֹנִי רוֹצָה לָשֶׁבֶת בֵּין תּוֹם לְבֵין אִיתַי.','between','רוֹנִי','תּוֹם','אִיתַי'),
+            C('אֲבִיגַיִל רוֹצָה לָשֶׁבֶת לְיַד אִיתַי.','next','אֲבִיגַיִל','אִיתַי'),
+            C('לִיאוֹר לֹא רוֹצֶה לָשֶׁבֶת לְיַד תּוֹם.','notnext','לִיאוֹר','תּוֹם')],
+     sol:['תּוֹם','רוֹנִי','אִיתַי','אֲבִיגַיִל','לִיאוֹר'],
+     tip:'תּוֹם, רוֹנִי וְאִיתַי יוֹשְׁבִים זֶה לְיַד זֶה — וְרוֹנִי בָּאֶמְצַע שֶׁלָּהֶם.',
+     why:'תּוֹם, רוֹנִי, אִיתַי, אֲבִיגַיִל, לִיאוֹר — לִיאוֹר בַּקָּצֶה, רָחוֹק מִתּוֹם!'},
+    {intro:'אַרְבָּעָה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: נֹגָה, אֵלָה, עוֹמֶר וְאָדָם.',
+     who:[P('נֹגָה','f'),P('אֵלָה','f'),P('עוֹמֶר','m'),P('אָדָם','m')],
+     clues:[C('עוֹמֶר רוֹצֶה לָשֶׁבֶת בְּכִסֵּא מִסְפָּר 1.','chair','עוֹמֶר',1),
+            C('נֹגָה רוֹצָה לָשֶׁבֶת לְיַד עוֹמֶר.','next','נֹגָה','עוֹמֶר'),
+            C('אֵלָה לֹא רוֹצָה לָשֶׁבֶת לְיַד נֹגָה.','notnext','אֵלָה','נֹגָה')],
+     sol:['עוֹמֶר','נֹגָה','אָדָם','אֵלָה'],
+     tip:'נֹגָה יוֹשֶׁבֶת בְּכִסֵּא מִסְפָּר 2.',
+     why:'עוֹמֶר, נֹגָה, אָדָם, אֵלָה — אָדָם יוֹשֵׁב בֵּין נֹגָה לְאֵלָה!'},
+    {intro:'אַרְבָּעָה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: גַּל, מִיכַל, אוֹרִי וְנוֹעָה.',
+     who:[P('גַּל','m'),P('מִיכַל','f'),P('אוֹרִי','m'),P('נוֹעָה','f')],
+     clues:[C('נוֹעָה לֹא רוֹצָה לָשֶׁבֶת בַּקָּצֶה.','notend','נוֹעָה'),
+            C('גַּל לֹא רוֹצֶה לָשֶׁבֶת בַּקָּצֶה.','notend','גַּל'),
+            C('מִיכַל רוֹצָה לָשֶׁבֶת לְיַד נוֹעָה.','next','מִיכַל','נוֹעָה')],
+     sol:['מִיכַל','נוֹעָה','גַּל','אוֹרִי'],
+     tip:'נוֹעָה וְגַל יוֹשְׁבִים בִּשְׁנֵי הַכִּסְאוֹת שֶׁבָּאֶמְצַע.',
+     why:'מִיכַל, נוֹעָה, גַּל, אוֹרִי — נוֹעָה וְגַל בָּאֶמְצַע, וּמִיכַל לְיַד נוֹעָה!'},
+    {intro:'שְׁלוֹשָׁה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: אֵיתָן, דָּנָה וְשִׁירָה.',
+     who:[P('אֵיתָן','m'),P('דָּנָה','f'),P('שִׁירָה','f')],
+     clues:[C('אֵיתָן רוֹצֶה לָשֶׁבֶת בָּאֶמְצַע.','middle','אֵיתָן'),
+            C('דָּנָה רוֹצָה לָשֶׁבֶת בְּכִסֵּא מִסְפָּר 3.','chair','דָּנָה',3)],
+     sol:['שִׁירָה','אֵיתָן','דָּנָה'],
+     tip:'אֵיתָן יוֹשֵׁב בְּכִסֵּא מִסְפָּר 2.',
+     why:'שִׁירָה בְּכִסֵּא 1, אֵיתָן בָּאֶמְצַע, וְדָנָה בְּכִסֵּא 3!'},
+    {intro:'חֲמִשָּׁה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: רוֹעִי, תָּמָר, אָבִיב, נוֹעָה וְיוֹסִי.',
+     who:[P('רוֹעִי','m'),P('תָּמָר','f'),P('אָבִיב','m'),P('נוֹעָה','f'),P('יוֹסִי','m')],
+     clues:[C('תָּמָר רוֹצָה לָשֶׁבֶת בָּאֶמְצַע.','middle','תָּמָר'),
+            C('יוֹסִי רוֹצֶה לָשֶׁבֶת בֵּין נוֹעָה לְבֵין תָּמָר.','between','יוֹסִי','נוֹעָה','תָּמָר'),
+            C('רוֹעִי לֹא רוֹצֶה לָשֶׁבֶת לְיַד תָּמָר.','notnext','רוֹעִי','תָּמָר')],
+     sol:['נוֹעָה','יוֹסִי','תָּמָר','אָבִיב','רוֹעִי'],
+     tip:'תָּמָר בְּכִסֵּא מִסְפָּר 3 — בְּדִיּוּק בָּאֶמְצַע.',
+     why:'נוֹעָה, יוֹסִי, תָּמָר, אָבִיב, רוֹעִי — רוֹעִי בַּקָּצֶה, רָחוֹק מִתָּמָר!'},
+    {intro:'חֲמִשָּׁה חֲבֵרִים יוֹשְׁבִים בְּשׁוּרָה: יָעֵל, מָאיָה, בֶּן, אוֹרִי וְהִילָה.',
+     who:[P('יָעֵל','f'),P('מָאיָה','f'),P('בֶּן','m'),P('אוֹרִי','m'),P('הִילָה','f')],
+     clues:[C('בֶּן רוֹצֶה לָשֶׁבֶת בְּכִסֵּא מִסְפָּר 1.','chair','בֶּן',1),
+            C('מָאיָה רוֹצָה לָשֶׁבֶת בְּקָצֶה הַשּׁוּרָה.','end','מָאיָה'),
+            C('הִילָה רוֹצָה לָשֶׁבֶת לְיַד בֶּן.','next','הִילָה','בֶּן'),
+            C('יָעֵל לֹא רוֹצָה לָשֶׁבֶת לְיַד הִילָה.','notnext','יָעֵל','הִילָה')],
+     sol:['בֶּן','הִילָה','אוֹרִי','יָעֵל','מָאיָה'],
+     tip:'מָאיָה בְּכִסֵּא מִסְפָּר 5 — בַּקָּצֶה הַשֵּׁנִי.',
+     why:'בֶּן, הִילָה, אוֹרִי, יָעֵל, מָאיָה — אוֹרִי יוֹשֵׁב בֵּין הִילָה לְיָעֵל!'},
+  ];
+  // does constraint c (person args already resolved to indexes) hold?
+  //   dist: v = items per person   seat: v = chair index (0-based) per person, n = chairs
+  const DIST_OK={
+    free:()=>true,
+    exact:(v,a,k)=>v[a]===k,
+    more:(v,a,b,k)=>v[a]===v[b]+k,
+    less:(v,a,b,k)=>v[a]===v[b]-k,
+    same:(v,a,b)=>v[a]===v[b],
+    double:(v,a,b)=>v[a]===2*v[b],
+  };
+  const SEAT_OK={
+    next:(v,n,a,b)=>Math.abs(v[a]-v[b])===1,
+    notnext:(v,n,a,b)=>Math.abs(v[a]-v[b])!==1,
+    far:(v,n,a,b)=>Math.abs(v[a]-v[b])>=2,
+    between:(v,n,a,b,c)=>Math.abs(v[a]-v[b])===1&&Math.abs(v[a]-v[c])===1,
+    end:(v,n,a)=>v[a]===0||v[a]===n-1,
+    notend:(v,n,a)=>v[a]!==0&&v[a]!==n-1,
+    middle:(v,n,a)=>2*v[a]===n-1,
+    chair:(v,n,a,k)=>v[a]===k-1,
+  };
+  function holds(k,c,v){
+    const [op,...args]=c;
+    return k==='dist'?!!DIST_OK[op](v,...args):!!SEAT_OK[op](v,v.length,...args);
+  }
+
   const KINDS={
     who:{bank:WHO, title:'🔍 מִי אֲנִי?', why:'כָּל הָרְמָזִים מַתְאִימִים!'},
     odd:{bank:ODD, title:'🔎 מִי לֹא שַׁיָּךְ?'},
@@ -355,9 +579,14 @@ window.EXERCISES.types.logic=(()=>{
     rule:{bank:RULE,title:'💡 אִם... אָז...'},
     ana:{bank:ANA, title:'🔗 מָה מַתְאִים?'},
     then:{bank:THEN,title:'⚡ מָה יִקְרֶה?'},
+    dist:{bank:DIST,title:'🤝 חִידַת חֲלֻקָּה', q:'חַלְּקִי לְפִי כָּל הַבַּקָּשׁוֹת!'},
+    seat:{bank:SEAT,title:'🪑 מִי יוֹשֵׁב אֵיפֹה?', q:'הוֹשִׁיבִי אֶת כֻּלָּם לְפִי כָּל הַבַּקָּשׁוֹת!'},
   };
-  // how many of each kind one הִגָּיוֹן session holds (15 cards, every kind present)
-  const MIX={who:4,odd:2,ord:2,pat:2,rule:2,ana:2,then:1};
+  const PUZZLE_KINDS=['dist','seat'];
+  const isPuzzle=k=>PUZZLE_KINDS.indexOf(k)>=0;
+  // how many of each kind one הִגָּיוֹן session holds (15 cards, every kind present;
+  // the two puzzle kinds took 4 of the quick-choice slots on 2026-11-22)
+  const MIX={who:3,odd:2,ord:1,pat:2,rule:1,ana:1,then:1,dist:2,seat:2};
 
   // NO-REPEAT rotation per kind (shuffled queue; a fresh cycle never opens with
   // the item that closed the previous one)
@@ -373,11 +602,25 @@ window.EXERCISES.types.logic=(()=>{
     return bank[R.last];
   }
   function makeOne(k,entry){
+    if(isPuzzle(k))return makePuzzle(k,entry);
     const order=sh(entry.opts.map((_,i)=>i));
     return {t:TLG,k,title:KINDS[k].title,lines:(entry.lines||[]).slice(),q:entry.q||'',
             row:entry.row?entry.row.slice():null,num:!!entry.num,
             opts:order.map(i=>({e:entry.opts[i].e,w:entry.opts[i].w||'',no:entry.opts[i].no})),
             a:order.indexOf(0)+1,why:entry.why||KINDS[k].why||''};
+  }
+  // a puzzle card: names in the constraints → person indexes. `sum` is the
+  // report's one-line answer; `skip` lets core offer its skip button after the
+  // 2nd mistake (a long puzzle must never soft-lock a game). a=1: no options.
+  function makePuzzle(k,e){
+    const names=e.who.map(w=>w.n);
+    const res=c=>[c[0]].concat(c.slice(1).map(x=>typeof x==='string'?names.indexOf(x):x));
+    return {t:TLG,k,title:KINDS[k].title,lines:[e.intro],q:KINDS[k].q,
+            people:e.who.map(w=>({n:w.n,g:w.g})),
+            clues:e.clues.map(c=>({t:c.t,c:res(c.c)})),
+            total:e.total||0,item:e.item?Object.assign({},e.item):null,
+            sum:k==='dist'?names.map((n,i)=>n+' '+e.sol[i]).join(' · '):e.sol.join(' · '),
+            tip:e.tip||'',why:e.why||'',opts:[],a:1,skip:true};
   }
   // Superman + אַלּוּפָה get LOGIC_PER_GAME cards per game (problems.js places them
   // at the 6th and 14th question); the kind rotates across games so every kind
@@ -385,12 +628,19 @@ window.EXERCISES.types.logic=(()=>{
   const LOGIC_PER_GAME=2;
   const WEAVE_KINDS=['who','odd','pat','who','rule','ana','ord','then'];
   let _kc=0;
-  function makeWeave(){
+  // the puzzle kinds take turns (dist, seat, dist …) across Queen + אַלּוּפָה + bridge games
+  let _pc=0;
+  function makePuzzleCard(){const k=PUZZLE_KINDS[_pc%PUZZLE_KINDS.length];_pc++;return makeOne(k,_next(k));}
+  // אַלּוּפָה: its LAST logic slot (the 14th question) is a puzzle — the puzzles
+  // REPLACE one quick-choice card there. Superman keeps two quick-choice cards.
+  function makeWeave(mode){
     const out=[];
-    for(let i=0;i<LOGIC_PER_GAME;i++){
+    const quick=mode==='mulc'?LOGIC_PER_GAME-1:LOGIC_PER_GAME;
+    for(let i=0;i<quick;i++){
       const k=WEAVE_KINDS[_kc%WEAVE_KINDS.length];_kc++;
       out.push(makeOne(k,_next(k)));
     }
+    if(mode==='mulc')out.push(makePuzzleCard());
     return out;
   }
   function makePool(){
@@ -449,7 +699,69 @@ window.EXERCISES.types.logic=(()=>{
   .lg-chk:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.28)}
   .lg-chk:disabled{opacity:.4;cursor:default;box-shadow:none}
   @media(max-width:480px){.lg-clue{font-size:1.5rem}.lg-q{font-size:1.6rem}.lg-row span{font-size:2rem}
-    .lg-opt{min-width:92px;padding:8px 6px}.lg-opt .lg-e{font-size:2.1rem}.lg-opt .lg-w{font-size:1.35rem}}`;
+    .lg-opt{min-width:92px;padding:8px 6px}.lg-opt .lg-e{font-size:2.1rem}.lg-opt .lg-w{font-size:1.35rem}}
+  /* ── puzzles (dist / seat) ── */
+  .pz-root{gap:10px}
+  .pz-root .lg-title{font-size:1.6rem}
+  .pz-root .lg-q{font-size:1.5rem}
+  .pz-clues{gap:3px;padding:9px 14px}
+  .pz-intro{direction:rtl;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.5rem;line-height:1.45;
+    color:var(--skin-accent,#ffd27d);padding:0 4px 3px}
+  .pz-clue{font-size:1.45rem;line-height:1.4}
+  .pz-clue .lg-n{transition:background .2s,border-color .2s,opacity .2s}
+  .pz-clue .lg-n.pz-ok{background:rgba(76,175,80,.7);border-color:#4caf50}
+  .pz-clue .lg-n.pz-bad{background:rgba(233,30,99,.7);border-color:#e91e63}
+  .pz-clue .lg-n.pz-stale{opacity:.45}
+  .pz-pile{direction:rtl;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.4rem;color:var(--skin-text,#fff);
+    background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.35);border-radius:14px;padding:3px 16px;
+    display:flex;align-items:center;gap:8px;transition:border-color .2s}
+  .pz-pile .pz-pe{font-size:1.7rem}
+  .pz-pile b{font-family:'Fredoka One',cursive;font-size:1.7rem;color:var(--skin-accent,#ffd27d)}
+  .pz-pile.pz-zero{border-style:solid;border-color:#4caf50}
+  .pz-pile.pz-nudge{animation:lgShake .4s ease}
+  /* ONE row, always — the chairs ARE the row ("לְיַד" must look like "next to"),
+     so they shrink to fit instead of wrapping */
+  .pz-kids,.pz-chairs{width:100%;display:flex;gap:10px;justify-content:center;direction:rtl;flex-wrap:nowrap}
+  .pz-kid{flex:0 1 150px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;
+    background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.25);border-radius:18px;padding:7px 6px}
+  .pz-who{display:flex;align-items:center;gap:6px;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.4rem;color:var(--skin-text,#fff)}
+  .pz-face{font-size:1.7rem;line-height:1}
+  .pz-tray{min-height:48px;width:100%;display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-start;
+    gap:2px 7px;font-size:.95rem;line-height:1.2}
+  .pz-g{white-space:nowrap;letter-spacing:-1px}
+  .pz-ctl{direction:ltr;display:flex;align-items:center;gap:8px}
+  .pz-btn{width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.14);
+    color:var(--skin-text,#fff);font-family:'Fredoka One',cursive;font-size:1.7rem;line-height:1;cursor:pointer;
+    touch-action:manipulation;padding:0;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .pz-btn:active{transform:translateY(2px);box-shadow:none}
+  .pz-btn:disabled{opacity:.28;cursor:default;box-shadow:none}
+  .pz-cnt{min-width:2ch;text-align:center;font-family:'Fredoka One',cursive;font-size:1.9rem;color:var(--skin-accent,#ffd27d)}
+  .pz-chair{position:relative;flex:0 1 104px;min-width:0;min-height:96px;border-radius:16px;cursor:pointer;user-select:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:20px 4px 6px;
+    background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.25);transition:border-color .15s,background .15s,transform .12s}
+  .pz-cn{position:absolute;top:3px;right:8px;font-family:'Fredoka One',cursive;font-size:1.05rem;
+    color:var(--skin-accent,#ffd27d)}
+  .pz-empty{font-size:2.3rem;opacity:.5}
+  .pz-chair .pz-name,.pz-pill .pz-name{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.3rem;color:var(--skin-text,#fff)}
+  .pz-pool{width:100%;min-height:58px;box-sizing:border-box;display:flex;gap:10px;justify-content:center;align-items:center;
+    flex-wrap:wrap;direction:rtl;padding:7px 10px;border-radius:16px;border:2px dashed rgba(255,255,255,.25)}
+  .pz-pool-done{font-family:'Fredoka One','Heebo',sans-serif;font-size:1.2rem;color:var(--skin-text,#fff);opacity:.6}
+  .pz-pill{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;cursor:pointer;user-select:none;
+    background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);transition:transform .12s,border-color .15s,background .15s}
+  .pz-sel{border-color:var(--skin-primary,#c77dff)!important;background:rgba(199,125,255,.24)!important;
+    box-shadow:0 0 14px rgba(199,125,255,.4);transform:translateY(-2px)}
+  .pz-root.pz-lock .pz-btn,.pz-root.pz-lock .pz-chair,.pz-root.pz-lock .pz-pill{pointer-events:none}
+  .pz-root.pz-lock .pz-kid,.pz-root.pz-lock .pz-chair{border-color:#4caf50;background:rgba(76,175,80,.16)}
+  .pz-tip{display:none;direction:rtl;text-align:center;font-family:'Fredoka One','Heebo',sans-serif;font-size:1.35rem;
+    line-height:1.45;color:var(--skin-text,#fff);background:rgba(255,193,7,.15);border:1.5px solid rgba(255,193,7,.6);
+    border-radius:14px;padding:5px 14px}
+  .pz-tip.lg-on{display:block;animation:lgFade .3s ease}
+  .pz-chair .pz-name{display:inline-block;max-width:100%;overflow-wrap:anywhere}
+  @media(max-width:480px){.pz-intro{font-size:1.25rem}.pz-clue{font-size:1.2rem}.pz-kids,.pz-chairs{gap:6px}
+    .pz-chair{min-height:80px}.pz-chair .pz-name,.pz-pill .pz-name{font-size:1rem}
+    .pz-kid{padding:6px 3px}.pz-who{font-size:1.15rem;gap:3px}.pz-face{font-size:1.4rem}
+    .pz-ctl{gap:4px;flex-wrap:wrap;justify-content:center}.pz-cnt{order:-1;flex-basis:100%;font-size:1.6rem}
+    .pz-btn{width:38px;height:38px;font-size:1.4rem}}`;
   function injectStyle(){
     if(document.getElementById('lg-style'))return;
     const st=document.createElement('style');st.id='lg-style';st.textContent=CSS;
@@ -468,6 +780,7 @@ window.EXERCISES.types.logic=(()=>{
 
   let _uid=0;
   function mount(ctx){
+    if(isPuzzle((ctx.p||{}).k))return mountPuzzle(ctx);
     injectStyle();
     const {root,api}=ctx;
     const p=ctx.p||{};
@@ -553,14 +866,199 @@ window.EXERCISES.types.logic=(()=>{
     return function cleanup(){timers.forEach(clearTimeout);root.innerHTML='';};
   }
 
+  /* ── the PUZZLE card (dist / seat) ──────────────────────────────────────────
+     Build the answer, press ✓: every request gets ✓ (green) or ✗ (red, pulsing).
+     All ✓ → solved. Otherwise a mistake (−points), the marks stay (faded once she
+     changes something), and after the 2nd mistake the 💡 tip opens. ✓ with items
+     still in the pile / an empty chair, or a re-submit of the SAME wrong answer,
+     only nudges (no penalty). */
+  function mountPuzzle(ctx){
+    injectStyle();
+    const {root,api}=ctx;
+    const p=ctx.p||{};
+    const k=p.k, isDist=k==='dist';
+    const people=p.people||[], clues=p.clues||[], N=people.length;
+    const item=p.item||{e:'🍪',w:'',g:'f'}, total=p.total||0;
+    const uid=++_uid;
+    let done=false,tries=0,lastWrong='';
+    const timers=[];const later=(fn,ms)=>{timers.push(setTimeout(fn,ms));};
+    const hint=msg=>{const h=document.getElementById('hint');if(h)h.textContent=msg;};
+    const face=g=>g==='f'?'👧':'👦';
+    const cnt=new Array(N).fill(0);        // dist: items each friend holds
+    const seatOf=new Array(N).fill(-1);    // seat: chair index of each friend (−1 = not seated)
+    let sel=-1;                            // seat: the friend picked up
+
+    let area='';
+    if(isDist){
+      area='<div class="pz-pile" id="pz-pile-'+uid+'"><span class="pz-pe">'+item.e+'</span>נִשְׁאֲרוּ: <b class="pz-left">'+total+'</b></div>'+
+        '<div class="pz-kids">'+people.map((w,i)=>
+          '<div class="pz-kid" data-p="'+i+'">'+
+            '<div class="pz-who"><span class="pz-face">'+face(w.g)+'</span><span class="pz-name">'+w.n+'</span></div>'+
+            '<div class="pz-tray"></div>'+
+            '<div class="pz-ctl"><button class="pz-btn pz-minus" data-p="'+i+'" aria-label="פָּחוֹת">−</button>'+
+              '<span class="pz-cnt">0</span>'+
+              '<button class="pz-btn pz-plus" data-p="'+i+'" aria-label="עוֹד">+</button></div>'+
+          '</div>').join('')+'</div>';
+    }else{
+      area='<div class="pz-chairs">'+people.map((_,s)=>
+          '<div class="pz-chair" data-s="'+s+'" role="button" tabindex="0" aria-label="כִּסֵּא '+(s+1)+'">'+
+            '<span class="pz-cn">'+(s+1)+'</span><span class="pz-occ"></span></div>').join('')+'</div>'+
+        '<div class="pz-pool" id="pz-pool-'+uid+'">'+sh(people.map((_,i)=>i)).map(i=>
+          '<div class="pz-pill" data-p="'+i+'" role="button" tabindex="0">'+
+            '<span class="pz-face">'+face(people[i].g)+'</span><span class="pz-name">'+people[i].n+'</span></div>').join('')+
+          '<span class="pz-pool-done" style="display:none">כֻּלָּם יוֹשְׁבִים — לַחֲצִי ✓</span></div>';
+    }
+    root.innerHTML=
+      '<div class="lg-root pz-root" data-k="'+k+'">'+
+        '<div class="lg-title">'+(p.title||'🧠')+'</div>'+
+        '<div class="lg-clues pz-clues">'+
+          '<div class="pz-intro">'+((p.lines||[])[0]||'')+'</div>'+
+          clues.map((c,i)=>'<div class="lg-clue pz-clue" data-c="'+i+'"><span class="lg-n">'+(i+1)+'</span><span>'+c.t+'</span></div>').join('')+
+        '</div>'+
+        (p.q?'<div class="lg-q">'+p.q+'</div>':'')+
+        area+
+        '<div class="pz-tip" id="pz-tip-'+uid+'">💡 '+(p.tip||'')+'</div>'+
+        '<div class="lg-why" id="lg-why-'+uid+'">'+(p.why||'')+'</div>'+
+        '<button class="lg-chk" id="lg-chk-'+uid+'" aria-label="הַגָּשָׁה">✓</button>'+
+      '</div>';
+    const box=root.querySelector('.pz-root');
+    const clueEls=Array.prototype.slice.call(root.querySelectorAll('.pz-clue'));
+    const tip=root.querySelector('#pz-tip-'+uid), why=root.querySelector('#lg-why-'+uid), chk=root.querySelector('#lg-chk-'+uid);
+    hint(isDist?'🧩 תְּנִי לְכָל אֶחָד בְּעֶזְרַת + וְ־−, וְאָז לַחֲצִי ✓'
+               :'🪑 בַּחֲרִי חָבֵר וְאָז כִּסֵּא — וּכְשֶׁכֻּלָּם יוֹשְׁבִים, לַחֲצִי ✓');
+
+    // the ✓/✗ marks of the last check fade once the answer changes
+    function stale(){
+      clueEls.forEach(c=>{c.classList.remove('lg-hit');const n=c.querySelector('.lg-n');
+        if(n&&(n.classList.contains('pz-ok')||n.classList.contains('pz-bad')))n.classList.add('pz-stale');});
+    }
+    function mark(ok){
+      clueEls.forEach((c,i)=>{const n=c.querySelector('.lg-n');
+        n.classList.remove('pz-ok','pz-bad','pz-stale');c.classList.remove('lg-hit');
+        n.classList.add(ok[i]?'pz-ok':'pz-bad');n.textContent=ok[i]?'✓':'✗';
+        if(!ok[i]){void c.offsetWidth;c.classList.add('lg-hit');}});
+    }
+
+    /* ── dist: + / − move one item between the pile and a friend ── */
+    function renderDist(){
+      const left=total-cnt.reduce((a,b)=>a+b,0);
+      const pile=root.querySelector('#pz-pile-'+uid);
+      pile.querySelector('.pz-left').textContent=left;
+      pile.classList.toggle('pz-zero',left===0);
+      root.querySelectorAll('.pz-kid').forEach(el=>{
+        const i=+el.getAttribute('data-p'),n=cnt[i];
+        el.querySelector('.pz-cnt').textContent=n;
+        let tray='';for(let g=0;g<n;g+=5)tray+='<span class="pz-g">'+item.e.repeat(Math.min(5,n-g))+'</span>';
+        el.querySelector('.pz-tray').innerHTML=tray;
+        el.querySelector('.pz-minus').disabled=n===0;
+        el.querySelector('.pz-plus').disabled=left===0;
+      });
+    }
+    /* ── seat: tap a friend, then a chair (an occupied chair SWAPS; tapping a
+       seated friend picks them up; tapping the pool sends them back) ── */
+    function renderSeat(){
+      root.querySelectorAll('.pz-chair').forEach(el=>{
+        const s=+el.getAttribute('data-s'),o=seatOf.indexOf(s);
+        el.querySelector('.pz-occ').innerHTML=o<0?'<span class="pz-empty">🪑</span>':
+          '<span class="pz-face">'+face(people[o].g)+'</span><br><span class="pz-name">'+people[o].n+'</span>';
+        el.classList.toggle('pz-sel',o>=0&&o===sel);
+      });
+      let inPool=0;
+      root.querySelectorAll('.pz-pill').forEach(el=>{
+        const i=+el.getAttribute('data-p'),seated=seatOf[i]>=0;
+        el.style.display=seated?'none':'';if(!seated)inPool++;
+        el.classList.toggle('pz-sel',i===sel);
+      });
+      root.querySelector('.pz-pool-done').style.display=inPool?'none':'';
+    }
+    function tapChair(s){
+      if(done)return;
+      const o=seatOf.indexOf(s);
+      if(sel>=0){
+        if(o===sel){sel=-1;renderSeat();return;}         // tapped its own chair: put it down
+        const from=seatOf[sel];
+        if(o>=0)seatOf[o]=from;                          // swap (or back to the pool)
+        seatOf[sel]=s;sel=-1;stale();
+      }else if(o>=0)sel=o;                               // pick up a seated friend
+      renderSeat();
+    }
+    function tapPill(i){if(done)return;sel=sel===i?-1:i;renderSeat();}
+
+    const attempt=()=>isDist?cnt.join('·'):people.map((_,s)=>{const o=seatOf.indexOf(s);return o<0?'?':people[o].n;}).join('·');
+    function submit(){
+      if(done)return;
+      if(isDist){
+        const left=total-cnt.reduce((a,b)=>a+b,0);
+        if(left>0){
+          hint('עוֹד נִשְׁאֲרוּ '+left+' '+item.w+' — חַלְּקִי אֶת '+(item.g==='m'?'כֻּלָּם':'כֻּלָּן')+' 💗');
+          const pile=root.querySelector('#pz-pile-'+uid);pile.classList.remove('pz-nudge');void pile.offsetWidth;pile.classList.add('pz-nudge');
+          return;
+        }
+      }else if(seatOf.some(s=>s<0)){hint('עוֹד לֹא כֻּלָּם יוֹשְׁבִים — הוֹשִׁיבִי אֶת כֻּלָּם 💗');return;}
+      const now=attempt();
+      if(now===lastWrong){hint('זֶה אוֹתוֹ נִסָּיוֹן — שַׁנִּי מַשֶּׁהוּ קֹדֶם 💗');return;}
+      const v=isDist?cnt.slice():seatOf.slice();
+      const ok=clues.map(c=>holds(k,c.c,v));
+      mark(ok);
+      if(ok.every(Boolean)){
+        done=true;sel=-1;if(!isDist)renderSeat();
+        box.classList.add('pz-lock');
+        if(isDist)root.querySelectorAll('.pz-btn').forEach(b=>{b.disabled=true;});
+        tip.classList.remove('lg-on');
+        if(why&&p.why)why.classList.add('lg-on');
+        chk.disabled=true;
+        hint('🎉 כָּל הַבַּקָּשׁוֹת מִתְקַיְּמוֹת! אַתְּ בַּלָּשִׁית אֲמִיתִּית!');
+        api.solved();
+      }else{
+        tries++;lastWrong=now;
+        api.wrong(now);
+        hint('בַּבַּקָּשׁוֹת עִם ✗ מַשֶּׁהוּ עוֹד לֹא מַתְאִים — '+(isDist?'שַׁנִּי':'הַחְלִיפִי מְקוֹמוֹת')+' וְנַסִּי שׁוּב 💗');
+        if(tries>=2&&p.tip)later(()=>{if(!done)tip.classList.add('lg-on');},400);
+      }
+    }
+
+    if(isDist){
+      root.querySelectorAll('.pz-btn').forEach(b=>b.addEventListener('click',function(){
+        if(done)return;
+        const i=+this.getAttribute('data-p'),left=total-cnt.reduce((a,c)=>a+c,0);
+        if(this.classList.contains('pz-plus')){if(left<=0)return;cnt[i]++;}
+        else{if(cnt[i]<=0)return;cnt[i]--;}
+        stale();renderDist();
+      }));
+      renderDist();
+    }else{
+      const key=fn=>function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();fn.call(this);}};
+      root.querySelectorAll('.pz-chair').forEach(el=>{
+        const go=function(){tapChair(+this.getAttribute('data-s'));};
+        el.addEventListener('click',go);el.addEventListener('keydown',key(go));
+      });
+      root.querySelectorAll('.pz-pill').forEach(el=>{
+        const go=function(){tapPill(+this.getAttribute('data-p'));};
+        el.addEventListener('click',function(e){e.stopPropagation();go.call(this);});el.addEventListener('keydown',key(go));
+      });
+      // tapping the pool's empty space while a SEATED friend is picked up sends them back
+      root.querySelector('#pz-pool-'+uid).addEventListener('click',()=>{
+        if(done||sel<0||seatOf[sel]<0)return;
+        seatOf[sel]=-1;sel=-1;stale();renderSeat();
+      });
+      renderSeat();
+    }
+    chk.addEventListener('click',submit);
+
+    return function cleanup(){timers.forEach(clearTimeout);root.innerHTML='';};
+  }
+
   return{
     t:TLG,
-    modes:['logic','sup','mulc'],
+    modes:['logic','sup','mulc','mx','br','b20'],
     aidsReveal:'always',
-    make(mode){return mode==='logic'?makePool():(mode==='sup'||mode==='mulc')?makeWeave():[];},
-    _resetRotation(){Object.keys(_rot).forEach(k=>delete _rot[k]);_kc=0;},   // test hook
+    // Queen (mx) + the bridges (br/b20): ONE puzzle card per game (problems.js
+    // puts it on top of the deck)
+    make(mode){return mode==='logic'?makePool():(mode==='mx'||mode==='br'||mode==='b20')?[makePuzzleCard()]:(mode==='sup'||mode==='mulc')?makeWeave(mode):[];},
+    _resetRotation(){Object.keys(_rot).forEach(k=>delete _rot[k]);_kc=0;_pc=0;},   // test hook
     _weaveKinds:WEAVE_KINDS,
     _banks:{who:WHO,odd:ODD,ord:ORD,pat:PAT,rule:RULE,ana:ANA,then:THEN},_mix:MIX,           // test hooks
+    _puzzles:{dist:DIST,seat:SEAT},_puzzleKinds:PUZZLE_KINDS,_holds:holds,                    // test hooks (puzzles)
     _makeOne:makeOne,
     mount,
   };

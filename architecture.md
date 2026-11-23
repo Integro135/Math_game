@@ -403,7 +403,20 @@ Current recipes:
   (`half`, `ice_cream`, `deal`, `pack`, `fair`, `can_share`), one per game.
   Since 2026-11-15 it is **18**: + ONE range card (🎯 `num_range.make('mx')` —
   which numbers lie between two bounds) at index 14, question 15, after every
-  other woven card, so none of them moves.
+  other woven card, so none of them moves. Since 2026-11-22 it is **19**: + ONE
+  🧠 logic PUZZLE (`logic.make('mx')` — חִידַת חֲלֻקָּה / מִי יוֹשֵׁב אֵיפֹה?, the two
+  kinds take turns) at index 16, question 17, again after every woven card.
+- **The bridges (`br` גָּשֵׁר 10, `b20` גָּשֵׁר 20)** — fixed curriculum sets in rotation
+  (`makeBridgePool` / `makeBridge20Pool`) with the unknowns, equations, two balance
+  cards and 🧩 cards woven in by position. Since 2026-11-16 every game also has ONE
+  🎯 range card (`num_range.make('br'|'b20')` — a range ACROSS the ten the game
+  bridges) at index 14, question 15 (`_withRangeCard`), after every woven card:
+  גָּשֵׁר 10 kept its 15 (sets 1–5 each dropped their easiest fact, a 14), גָּשֵׁר 20 was 18.
+  Since 2026-11-22 both also get ONE 🧠 logic PUZZLE (`logic.make('br'|'b20')`, the
+  dist/seat kinds take turns, shared with Queen's rotation) at index 15, question 16
+  (`_withLogicPuzzle`), right after the range card: **גָּשֵׁר 10 = 16, גָּשֵׁר 20 = 19**.
+  (The 12 facts of a bridge-10 set can't shrink again — the 3rd unknown, the chain,
+  sits at arithmetic index 11 — so this card went on top of the 15 cap.)
 - **Superman (`sup`)** — a BALANCED equal share of every interactive type,
   shuffled: `column_add.make('sup')` (3 = 2-carry + 1 no-carry),
   `big_step.make('sup')` (3 big-number SUBTRACTIONS),
@@ -425,6 +438,8 @@ Current recipes:
   `pack` (how many boxes), `fair` (make uneven plates equal), `can_share` (yes/no, with
   the leftover), and since 2026-11-15 the 🎯 range card (`num_range.make('mulc')`), kept
   in EVERY game together with `mult_champ` and `triple_sum` (`_fitTypes` `always`).
+  Its two 🧠 logic cards sit at the 6th + 14th question (`_weaveLogic`); since
+  2026-11-22 the 14th is a logic PUZZLE (`dist`/`seat`, `logic.ex.js makeWeave('mulc')`).
   אַלּוּפָה now rotates the other 18 types through 7 math slots — every type within
   three games (`_fitTypes`)
   and `plates.make('mulc')` (g plates × s items → total, the multiplication story),

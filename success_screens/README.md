@@ -94,7 +94,7 @@ The host lives in `game/js/success.js`.
 
 ## 4. Screen inventory
 
-There are **85** rotation screens in `SUCCESS_FILES`; all register
+There are **95** rotation screens in `SUCCESS_FILES`; all register
 `supportsSuper: true`. The manifest is in order of addition (newest last). In
 2026-10 the ten oldest (supernova, comet-shower, constellation-heart,
 electric-orb, lightning-storm, blooming-garden, unicorn-rainbow,
@@ -180,6 +180,20 @@ listed in `SUCCESS_FILES` and pinned by `tests/test_new_success_screens.py`.
 | `success-magic-mirror.js` | A golden hand mirror floats in, a shine sweeps the glass and a crowned smiley pops up and winks as sparkles fly out. Super: the mirror spins, its gems light up in rainbow order, rings of stars burst. |
 | `success-seahorse-ride.js` | A side-view seahorse rises through bubbles, loops the loop and curls its tail around a glowing star. Super: two baby seahorses, swaying seaweed, every bubble pops into sparkles. |
 
+### The 2026-11-23 batch (ten more, added — nothing retired)
+| File | Effect |
+|---|---|
+| `success-swan-heart.js` | On a moonlit lake two white swans glide in from both sides leaving V-wakes, meet and bow their necks into a glowing, beating heart mirrored in the water, with ripple rings, a big moon and fireflies. Super: a fluffy cygnet paddles in, lotus lanterns bloom, and a light-heart gathers between the necks and bursts into petals. |
+| `success-hummingbird-flower.js` | An iridescent emerald hummingbird zips in as a trumpet flower turns to her and blooms petal by petal; she sips (golden nectar sparkles), then draws a figure-8 that stays behind as a rainbow ribbon. Super: a sapphire hummingbird joins, vines grow into a wreath of pastel blossoms, nectar drops rise into star bursts, and both loop the loop. |
+| `success-enchanted-rose.js` | A fairy-tale rose under a glass bell on a jewelled gold pedestal blooms from a bud while glitter spirals around the glass; a warm halo pulses and glowing petals drift up. Super: the bell lifts away, golden rays turn behind the rose, a ring of petals orbits it and gold glitter rains. |
+| `success-potion-bottle.js` | A glass potion flask (cork, bow, heart label) bounces in, its colour-cycling potion bubbles faster until the cork pops and a rainbow mist traces a big glowing heart ringed by gold stars. Super: heart-, star- and round flasks pop in turn and their mists twist into a rainbow spiral that blooms into a giant heart with glitter rain. |
+| `success-ice-skater.js` | A chibi figure skater glides onto a glowing oval rink (snowy rim, string lights, reflection), carves a pink heart with her blades, spins a pirouette in a spray of snow sparkles and ends in a "ta-da" pose. Super: a gold star is carved inside the heart, a twirling jump under a following spotlight, and a snowflake swirl. |
+| `success-sparkler-heart.js` | A hand-held sparkler light-paints a big heart as a long-exposure trail (white-hot → gold → palette, soft bloom, crackling branching sparks); the heart flares, beats twice and dissolves into glitter. Super: two sparklers draw a heart inside a golden star at once, then flare into a burst of sparks and glitter rain. |
+| `success-bead-bracelet.js` | A silk thread curls into a tilted ring and glossy beads (rainbow spheres, crystals, hearts, a gold star, pearls) streak in and slide onto it with a sparkle tick; the clasp clicks, a gold heart charm swings and a shine sweeps the slowly rocking bracelet. Super: a pearl-and-gold necklace races around it, a rainbow shimmer chases both rings and sparkles burst outward. |
+| `success-cotton-candy.js` | A fairground cotton-candy machine (chrome bowl, striped drum, marquee bulbs) spins glowing sugar threads while a striped cone swirls up a fluffy pink-to-lilac cloud, lifts it to the centre with a squash-bounce and puffs out hearts and sugar sparkles. Super: a three-colour rainbow floss grows into a giant heart-shaped cotton candy with sprinkles, gold stars and sugar glitter. |
+| `success-space-kitten.js` | An orange-tabby kitten astronaut in a glass bubble helmet tumbles in on jet-pack puffs, swims to a smiling golden star and hugs it; the star bursts into a ring of little stars as she somersaults, waves and winks (ringed planet, crescent moon, shooting star). Super: she rides the star like a comet on an infinity loop with a rainbow tail, little planets orbit the praise, and a star-and-heart burst ends it. |
+| `success-giraffe-star.js` | A baby giraffe on a starlit savanna hill beside an acacia stretches her neck comically high and tiptoes to boop a low golden star, which chimes into a burst and a cascade of little stars as her neck springs back with a happy wobble. Super: the fallen stars join into a glowing heart constellation, fireflies light the acacia, and a smaller giraffe peeks over the hill. |
+
 ### Special / reward (not in the rotation)
 | File | Effect |
 |---|---|
@@ -218,6 +232,16 @@ must be added there to preview them.
 3. **Iterate with `success_dev.html`** — add a `<script src>` line for the new
    file, then test the normal and super variants across every skin and verify the
    Enter/Space skip leaves nothing behind.
+4. **Look at it frame by frame with `_shot.py`** (2026-11-23) —
+   `python c:/Code/subtraction_game/success_screens/_shot.py <name> [--phone|--portrait] [--at MS] [--super]`
+   renders the screen on a PAUSED fake clock (Playwright `clock`, time moves only
+   by `run_for`, so frames are deterministic) over the host's near-black cover and
+   writes contact sheets `c:/tmp/ss_<name>_normal.png` (6 frames) / `_super.png`
+   (8 frames) — plus the skip/cleanup check and a rough fps. The common defect it
+   catches: art (a heart, a burst, a glow ring) climbing into the `+N ⭐` points
+   line on the 1024×768 tablet — keep a clear gap below it at every frame.
+5. Add the name to `tests/test_new_success_screens.py` (the batch list) and bump
+   the expected count.
 
 For a **reward** screen instead, register into `window.SUCCESS.special.<key>`,
 place the file in its own subfolder (e.g. `gift/`), and list it in

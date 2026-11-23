@@ -4,13 +4,14 @@ from helpers import *
 
 
 # Normalise a bridge set back to its FACTS, [type, a, b], skipping the 2 balance
-# cards (TSB): a shape-unknown (TVA/TVS) and the chains (TRA g+__+__=r, TRS
+# cards (TSB), the 🎯 range card (TRG, question 15 since 2026-11-16) and the 🧠 logic
+# puzzle (TLG, question 16 since 2026-11-22): a shape-unknown (TVA/TVS) and the chains (TRA g+__+__=r, TRS
 # g−__−__=r — built from the fact at the slot, a/b kept) keep their a/b; an
 # EQUATION card (2026-11-02, slots 2/6/10 of every bridge-10 set) is turned back
 # into the fact it poses — a + __ = c (TMA) → [TA, a, c−a] and c − __ = a (TM) →
 # [TS, c, c−a]. The curriculum order checks compare against this.
 # A whole-and-parts card (TPW, 2026-11-02, every 3rd card) carries its fact in `src`.
-BR_NORM = ("[...problems].filter(p => p.t!==TSB).map(p => p.t===TPW ? p.src : p).map(p => "
+BR_NORM = ("[...problems].filter(p => p.t!==TSB && p.t!==TRG && p.t!==TLG).map(p => p.t===TPW ? p.src : p).map(p => "
            "p.t===TMA?[TA,p.a,p.b-p.a]:p.t===TM?[TS,p.a,p.a-p.b]:"
            "p.t===TRS?[(p.g===p.a+p.b?TA:TS),p.a,p.b]:"
            "[(p.t===TVA?TA:p.t===TVS?TS:p.t===TRA?(p.a+p.b===p.r?TA:TS):p.t), p.a, p.b])")
@@ -34,11 +35,11 @@ class TestBridgingMode:
     EXPECTED_SEQ = [
         ("TA", 9, 6), ("TA", 9, 7), ("TA", 9, 8), ("TA", 9, 9),
         ("TS", 15, 9), ("TS", 16, 9), ("TS", 17, 9), ("TS", 18, 9),
-        ("TA", 8, 6), ("TA", 8, 7), ("TA", 8, 8), ("TS", 16, 8), ("TS", 17, 8),
+        ("TA", 8, 7), ("TA", 8, 8), ("TS", 16, 8), ("TS", 17, 8),            # 8+6 left for the 🎯 card (2026-11-16)
     ]
     # SET 2 — count-backs from 14 … 18, two additions to finish (15)
     EXPECTED_SEQ_2 = [
-        ("TS", 14, 7), ("TS", 14, 8),
+        ("TS", 14, 8),                                                    # 14−7 left for the 🎯 card
         ("TS", 15, 6), ("TS", 15, 7), ("TS", 15, 8),
         ("TS", 16, 7), ("TS", 16, 8), ("TS", 16, 9),
         ("TS", 17, 8), ("TS", 17, 9), ("TS", 18, 9),
@@ -48,18 +49,17 @@ class TestBridgingMode:
     EXPECTED_SEQ_3 = [
         ("TA", 8, 8), ("TS", 16, 8), ("TA", 9, 9), ("TS", 18, 9),
         ("TA", 7, 8), ("TA", 8, 7), ("TS", 15, 8), ("TS", 15, 7),
-        ("TA", 8, 9), ("TA", 9, 8), ("TS", 17, 9), ("TS", 17, 8),
-        ("TA", 6, 8),
+        ("TA", 8, 9), ("TA", 9, 8), ("TS", 17, 9), ("TS", 17, 8),          # the 6+8 finish left for the 🎯 card
     ]
     # SET 4 — +7 and +6 with inverses (15)
     EXPECTED_SEQ_4 = [
         ("TA", 7, 8), ("TA", 7, 9), ("TS", 14, 7), ("TS", 15, 7), ("TS", 16, 7),
         ("TA", 6, 8), ("TA", 6, 9), ("TS", 14, 6), ("TS", 15, 6),
-        ("TA", 8, 7), ("TA", 9, 7), ("TA", 8, 6), ("TA", 9, 6),
+        ("TA", 8, 7), ("TA", 9, 7), ("TA", 9, 6),                          # 8+6 left for the 🎯 card
     ]
     # SET 5 — the +9 shortcut, high end (15)
     EXPECTED_SEQ_5 = [
-        ("TA", 5, 9), ("TA", 6, 9), ("TA", 7, 9), ("TA", 8, 9), ("TA", 9, 9),
+        ("TA", 6, 9), ("TA", 7, 9), ("TA", 8, 9), ("TA", 9, 9),            # 5+9 left for the 🎯 card
         ("TS", 14, 9), ("TS", 15, 9), ("TS", 16, 9), ("TS", 17, 9), ("TS", 18, 9),
         ("TA", 9, 6), ("TA", 9, 7), ("TA", 9, 8),
     ]
@@ -79,11 +79,15 @@ class TestBridgingMode:
             return 5 <= a < 10 and 5 <= b < 10 and 14 <= a + b <= 18
         return 14 <= a <= 18 and 5 <= b < 10 and (a % 10) < b and 0 < (a - b) < 10
 
-    def test_br_every_set_has_at_most_15(self):
-        """At most 15 cards per set: the arithmetic (13; set 6: 12) + 2 balance cards."""
+    def test_br_every_set_has_at_most_16(self):
+        """At most 16 cards per set: the arithmetic (12 in every set since 2026-11-16, when
+        sets 1–5 each gave their easiest fact up for it) + 2 balance cards + the 🎯 range card
+        + the 🧠 logic puzzle (2026-11-22 — on top: 12 facts can't shrink again without
+        losing the chain slot, the 3rd unknown at arithmetic index 11)."""
         for seq in (self.EXPECTED_SEQ, self.EXPECTED_SEQ_2, self.EXPECTED_SEQ_3,
                     self.EXPECTED_SEQ_4, self.EXPECTED_SEQ_5, self.EXPECTED_SEQ_6):
-            assert len(seq) + 2 <= 15, f"a bridge-10 set holds at most 15, got {len(seq)} + 2"
+            assert len(seq) == 12, f"12 facts per set (the 3 unknowns sit at arithmetic 3/7/11), got {len(seq)}"
+            assert len(seq) + 4 <= 16, f"a bridge-10 set holds at most 16, got {len(seq)} + 2 + 1 + 1"
             assert len(set(seq)) == len(seq), f"duplicate problem in a set: {seq}"
 
     def test_br_every_set_is_hard(self, page):
@@ -222,8 +226,8 @@ class TestBridgingMode:
     def test_br_mode_has_15_problems(self, page):
         """Bridging mode serves exactly 15 problems per session."""
         self._switch_br(page)
-        assert page.evaluate("problems.length") == 15, \
-            f"Expected 15 br problems, got {page.evaluate('problems.length')}"
+        assert page.evaluate("problems.length") == 16, \
+            f"Expected 16 br problems, got {page.evaluate('problems.length')}"
 
     def test_br_mode_pts_is_15(self, page):
         """modePts() returns 15 in bridging mode."""
@@ -364,8 +368,8 @@ class TestBridgingMode:
         """The second bridging set serves exactly 15 problems."""
         self._switch_br(page)            # 1st selection → set 1
         self._reenter_br(page)           # 2nd selection → set 2
-        assert page.evaluate("problems.length") == 15, \
-            f"Expected 15 problems in set 2, got {page.evaluate('problems.length')}"
+        assert page.evaluate("problems.length") == 16, \
+            f"Expected 16 problems in set 2, got {page.evaluate('problems.length')}"
 
     def test_br_set2_exact_order(self, page):
         """The second selection serves SET 2 in its exact prescribed order."""
@@ -384,8 +388,8 @@ class TestBridgingMode:
         self._switch_br(page)            # set 1
         self._reenter_br(page)           # set 2
         self._reenter_br(page)           # set 3
-        assert page.evaluate("problems.length") == 15, \
-            f"Expected 15 problems in set 3, got {page.evaluate('problems.length')}"
+        assert page.evaluate("problems.length") == 16, \
+            f"Expected 16 problems in set 3, got {page.evaluate('problems.length')}"
 
     def test_br_set3_exact_order(self, page):
         """The third selection serves SET 3 (big bridges) in its exact prescribed order."""
@@ -406,7 +410,7 @@ class TestBridgingMode:
         TA, TS = consts["TA"], consts["TS"]
         self._switch_br(page); self._reenter_br(page); self._reenter_br(page)   # set 3
         probs = page.evaluate(BR_NORM)
-        assert len(probs) == 13
+        assert len(probs) == 12
         for t, a, b in probs:
             if t == TA:
                 assert self._hard_ok(TA, t, a, b), f"addition {a}+{b} must be a hard crossing (13–18)"
@@ -418,8 +422,8 @@ class TestBridgingMode:
         self._switch_br(page)            # set 1
         for _ in range(3):
             self._reenter_br(page)       # → 2 → 3 → 4
-        assert page.evaluate("problems.length") == 15, \
-            f"Expected 15 problems in set 4, got {page.evaluate('problems.length')}"
+        assert page.evaluate("problems.length") == 16, \
+            f"Expected 16 problems in set 4, got {page.evaluate('problems.length')}"
 
     def test_br_set4_exact_order(self, page):
         """The fourth selection serves SET 4 (gentle crossings) in its exact prescribed order."""
@@ -443,7 +447,7 @@ class TestBridgingMode:
         for _ in range(3):
             self._reenter_br(page)       # set 4
         probs = page.evaluate(BR_NORM)
-        assert len(probs) == 13
+        assert len(probs) == 12
         for t, a, b in probs:
             assert self._hard_ok(TA, t, a, b), f"{a},{b} must be a hard crossing"
         assert sum(1 for t, a, b in probs if 6 in (a, b) or 7 in (a, b)) >= 12
@@ -457,8 +461,8 @@ class TestBridgingMode:
     def test_br_set5_has_15_problems(self, page):
         """The fifth bridging set (the +9 shortcut) serves exactly 15 problems."""
         self._reach_set(page, 5)
-        assert page.evaluate("problems.length") == 15, \
-            f"Expected 15 problems in set 5, got {page.evaluate('problems.length')}"
+        assert page.evaluate("problems.length") == 16, \
+            f"Expected 16 problems in set 5, got {page.evaluate('problems.length')}"
 
     def test_br_set5_exact_order(self, page):
         """The fifth selection serves SET 5 (+9 shortcut) in its exact prescribed order."""
@@ -474,7 +478,7 @@ class TestBridgingMode:
         TA, TS = consts["TA"], consts["TS"]
         self._reach_set(page, 5)
         probs = page.evaluate(BR_NORM)
-        assert len(probs) == 13
+        assert len(probs) == 12
         for t, a, b in probs:
             if t == TA:
                 assert self._hard_ok(TA, t, a, b), f"addition {a}+{b} must be a hard crossing (13–18)"
@@ -484,8 +488,8 @@ class TestBridgingMode:
     def test_br_set6_has_15_problems(self, page):
         """The sixth bridging set (mid-teen count-backs) serves exactly 15 problems."""
         self._reach_set(page, 6)
-        assert page.evaluate("problems.length") == 14, \
-            f"Expected 12 + 2 balance = 14 problems in set 6, got {page.evaluate('problems.length')}"
+        assert page.evaluate("problems.length") == 16, \
+            f"Expected 12 + 2 balance + 1 range + 1 puzzle = 16 problems in set 6, got {page.evaluate('problems.length')}"
 
     def test_br_set6_exact_order(self, page):
         """The sixth selection serves SET 6 (mid-teen count-backs) in its exact order."""
@@ -526,15 +530,15 @@ class TestBridgingMode:
         assert seen[6] == exp[0], "the next selection wraps back to set 1"
 
     def test_br_restart_size_alternates(self, page):
-        """Every one of the six sets holds 15 (the cap since 2026-11-01), on every
-        restart. Weaving the unknowns in re-renders problems but never adds/removes
+        """Every one of the six sets holds 16 (the 15 cap of 2026-11-01 + the 🧠 puzzle of
+        2026-11-22), on every restart. Weaving the unknowns in re-renders problems but never adds/removes
         any, so the lengths are unchanged."""
         self._switch_br(page)
         lens = [page.evaluate("problems.length")]
         for _ in range(6):
             page.evaluate("restart()"); page.wait_for_timeout(120)
             lens.append(page.evaluate("problems.length"))
-        assert lens == [15, 15, 15, 15, 15, 14, 15], f"13 + 2 balance (set 6: 12 + 2), got {lens}"
+        assert lens == [16] * 7, f"12 + 2 balance + 1 range + 1 puzzle in every set, got {lens}"
 
     def test_br_reclick_while_active_rotates_set(self, page):
         """Re-selecting גָּשֵׁר 10 while ALREADY in it starts a fresh game with
@@ -630,7 +634,7 @@ class TestBridge20:
 
     def test_b20_has_15_problems(self, page):
         self._switch(page)
-        assert page.evaluate("problems.length") == 17, "15 + 2 balance cards"
+        assert page.evaluate("problems.length") == 19, "15 + 2 balance cards + the 🎯 range card + the 🧠 puzzle"
 
     def test_b20_exact_order(self, page):
         # every 4th problem is re-rendered as a shape-unknown (TVA/TVS); normalise

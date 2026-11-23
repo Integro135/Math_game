@@ -42,15 +42,27 @@ def _plain(s):
     return NIQQUD.sub("", s)
 
 
+def _tap(page, find, kind, tries=5):
+    """Wait until the JS expression `find` gives a point {x, y, n: _space4.taps.total} where a tap reaches
+    `kind`, click it, and check that the tap reached `kind`. The sky keeps moving between that check and the
+    click (a satellite can swing in front of the Earth in the gap), so a tap that something else reached
+    first is taken again, up to `tries` times."""
+    got = []
+    for _ in range(tries):
+        q = page.wait_for_function(find, timeout=30_000).json_value()
+        page.mouse.click(q["x"], q["y"])
+        page.wait_for_function(f"_space4.taps.total > {q['n']}", timeout=3_000)
+        got.append(page.evaluate("_space4.taps.last"))
+        if got[-1] == kind:
+            return q
+    pytest.fail(f"{tries} taps meant for the {kind} reached {got}")
+
+
 def _tap_kind(page, kind, index=0):
-    """Tap the index-th target of a kind (it must be the first thing under its own centre)."""
-    page.wait_for_function(
-        f"(() => {{ const T = _space4.targets().filter(q => q.kind === '{kind}'); const q = T[{index}];"
-        f" return !!q && q.x > 4 && q.y > 4 && q.x < innerWidth - 4 && q.y < innerHeight - 4 && _space4.hitAt(q.x, q.y) === '{kind}'; }})()", timeout=30_000)
-    q = page.evaluate(f"_space4.targets().filter(q => q.kind === '{kind}')[{index}]")
-    page.mouse.click(q["x"], q["y"])
-    page.wait_for_function(f"_space4.taps.last === '{kind}'", timeout=3_000)
-    return q
+    """Tap the index-th target of a kind at its centre, once it is the first thing a tap there reaches."""
+    return _tap(page, f"(() => {{ const q = _space4.targets().filter(q => q.kind === '{kind}')[{index}];"
+                      f" return !!q && q.x > 4 && q.y > 4 && q.x < innerWidth - 4 && q.y < innerHeight - 4"
+                      f" && _space4.hitAt(q.x, q.y) === '{kind}' && {{x: q.x, y: q.y, n: _space4.taps.total}}; }})()", kind)
 
 
 class TestBlackHole:
@@ -109,6 +121,36 @@ class TestWorlds:
         _tap_kind(page, "orbiter")
         assert any(o["lap"] for o in page.evaluate("_space4.orbiters()"))
         assert _plain(page.evaluate("_space4.fact")).startswith(("הירח", "לוין"))
+
+    def test_a_satellite_behind_the_globe_cannot_be_tapped_through_it(self, page):
+        """The Moon and the satellites spend part of every lap BEHIND the Earth. Their tap circles are wide (easy
+        to catch on the open sky), so a tap on the globe's middle used to reach one hidden behind it about one
+        time in five — the bubble named a satellite nobody could see. Where the globe covers one, a tap is a
+        tap on the Earth."""
+        errs = _open(page)
+        res = page.evaluate("""() => new Promise(done => {
+            const out = {hidden: 0, earth: 0, other: []}, t0 = performance.now();
+            const tick = () => {
+              const e = _space4.bodies().earth, orb = _space4.targets().filter(q => q.kind === 'orbiter');
+              for (const q of orb) {
+                if (!q.behind || Math.hypot(q.x - e.x, q.y - e.y) > e.r * 0.9) continue;                // not hidden by the globe
+                if (orb.some(f => !f.behind && Math.hypot(q.x - f.x, q.y - f.y) <= f.r)) continue;     // one in FRONT may take it
+                out.hidden++;
+                const k = _space4.hitAt(q.x, q.y);
+                if (k === 'earth') out.earth++; else out.other.push(k);
+              }
+              if (performance.now() - t0 < 9000) requestAnimationFrame(tick); else done(out);
+            };
+            requestAnimationFrame(tick);
+        })""")
+        assert res["hidden"] >= 5 and res["earth"] >= 5, res                                   # the fastest satellite hides once every 7.4 s
+        assert "orbiter" not in res["other"], res
+        # a real tap on the globe, right over a satellite hidden behind it
+        _tap(page, """(() => { const e = _space4.bodies().earth;
+            const q = _space4.targets().find(q => q.kind === 'orbiter' && q.behind && Math.hypot(q.x - e.x, q.y - e.y) < e.r * 0.8);
+            return !!q && _space4.hitAt(q.x, q.y) === 'earth' && {x: q.x, y: q.y, n: _space4.taps.total}; })()""", "earth")
+        assert "כדור הארץ" in _plain(page.evaluate("_space4.fact"))
+        assert errs == []
 
     def test_every_world_passes_with_its_name_and_fact(self, page):
         errs = _open(page)

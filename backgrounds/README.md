@@ -1041,10 +1041,15 @@ every grain is yanked in, a space rock spirals in and is drawn into a streak);
 Saturn / Earth / a passing world → it spins up; the Moon or a satellite → an
 extra lap; a galaxy → it whirls; a constellation → it lights up; a bright star
 → a supernova; the rocket → a roll; the astronaut → a somersault; the Sun → a
-flare; empty sky → a burst of travellers.
+flare; empty sky → a burst of travellers. The Moon and the satellites have wide
+tap circles (easy to catch on the open sky), but one on the far side of its lap
+can't be tapped through the globe that covers it: there a tap reaches the Earth
+(`reaches()`, v10.36 — before, about one tap in five on the globe's middle named
+a satellite nobody could see).
 
 **Hooks** — `window._space4`: `bh`, `gl`, `dust`, `surge`, `taps`, `fact`,
-`perf()` (2-D ms per frame, tier, counts), `targets()`, `hitAt(x, y)`,
+`perf()` (2-D ms per frame, tier, counts), `targets()` (an orbiter carries
+`behind`), `hitAt(x, y)`,
 `bodies()`, `orbiters()`, `galaxies()`, `constellations()`, `stars()`,
 `rocket()`, `astronaut()`, `comets()`, `nova()`, `rock()`, `tidal()`,
 `startNova()`, `startComet(x, y)`, `flare()`, and space2's `passers`,

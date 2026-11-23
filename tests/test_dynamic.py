@@ -135,8 +135,8 @@ class TestDynamicExercises:
 
     def test_every_mode_builds_correct_pool_size(self, page):
         """Each mode's recipe produces its expected session length."""
-        expected = {"5": 12, "10": 12, "20": 12, "'br'": 15, "'b20'": 17,
-                    "'mx'": 17, "'sup'": 15, "'mulc'": 15, "'big'": 12}   # 15-card decks (reading + logic inside); Queen 17 (+1 balance card, +1 division card)
+        expected = {"5": 12, "10": 12, "20": 12, "'br'": 16, "'b20'": 19,
+                    "'mx'": 19, "'sup'": 15, "'mulc'": 15, "'big'": 12}   # 15-card decks (reading + logic inside); Queen 19 (+1 balance card, +1 division card, +1 🎯 range card, +1 🧠 logic puzzle); bridge 10: 12 + 2 balance + 🎯 + 🧠 puzzle; bridge 20: 15 + 2 balance + 🎯 + 🧠 puzzle
         for arg, size in expected.items():
             enter_mode(page, arg)
             page.wait_for_function(f"problems.length === {size}", timeout=TIMEOUT)

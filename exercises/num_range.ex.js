@@ -1,7 +1,7 @@
 /* ── "אֵילוּ מִסְפָּרִים בֵּין 65 לְ-75?" — mark every number BETWEEN two bounds (🎯) ──
    The range card of Queen (mx) and אַלּוּפָה (mulc), after the user's example
    (2026-11-15): "between 65 and 75 — which of 50, 51, 66, 71, 79?" → only 66
-   and 71.
+   and 71. Since 2026-11-16 also in גָּשֵׁר 10 (br) and גָּשֵׁר 20 (b20).
 
    • The two bounds sit at the ends of a gold bar (the low one on the LEFT, the
      way the game's number lines run); the candidate numbers are tiles in a
@@ -20,15 +20,20 @@
      She fixes the marks and submits again (the second try is worth 67%).
    • ✓ with nothing marked only nudges (no penalty).
 
-   Generator: every range is 10 wide and starts on a multiple of 5. Queen
-   (medium) draws from the whole spread, whole decades included (30–40, where
-   the tens digit decides); אַלּוּפָה (hard) only from ranges that CROSS a decade
-   (65–75, where it doesn't). 2 or 3 numbers inside, never touching a bound.
-   Queen: 5 numbers — one near miss just outside a bound, the rest further
-   away. אַלּוּפָה: 6 numbers with the classic traps — a near miss on EACH side
-   (64, 76) and, when there is one, the digits of an inside number reversed
-   (71 → 17). There is always at least one number below the range and one above
-   it. The ranges rotate through a no-repeat queue per level.
+   Generator: Queen and אַלּוּפָה ranges are 10 wide and start on a multiple of
+   5. Queen (medium) draws from the whole spread, whole decades included
+   (30–40, where the tens digit decides); אַלּוּפָה (hard) only from ranges that
+   CROSS a decade (65–75, where it doesn't). The BRIDGES get ranges 4–8 wide
+   ACROSS the ten they bridge, the bounds 2–6 either side of it — גָּשֵׁר 10:
+   4–12 … 8–16 with numbers up to 20; גָּשֵׁר 20: 14–22 … 18–26 with numbers up to
+   30 — and one number inside on EACH side of that ten (9 and 12 in 7–13), so
+   the card is about the bridge too. 2 or 3 numbers inside, never touching a
+   bound. Queen and the bridges: 5 numbers — one near miss just outside a
+   bound, the rest further away (גָּשֵׁר 20 adds 12 when 21 is inside: the
+   reversed digits). אַלּוּפָה: 6 numbers with the classic traps — a near miss on
+   EACH side (64, 76) and, when there is one, the digits of an inside number
+   reversed (71 → 17). There is always at least one number below the range
+   and one above it. The ranges rotate through a no-repeat queue per level.
 
    Self-contained interactive type, mounted by core.js _colxMount into
    #colx-root; self-checks via api.solved()/api.wrong(). Problem shape:
@@ -41,26 +46,41 @@ window.EXERCISES.types.num_range=(()=>{
   const span=(a,b)=>{const o=[];for(let v=a;v<=b;v++)o.push(v);return o;};
   const asc=a=>a.slice().sort((x,y)=>x-y);
 
-  // the low bounds of the ranges (the high bound is always low + 10)
-  const LOS={mx:[10,15,20,25,30,35,40,45,50,55,60,65,70,75,80],mulc:[15,25,35,45,55,65,75]};
-  const _queue={mx:[],mulc:[]};
-  function nextLo(level){const q=_queue[level];if(!q.length)q.push(...sh(LOS[level].slice()));return q.pop();}
+  // the ranges of each level as [low, high] bounds, and how a card is filled: n numbers from 1 … max,
+  // "far" = at least `far` outside a bound, `both` = a near miss on each side, `rev` = the
+  // reversed-digits trap, `ten` = the ten a bridge crosses (one number inside on each side of it)
+  const tens=los=>los.map(lo=>[lo,lo+10]);
+  const across=t=>{const o=[];for(let lo=t-6;lo<=t-2;lo++)for(let hi=t+2;hi<=t+6;hi++)if(hi-lo<=8)o.push([lo,hi]);return o;};
+  const LV={
+    mx:  {ranges:tens([10,15,20,25,30,35,40,45,50,55,60,65,70,75,80]),n:5,max:99,far:6},
+    mulc:{ranges:tens([15,25,35,45,55,65,75]),n:6,max:99,far:6,both:true,rev:true},
+    br:  {ranges:across(10),n:5,max:20,far:4,ten:10},              // 4–12 … 8–16: 15 ranges
+    b20: {ranges:across(20),n:5,max:30,far:4,ten:20,rev:true},     // 14–22 … 18–26: 15 ranges
+  };
+  const _queue={mx:[],mulc:[],br:[],b20:[]};
+  function nextRange(level){const q=_queue[level];if(!q.length)q.push(...sh(LV[level].ranges.slice()));return q.pop();}
 
   function makeCard(level){
-    const hard=level==='mulc', lo=nextLo(hard?'mulc':'mx'), hi=lo+10, N=hard?6:5;
+    const c=LV[level], [lo,hi]=nextRange(level), N=c.n;
     const inside=v=>v>lo&&v<hi;
     const k=Math.random()<0.55?2:3;
-    const ins=sh(span(lo+1,hi-1)).slice(0,k);
+    let ins;
+    if(c.ten){                                    // a bridge: one inside below its ten, one above (+ one anywhere inside)
+      ins=[sh(span(lo+1,c.ten-1))[0],sh(span(c.ten+1,hi-1))[0]];
+      if(k===3)ins.push(sh(span(lo+1,hi-1).filter(v=>!ins.includes(v)))[0]);
+    }else ins=sh(span(lo+1,hi-1)).slice(0,k);
     const used=new Set(ins);
-    const free=v=>v>=1&&v<=99&&v!==lo&&v!==hi&&!inside(v)&&!used.has(v);
+    const free=v=>v>=1&&v<=c.max&&v!==lo&&v!==hi&&!inside(v)&&!used.has(v);
     // add one random free number from `list`; false when the list has none left
-    const take=list=>{const c=sh(list.filter(free));if(!c.length)return false;used.add(c[0]);return true;};
-    const nearLo=span(lo-3,lo-1), nearHi=span(hi+1,hi+3), farLo=span(1,lo-6), farHi=span(hi+6,99);
+    const take=list=>{const x=sh(list.filter(free));if(!x.length)return false;used.add(x[0]);return true;};
+    const nearLo=span(lo-3,lo-1), nearHi=span(hi+1,hi+3), farLo=span(1,lo-c.far), farHi=span(hi+c.far,c.max);
     const below=()=>[...used].some(v=>v<lo), above=()=>[...used].some(v=>v>hi);
-    if(hard){
-      take(nearLo);take(nearHi);
-      take(ins.filter(v=>v%10).map(v=>(v%10)*10+((v/10)|0)));   // the reversed-digits trap (71 → 17), only if it lands outside
-    }else take(Math.random()<0.5?nearLo:nearHi);
+    if(c.both){take(nearLo);take(nearHi);}
+    else take(Math.random()<0.5?nearLo:nearHi);
+    if(c.rev){                                    // the reversed-digits trap (71 → 17, 21 → 12), only if it lands outside —
+      const room=v=>used.size+1+(below()||v<lo?0:1)+(above()||v>hi?0:1)<=N;   // and leaves room for a number on each side
+      take(ins.filter(v=>v%10).map(v=>(v%10)*10+((v/10)|0)).filter(room));
+    }
     // both sides of the range must be present; then far numbers fill the row
     while(used.size<N){
       const want=!below()?farLo.concat(nearLo):!above()?farHi.concat(nearHi):(Math.random()<0.5?farLo:farHi);
@@ -204,12 +224,11 @@ window.EXERCISES.types.num_range=(()=>{
 
   return{
     t:TRG,
-    modes:['rng','mx','mulc'],
+    modes:['rng','mx','mulc','br','b20'],
     aidsReveal:'always',            // no host aid — the card opens its own number line after a mistake
     make(mode){
-      if(mode==='mx')return[makeCard('mx')];
-      if(mode==='mulc')return[makeCard('mulc')];
-      if(mode==='rng')return sh([0,1,2,3].map(()=>makeCard('mx')).concat([0,1,2,3].map(()=>makeCard('mulc'))));
+      if(mode==='mx'||mode==='mulc'||mode==='br'||mode==='b20')return[makeCard(mode)];
+      if(mode==='rng')return sh(['mx','mulc','br','b20'].flatMap(lv=>[makeCard(lv),makeCard(lv)]));   // tester: two of every level
       return[];
     },
     mount,

@@ -14,10 +14,10 @@ class TestGameFlow:
         page.wait_for_timeout(120)
         assert page.evaluate("problems.length") == 12
 
-    def test_mx_session_has_18_problems_with_each_type(self, page):
+    def test_mx_session_has_19_problems_with_each_type(self, page):
         """
         Queen (mx) session must:
-          - have exactly 18 problems (the core types below + `__+__+__` + one rotating extra + one balance card + one division card + one 🎯 range card)
+          - have exactly 19 problems (the core types below + `__+__+__` + one rotating extra + one balance card + one division card + one 🎯 range card + one 🧠 logic puzzle)
           - contain ≥1 of EACH problem type:
             TZ, TX, TW, TM, TS, TA, TDA, TDS, TT, TC, TBG, TCS.
         """
@@ -25,10 +25,10 @@ class TestGameFlow:
         # 5 fresh Queen sessions — each must satisfy the rule
         for session in range(5):
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
             n = page.evaluate("problems.length")
-            assert n == 18, \
-                f"Session {session+1}: expected 18 mx problems, got {n}"
+            assert n == 19, \
+                f"Session {session+1}: expected 19 mx problems, got {n}"
             types = page.evaluate("[...problems].map(p => p.t)")
             for name, code in consts.items():
                 count = sum(1 for t in types if t == code)

@@ -246,7 +246,7 @@ class TestTryFirstScoring:
 
         for _ in range(10):                # 10 fresh Queen sessions
             page.evaluate("setMode('mx'); restart()")
-            page.wait_for_function("problems.length === 18", timeout=TIMEOUT)
+            page.wait_for_function("problems.length === 19", timeout=TIMEOUT)
             problems = page.evaluate("problems")
             for i, p in enumerate(problems):
                 t = p["t"]

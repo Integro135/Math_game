@@ -26,12 +26,16 @@ BATCH_NOV = ['squirrel-leaves', 'bunny-carrot', 'panda-bamboo', 'magic-storybook
 BATCH_DEC = ['unicorn-gallop', 'mermaid-wave', 'cupcake-sprinkles', 'puppy-fetch', 'gumball-machine',
              'pinata-burst', 'fairy-house', 'pumpkin-carriage', 'magic-mirror', 'seahorse-ride']
 
+# 2026-11-23: ten MORE, appended after BATCH_DEC (added — nothing retired)
+BATCH_NOV23 = ['swan-heart', 'hummingbird-flower', 'enchanted-rose', 'potion-bottle', 'ice-skater',
+               'sparkler-heart', 'bead-bracelet', 'cotton-candy', 'space-kitten', 'giraffe-star']
+
 # ...which replaced the ten OLDEST screens (the first 10 manifest entries)
 RETIRED = ['supernova', 'comet-shower', 'constellation-heart', 'electric-orb', 'lightning-storm',
            'blooming-garden', 'unicorn-rainbow', 'black-hole-stars', 'star-race', 'aurora-glow']
 
 
-@pytest.mark.parametrize("name", BATCH + BATCH_OCT + BATCH_NOV + BATCH_DEC)
+@pytest.mark.parametrize("name", BATCH + BATCH_OCT + BATCH_NOV + BATCH_DEC + BATCH_NOV23)
 def test_screen_renders_and_cleans_up(page, name):
     page.wait_for_function(f"window.SUCCESS && SUCCESS.styles.some(s=>s.name==='{name}')", timeout=TIMEOUT)
     errs = []
@@ -66,7 +70,7 @@ def test_batch_is_listed_in_success_files(page):
         assert f"success-{n}" in files
 
 
-@pytest.mark.parametrize("name", BATCH_OCT + BATCH_NOV + BATCH_DEC)
+@pytest.mark.parametrize("name", BATCH_OCT + BATCH_NOV + BATCH_DEC + BATCH_NOV23)
 def test_new_screen_stops_all_frames_and_listeners_on_cleanup(page, name):
     """After a mid-animation skip, the screen schedules NO further animation
     frames or timeouts and has removed its resize listener."""
@@ -115,7 +119,7 @@ def test_new_screen_stops_all_frames_and_listeners_on_cleanup(page, name):
 
 def test_october_batch_is_appended_newest_last(page):
     files = page.evaluate("SUCCESS_FILES")
-    tail = BATCH_OCT + BATCH_NOV + BATCH_DEC
+    tail = BATCH_OCT + BATCH_NOV + BATCH_DEC + BATCH_NOV23
     assert files[-len(tail):] == [f"success-{n}" for n in tail]
 
 
@@ -128,5 +132,5 @@ def test_retired_screens_are_gone(page):
         assert f"success-{n}" not in files, f"{n} still in SUCCESS_FILES"
         assert n not in names, f"{n} still registered"
         assert not (Path(GAME_URL_DIR) / "success_screens" / f"success-{n}.js").exists(), f"{n}.js still on disk"
-    assert len(files) == 85, f"expected 85 rotation screens, got {len(files)}"
+    assert len(files) == 95, f"expected 95 rotation screens, got {len(files)}"
     assert len(set(files)) == len(files), "duplicate SUCCESS_FILES entries"

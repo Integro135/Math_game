@@ -221,7 +221,7 @@ class TestDivisionRecipes:
 
 class TestQueenDivision:
     def test_queen_gets_one_division_card_and_all_six_kinds_take_turns(self, page):
-        """Queen (mx) is 18 cards: the 15 base + one balance card + the 🎯 range card + ONE division card,
+        """Queen (mx) is 19 cards: the 15 base + one balance card + the 🎯 range card + ONE division card + one 🧠 logic puzzle,
         which walks through all six division kinds (the old שָׁוֶה בְּשָׁוֶה + ice-cream
         shop, and deal / pack / fair / can_share) over six consecutive games."""
         enter_mode(page, 'mx')
@@ -231,7 +231,7 @@ class TestQueenDivision:
         res = page.evaluate("""(()=>{const D=[THF,TIC,TDL,TPK,TFR,TCN],out=[];
             for(let i=0;i<6;i++){const d=makePool('mx');out.push({n:d.length,div:d.filter(p=>D.includes(p.t)).map(p=>p.t),first:d[0].t});}
             return out;})()""")
-        assert all(r["n"] == 18 for r in res), res
+        assert all(r["n"] == 19 for r in res), res
         assert all(len(r["div"]) == 1 for r in res), res
         assert len({r["div"][0] for r in res}) == 6, f"six games must cover all six division kinds: {res}"
-        assert page.evaluate("problems.length") == 18
+        assert page.evaluate("problems.length") == 19

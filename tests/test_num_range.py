@@ -2,7 +2,9 @@
 נִמְצָאִים בֵּין 65 לְ-75?": tap every number strictly between the two bounds,
 ✓ submits. Added 2026-11-15 (user: "between 65 and 75 — of 50, 51, 66, 71, 79
 she must choose only 66 and 71") to Queen (mx: one card on top, an 18-card
-deck) and אַלּוּפָה (mulc: one card in every game, inside the 15).
+deck) and אַלּוּפָה (mulc: one card in every game, inside the 15); 2026-11-16 to
+גָּשֵׁר 10 and גָּשֵׁר 20 (br/b20: question 15, a range ACROSS the ten the game
+bridges — 7–13, 16–23).
 
 Try-first: a wrong ✓ logs ONE mistake, marks the out-of-range picks red and
 says why, hints that a number is missing WITHOUT pointing at it, and opens a
@@ -181,18 +183,57 @@ class TestGenerator:
             cnt = page.evaluate(f"""(()=>{{const c={{}};for(let i=0;i<{n * 10};i++){{const lo=EXERCISES.types.num_range.make('{lv}')[0].lo;c[lo]=(c[lo]||0)+1;}}return Object.values(c);}})()""")
             assert len(cnt) == n and min(cnt) >= 9 and max(cnt) <= 11, (lv, cnt)
 
+    def test_bridge_cards_cross_the_ten_they_bridge(self, page):
+        """2026-11-16, גָּשֵׁר 10 / גָּשֵׁר 20: ranges 4–8 wide ACROSS the ten the game bridges,
+        the bounds 2–6 either side of it (4–12 … 8–16 / 14–22 … 18–26, 15 ranges each); 5
+        numbers up to 20 / 30 with one inside on EACH side of that ten, a near miss, a
+        number below and above the range; in גָּשֵׁר 20 the reversed digits of an inside
+        21 (12) whenever the row has room for it."""
+        enter_mode(page, 'br')
+        page.wait_for_function("typeof EXERCISES.types.num_range==='object'", timeout=TIMEOUT)
+        res = page.evaluate("""(()=>{const bad=[],st={};
+            for(const [lv,t,max] of [['br',10,20],['b20',20,30]]){const s=st[lv]={ranges:new Set(),k:new Set(),has21:0,rev:0};
+              for(let i=0;i<600;i++){const c=EXERCISES.types.num_range.make(lv)[0];
+                const ins=c.nums.filter(v=>v>c.lo&&v<c.hi), out=c.nums.filter(v=>!(v>c.lo&&v<c.hi));
+                s.ranges.add(c.lo+'-'+c.hi);s.k.add(ins.length);
+                if(c.t!==TRG||c.nums.length!==5)bad.push(['card',c]);
+                if(!(c.lo>=t-6&&c.lo<=t-2&&c.hi>=t+2&&c.hi<=t+6&&c.hi-c.lo<=8))bad.push(['range',c]);
+                if(new Set(c.nums).size!==5)bad.push(['dup',c]);
+                if(c.nums.some(v=>v===c.lo||v===c.hi||v<1||v>max))bad.push(['value',c]);
+                if(ins.length!==c.a)bad.push(['a',c]);
+                if(!ins.some(v=>v<t)||!ins.some(v=>v>t))bad.push(['across',c]);
+                if(!out.some(v=>v<c.lo)||!out.some(v=>v>c.hi))bad.push(['sides',c]);
+                if(!out.some(v=>(v>=c.lo-3&&v<c.lo)||(v>c.hi&&v<=c.hi+3)))bad.push(['near',c]);
+                if(ins.includes(21)){s.has21++;if(out.includes(12))s.rev++;}}
+              s.ranges=s.ranges.size;s.k=[...s.k].sort();}
+            return {bad:bad.slice(0,4),st};})()""")
+        assert res["bad"] == [], res["bad"]
+        br, b20 = res["st"]["br"], res["st"]["b20"]
+        assert br["ranges"] == 15 and b20["ranges"] == 15, res["st"]
+        assert br["k"] == [2, 3] and b20["k"] == [2, 3], res["st"]
+        assert b20["has21"] > 100 and b20["rev"] >= b20["has21"] // 2, b20     # not when 3 inside + a near miss below fill the row
+
+    def test_bridge_ranges_take_turns_through_a_no_repeat_queue(self, page):
+        """Each bridge's 15 ranges come round once before any comes round again (10
+        cycles' worth of draws: every range 10 times, give or take one)."""
+        enter_mode(page, 'br')
+        page.wait_for_function("typeof EXERCISES.types.num_range==='object'", timeout=TIMEOUT)
+        for lv in ("br", "b20"):
+            cnt = page.evaluate(f"""(()=>{{const c={{}};for(let i=0;i<150;i++){{const r=EXERCISES.types.num_range.make('{lv}')[0],k=r.lo+'-'+r.hi;c[k]=(c[k]||0)+1;}}return Object.values(c);}})()""")
+            assert len(cnt) == 15 and min(cnt) >= 9 and max(cnt) <= 11, (lv, cnt)
+
 
 class TestDecks:
-    def test_queen_has_18_cards_with_one_range_card_at_question_15(self, page):
+    def test_queen_has_19_cards_with_one_range_card_at_question_15(self, page):
         enter_mode(page, 'mx')
         page.wait_for_function("typeof EXERCISES.types.num_range==='object'", timeout=TIMEOUT)
         res = page.evaluate("""(()=>{const out=[];for(let i=0;i<6;i++){const d=makePool('mx');
             out.push({n:d.length,rg:d.map((p,j)=>p.t===TRG?j:-1).filter(j=>j>=0),bal:d.findIndex(p=>p.t===TBE||p.t===TSB)});}
             return out;})()""")
-        assert all(r["n"] == 18 for r in res), res
+        assert all(r["n"] == 19 for r in res), res
         assert all(r["rg"] == [14] for r in res), res
         assert all(r["bal"] == 12 for r in res), "the balance card keeps question 13"
-        assert page.evaluate("problems.length") == 18
+        assert page.evaluate("problems.length") == 19
 
     def test_champion_has_one_range_card_in_every_game(self, page):
         enter_mode(page, 'mulc')
@@ -211,23 +252,57 @@ class TestDecks:
         enter_mode(page, 'mx')
         page.wait_for_function("typeof EXERCISES.types.num_range==='object'", timeout=TIMEOUT)
         page.evaluate("mode='mx';restart()")
-        page.wait_for_function("window.POOL_PENDING!==true && problems.length===18", timeout=TIMEOUT)
+        page.wait_for_function("window.POOL_PENDING!==true && problems.length===19", timeout=TIMEOUT)
         assert page.evaluate("problems[14].t") == page.evaluate("TRG")
         page.evaluate("idx=14;done=false;tryFirst=0;loadProblem();")
         page.wait_for_selector(".rg-tile", state="visible", timeout=TIMEOUT)
         n = page.evaluate("problems[14].nums.length")
         assert page.locator(".rg-tile").count() == n == 5
         prog = page.inner_text("#prog-txt")
-        assert "15" in prog and "18" in prog, prog
+        assert "15" in prog and "19" in prog, prog
         box = page.locator(".rg-root").bounding_box()
         vw = page.viewport_size
         assert box and box["x"] >= 0 and box["x"] + box["width"] <= vw["width"] + 1, box
 
-    def test_tester_mode_serves_both_levels(self, page):
+    def test_both_bridges_carry_one_range_card_at_question_15(self, page):
+        """גָּשֵׁר 10: all six sets carry the range card at question 15 (12 facts + 2
+        balance + 1 — sets 1–5 each gave their easiest fact up for it — + the 🧠 logic
+        puzzle after it since 2026-11-22: 16); גָּשֵׁר 20: 19 cards (15 + 2 + 1 + 1), the range
+        card at question 15. Each card is its bridge's level: a range across 10
+        (numbers up to 20) / across 20 (up to 30)."""
+        enter_mode(page, 'br')
+        page.wait_for_function("typeof EXERCISES.types.num_range==='object'", timeout=TIMEOUT)
+        for fn, builds, n, t in (("makeBridgePool", 6, 16, 10), ("makeBridge20Pool", 5, 19, 20)):
+            res = page.evaluate(f"""(()=>{{const out=[];for(let i=0;i<{builds};i++){{const d={fn}(),rg=d.map((p,j)=>p.t===TRG?j:-1).filter(j=>j>=0),c=d[rg[0]]||{{}};
+                out.push({{n:d.length,rg,lo:c.lo,hi:c.hi,max:Math.max(...(c.nums||[0]))}});}}return out;}})()""")
+            assert all(r["n"] == n and r["rg"] == [14] for r in res), (fn, res)
+            assert all(r["lo"] < t < r["hi"] and r["hi"] - r["lo"] <= 8 and r["max"] <= t + 10 for r in res), (fn, res)
+
+    def test_the_card_plays_in_a_real_bridge_game(self, page):
+        """REAL bridge games: question 15 is the range card, drawn on screen and scored
+        like any bridge answer (15) — the 15th of 16 in גָּשֵׁר 10, the 15th of 19 in גָּשֵׁר 20."""
+        for m, n in (("br", 16), ("b20", 19)):
+            enter_mode(page, m)
+            page.wait_for_function(f"window.POOL_PENDING!==true && typeof EXERCISES.types.num_range==='object' && problems.length==={n}", timeout=TIMEOUT)
+            assert page.evaluate("problems[14].t") == page.evaluate("TRG")
+            page.evaluate("idx=14;score=0;done=false;tryFirst=0;loadProblem();")
+            page.wait_for_selector(".rg-tile", state="visible", timeout=TIMEOUT)
+            assert page.locator(".rg-tile").count() == 5
+            prog = page.inner_text("#prog-txt")
+            assert "15" in prog and str(n) in prog, prog
+            _tap(page, *page.evaluate("problems[14].nums.filter(v=>v>problems[14].lo&&v<problems[14].hi)"))
+            page.click(".rg-btn")
+            page.wait_for_function("done === true", timeout=TIMEOUT)
+            assert page.evaluate("score") == 15, f"{m}: first-try correct = the bridge's 15 points"
+
+    def test_tester_mode_serves_every_level(self, page):
+        """The tester handle: two cards of each level — Queen, אַלּוּפָה (6 numbers) and the two
+        bridges (ranges narrower than 10)."""
         enter_mode(page, 'rng')
         page.wait_for_function("window.POOL_PENDING!==true && problems.length>0", timeout=TIMEOUT)
-        res = page.evaluate("({n:problems.length,all:problems.every(p=>p.t===TRG),sizes:[...new Set(problems.map(p=>p.nums.length))].sort(),pts:modePts()})")
-        assert res == {"n": 8, "all": True, "sizes": [5, 6], "pts": 15}, res
+        res = page.evaluate("({n:problems.length,all:problems.every(p=>p.t===TRG),sizes:[...new Set(problems.map(p=>p.nums.length))].sort(),pts:modePts(),"
+                            "wide:problems.filter(p=>p.hi-p.lo===10).length,narrow:problems.filter(p=>p.hi-p.lo<=8).length})")
+        assert res == {"n": 8, "all": True, "sizes": [5, 6], "pts": 15, "wide": 4, "narrow": 4}, res
 
 
 class TestPhone:

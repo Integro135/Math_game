@@ -2152,7 +2152,7 @@ window.BACKGROUNDS.space4={
   function hitTargets(){
     const T=[],add=(x,y,r,f,kind,o)=>T.push({x,y,r,name:f[0],fact:f[1],kind,o});
     if(earthOn()){
-      ORBITERS.forEach((o,i)=>{const q=orbiterPos(o);add(q.x,q.y,EARTH.r*(i?.7:.8),i?FACT.sat:FACT.moon,'orbiter',o);});
+      ORBITERS.forEach((o,i)=>{const q=orbiterPos(o);add(q.x,q.y,EARTH.r*(i?.7:.8),i?FACT.sat:FACT.moon,'orbiter',o);T[T.length-1].behind=q.behind;});
       add(ASTRO.x,ASTRO.y,34*ASTRO.k,FACT_ASTRO,'astro');
     }
     if(nova)add(nova.x,nova.y,70,FACT.nova,'nova');
@@ -2167,6 +2167,9 @@ window.BACKGROUNDS.space4={
     add(SUN.x,SUN.y,SUN.r*1.02,FACT.sun,'sun');
     return T;
   }
+  // a tap reaches a target inside its radius — except a Moon or satellite on the far side of its lap where
+  // the globe covers it: a tap there is a tap on the Earth, not on a satellite nobody can see
+  const reaches=(tg,x,y)=>Math.hypot(x-tg.x,y-tg.y)<=tg.r&&!(tg.behind&&Math.hypot(x-EARTH.x,y-EARTH.y)<EARTH.r);
   const TAPS={total:0,last:null};
   // Clicks land on the game's layers, not the canvas — listen on the document
   // and react only to clicks on the bare sky (not the game UI / poppables)
@@ -2176,7 +2179,7 @@ window.BACKGROUNDS.space4={
       factEl.style.opacity='0';clearTimeout(factTimer);return;}
     const x=e.clientX,y=e.clientY;
     for(const tg of hitTargets()){
-      if(Math.hypot(x-tg.x,y-tg.y)>tg.r)continue;
+      if(!reaches(tg,x,y))continue;
       TAPS.total++;TAPS.last=tg.kind;
       if(tg.kind==='bh'){
         bhFrenzyT=lastT;
@@ -2275,10 +2278,11 @@ window.BACKGROUNDS.space4={
     get fact(){return factEl.style.opacity==='1'?factEl.textContent:'';},
     perf:()=>({ms2d:perf.ms2d,frames:perf.frames,quality:GLQS[qIdx].name,lite:lite(),dpr2:DPR2,stars:FAR.reduce((n,f)=>n+f.pts.length/3,0)+NEAR.length,
                travellers:TRAVELERS.length,dust:dustN,passers:PASSERS.length,sparks:SPARKS.length,deepSky:skyArt.width>2,skyMs:SKY_MS}),
-    // every tap target right now: [{name, kind, x, y, r}] in hit order (small things first)
-    targets:()=>hitTargets().map(q=>({name:q.name,kind:q.kind,x:q.x,y:q.y,r:q.r})),
+    // every tap target right now: [{name, kind, x, y, r, behind}] in hit order (small things first;
+    // behind = a Moon or satellite on the far side of the Earth — the globe covers it, see reaches())
+    targets:()=>hitTargets().map(q=>({name:q.name,kind:q.kind,x:q.x,y:q.y,r:q.r,behind:!!q.behind})),
     // the first target a tap at x, y would reach
-    hitAt(x,y){for(const q of hitTargets())if(Math.hypot(x-q.x,y-q.y)<=q.r)return q.kind;return null;},
+    hitAt(x,y){for(const q of hitTargets())if(reaches(q,x,y))return q.kind;return null;},
     bodies:()=>({saturn:{x:PLANET.x,y:PLANET.y,r:PLANET.r,on:saturnOn(),boost:clickEnv(PLANET.boostT,lastT,3),rot:PLANET.body.rot},
                  earth:{x:EARTH.x,y:EARTH.y,r:EARTH.r,on:earthOn(),boost:clickEnv(EARTH.boostT,lastT,3),rot:EARTH.body.rot},
                  sun:{x:SUN.x,y:SUN.y,r:SUN.r,flare:flareT!==null}}),

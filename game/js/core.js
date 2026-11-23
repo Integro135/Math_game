@@ -730,14 +730,17 @@ function _colxMount(){
    offers a way out, so it never becomes a lazy shortcut. A skip scores 0 (it is
    NOT gotCorrect; it counts as skipped in the report and the grade). */
 function _isLangType(pt){return pt===TSQ||pt===TCZ||pt===TTF||pt===TWM||pt===TSO||pt===TRH;}
-// show the skip button only on a live language card AFTER the 2nd mistake
+// …and any card that flags itself skippable — the 🧠 logic PUZZLES (p.skip: a long
+// multi-step puzzle must not soft-lock a Queen / אַלּוּפָה / הִגָּיוֹן game either)
+function _canSkip(){return _isLangType(ptype)||!!(problems[idx]||{}).skip;}
+// show the skip button only on a live skippable card AFTER the 2nd mistake
 function _maybeShowSkip(){
   const b=document.getElementById('skip-btn');
   if(!b)return;
-  b.style.display=(_isLangType(ptype)&&!done&&tryFirst>=2)?'':'none';
+  b.style.display=(_canSkip()&&!done&&tryFirst>=2)?'':'none';
 }
 function skipLangQuestion(){
-  if(done||!_isLangType(ptype)||tryFirst<2)return;   // only after the 2nd mistake
+  if(done||!_canSkip()||tryFirst<2)return;   // only after the 2nd mistake
   done=true;
   if(report[idx])report[idx].skipped=true;   // 0 points, shown as "דולג" in the report
   setFb('⏭️ דִּלַּגְנוּ עַל הַשְּׁאֵלָה — 0 נְקֻדּוֹת','fb-err');
@@ -753,7 +756,7 @@ function showBtns(s){
     btns.className='btn-row';
     // language reading cards get a skip button (0 points) so a hard-to-read card
     // never soft-locks the set — hidden until the 2nd mistake (_maybeShowSkip)
-    if(_isLangType(ptype))
+    if(_canSkip())
       btns.innerHTML='<button class="btn b-skip" id="skip-btn" style="display:none" onclick="skipLangQuestion()">⏭️ דַּלְּגִי עַל הַשְּׁאֵלָה</button>';
     _maybeShowSkip();
     // exercise modules (TCA/TCS/TCM/TBC/TPG/TMC/TMK) check themselves — no host check button
@@ -1205,6 +1208,7 @@ function _reportRows(){
     else if(r.ptype===TTF)eq=`✔️✖️ ${r.correct===1?'נָכוֹן':'לֹא נָכוֹן'}`;
     else if(r.ptype===TWM)eq=`🖼️ הַתְאָמָה ${(p.pairs||[]).map(x=>x.e).join(' ')}`;
     else if(r.ptype===TSO)eq=`🔀 ${(p.words||[]).join(' ')}`;
+    else if(r.ptype===TLG&&p.sum){eq=`🧠 ${p.title||''}`;cor=p.sum;}   // a logic PUZZLE (dist/seat): the answer is the whole arrangement
     else if(r.ptype===TLG){const _o=(p.opts||[])[r.correct-1];eq=`🧠 ${p.title||''} — ${(_o||{}).e||''} ${(_o||{}).w||''}`;}
     else if(r.ptype===TRH){const _o=(p.opts||[])[r.correct-1];eq=`🎵 ${(p.cue||{}).w||'?'} — ${(_o||{}).w||'?'}`;}
     else if(r.ptype===TTS)eq=`➕ ___ + ___ + ___ = ${r.correct}`;

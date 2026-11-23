@@ -18,58 +18,25 @@ try: sys.stdout.reconfigure(encoding="utf-8")
 except Exception: pass
 
 # ── CONFIG (edit these; never change the command line) ──────────────────────
-THEME    = "girls"                 # (unused in STANDALONE mode)
-DSF      = 2                       # device scale factor
+THEME    = "unicorns"
+DSF      = 1                       # device scale factor
 HIDE_UI  = False
-STANDALONE = r"c:\Code\subtraction_game\backgrounds\whales.html"
-VIEW     = {"width": 1280, "height": 800}   # desktop viewport
-SEEK_F   = 0.83                    # sky whales: light-cycle fraction to shoot
+STANDALONE = ""
+VIEW     = {"width": 1024, "height": 768}   # tablet landscape
 EVAL = r"""(async function(){
   var W=function(fn){return new Promise(function(r){var t=setInterval(function(){if(fn()){clearInterval(t);r();}},50);});};
-  var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-  await W(function(){return window.BACKGROUNDS&&BACKGROUNDS.whales&&BACKGROUNDS.whales._test;});
-  var t=BACKGROUNDS.whales._test;
-  t.seek(__F__);   // NIGHT — pearl + star-variant events live here
-  await sleep(300);
-  function clickAt(x,y){ var el=document.elementFromPoint(x,y)||document.body;
-    el.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:x,clientY:y})); }
-  // A) mama song via real click (night variant: star-group pulse)
-  var mHit=document.querySelectorAll('.whale .sw-hit')[0];
-  var r=mHit.getBoundingClientRect();
-  clickAt(r.left+r.width/2, r.top+r.height/2);
-  var songOn=t.busy().song;
-  await sleep(1100);
-  // B) PEARL: fire, and click it during the 600ms pre-rise window — must NOT
-  //    catch (pearlLive gate, the frozen-pearl race fix)
-  t.pearl();
-  clickAt(r.left+r.width/2, r.top+r.height/2-10);
-  var earlyCaught=t.busy().caught;
-  // wait for rise to complete (600ms delay + 4200ms rise), then really catch it
-  await sleep(5200);
-  var ph=document.querySelector('.sw-pearl-hit').getBoundingClientRect();
-  clickAt(ph.left+ph.width/2, ph.top+ph.height/2);
-  await sleep(400);
-  var caught=t.busy().caught;
-  // C) event storm + toy
-  t.spout(); t.breach(); t.pod(); t.birds(); t.star(); t.roll(); t.narwhal();
-  clickAt(300,700);
-  await sleep(700);
-  var peak=document.getAnimations().length;
-  // D) restart twice → leak-free cleanup
-  start(); start();
-  await sleep(500);
-  var t2=BACKGROUNDS.whales._test;
-  t2.seek(0.56);
-  await sleep(300);
-  var after=document.getAnimations().length;
-  return JSON.stringify({songOn:songOn, earlyCaught:earlyCaught, caught:caught,
-    peak:peak, animsAfterRestart:after, freshHooks:(t2!==t)});
-})();""".replace("__F__", str(SEEK_F))
+  await W(function(){return window.SUCCESS&&SUCCESS.styles.some(function(s){return s.name==='space-kitten';})&&!document.getElementById('load-screen');});
+  await new Promise(function(r){setTimeout(r,600);});
+  var st=SUCCESS.styles.find(function(s){return s.name==='space-kitten';});
+  _fwOn=true;_showExternal(st,false,2700);
+  await new Promise(function(r){setTimeout(r,1500);});
+  return JSON.stringify({n:SUCCESS.styles.length,pal:_skinPalette()});
+})();"""
 POST_EVAL = r""
 CLICKS   = []
-WAIT_MS   = 400
+WAIT_MS   = 50
 SHOTS    = [
-    {"path": r"c:\tmp\whales_final.png", "clip": {"x": 0, "y": 0, "width": 1280, "height": 800}},
+    {"path": r"c:\tmp\ss_ingame.png", "clip": {"x": 0, "y": 0, "width": 1024, "height": 768}},
 ]
 # ────────────────────────────────────────────────────────────────────────────
 

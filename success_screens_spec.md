@@ -135,10 +135,12 @@ sticker book, squirrel leaves, bunny carrot, panda bamboo, magic
 storybook, crayon drawing, flamingo dance, octopus juggle, frog lilypad,
 dandelion wish, music box, unicorn gallop, mermaid wave, cupcake
 sprinkles, puppy fetch, gumball machine, piñata burst, fairy house,
-pumpkin carriage, magic mirror, seahorse ride …). The ten oldest screens (supernova, comet shower,
+pumpkin carriage, magic mirror, seahorse ride, swan heart, hummingbird &
+flower, enchanted rose, potion bottle, ice skater, sparkler heart, bead
+bracelet, cotton candy, space kitten, giraffe & star …). The ten oldest screens (supernova, comet shower,
 constellation heart, electric orb, lightning storm, blooming garden, unicorn
 rainbow, black-hole stars, star race, aurora glow) were retired in 2026-10.
-There are currently **85** rotation screens registered in `SUCCESS_FILES`
+There are currently **95** rotation screens registered in `SUCCESS_FILES`
 (game/js/data.js), plus the **gift** reward screen in `SUCCESS_SPECIAL`.
 
 > **Bright-backdrop exception.** Three screens (`hot-air-balloon`,

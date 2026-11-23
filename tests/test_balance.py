@@ -189,18 +189,18 @@ class TestBalanceFill:
 
 
 class TestBalanceRecipes:
-    def test_queen_has_18_cards_with_one_balance_card(self, page):
+    def test_queen_has_19_cards_with_one_balance_card(self, page):
         enter_mode(page, 'mx')
         page.wait_for_function("typeof EXERCISES.types.balance==='object'", timeout=TIMEOUT)
         res = page.evaluate("""(()=>{const out=[];for(let i=0;i<6;i++){const d=makePool('mx');
             out.push({n:d.length,bal:d.filter(p=>p.t===TBE||p.t===TSB).map(p=>p.t),first:d[0].t});}
             return out;})()""")
-        assert all(r["n"] == 18 for r in res), res
+        assert all(r["n"] == 19 for r in res), res
         assert all(len(r["bal"]) == 1 for r in res), res
         kinds = [r["bal"][0] for r in res]
         assert all(kinds[i] != kinds[i + 1] for i in range(len(kinds) - 1)), \
             f"the two kinds must take turns across Queen games, got {kinds}"
-        assert page.evaluate("problems.length") == 18
+        assert page.evaluate("problems.length") == 19
 
     def test_champion_rotates_both_kinds_in(self, page):
         enter_mode(page, 'mulc')
@@ -259,12 +259,12 @@ class TestBalanceAppearsInRealGames:
         kinds = []
         for _ in range(2):                                   # two games in a row: the kinds alternate
             _new_game(page, 'mx')
-            assert page.evaluate("problems.length") == 18
+            assert page.evaluate("problems.length") == 19
             assert page.evaluate("problems[12].t") in (page.evaluate("TBE"), page.evaluate("TSB")), \
                 "Queen's question 13 must be the balance card"
             kinds.append(_goto_and_check_rendered(page, 12))
             prog = page.inner_text("#prog-txt")
-            assert "13" in prog and "18" in prog, f"progress must read question 13 of 18, got {prog!r}"
+            assert "13" in prog and "19" in prog, f"progress must read question 13 of 19, got {prog!r}"
         assert set(kinds) == {page.evaluate("TBE"), page.evaluate("TSB")}, \
             f"over two Queen games both balance kinds (the scale pans too) must appear, got {kinds}"
 
