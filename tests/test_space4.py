@@ -227,11 +227,45 @@ class TestSky:
         page.wait_for_function("!_space4.astronaut().spinning", timeout=5_000)
         assert errs == []
 
+    def test_the_astronaut_comes_and_goes(self, page):
+        """2026-11-23 (the user: "make them arrive and leave — they needn't be there all the time"):
+        the scene opens with the astronaut beside the Earth; after a while she floats off the screen
+        on her jet pack (puffs behind her), is away for a while — no tap reaches her — and floats
+        back in from off the screen to her place by the Earth."""
+        errs = _open(page)
+        a = page.evaluate("_space4.astronaut()")
+        assert a["state"] == "here" and 15 < a["nextIn"] < 40, a
+        assert page.evaluate("_space4.astroLeave()")
+        page.wait_for_function("_space4.astronaut().state === 'out' && _space4.astronaut().puffs > 0", timeout=3_000)
+        page.wait_for_function("_space4.astronaut().state === 'away'", timeout=10_000)
+        a = page.evaluate("_space4.astronaut()")
+        assert 25 < a["nextIn"] <= 55, a
+        assert "astro" not in {q["kind"] for q in page.evaluate("_space4.targets()")}, "while she is away a tap can't reach her"
+        assert page.evaluate("_space4.astroCome()")
+        page.wait_for_function("_space4.astronaut().state === 'in' && _space4.astronaut().x > -900", timeout=2_000)
+        a = page.evaluate("_space4.astronaut()")
+        assert a["x"] < 10 or a["y"] < 10, f"she floats in from off the screen: {a}"
+        page.wait_for_function("_space4.astronaut().state === 'here'", timeout=10_000)
+        a = page.evaluate("_space4.astronaut()")
+        assert a["visits"] == 1 and 15 < a["nextIn"] < 40, a
+        assert "astro" in {q["kind"] for q in page.evaluate("_space4.targets()")}
+        assert errs == []
+
     def test_the_starship_comes_by_itself(self, page):
         """2026-11-23: the starship (it replaced the patrolling rocket) is not always there — it is
         away between visits, and the first visit comes on its own a few seconds after the scene opens."""
         errs = _open(page)
-        page.wait_for_function("_space4.ship().visits >= 1 && _space4.ship().state !== 'away'", timeout=25_000)
+        page.wait_for_function("_space4.ship().visits >= 1 && _space4.ship().state !== 'away'", timeout=30_000)
+        assert errs == []
+
+    def test_the_starships_visits_are_short(self, page):
+        """2026-11-23 (later): it comes and goes — a visit is one to three worlds, never every world at once."""
+        errs = _open(page)
+        _ship_ready(page)
+        page.evaluate("_space4.spawnAll()")
+        page.wait_for_timeout(900)
+        stops = [page.evaluate("_space4.shipVisit(false)") for _ in range(12)]
+        assert all(1 <= n <= 3 for n in stops), stops
         assert errs == []
 
     def test_the_starship_lands_on_every_world_and_warps_out(self, page):
@@ -241,7 +275,7 @@ class TestSky:
         errs = _open(page)
         _ship_ready(page)
         stops = page.evaluate("_space4.shipVisit(false)")
-        assert stops >= 1
+        assert 1 <= stops <= 3
         page.wait_for_function("_space4.ship().state === 'fly'", timeout=5_000)
         _tap_kind(page, "ship")
         assert page.evaluate("_space4.ship().rolling") and "חללית" in _plain(page.evaluate("_space4.fact"))
@@ -255,6 +289,7 @@ class TestSky:
         assert 1 <= sh["landings"] and 1 <= len(sh["landedOn"]) <= stops, sh
         assert len(set(sh["landedOn"])) == len(sh["landedOn"]), f"one landing per world: {sh['landedOn']}"
         assert sh["dives"] == 0 and sh["minHole"] > 3.2, sh
+        assert sh["nextIn"] >= 30, f"then it is away a good while before it comes again: {sh}"
         assert errs == []
 
     def test_the_starship_is_a_baked_sheet_of_a_3d_model(self, page):

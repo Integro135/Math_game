@@ -52,9 +52,11 @@
    The cast: SATURN and EARTH (with the Moon and two satellites) roam the frame on
    slow curved paths that keep clear of the hole; the other planets, Pluto and an
    asteroid drift past one or two at a time; three galaxies turn; comets cross
-   with their tails away from the Sun; now and then a STARSHIP warps in, lands on every
-   world on screen in turn and warps out — or falls into the black hole; an ASTRONAUT
-   floats beside the Earth; a star now and then goes supernova.
+   with their tails away from the Sun; now and then a STARSHIP warps in, lands on one to
+   three worlds and warps out — or falls into the black hole; an ASTRONAUT floats in on
+   her jet pack, stays a while beside the Earth and floats away again; a star now and
+   then goes supernova. (The starship and the astronaut COME AND GO — most of the time
+   neither is on screen.)
 
    Taps (on the bare sky — the game's own layers are ignored): any object → its
    Hebrew fact in the discovery bubble, plus: the black hole → a feeding frenzy
@@ -2088,11 +2090,13 @@ window.BACKGROUNDS.space4={
     ctx.fill();
   }
 
-  /* ── THE CREW: the STARSHIP (2026-11-23 — it replaced the little patrolling rocket) and an
-     astronaut floating by the Earth.
-     THE STARSHIP is not always there: now and then it WARPS IN at the far (left) edge or the
-     top and makes a TOUR of every world on screen — Saturn, the Earth and the passing worlds,
-     nearest first. At each one it comes down over the top, slows to a hover, lowers its
+  /* ── THE CREW: the STARSHIP (2026-11-23 — it replaced the little patrolling rocket) and the
+     ASTRONAUT. Both COME AND GO (2026-11-23, the user: "make them arrive and leave — they
+     needn't be there all the time"): most of the time neither is on screen.
+     THE STARSHIP is not always there: now and then (35–60 s after its last visit) it WARPS IN
+     at the far (left) edge or the top and makes a short TOUR — one to three of the worlds on
+     screen, the ones it has not landed on for longest first (so over a few visits it lands on
+     every one), flown nearest first. At each one it comes down over the top, slows to a hover, lowers its
      landing legs and SETS DOWN on it under a soft landing beam (puffs of dust, a gold ring
      round the world, a little flag planted beside it), rests a moment with its lights
      blinking, then lifts off for the next. After the last world it warps out — or, sometimes,
@@ -2111,7 +2115,12 @@ window.BACKGROUNDS.space4={
      points the way the bake's camera does (prj): three ion flames behind the stern and the
      pods, engine glows, blinking fin lights, the nose lamp, the cabin glow, the landing
      beam. A frame is about fifteen blits and a few batched paths — no gradient is built
-     per frame, and the scene never reads the sheet's pixels.                           */
+     per frame, and the scene never reads the sheet's pixels.
+     THE ASTRONAUT floats in from the left edge or the top on her jet pack (little puffs
+     behind her), tumbling, and settles beside the Earth; she stays 22–36 s, then floats
+     off the screen the same way, and comes back 30–55 s later — only while the Earth is
+     well inside the frame (she leaves early when it starts to go). The scene opens with
+     her there.                                                                          */
   let SHIP=null,ASTRO=null;
   const SHIP_U=90,SHIP_LEN=180,SHIP_FOOT=40,SHIP_TOP=50;      // sprite units: 90 to a model unit (the ship is 2 long) · centre → feet · centre → fin tips
   // a point of the model (x forward, y up, z = the right wing) → sprite units from the ship's centre, at a yaw (radians)
@@ -2137,7 +2146,7 @@ window.BACKGROUNDS.space4={
     const len=clamp(M*.2,90,190);
     loadShipSheet();
     SHIP={len,kC:len/SHIP_LEN,k:len/SHIP_LEN,fx:bakeShipFx(),x:-999,y:-999,th:0,face:1,yaw:15,
-          state:'away',next:lastT+6+Math.random()*4,tour:[],stop:0,leg:null,ph0:0,w:null,dive:false,visitT:null,
+          state:'away',next:lastT+8+Math.random()*5,lastOn:{},tour:[],stop:0,leg:null,ph0:0,w:null,dive:false,visitT:null,
           legK:0,thr:0,jets:0,beam:0,beamLen:0,trail:[],lastTrail:0,warp:null,rollT:null,hopT:null,touchT:null,leftT:null,
           puffs:[],flags:[],visits:0,landings:0,dives:0,landedOn:[],spiral:null,minHole:1e9};
     // (the astronaut, unchanged)
@@ -2165,7 +2174,8 @@ window.BACKGROUNDS.space4={
     h.restore();
     h.strokeStyle='rgba(255,255,255,.8)';h.lineWidth=1.8;h.lineCap='round';h.beginPath();h.arc(30,16,7.6,Math.PI*1.05,Math.PI*1.5);h.stroke();
     h.strokeStyle='rgba(150,162,192,.8)';h.lineWidth=1;h.beginPath();h.ellipse(30,16,10.8,9,0,0,TAU);h.stroke();
-    ASTRO={k,spr:as,ph:Math.random()*TAU,spinT:null,x:0,y:0};
+    ASTRO={k,spr:as,ph:Math.random()*TAU,spinT:null,x:0,y:0,state:'here',next:lastT+22+Math.random()*14,t0:0,dur:1,from:null,to:null,arc:0,tum:0,
+           puffs:[],lastPuff:0,visits:0};
   }
   // ── where the ship sets down on a world right now: the point on top of it (Saturn: its tilted pole),
   //    the outward normal there, and the world's centre / size (null = that world isn't on screen)
@@ -2234,8 +2244,10 @@ window.BACKGROUNDS.space4={
     const S=SHIP,tour=SHIP_SHEET?worldsNow():[];
     if(!tour.length){S.next=t+6;return 0;}
     const top=Math.random()<.4,e=top?{x:rnd(.1,.55)*W,y:H*.05}:{x:W*.035,y:rnd(.18,.64)*H};
-    const order=[],rest=tour.slice();let px=e.x,py=e.y;
-    while(rest.length&&order.length<4){let bi=0,bd=1e9;rest.forEach((w,i)=>{const s=landSpot(w),d=Math.hypot(s.x-px,s.y-py);if(d<bd){bd=d;bi=i;}});
+    const n=Math.random()<.25?1:Math.random()<.75?2:3;     // a short visit: one to three worlds…
+    const rest=tour.sort(()=>Math.random()-.5).sort((a,b)=>(S.lastOn[a.name]||-1e9)-(S.lastOn[b.name]||-1e9)).slice(0,n);   // …the ones it hasn't landed on for longest
+    const order=[];let px=e.x,py=e.y;
+    while(rest.length){let bi=0,bd=1e9;rest.forEach((w,i)=>{const s=landSpot(w),d=Math.hypot(s.x-px,s.y-py);if(d<bd){bd=d;bi=i;}});
       const w=rest.splice(bi,1)[0],s=landSpot(w);order.push(w);px=s.x;py=s.y;}
     S.tour=order;S.stop=0;S.dive=dive==null?Math.random()<.38:!!dive;
     const s0=landSpot(order[0]),dx=s0.x-e.x,dy=s0.y-e.y;
@@ -2246,7 +2258,7 @@ window.BACKGROUNDS.space4={
     return order.length;
   }
   function touchDown(S,t,s){
-    S.touchT=t;S.landings++;S.landedOn.push(S.w.name);
+    S.touchT=t;S.landings++;S.landedOn.push(S.w.name);S.lastOn[S.w.name]=t;
     const tx=-Math.sin(s.n),ty=Math.cos(s.n),half=SHIP_LEN*S.k*.22;
     for(let i=0;i<6;i++){const side=i%2?1:-1,v=(18+Math.random()*26)*S.k*1.6;
       S.puffs.push({x:s.x+tx*side*half,y:s.y+ty*side*half,vx:tx*side*v+Math.cos(s.n)*6,vy:ty*side*v+Math.sin(s.n)*6,t0:t});}
@@ -2266,7 +2278,7 @@ window.BACKGROUNDS.space4={
       else{S.k+=((S.state==='leave'?S.kC:S.kC*.9)-S.k)*Math.min(1,dt*2);thr=1.15;}
       if(u>=1){
         if(S.state==='fly'){S.state='descend';S.ph0=t;}
-        else if(S.state==='leave'){S.warp={x,y,a:Math.atan2(y-S.y,x-S.x),t0:t,out:true};S.state='away';S.leftT=t;S.next=t+18+Math.random()*16;S.x=-999;S.y=-999;return;}
+        else if(S.state==='leave'){S.warp={x,y,a:Math.atan2(y-S.y,x-S.x),t0:t,out:true};S.state='away';S.leftT=t;S.next=t+35+Math.random()*25;S.x=-999;S.y=-999;return;}
         else{S.state='spiral';S.ph0=t;}
       }
     }
@@ -2289,7 +2301,7 @@ window.BACKGROUNDS.space4={
     else if(S.state==='spiral'){                               // caught: a tightening spiral, faster and faster, stretched
       const p=Math.min(1,(t-S.ph0)/2.7),q=spiralPos(S.spiral,p),a=q.a;
       x=q.x;y=q.y;thT=hdg();thr=1.3;S.k+=(S.kC*.9*(1-.45*p)-S.k)*Math.min(1,dt*3);
-      if(p>=1){TIDAL.push({ang:a,t0:t,big:26});bhFrenzyT=t;S.dives++;S.state='away';S.leftT=t;S.spiral=null;S.next=t+22+Math.random()*14;S.x=-999;S.y=-999;return;}
+      if(p>=1){TIDAL.push({ang:a,t0:t,big:26});bhFrenzyT=t;S.dives++;S.state='away';S.leftT=t;S.spiral=null;S.next=t+40+Math.random()*25;S.x=-999;S.y=-999;return;}
     }
     if(S.state!=='spiral'&&S.state!=='todive')S.minHole=Math.min(S.minHole,Math.hypot(x-BH.x,y-BH.y)/BH.r);
     if(thT!==null){const d=Math.atan2(Math.sin(thT-S.th),Math.cos(thT-S.th));S.th+=d*Math.min(1,dt*(S.state==='spiral'?10:5));}
@@ -2380,12 +2392,55 @@ window.BACKGROUNDS.space4={
     if(S.state==='landed'){ctx.globalAlpha=al*(.3+.22*Math.sin(t*4));lt(prj(.32,.2,0,psi),'160,230,255',26);}
     ctx.globalAlpha=1;ctx.setTransform(DPR2,0,0,DPR2,0,0);
   }
-  function drawAstro(t){
-    const s=ASTRO,an=t*.1+s.ph,k=s.k;
-    s.x=EARTH.x+Math.cos(an)*EARTH.r*3.4;s.y=EARTH.y+Math.sin(an)*EARTH.r*2.3+Math.sin(t*.8+s.ph)*5;
-    let rot=Math.sin(t*.5+s.ph)*.35;if(s.spinT!==null){const p=(t-s.spinT)/1.4;if(p>=1)s.spinT=null;else rot+=TAU*p*p*(3-2*p);}
+  // where she floats while she is with the Earth
+  // (kept inside the frame: where the orbit would cross an edge it is folded back in, so she drifts along it and back — never off the screen)
+  function astroOrbit(t){const s=ASTRO,an=t*.1+s.ph,px=34*s.k+6,py=40*s.k+6;
+    let x=EARTH.x+Math.cos(an)*EARTH.r*3.4,y=EARTH.y+Math.sin(an)*EARTH.r*2.3+Math.sin(t*.8+s.ph)*5;
+    if(x<px)x=2*px-x;else if(x>W-px)x=2*(W-px)-x;
+    if(y<py)y=2*py-y;else if(y>H-py)y=2*(H-py)-y;
+    return{x,y};}
+  // the Earth is well inside the frame and not about to leave (slack: how far along its trip it may be)
+  function earthHome(t,slack){const e=EARTH,mv=e.mv;if(!earthOn())return false;
+    if(mv.state==='move'&&t>=mv.startAt&&mv.u>slack)return false;
+    return e.x>W*.06&&e.x<W*.78&&e.y>H*.1&&e.y<H*.92;}
+  // 'in': from just off the left edge or the top to her place by the Earth · 'out': from where she is to just off one of them
+  function astroGo(t,state){
+    const s=ASTRO,mg=48*s.k+20,o=state==='in'?astroOrbit(t):{x:s.x,y:s.y};
+    let left=o.x<o.y*1.15;if(Math.random()<.25)left=!left;if(o.x>BH.x-BH.r*6)left=true;   // the nearer edge, mostly — never up past the hole
+    const p=left?{x:-mg,y:clamp(o.y+rnd(-.12,.12)*H,H*.1,H*.85)}:{x:clamp(o.x+rnd(-.1,.1)*W,W*.04,BH.x-BH.r*6),y:-mg};
+    s.state=state;s.t0=t;s.dur=clamp(Math.hypot(p.x-o.x,p.y-o.y)/(M*.1),3.5,7.5);
+    const f=state==='in'?p:o,g=state==='in'?o:p,dx=g.x-f.x,dy=g.y-f.y,l=Math.hypot(dx,dy)||1,toC=(-dy/l)*(W/2-(f.x+g.x)/2)+(dx/l)*(H/2-(f.y+g.y)/2);
+    s.arc=(toC>=0?1:-1)*M*rnd(.03,.07);                        // the arc bows in toward the middle of the screen, never out past an edge
+    s.tum=(Math.random()<.5?-1:1)*TAU*rnd(.5,.8);
+    if(state==='in'){s.from=p;s.to=null;s.visits++;}else{s.from={x:s.x,y:s.y};s.to=p;}
+  }
+  function drawAstro(t,dt){
+    const s=ASTRO,k=s.k;
+    if(s.state==='away'){if(t<s.next||stopped)return;if(!earthHome(t,.55)){s.next=t+3;return;}astroGo(t,'in');}
+    if(s.state==='here'){
+      if(!earthOn()){s.state='away';s.next=t+rnd(30,55);s.x=s.y=-999;s.puffs.length=0;return;}
+      if(t>=s.next||!earthHome(t,.8))astroGo(t,'out');
+    }
+    if(s.state==='in'&&!earthOn())astroGo(t,'out');
+    let x,y,rot=Math.sin(t*.5+s.ph)*.35,jet=0;
+    if(s.state==='here'){const o=astroOrbit(t);x=o.x;y=o.y;}
+    else{                                                      // floating in (slowing to a stop beside the Earth) or out (speeding off), on a gentle arc, tumbling
+      const u=Math.min(1,(t-s.t0)/s.dur),inn=s.state==='in',e=inn?1-(1-u)*(1-u):u*u,f=s.from,g=inn?astroOrbit(t):s.to;
+      const dx=g.x-f.x,dy=g.y-f.y,l=Math.hypot(dx,dy)||1,b=Math.sin(Math.PI*u)*s.arc;
+      x=f.x+dx*e-dy/l*b;y=f.y+dy*e+dx/l*b;
+      rot+=inn?s.tum*(1-smooth(u)):s.tum*u*u;jet=inn?(u<.7?1:0):(u>.05?1:0);
+      if(u>=1){if(inn){s.state='here';s.next=t+rnd(22,36);}else{s.state='away';s.next=t+rnd(30,55);s.x=s.y=-999;s.puffs.length=0;return;}}
+    }
+    // the jet pack: little puffs left behind her as she floats in or out
+    const vx=x-s.x,vy=y-s.y,vl=Math.hypot(vx,vy);
+    if(jet&&vl>.05&&vl<60&&t-s.lastPuff>.09){s.lastPuff=t;const ux=vx/vl,uy=vy/vl,sp=(26+Math.random()*16)*k;
+      s.puffs.push({x:x-ux*16*k,y:y-uy*16*k,vx:-ux*sp+(Math.random()-.5)*14*k,vy:-uy*sp+(Math.random()-.5)*14*k,t0:t});if(s.puffs.length>12)s.puffs.shift();}
+    for(let i=s.puffs.length-1;i>=0;i--){const p=s.puffs[i],q=(t-p.t0)/.8;if(q>=1){s.puffs.splice(i,1);continue;}
+      p.x+=p.vx*dt;p.y+=p.vy*dt;glow('200,232,255',p.x,p.y,(6+16*q)*k,.8*(1-q));glow('255,255,255',p.x,p.y,(3+3*q)*k,.95*(1-q)*(1-q));}   // a soft cloud round a bright core
+    s.x=x;s.y=y;
+    if(s.spinT!==null){const p=(t-s.spinT)/1.4;if(p>=1)s.spinT=null;else rot+=TAU*p*p*(3-2*p);}
     const cs=Math.cos(rot),sn=Math.sin(rot);
-    ctx.setTransform(DPR2*cs*k,DPR2*sn*k,-DPR2*sn*k,DPR2*cs*k,DPR2*s.x,DPR2*s.y);
+    ctx.setTransform(DPR2*cs*k,DPR2*sn*k,-DPR2*sn*k,DPR2*cs*k,DPR2*x,DPR2*y);
     ctx.drawImage(s.spr.c,-30,-38,60,76);
     ctx.setTransform(DPR2,0,0,DPR2,0,0);
   }
@@ -2398,8 +2453,8 @@ window.BACKGROUNDS.space4={
     const T=[],add=(x,y,r,f,kind,o)=>T.push({x,y,r,name:f[0],fact:f[1],kind,o});
     if(earthOn()){
       ORBITERS.forEach((o,i)=>{const q=orbiterPos(o);add(q.x,q.y,EARTH.r*(i?.7:.8),i?FACT.sat:FACT.moon,'orbiter',o);T[T.length-1].behind=q.behind;});
-      add(ASTRO.x,ASTRO.y,34*ASTRO.k,FACT_ASTRO,'astro');
     }
+    if(ASTRO.state!=='away')add(ASTRO.x,ASTRO.y,34*ASTRO.k,FACT_ASTRO,'astro');
     if(nova)add(nova.x,nova.y,70,FACT.nova,'nova');
     for(const p of PASSERS)T.push({x:p.x+(p.ox||0),y:p.y+(p.oy||0),r:Math.max(p.r*1.4,18),name:p.w.name,fact:p.w.fact,kind:'passer',o:p});
     for(const c of COMETS)if(c.delay<=0)add(c.x,c.y,40,FACT.comet,'comet');
@@ -2500,7 +2555,8 @@ window.BACKGROUNDS.space4={
     updateMover(PLANET.mv,PLANET,t,dt);
     updateMover(EARTH.mv,EARTH,t,dt);
     if(saturnOn())drawSaturn(t,dt);
-    if(earthOn()){drawEarth(t,dt);drawAstro(t);}
+    if(earthOn())drawEarth(t,dt);
+    drawAstro(t,dt);
     drawShip(t,dt);
     drawComets(t,dt);
     drawShoot(t);
@@ -2539,10 +2595,15 @@ window.BACKGROUNDS.space4={
     // todive · spiral), the worlds it landed on this visit, and the closest it came to the hole (in hole radii) outside a dive
     ship:()=>({ready:!!SHIP_SHEET,x:SHIP.x,y:SHIP.y,state:SHIP.state,k:SHIP.k,face:SHIP.face,yaw:SHIP.yaw,visits:SHIP.visits,landings:SHIP.landings,dives:SHIP.dives,
                landedOn:SHIP.landedOn.slice(),stops:SHIP.tour.length,stop:SHIP.stop,dive:SHIP.dive,minHole:SHIP.minHole,
-               rolling:SHIP.rollT!==null,hopping:SHIP.hopT!==null,flags:SHIP.flags.length}),
+               rolling:SHIP.rollT!==null,hopping:SHIP.hopT!==null,flags:SHIP.flags.length,nextIn:SHIP.state==='away'?SHIP.next-lastT:null}),
     // test hook: a visit now (dive: true → it ends in the hole, false → it warps out); returns how many worlds it will visit
     shipVisit(dive){return startVisit(lastT,dive);},
-    astronaut:()=>({x:ASTRO.x,y:ASTRO.y,spinning:ASTRO.spinT!==null,on:earthOn()}),
+    // the astronaut: state 'here' (beside the Earth) · 'out' (floating away) · 'away' · 'in' (floating back); nextIn = seconds until she leaves ('here') or comes back ('away')
+    astronaut:()=>({x:ASTRO.x,y:ASTRO.y,spinning:ASTRO.spinT!==null,state:ASTRO.state,on:ASTRO.state!=='away',visits:ASTRO.visits,
+                    nextIn:(ASTRO.state==='here'||ASTRO.state==='away')?ASTRO.next-lastT:null,puffs:ASTRO.puffs.length}),
+    // test hooks: she floats away now / she floats back now (only if the Earth is home) — each returns whether she went
+    astroLeave(){if(ASTRO.state==='here'||ASTRO.state==='in'){astroGo(lastT,'out');return true;}return false;},
+    astroCome(){if(ASTRO.state==='away'&&earthHome(lastT,.55)){astroGo(lastT,'in');return true;}return false;},
     comets:()=>COMETS.filter(c=>c.delay<=0).map(c=>XY(c.x,c.y)),
     nova:()=>nova?{x:nova.x,y:nova.y}:null,
     rock:()=>!!ROCK,tidal:()=>TIDAL.length,

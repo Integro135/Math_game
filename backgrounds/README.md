@@ -1039,15 +1039,38 @@ slow curved paths that keep clear of the hole; Mercury, Venus, Mars, Jupiter
 (with its four moons), Uranus (with its rings), Neptune, Pluto and an asteroid
 drift past one or two at a time and can be swallowed (→ a tidal streak); a
 STARSHIP visits now and then (v10.41, it replaced the little patrolling rocket),
-and an ASTRONAUT floats beside the Earth.
+and an ASTRONAUT floats beside the Earth — now and then (v10.43).
 
-**The starship (v10.41).** Away between visits (the first comes 6–10 s after the
-scene opens, then every 18–34 s after it leaves). A visit (`startVisit`): it
+**They come and go (v10.43).** The user: "make the starship and the astronaut arrive
+and leave — they needn't be on the screen all the time". Most of the time neither
+is there:
+- **The starship** — a visit is SHORT: one to three worlds (25 % one, ~56 % two,
+  ~19 % three), not every world on screen. It picks the worlds it has not landed
+  on for longest (`S.lastOn[name]` = the time of its last landing there, set in
+  `touchDown`; never = first), then flies them nearest first — so over a few
+  visits it still lands on every world. Away 35–60 s after it warps out (40–65 s
+  after a dive); the first visit comes 8–13 s after the scene opens. A visit is
+  ~9 s a world, so the ship is on screen roughly a quarter of the time.
+- **The astronaut** — states `here` (beside the Earth, as before) → `out` → `away`
+  → `in` → `here` (`drawAstro` / `astroGo`). The scene opens with her `here`;
+  after 22–36 s she floats OFF the screen to the nearer of the left edge and the
+  top (never up past the hole), speeding up, tumbling, puffs from her jet pack
+  left behind her; 30–55 s later she floats back IN from off one of those edges
+  to her place by the Earth, slowing to a stop as her tumble settles. She comes
+  only while the Earth is well inside the frame and early in its trip
+  (`earthHome`), and leaves early when it starts to go. The path bows in toward
+  the middle of the screen. Her orbit round the Earth is FOLDED BACK at the
+  frame's edges (`astroOrbit`), so she is never parked off the screen (before
+  v10.43 she sat half off the left edge whenever the Earth drifted there — on a
+  phone, often). No tap reaches her while she is away.
+
+**The starship (v10.41).** Away between visits (v10.43: the first comes 8–13 s after the
+scene opens, then 35–60 s after it leaves). A visit (`startVisit`): it
 warps in at the left edge or the top (a streak + a flash, the ship popping out
 of it), takes the worlds on screen whose top is a fair landing spot
 (`worldsNow` / `spotOk`: inside the frame, room above for the ship, ≥ 3.6 r from
-the hole) — Saturn (its tilted pole), the Earth, the passing worlds — at most
-four, nearest first, and flies to each on a cubic leg whose END FOLLOWS the
+the hole) — Saturn (its tilted pole), the Earth, the passing worlds — one to
+three of them (v10.43; it was every one, up to four), nearest first, and flies to each on a cubic leg whose END FOLLOWS the
 drifting world (`legTo`: the start and its control point are fixed, the end and
 the control point above it are re-read every frame, so it comes DOWN onto the
 world; a leg through the hole's neighbourhood is bent away). Over the world it
@@ -1121,7 +1144,8 @@ a satellite nobody could see).
 `perf()` (2-D ms per frame, tier, counts), `targets()` (an orbiter carries
 `behind`), `hitAt(x, y)`,
 `bodies()`, `orbiters()`, `galaxies()`, `constellations()`, `stars()`,
-`ship()` (state, landings, landedOn, dives, minHole, rolling, hopping, flags), `shipVisit(dive)`, `astronaut()`, `comets()`, `nova()`, `rock()`, `tidal()`,
+`ship()` (state, landings, landedOn, dives, minHole, rolling, hopping, flags, nextIn), `shipVisit(dive)`,
+`astronaut()` (state here · out · away · in, on, visits, nextIn, puffs), `astroLeave()`, `astroCome()`, `comets()`, `nova()`, `rock()`, `tidal()`,
 `startNova()`, `startComet(x, y)`, `flare()`, and space2's `passers`,
 `passStats`, `movers`, `simulateMovers(sec)`, `spawnAll()`, `simulate(sec)`.
 

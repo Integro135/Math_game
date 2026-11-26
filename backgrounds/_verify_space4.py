@@ -20,14 +20,19 @@ STANDALONE = "space4.html"       # "" → in-game mode
 OUT        = "c:/tmp/space4/shots"
 # [name, hooks to fire, ms to wait before the still, (optional) a JS condition to wait for first]
 #   a hook starting "js:" is raw JS, any other is called on window._space4
-#   a name starting "zoom" is a close-up crop round the starship · "hole" is one round the black hole
+#   a name starting "zoom" is a close-up crop round the starship · "hole" round the black hole · "astro" round the astronaut
 SHOTS = [
     ["s00", [], 0, "_space4.ship().ready"],
-    ["sp_scene", [], 3000],
-    ["zoom_landed", ["shipVisit(false)"], 0, "_space4.ship().state==='landed'"],
-    ["sp_landed", [], 100],
+    ["astro_here", [], 600],
+    ["astro_out1", ["astroLeave()"], 1400],
+    ["astro_out2", [], 1600],
+    ["full_out", [], 0],
+    ["full_away", [], 0, "_space4.astronaut().state==='away'"],
+    ["astro_in1", ["astroCome()"], 1500],
+    ["astro_in2", [], 1800],
+    ["astro_back", [], 0, "_space4.astronaut().state==='here'"],
 ]
-SHEET      = False               # True: pack every full still of a view into sheet_<view>.png
+SHEET      = False              # True: pack every full still of a view into sheet_<view>.png
 DSF        = 1                   # device scale factor (2 for sharp close-ups)
 # ────────────────────────────────────────────────────────────────────────────
 BG_DIR = Path("c:/Code/subtraction_game/backgrounds")
@@ -59,6 +64,11 @@ with sync_playwright() as pw:
                 cw, chh = 400, 330
                 page.screenshot(path=str(Path(OUT) / f"{name}_{view}.png"), clip={"x": max(0, min(w - cw, bh["x"] - cw * .68)), "y": max(0, min(h - chh, bh["y"] - chh / 2)), "width": cw, "height": chh})
                 print(name, page.evaluate("JSON.stringify({eaten:_space4.eaten(),near:_space4.particles().list.filter(q=>q.d<1.6).map(q=>+q.d.toFixed(2))})"))
+            elif name.startswith("astro"):
+                a = page.evaluate("window._space4.astronaut()")
+                cx = max(0, min(w - 300, a["x"] - 150)); cy = max(0, min(h - 220, a["y"] - 110))
+                page.screenshot(path=str(Path(OUT) / f"{name}_{view}.png"), clip={"x": cx, "y": cy, "width": 300, "height": 220})
+                print(name, a["state"], round(a["x"]), round(a["y"]), "puffs", a["puffs"], "nextIn", a["nextIn"])
             elif name.startswith("zoom"):
                 sh = page.evaluate("window._space4.ship()")
                 cx = max(0, min(w - 360, sh["x"] - 180)); cy = max(0, min(h - 240, sh["y"] - 120))
